@@ -1,3 +1,18 @@
+# Sector Rebound — FIELDGRID v0.9.9 (UI Instrument Pass)
+
+**Active UI exploration branch:** `dev/sector-rebound-ui-v099` · **Android versionCode 24**. This branch preserves the previously verified `dev/sector-rebound-ui` v0.9.8.1 build for rollback.
+
+## Current checkpoint — October 26, 2026
+
+- **Implemented:** purpose-built FIELDGRID main-menu hierarchy, action metadata, concise vehicle/pilot status chips, visible occupied-bay feedback, radar corner detailing and landscape spacing guardrails. Arena, gameplay systems, multiplayer protocol and collision rules remain unchanged.
+- **Verified:** all gameplay smoke tests PASS; Android debug APK builds and uploads successfully; real Chromium produced 30 before/after images (home/settings/help/arena/pause at 740×360, 915×412 and 1280×720). Home and collapsed-settings menus required no scrolling at those test sizes.
+- **Artifacts:** [successful v0.9.9 APK + 30-screen screenshot run](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40416502522) under **Artifacts**: `sector-rebound-v0.9.9-debug-apk` and `sector-rebound-v0.9.9-visual-before-after` (download ZIP). Screenshot archive includes `layout-report.json`.
+- **Not yet verified:** visually reviewing each screenshot, real Android touch feel/safe areas/frame pacing, or host/guest LAN on two phones. Do not treat this as a commercial release.
+
+See [v0.9.9 interface audit and follow-up checklist](docs/UI_HIERARCHY_v0.9.9.md). Prior release history follows.
+
+---
+
 # Sector Rebound — FIELDGRID v0.9.8.1 (UI / Flow QA)
 
 **Current playable development branch:** `dev/sector-rebound-ui` · **Android versionCode:** 23
