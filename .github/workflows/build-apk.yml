@@ -1,4 +1,4 @@
-name: Android Test APK # Sector Rebound v0.9.10b camera and multi-unit animation QA
+name: Android Test APK # Sector Rebound v0.9.10b verified camera and animation QA
 on:
   workflow_dispatch:
   push:
