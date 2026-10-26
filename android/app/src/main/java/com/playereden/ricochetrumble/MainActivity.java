@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.content.Context;
 import android.graphics.Color;
+import android.view.View;
+import android.view.WindowManager;
 import android.net.nsd.NsdManager;
 import android.net.nsd.NsdServiceInfo;
 import android.webkit.JavascriptInterface;
@@ -50,11 +52,14 @@ public final class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getWindow().setStatusBarColor(Color.rgb(8, 21, 30));
-        getWindow().setNavigationBarColor(Color.rgb(8, 21, 30));
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        enterImmersiveMode();
         nsd = (NsdManager) getSystemService(Context.NSD_SERVICE);
         web = new WebView(this);
-        web.setBackgroundColor(Color.rgb(8, 21, 30));
+        web.setBackgroundColor(Color.rgb(7, 20, 28));
+        web.setVerticalScrollBarEnabled(false);
+        web.setHorizontalScrollBarEnabled(false);
+        web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         web.getSettings().setJavaScriptEnabled(true);
         web.getSettings().setDomStorageEnabled(false);
         web.getSettings().setBlockNetworkLoads(true);
@@ -69,6 +74,20 @@ public final class MainActivity extends Activity {
         web.addJavascriptInterface(new GameBridge(), "AndroidBridge");
         setContentView(web);
         web.loadUrl("file:///android_asset/index.html");
+    }
+
+    private void enterImmersiveMode() {
+        getWindow().getDecorView().setSystemUiVisibility(
+            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+            | View.SYSTEM_UI_FLAG_FULLSCREEN
+            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+    }
+    @Override public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) enterImmersiveMode();
     }
 
     private void signal(JSONObject data) {
@@ -257,8 +276,12 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public void stopNetwork() { runOnUiThread(() -> closeNetwork()); }
         @JavascriptInterface public void sendPacket(String packet) { send(packet); }
     }
-    @Override protected void onPause() { super.onPause(); if (web != null) web.onPause(); }
-    @Override protected void onResume() { super.onResume(); if (web != null) web.onResume(); }
+    @Override protected void onPause() {
+        if (web != null) web.evaluateJavascript("window.RR && window.RR.appPause && window.RR.appPause()", null);
+        super.onPause();
+        if (web != null) web.onPause();
+    }
+    @Override protected void onResume() { super.onResume(); enterImmersiveMode(); if (web != null) web.onResume(); }
     @Override protected void onStop() {
         boolean wasConnected = connection != null;
         closeNetwork();
@@ -266,5 +289,8 @@ public final class MainActivity extends Activity {
         super.onStop();
     }
     @Override protected void onDestroy() { closeNetwork(); if (web != null) { web.removeJavascriptInterface("AndroidBridge"); web.destroy(); web = null; } super.onDestroy(); }
-    @Override public void onBackPressed() { closeNetwork(); if (web != null) web.loadUrl("file:///android_asset/index.html"); else super.onBackPressed(); }
+    @Override public void onBackPressed() {
+        if (web != null) web.evaluateJavascript("window.RR && window.RR.openMenu && window.RR.openMenu()", null);
+        else super.onBackPressed();
+    }
 }

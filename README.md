@@ -1,3 +1,29 @@
+# Ricochet Rumble
+
+**v0.4 — Full-screen landscape Android game pass**
+
+Ricochet Rumble is a self-contained Android tank arcade game with local Wi-Fi two-phone play support. The Android app uses a hardware-accelerated WebView to render an offline canvas game. This is **not a native OpenGL renderer**, but it behaves like a fixed full-screen game rather than a scrolling webpage.
+
+## v0.4 changes
+
+- Immersive landscape Android screen, with status/navigation bars hidden and no WebView scrollbars or overscroll.
+- Responsive fixed-viewport arena and independent thumb controls on the left and right of the battlefield.
+- Integrated lives/KO HUD and an in-game full-screen menu.
+- Browser portrait fallback asks for landscape; Android itself requests sensor landscape.
+- Android Back opens the in-game pause/menu instead of reloading the entire app.
+- App backgrounding pauses local solo/keyboard games; controls release on focus loss.
+- All game data remains bundled inside the APK and does not download external assets.
+
+## Test scope
+
+- `node tests/smoke.mjs` tests core gameplay and network message shape.
+- Browser layout checked at 915×412, 740×360, 1280×720 and 393×852. No document overflow or JS page errors observed in the test viewport.
+- GitHub Actions build is a manually triggered debug APK workflow (an automated one-off build on workflow edits is also enabled).
+- Two physical phones still need to validate local discovery, controls, and gameplay performance. Cross-network P2P and online friends are **not implemented**.
+- GitHub Actions debug signing keys may change across runs. If Android rejects updating an old debug version, uninstall the old test build and reinstall; later releases need persistent signing keys for in-place updates.
+
+---
+
 # Ricochet Rumble — v0.3 playable arcade prototype
 
 A free, self-contained 2D tank duel. This project is completely separate from SudokuTogether and is intended to become a simple Android two-phone P2P game.

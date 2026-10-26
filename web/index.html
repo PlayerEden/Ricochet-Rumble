@@ -2,52 +2,53 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-  <meta name="theme-color" content="#08151e">
-  <title>Ricochet Rumble — Prototype 0.3</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#07141c">
+  <title>Ricochet Rumble · v0.4</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="shell">
-    <header class="topbar">
-      <div><div class="eyebrow">PLAYEREDEN // TWO-PLAYER LAB</div><h1>RICOCHET <span>RUMBLE</span></h1></div>
-      <div class="version">v0.3<br><span>POWER-UP MAYHEM</span></div>
+  <main class="game-screen" id="game-screen">
+    <header class="game-hud">
+      <div class="game-identity"><span class="logo-mark">RR</span><div class="brand-stack"><strong>RICOCHET <em>RUMBLE</em></strong><span id="mode-label">READY TO RUMBLE</span></div></div>
+      <div class="scorestrip" aria-live="polite">
+        <span class="blue-tag"><span class="player-pip"></span> CYAN <strong id="score0">5</strong> <span class="hud-life">♥</span></span>
+        <span id="round" class="middle">5 LIVES EACH</span>
+        <span class="pink-tag"><span class="hud-life">♥</span> <strong id="score1">5</strong> CORAL <span class="player-pip"></span></span>
+      </div>
+      <button class="hud-menu" id="menu-button" aria-label="Pause or open game menu"><span aria-hidden="true">☰</span> MENU</button>
     </header>
-    <div class="scorestrip" aria-live="polite"><span class="blue-tag">◆ CYAN <strong id="score0">5</strong> ♥</span><span id="round" class="middle">5 LIVES EACH</span><span class="pink-tag">♥ <strong id="score1">5</strong> CORAL ◆</span></div>
-    <section class="arena-wrap">
-      <canvas id="arena" width="960" height="600" aria-label="Tank duel arena"></canvas>
-      <div class="overlay" id="menu">
-        <div class="panel" id="panel">
-          <div class="eyebrow">COMBAT READY?</div>
-          <h2>ONE ARENA. TWO TANKS.</h2>
-          <p>Five lives each. Get hit, respawn with a brief shield, and keep fighting! Grab power-ups for rapid fire, turbo speed, or a one-hit barrier. Drag the analog stick to move, hold Fire to shoot.</p>
-          <label class="arena-label" for="arena-choice">ARENA <select id="arena-choice" aria-label="Select the arena"><option value="0">01 / FOUNDRY</option><option value="1">02 / CROSSROADS</option><option value="2">03 / PINBALL</option></select></label>
-          <button class="primary" data-action="solo">PLAY VS BOT</button>
-          <button data-action="duel">TWO PLAYERS · ONE DEVICE</button>
-          <div class="line"></div>
-          <div class="eyebrow">ANDROID APK · SAME WI-FI</div>
-          <button data-action="host">HOST NEARBY MATCH</button>
-          <button data-action="find">FIND NEARBY MATCH</button>
-          <button data-action="manual">JOIN BY LOCAL IP</button>
-          <p class="note" id="menu-note">Browser version plays offline. Nearby multiplayer is enabled by the included Android wrapper.</p>
+    <div class="battlefield" aria-label="Battle arena and touch controls">
+      <div class="touch-zone touch-left" aria-label="Movement">
+        <div class="joystick" id="joystick" role="group" aria-label="Move using the analog joystick; drag any direction">
+          <div class="stick-ring"></div><div class="stick-knob" id="stick-knob"><span>✦</span></div>
         </div>
+        <span class="control-caption">MOVE</span>
       </div>
-      <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    </section>
-    <section class="controlarea" aria-label="Touch controls">
-      <div class="controls-title"><span>TOUCH CONTROLS</span><span id="mode-label">NO GAME ACTIVE</span></div>
-      <div class="controls">
-        <div class="joystick-group">
-          <div class="joystick" id="joystick" role="group" aria-label="Analog movement joystick; drag in any direction">
-            <div class="stick-ring"></div><div class="stick-knob" id="stick-knob"><span>✦</span></div>
+      <section class="arena-wrap" aria-label="Game field">
+        <canvas id="arena" width="960" height="600" aria-label="Top-down tank duel arena"></canvas>
+        <div id="toast" class="toast" role="status" aria-live="polite"></div>
+      </section>
+      <div class="touch-zone touch-right" aria-label="Fire control">
+        <button class="fire-btn" data-key="fire" aria-label="Hold to fire"><span class="fire-icon">◎</span><span>FIRE</span></button>
+        <span class="control-caption">HOLD TO SHOOT</span>
+      </div>
+    </div>
+    <div class="overlay" id="menu">
+      <div class="panel" id="panel" role="dialog" aria-label="Game menu">
+        <div class="menu-heading"><div class="eyebrow">PLAYEREDEN • ARCADE SERIES</div><h2>RICOCHET <span>RUMBLE</span></h2><p>Two tanks. Five lives. No stopping.</p></div>
+        <div class="menu-content">
+          <div class="menu-main">
+            <label class="arena-label" for="arena-choice">SELECT ARENA<select id="arena-choice" aria-label="Select arena"><option value="0">01 / FOUNDRY</option><option value="1">02 / CROSSROADS</option><option value="2">03 / PINBALL</option></select></label>
+            <button class="primary" data-action="solo">▶ PLAY VS BOT</button>
+            <button data-action="duel">LOCAL DUEL · KEYBOARD</button>
           </div>
-          <span class="stick-label">MOVE · 360°</span>
+          <div class="menu-join"><div class="eyebrow">TWO PHONES · SAME WI-FI</div><button data-action="host">HOST NEARBY MATCH</button><button data-action="find">FIND NEARBY MATCH</button><button data-action="manual">JOIN BY LOCAL IP</button></div>
         </div>
-        <div class="action-group"><button class="fire-btn" data-key="fire">FIRE <span>◎</span></button><button class="small-btn" id="menu-button">MENU</button></div>
+        <p class="note" id="menu-note">Left stick to move · Hold FIRE to shoot · Collect glowing power-ups</p>
       </div>
-      <p class="help">Drag to steer, hold FIRE to shoot; collect glowing power-ups. Keyboard: P1 WASD + Space · P2 arrows + Enter.</p>
-    </section>
-    <footer>FREE • 3 ARENAS • ZERO EXTRA ASSETS • LOCAL P2P FOUNDATION</footer>
+    </div>
+    <div class="rotate-prompt" aria-hidden="true"><div class="rotate-symbol">↻</div><strong>ROTATE TO LANDSCAPE</strong><span>Ricochet Rumble is played sideways.</span></div>
   </main>
   <script src="game.js"></script>
 </body>
