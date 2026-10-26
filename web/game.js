@@ -278,7 +278,7 @@ function shoot(owner){if(state.lives[owner]<=0)return false;
  let x=t.x+dx*(isFoot?7:12),y=t.y+dy*(isFoot?7:12);
  for(let distance=isFoot?9:14;distance<=(isFoot?17:34);distance+=2){const bx=t.x+dx*distance,by=t.y+dy*distance;if(blocked(bx,by,isFoot?3:5))break;x=bx;y=by;}
  t.shield=0; // Shooting cancels spawn/ejection immunity.
- const speed=isFoot?475:def.projectileSpeed;state.bullets.push({x,y,vx:dx*speed,vy:dy*speed,owner,life:isFoot?.9:3.8,bounces:0,age:0,kind:isFoot?'sidearm':v?.type==='mech'?'mech':'shell'});t.flash=.11;if(!isFoot)t.recoil=1;emitFx('shot',x,y,colors[owner],owner);sound(410+owner*80,.065,x,y);refreshHUD();return true;}
+ const speed=isFoot?475:def.projectileSpeed;state.bullets.push({x,y,vx:dx*speed,vy:dy*speed,owner,life:isFoot?.9:3.8,bounces:0,age:0,kind:isFoot?'sidearm':v?.type==='mech'?'mech':'shell'});t.flash=.11;t.recoil=isFoot?.28:v?.type==='mech'?.56:.72;emitFx('shot',x,y,colors[owner],owner);sound(410+owner*80,.065,x,y);refreshHUD();return true;}
 function respawn(victim){const enemies=state.tanks.filter((_,i)=>i!==victim&&state.lives[i]>0&&!friendly(victim,i));const spots=[];
  if(mazeGrid){for(let r=0;r<mazeGrid.rows;r++)for(let c=0;c<mazeGrid.cols;c++)spots.push([(c+.5)*mazeGrid.cell,(r+.5)*mazeGrid.cell]);}
  else spots.push(...[[130,300],[830,300],[130,100],[830,500],[480,96],[480,500],[130,480],[830,120],[340,70],[620,525]]);
@@ -338,7 +338,7 @@ function drawTopTank(c,paint,parked=false,trackLeft=0,trackRight=0,recoil=0,susp
  // Art contract v0.9.6: vehicle local +X is FORWARD (toward the barrel).
  // Tracks run parallel to +X at BOTH sides of the hull. Mirror them from
  // one geometry definition, never draw the right tread with separate offsets.
- c.save();c.translate(-3*recoil,Math.sin((trackLeft+trackRight)*.35)*suspension*.65);c.lineJoin='miter';c.lineWidth=2;c.strokeStyle='#071820';
+ c.save();c.translate(-2.2*recoil,Math.sin((trackLeft+trackRight)*.35)*suspension*.35);c.lineJoin='miter';c.lineWidth=2;c.strokeStyle='#071820';
  for(const side of [-1,1]){
    c.save();c.scale(1,side);
    // Road track and six identically-spaced treads: all seams are perpendicular to travel.
@@ -369,10 +369,11 @@ function drawTopTank(c,paint,parked=false,trackLeft=0,trackRight=0,recoil=0,susp
  if(parked){c.strokeStyle='#83bba9';c.lineWidth=1.7;c.strokeRect(-29,-30,58,60)}
  c.restore();
 }
-function drawTopMech(c,paint,parked=false,stride=0){
+function drawTopMech(c,paint,parked=false,stride=0,recoil=0,bob=0){
  // True top-down walker: two separate articulated legs, shoulders and central cockpit.
  // Readable at phone scale; the dark gaps distinguish the mech from tracked tanks.
- c.save();c.lineWidth=2;c.strokeStyle='#071723';
+ // Weight is subtle and only affects this unit's own art, not physics.
+ c.save();c.translate(-1.3*recoil,bob);c.lineWidth=2;c.strokeStyle='#071723';
  for(const side of [-1,1]){
    c.save();c.scale(1,side);
    // Alternating walking gait; mirrored limbs retain their geometry at rest.
@@ -394,9 +395,10 @@ function drawTopMech(c,paint,parked=false,stride=0){
  if(parked){c.strokeStyle='#cfb4fd';c.lineWidth=2;c.strokeRect(-29,-38,67,76)}
  c.restore();
 }
-function drawTopPilot(c,paint,shooting=false,stride=0){
+function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
  // True overhead pilot: two boots, shoulder pads, helmet visor and sidearm pointing +X.
- c.save();c.lineWidth=2;c.strokeStyle='#071720';
+ // Lightweight gait response is intentionally smaller than the mech or tank.
+ c.save();c.translate(-.8*recoil,bob);c.lineWidth=2;c.strokeStyle='#071720';
  c.fillStyle='#142b39';c.fillRect(-14+stride,-12,10,8);c.fillRect(-14-stride,4,10,8);
  c.fillStyle=paint;c.fillRect(-10,-11,16,22);c.strokeRect(-10,-11,16,22);
  c.fillStyle='#243b47';c.fillRect(-6,-7,13,14);
@@ -406,17 +408,23 @@ function drawTopPilot(c,paint,shooting=false,stride=0){
  if(shooting){c.fillStyle='#ffe5a0';c.beginPath();c.arc(25,0,4,0,Math.PI*2);c.fill()}
  c.restore();
 }
-function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick>0)c.translate(Math.sin(visualClock*130)*screenKick,Math.cos(visualClock*98)*screenKick*.5);const zoom=mazeGrid?Math.max(1.28,W/worldW,H/worldH):1,viewW=W/zoom,viewH=H/zoom,me=mode==='guest'?1:0,localTank=state.lives[me]>0?state.tanks[me]:(state.tanks.find((t,i)=>state.lives[i]>0)||state.tanks[me]||state.tanks[0]);
- const desiredX=clamp((localTank?.x||W/2)-viewW/2,0,Math.max(0,worldW-viewW)),desiredY=clamp((localTank?.y||H/2)-viewH/2,0,Math.max(0,worldH-viewH));
+function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick>0)c.translate(Math.sin(visualClock*130)*screenKick,Math.cos(visualClock*98)*screenKick*.5);// A 6.25% camera pullback. The perimeter includes a small rendered exterior
+ // apron so wide Android screens never reveal blank letterbox gutters.
+ const zoom=mazeGrid?Math.max(1.20,W/(worldW+160),H/(worldH+120)):1,viewW=W/zoom,viewH=H/zoom,me=mode==='guest'?1:0,localTank=state.lives[me]>0?state.tanks[me]:(state.tanks.find((t,i)=>state.lives[i]>0)||state.tanks[me]||state.tanks[0]);
+ const apron=mazeGrid?80:0;const desiredX=clamp((localTank?.x||W/2)-viewW/2,-apron,Math.max(-apron,worldW+apron-viewW)),desiredY=clamp((localTank?.y||H/2)-viewH/2,-apron,Math.max(-apron,worldH+apron-viewH));
  const follow=1-Math.exp(-Math.min(.1,dt)*13);camera.x+=(desiredX-camera.x)*follow;camera.y+=(desiredY-camera.y)*follow;if(!mazeGrid){camera.x=0;camera.y=0}
  c.scale(zoom,zoom);c.translate(-camera.x,-camera.y);
+ // Paint past the playable perimeter so a small camera pullback remains
+ // immersive rather than showing untextured side gutters.
+ c.fillStyle='#112631';c.fillRect(camera.x-8,camera.y-8,viewW+16,viewH+16);
  c.fillStyle='#101f2b';c.fillRect(0,0,worldW,worldH);
  // Modular FIELDGRID surface, deterministic from cell coordinates with no per-frame randomness.
  // Culling ensures large mazes don't draw decorative details outside the camera.
  const left=camera.x-56,right=camera.x+viewW+56,top=camera.y-56,bottom=camera.y+viewH+56;
- const tile=132,xmin=Math.max(0,Math.floor(left/tile)),xmax=Math.min(Math.ceil(worldW/tile),Math.ceil(right/tile)),ymin=Math.max(0,Math.floor(top/tile)),ymax=Math.min(Math.ceil(worldH/tile),Math.ceil(bottom/tile));
+ const tile=132,xmin=Math.max(-1,Math.floor(left/tile)),xmax=Math.min(Math.ceil(worldW/tile)+1,Math.ceil(right/tile)),ymin=Math.max(-1,Math.floor(top/tile)),ymax=Math.min(Math.ceil(worldH/tile)+1,Math.ceil(bottom/tile));
  for(let gy=ymin;gy<ymax;gy++)for(let gx=xmin;gx<xmax;gx++){
    const x=gx*tile,y=gy*tile,hash=(gx*19+gy*37+currentSeed%23)%11;
+   if(x<0||y<0||x>=worldW||y>=worldH){c.fillStyle='#10242e';c.fillRect(x+1,y+1,tile-2,tile-2);c.strokeStyle='#25414b';c.lineWidth=1;c.strokeRect(x+2,y+2,tile-4,tile-4);continue;}
    c.fillStyle=hash%3===0?'#132632':hash%3===1?'#142733':'#162a36';c.fillRect(x+1,y+1,tile-2,tile-2);
    c.strokeStyle='#29424e';c.lineWidth=1;c.strokeRect(x+2,y+2,tile-4,tile-4);
    c.fillStyle='#29424e';for(const dx of [12,tile-16])for(const dy of [12,tile-16])c.fillRect(x+dx,y+dy,3,3);
@@ -456,12 +464,12 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  c.save();c.translate(t.x,t.y);c.rotate(t.a);
  if(t.onFoot){
    const stride=Math.sin(visualClock*15+i*1.7)*Math.min(3.5,Math.hypot(t.vx,t.vy)/65);
-   drawTopPilot(c,colors[i],t.flash>0,stride);c.strokeStyle=colors[i];c.lineWidth=2;c.beginPath();c.arc(0,0,15,0,Math.PI*2);c.stroke();
+   drawTopPilot(c,colors[i],t.flash>0,stride,t.recoil||0,Math.sin(visualClock*15+i*1.7)*Math.min(.45,Math.hypot(t.vx,t.vy)/400));c.strokeStyle=colors[i];c.lineWidth=2;c.beginPath();c.arc(0,0,15,0,Math.PI*2);c.stroke();
    c.restore();
    if(t.ejectAnim>0){c.save();c.globalAlpha=Math.min(.7,t.ejectAnim/.62);c.strokeStyle='#e5faff';c.lineWidth=2;c.beginPath();c.arc(t.x,t.y,18+(1-t.ejectAnim/.62)*22,0,Math.PI*2);c.stroke();c.restore();}
  }else{
  if(t.shield>0){c.globalAlpha=.65+.25*Math.sin(t.shield*15)}
- (currentVehicle(t)?.type==='mech'?drawTopMech(c,colors[i],false,Math.sin(visualClock*10+i*1.9)*Math.min(4.1,Math.hypot(t.vx,t.vy)/42)):drawTopTank(c,colors[i],false,t.trackLeft||0,t.trackRight||0,t.recoil||0,Math.min(1,Math.hypot(t.vx,t.vy)/170)));if(t.flash>0){c.fillStyle='#fff3a0';c.beginPath();c.arc(39,0,8+t.flash*70,0,Math.PI*2);c.fill()}c.restore();
+ (currentVehicle(t)?.type==='mech'?drawTopMech(c,colors[i],false,Math.sin(visualClock*10+i*1.9)*Math.min(3.2,Math.hypot(t.vx,t.vy)/55),t.recoil||0,Math.sin(visualClock*20+i*3.8)*Math.min(.65,Math.hypot(t.vx,t.vy)/320)):drawTopTank(c,colors[i],false,t.trackLeft||0,t.trackRight||0,t.recoil||0,Math.min(1,Math.hypot(t.vx,t.vy)/240)));if(t.flash>0){c.fillStyle='#fff3a0';c.beginPath();c.arc(39,0,8+t.flash*70,0,Math.PI*2);c.fill()}c.restore();
  if(isPilotMatch()){const v=state.vehicles?.[t.vehicleId];if(v){c.fillStyle='#16313b';c.fillRect(t.x-19,t.y+29,38,5);c.fillStyle='#79eab2';c.fillRect(t.x-19,t.y+29,38*v.armor/vehicleDef(v).armor,5);}}}
  if(t.powerType&&t.powerTimer>0&&PICKUPS[t.powerType]){c.fillStyle=PICKUPS[t.powerType].color;c.font='900 11px system-ui';c.textAlign='center';c.fillText(PICKUPS[t.powerType].name+' '+Math.ceil(t.powerTimer)+'s',t.x,t.y+48)}
  if(t.shield>0){c.beginPath();c.arc(t.x,t.y,32+Math.sin(t.shield*10)*2,0,Math.PI*2);c.strokeStyle=colors[i];c.globalAlpha=clamp(t.shield/1.8*.8,0,.8);c.lineWidth=3;c.stroke();c.globalAlpha=1}
