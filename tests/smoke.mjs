@@ -47,7 +47,7 @@ assert.ok(spare);
 assert.ok(win.__test.closestAvailableVehicle(0),'dismounted player can locate a safe vehicle for navigation cue');
 // Pilots can move through parked tanks; occupied tanks remain collidable.
 player.x=spare.x-33;player.y=spare.y;player.vx=player.vy=0;
-assert.equal(win.__test.parkedVehicleAt(spare.x-15,spare.y,10),true);
+assert.equal(win.__test.parkedVehicleAt(spare.x-15,spare.y,10),false,'empty vehicles do not block either pilot or tank');
 win.__test.tankMove(player,{moveX:1,moveY:0},.15,0);
 assert.ok(player.x>spare.x-33,'pilot not blocked by parked vehicle');
 player.x=spare.x-10;player.y=spare.y;
@@ -237,3 +237,26 @@ assert.equal(node('quick-rematch').classList.contains('hidden'),false);
 for(const f of handlers['quick-rematch:click'])f();
 assert.equal(st().winner,-1);assert.equal(node('game-screen').classList.contains('match-finished'),false);
 console.log('PASS v0.9.7 motion/UX: mirrored animation, pilot ejection, serialized feedback, after-action controls and replay.');
+
+
+// v0.9.8: empty deployment projections never become physical barricades.
+// The controlled tank can cross a vacant vehicle bay while occupied actors stay solid.
+click('solo');
+const lone=st().tanks[0],vacant=st().vehicles.find(v=>v.occupant===-1&&v.armor>0);
+assert.ok(vacant,'empty recoverable vehicle exists');
+const armorBefore=vacant.armor;
+lone.x=vacant.x-40;lone.y=vacant.y;lone.vx=lone.vy=0;
+for(let n=0;n<4;n++)win.__test.tankMove(lone,{moveX:1,moveY:0},.065,0);
+assert.ok(lone.x>vacant.x,'occupied tank drives through an unoccupied deployment without blocking');
+// Simulated bullets should similarly ignore projections, not delete armor from them.
+st().bullets=[{x:vacant.x-22,y:vacant.y,vx:380,vy:0,owner:0,life:1,bounces:0,age:0,kind:'shell'}];
+lone.x=vacant.x+84;lone.y=vacant.y+50;lone.shield=3;
+for(let n=0;n<5;n++)win.__test.step(1/60);
+assert.equal(vacant.armor,armorBefore,'projected vehicle cannot intercept shells');
+// Occupied collision continues to go through the shared actor collision check.
+const live=st().tanks[1];live.x=vacant.x;live.y=vacant.y;live.vx=live.vy=0;
+lone.x=vacant.x-37;lone.y=vacant.y;lone.vx=lone.vy=0;
+win.__test.tankMove(lone,{moveX:1,moveY:0},.13,0);
+assert.ok(lone.x<=vacant.x-37+1,'living occupied actors still block vehicles');
+assert.ok(menuHtml.includes('PLAY TOGETHER')&&menuHtml.includes('ADVANCED RULES'));
+console.log('PASS v0.9.8: vacant vehicle is passable and non-cover; occupied actors block; UI hierarchy present.');

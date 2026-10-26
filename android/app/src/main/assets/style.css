@@ -164,3 +164,56 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit
 .match-finished .quick-rematch{z-index:5;top:77%;background:#62c9df;border:2px solid #a0edf1;color:#09232d;box-shadow:0 4px 14px #020c15}
 .match-finished .quick-rematch:focus-visible{outline:2px solid #f0d88a;outline-offset:3px}
 @media(max-height:390px){.match-finished .quick-rematch{top:79%;min-height:46px}}
+
+/* 0.9.8 / FIELDGRID INTERFACE CONTRACT ----------------------------------
+   Design principles: cockpit instrument instead of a generic app dialog;
+   Roboto Condensed for display hierarchy where installed, legible Roboto body.
+   Entirely offline: no remote font, icon, or UI dependencies.
+   Keep the touch and arena layout stable at phone landscape sizes. */
+:root{--panel:#102532;--border:#416170;--blue:#65cee1;--pink:#e98978;--text:#e5f2f5;--muted:#91acb8}
+html,body{font-family:Roboto,'Noto Sans',Arial,sans-serif}
+.panel h2,.panel button,.game-identity,.scorestrip,.hud-menu,.settings-head h2,.eyebrow,.control-caption,.settings-grid label,.toast,.quick-rematch{font-family:'Roboto Condensed','Arial Narrow',Roboto,Arial,sans-serif}
+.panel{background:#102530;border:1px solid #486c79;border-radius:5px;box-shadow:0 15px 32px #020d15c9}
+.panel h2{font-size:clamp(23px,4.6dvh,33px);font-weight:800;letter-spacing:.6px;line-height:1.06}
+.panel button{border:1px solid #426777;border-radius:4px;background:#1a3744;box-shadow:none;font-weight:800;letter-spacing:.4px;min-height:46px;transition:background-color .12s,border-color .12s}
+.panel button.primary{background:#65ccdf;color:#08242d;border:1px solid #9fe5ef}
+.panel button:active{background:#2c5360}
+.panel button.primary:active{background:#a4eaf1}
+.panel .menu-help{font-size:clamp(11px,1.25vw,14px);font-weight:800;padding:5px 12px;min-height:37px;max-width:85px}
+.menu-heading .eyebrow{color:#a2c2ca;display:flex;justify-content:center;gap:14px;align-items:center}
+.menu-heading h2{margin-top:5px}
+.menu-heading p{color:#8db0bb;letter-spacing:1.1px;font-size:clamp(10px,1.22vw,13px);font-weight:700}
+.menu-main{position:relative}
+.menu-main button{text-align:left;padding-left:clamp(24px,3.4vw,38px);position:relative}
+.menu-main button:before{content:'';position:absolute;left:10px;top:25%;height:50%;width:3px;background:#547f8b}
+.menu-main button.primary:before{background:#073c4a}
+.menu-join{border-left:1px solid #385564;padding-left:clamp(10px,1.6vw,19px)}
+.panel .menu-join .eyebrow{color:#b3d6dc;font-size:clamp(11px,1.5vw,14px)}
+.panel .menu-join p{font-size:clamp(12px,1.43vw,15px);line-height:1.35}
+.game-hud{background:#0d202c;border-bottom:1px solid #456170}
+.scorestrip{font-weight:800;letter-spacing:.25px}
+.scorestrip .middle{font-weight:700;letter-spacing:.7px}
+.hud-menu{background:#163442;border:1px solid #4c7580;border-radius:4px;font-weight:800}
+.control-caption{font-size:clamp(10px,1.15vw,13px);font-weight:700;letter-spacing:.7px}
+.interact-btn{min-height:48px;border-radius:4px;background:#21483e;border-color:#9ad8bc;font-family:'Roboto Condensed','Arial Narrow',Roboto,sans-serif;letter-spacing:.3px}
+.fire-btn{font-family:'Roboto Condensed','Arial Narrow',Roboto,sans-serif;font-weight:800;letter-spacing:.8px}
+.settings-head p{color:#a0bdc9}
+.settings-page label{letter-spacing:.45px;font-weight:800}
+.settings-page select{font-family:Roboto,Arial,sans-serif;font-weight:650}
+.extra-rules summary{font-family:'Roboto Condensed','Arial Narrow',Roboto,sans-serif;letter-spacing:.45px}
+.settings-actions button{min-height:48px}
+.pause-hint{margin:8px 0 12px!important;font-size:clamp(12px,1.4vw,15px)!important;text-align:center}
+.pause-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;max-width:520px;margin:7px auto 0}
+.pause-actions .primary{grid-column:1/-1}
+.pause-actions button{width:100%;min-height:48px;margin:0}
+.help-copy{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 10px}
+.help-copy p{margin:0!important;padding:9px 11px;background:#172f3b;border-left:2px solid #486e7b;font-size:clamp(11px,1.18vw,14px)!important;line-height:1.35!important;color:#c6dce3!important}
+.help-copy p strong{display:block;font-family:'Roboto Condensed','Arial Narrow',Roboto,sans-serif;color:#75d7e8;font-size:1.08em;letter-spacing:.6px;margin-bottom:3px}
+.panel:has(.help-copy){width:min(780px,96vw)}
+@media(max-height:390px){.panel{padding:7px 13px}.panel button{min-height:42px}.panel .menu-help{min-height:34px}.panel h2{font-size:22px}.panel .menu-join p{font-size:12px}.pause-hint{margin:3px 0 6px!important}.pause-actions button{min-height:44px}.help-copy p{padding:6px 9px;font-size:11px!important}.settings-actions button{min-height:44px}}
+@media(max-width:760px){.menu-join .menu-tip{display:none}.panel .menu-join p{font-size:12px}.help-copy{gap:5px}}
+@media(max-width:650px){.help-copy{grid-template-columns:1fr}.panel .menu-main button{padding-left:22px}}
+@media(prefers-reduced-motion:reduce){.panel button{transition:none}}
+/* Finger targets stay large on the shortest supported landscape screens. */
+.panel .menu-main button,.panel .pause-actions button,.panel .menu-help{min-height:44px}
+@media(min-height:391px){.panel .menu-main button,.panel .pause-actions button,.panel .menu-help{min-height:48px}}

@@ -69,3 +69,11 @@ See [multi-pass design, accessibility, pacing and systems audit](docs/QA_ROUNDS_
 ## v0.9.2 comfort & recovery pass
 
 The compact settings screen now uses larger selectors: 44 CSS pixels at 740×360, and 48 CSS pixels at 915×412 and wider. Tests show its expanded options fit without page scrolling. When an ejected pilot's nearest available vehicle is outside the camera, a modest on-screen arrow points toward it. This is a direction cue, not automatic maze navigation. Host/guest menus and phone backgrounding now force neutral guest movement and firing rather than leaving controls held. One rule set; no new modes or account setup. See `docs/COMFORT_QA_v0.9.2.md` for evidence and limits.
+
+
+## v0.9.8 UI & Flow Pass
+
+- Unoccupied tank and mech projections are non-solid for both pilots and driven vehicles, and do not intercept projectiles. Occupied vehicles and maze walls retain collision/damage.
+- Consistent compact FIELDGRID instrument design across main, settings, pause, and help menus; improved hierarchy and shorter labels.
+- Offline-safe font stack: condensed system face for tactical headings, normal Roboto for reading. No font downloads needed.
+- Regression tests specifically cover vacant vehicle traversal and active vehicle collision.

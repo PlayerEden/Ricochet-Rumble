@@ -76,9 +76,10 @@ function deployVehicle(forceType=null){if(!isPilotMatch()||state.winner>=0)retur
    emitFx('pickup',x,y,type==='mech'?'#e5a8ff':'#7df1c8');return true;}
  return false;}
 
-// Parked tanks occupy actual space. Only healthy, unoccupied vehicles block movement;
-// destroyed wrecks are cosmetic so an ejected pilot cannot become trapped in one.
-function parkedVehicleAt(x,y,r=12,exceptId=null){return isPilotMatch()&&(state.vehicles||[]).some(v=>v.id!==exceptId&&v.occupant===-1&&v.armor>0&&(v.x-x)**2+(v.y-y)**2<(r+(v.type==='mech'?25:23))**2)}
+// An empty deployment is a non-solid recovery opportunity, not improvised cover.
+// Keep this helper for compatibility with older test hooks. Occupied actors and
+// maze walls still collide through tankMove(). All players/bots share this rule.
+function parkedVehicleAt(x,y,r=12,exceptId=null){return false;}
 function vehicleSite(x,y,vehicles=[],pilots=[]){
  // Try positions close to the requested garage first, then search safe cell centers.
  const offsets=[[0,0],[-44,0],[0,-44],[0,44],[44,0],[-44,-44],[-44,44],[44,-44],[44,44],[-88,0],[0,88],[0,-88],[88,0]];
@@ -138,11 +139,11 @@ function pilotExitSite(i,vehicleId){const t=state.tanks[i];
 }
 function tryInteract(i=0){if(!isPilotMatch()||paused||state.winner>=0||state.lives[i]<=0)return false;const t=state.tanks[i];
  if(t.onFoot){const v=nearestEmptyVehicle(i);if(!v){if(i===0)notice('Find a parked tank and move closer');return false}
-  v.occupant=i;t.vehicleId=v.id;t.onFoot=false;Object.assign(t,{x:v.x,y:v.y,a:v.a,vx:0,vy:0});state.event=vehicleDef(v).name+' ACQUIRED · '+v.armor+' ARMOR';state.eventTimer=.9;emitFx('pickup',v.x,v.y,colors[i],i);}
+  v.occupant=i;t.vehicleId=v.id;t.onFoot=false;Object.assign(t,{x:v.x,y:v.y,a:v.a,vx:0,vy:0});state.event=vehicleDef(v).name+' ONLINE · '+v.armor+' ARMOR';state.eventTimer=.9;emitFx('pickup',v.x,v.y,colors[i],i);}
  else{const v=state.vehicles?.[t.vehicleId];if(!v)return false;
   const spot=pilotExitSite(i,v.id);
   if(!spot){if(i===0)notice('Need space beside the tank to exit');return false}
-  v.x=t.x;v.y=t.y;v.a=t.a;v.occupant=-1;t.onFoot=true;t.vehicleId=null;Object.assign(t,{x:spot[0],y:spot[1],vx:0,vy:0,shield:Math.max(t.shield,.35)});state.event='TANK ABANDONED';state.eventTimer=.8;}
+  v.x=t.x;v.y=t.y;v.a=t.a;v.occupant=-1;t.onFoot=true;t.vehicleId=null;Object.assign(t,{x:spot[0],y:spot[1],vx:0,vy:0,shield:Math.max(t.shield,.35)});state.event='VEHICLE AVAILABLE';state.eventTimer=.8;}
  refreshHUD();return true;}
 function ejectPilot(i){const t=state.tanks[i],v=state.vehicles?.[t.vehicleId];if(!v)return;
  v.x=t.x;v.y=t.y;v.a=t.a;v.occupant=-1;v.armor=0;v.respawn=9;
@@ -201,7 +202,7 @@ function tankMove(t,inp,dt,i){let mx=clamp(Number(inp.moveX)||0,-1,1),my=clamp(N
  const speed=(t.onFoot?(inp.bot?194:268):(inp.bot?178:222)*vehicleDef(currentVehicle(t)).speed)*(t.powerType==='turbo'&&t.powerTimer>0?1.48:1),blend=Math.min(1,dt*(mag?9:13));t.vx+=(mx*speed-t.vx)*blend;t.vy+=(my*speed-t.vy)*blend;
  if(mag){const target=Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a));t.a+=clamp(diff,-dt*12,dt*12)}
  const nx=t.x+t.vx*dt,ny=t.y+t.vy*dt;
- const radius=t.onFoot?10:21;const collides=(x,y)=>blocked(x,y,radius)||(!t.onFoot&&parkedVehicleAt(x,y,radius))||state.tanks.some((other,j)=>i!==j&&state.lives[j]>0&&(other.x-x)**2+(other.y-y)**2<(radius+(other.onFoot?12:21))**2);
+ const radius=t.onFoot?10:21;const collides=(x,y)=>blocked(x,y,radius)||state.tanks.some((other,j)=>i!==j&&state.lives[j]>0&&(other.x-x)**2+(other.y-y)**2<(radius+(other.onFoot?12:21))**2);
  if(!collides(nx,t.y))t.x=nx;else t.vx=0;
  if(!collides(t.x,ny))t.y=ny;else t.vy=0;}
 function hasLineOfSight(x,y,tx,ty){const length=Math.hypot(tx-x,ty-y),steps=Math.ceil(length/15);for(let n=1;n<steps;n++){const p=n/steps;if(nearWall(x+(tx-x)*p,y+(ty-y)*p,4))return false}return true;}
@@ -218,7 +219,7 @@ function botInput(i,dt){const bot=state.tanks[i],enemies=state.tanks.map((t,j)=>
  if(brain.timer<=0||brain.goal!==goal){const prev=Array(open.length).fill(-1),q=[start];prev[start]=start;for(let h=0;h<q.length&&prev[goal]===-1;h++)for(const j of open[q[h]])if(prev[j]===-1){prev[j]=q[h];q.push(j)}
  const path=[];if(prev[goal]!==-1){let n=goal;while(n!==start&&path.length<open.length){path.push(n);n=prev[n]}}brain.path=path.reverse();brain.goal=goal;brain.timer=.45+(i%4)*.09;}
  const waypoint=brain.path[0];if(waypoint!==undefined){const wx=((waypoint%cols)+.5)*cell,wy=(Math.floor(waypoint/cols)+.5)*cell;if(Math.hypot(wx-bot.x,wy-bot.y)<18){brain.path.shift()}else direction=Math.atan2(wy-bot.y,wx-bot.x);}
- }else{const aheadX=bot.x+Math.cos(direction)*72,aheadY=bot.y+Math.sin(direction)*72;if(blocked(aheadX,aheadY,27)||parkedVehicleAt(aheadX,aheadY,27))direction+=Math.sin(visualClock*.9+i)>0?1.4:-1.4;}
+ }else{const aheadX=bot.x+Math.cos(direction)*72,aheadY=bot.y+Math.sin(direction)*72;if(blocked(aheadX,aheadY,27))direction+=Math.sin(visualClock*.9+i)>0?1.4:-1.4;}
  botBrains.set(i,brain);
  const delta=Math.atan2(Math.sin(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a),Math.cos(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a));
  const skill=state.config?.botSkill||'normal',pace=skill==='casual'?.61:skill==='spicy'?.98:.81;
@@ -285,15 +286,8 @@ function step(dt){if(paused||state.winner>=0)return;
  if(blocked(b.x,ny,b.kind==='sidearm'?3:5)){if(b.kind==='sidearm'){b.life=0;break}b.vy=-b.vy;b.bounces++;emitFx('bounce',b.x,b.y,colors[b.owner]);sound(700,.018)}else b.y=ny;
  for(const bump of bumpers){const dx=b.x-bump.x,dy=b.y-bump.y,dist=Math.hypot(dx,dy);if(dist>0&&dist<bump.r+6&&(b.bumpDelay||0)<=0){const ux=dx/dist,uy=dy/dist,dot=b.vx*ux+b.vy*uy;if(dot<0){b.vx-=2*dot*ux;b.vy-=2*dot*uy;b.x=bump.x+ux*(bump.r+7);b.y=bump.y+uy*(bump.r+7);b.bounces++;b.bumpDelay=.09;emitFx('bounce',b.x,b.y,'#ffdf7b');sound(940,.05,b.x,b.y)}}}
  b.bumpDelay=Math.max(0,(b.bumpDelay||0)-subDt);if(b.bounces>(b.kind==='mech'?2:5)){b.life=0;break}
- // Empty vehicles are real cover, not just scenery. They absorb incoming rounds and can be wrecked.
- if(isPilotMatch())for(const v of state.vehicles){
-   if(v.occupant!==-1||v.armor<=0)continue;
-   if((v.x-b.x)**2+(v.y-b.y)**2<27**2){
-     b.life=0;v.armor--;if(v.armor===0)v.respawn=9;
-     emitFx('hit',b.x,b.y,'#79eab2',b.owner);
-     sound(160,.09,b.x,b.y);break;
-   }
- }
+ // Unoccupied vehicle bays are non-solid training projections. Projectiles
+ // pass through as well; only a piloted vehicle has physical armor.
  if(b.life<=0)break;
  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]>0&&(i===b.owner?(b.age>.38&&b.bounces>0):!friendly(i,b.owner))&&t.shield<=0&&(t.x-b.x)**2+(t.y-b.y)**2<((t.onFoot?14:26)+(b.kind==='mech'?5:0))**2){b.life=0;registerHit(b.owner,i);break}}}}
  state.bullets=state.bullets.filter(b=>b.life>0);}
@@ -408,7 +402,8 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
    if(v.armor>0){c.beginPath();c.arc(v.x,v.y,v.type==='mech'?42:35,0,Math.PI*2);c.strokeStyle=v.type==='mech'?'#6a5486':'#3e7568';c.lineWidth=2;c.stroke();}
    c.save();c.translate(v.x,v.y);c.rotate(v.a);
    if(v.armor<=0){c.fillStyle='#192b31';c.fillRect(-19,-18,38,36);c.strokeStyle='#fd7858';c.lineWidth=3;c.strokeRect(-19,-18,38,36);}
-   else if(v.type==='mech')drawTopMech(c,'#b69aff',true);else drawTopTank(c,'#72c3a8',true);
+   else {c.globalAlpha=.64;
+    if(v.type==='mech')drawTopMech(c,'#b69aff',true);else drawTopTank(c,'#72c3a8',true);}
    c.restore();if(v.armor>0){const me=state.tanks[mode==='guest'?1:0];const near=me?.onFoot&&Math.hypot(me.x-v.x,me.y-v.y)<68;
      if(near){c.fillStyle='#bff9d9';c.font='bold 12px system-ui';c.textAlign='center';c.fillText('ENTER  ·  '+vehicleDef(v).name,v.x,v.y+48);c.strokeStyle='#aaf3da';c.lineWidth=2;c.beginPath();c.arc(v.x,v.y,37+Math.sin(visualClock*5)*3,0,Math.PI*2);c.stroke();}}
  }
@@ -521,13 +516,13 @@ panel.addEventListener('change',e=>{const el=e.target;if(el.id?.startsWith('pref
 loadPrefs();
 
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
- if(a==='help'){setPanel('<div class="eyebrow">QUICK GUIDE</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>MOVE:</strong> Push the joystick in any direction. The tank points where it drives.</p><p><strong>FIRE:</strong> Hold FIRE, or enable AUTO FIRE in settings. Only a few shells can be active per tank.</p><p><strong>WIN:</strong> Outlast enemy pilots. Hits first damage vehicle armor; getting hit on foot costs a pilot life.</p><p><strong>MAZES:</strong> The camera follows you. Orange minimap rings show nearby gunfire; teammates cannot hurt each other.</p><p><strong>PILOTS + VEHICLES:</strong> Start in a tank (3 armor). Mechs have 4 armor and heavier shots. On foot you are faster, smaller, and still armed; dodge or fight, then ENTER a nearby vehicle.</p><p><strong>FIELDGRID:</strong> Every match generates a fresh maze. Vehicle deployments are marked on the minimap briefly.</p></div><button class="primary" data-action="help-back">◀ BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
+ if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right; only a few shells can be active.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
  const s=document.getElementById('lan-address').value.trim(),m=s.match(/^([\da-fA-F:.]+):(\d{1,5})$/);
  if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';window.AndroidBridge.joinGame(m[1],Number(m[2]));}});
 function showPauseMenu(){releaseControls();if(mode==='idle')return;
- if(mode==='solo'||mode==='duel'){paused=true;setPanel('<div class="eyebrow">FIELDGRID // PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><button class="primary" data-action="resume">▶ RESUME</button><button data-action="restart">↻ NEW FIELD</button><button data-action="close">MAIN MENU</button>')}
- else if(mode==='host'){paused=true;guestInput={moveX:0,moveY:0,fire:false};setPanel('<div class="eyebrow">FIELDGRID // HOST PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p>The match is paused for both players while this menu is open.</p><button data-action="resume">BACK TO ARENA</button><button data-action="restart">REMATCH · NEW MAZE</button><button data-action="close">DISCONNECT</button>')}
- else if(mode==='guest'){if(connected)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}});setPanel('<div class="eyebrow">FIELDGRID // PLAYER MENU</div><h2>SECTOR <span>MENU</span></h2><p>Only the host can restart the match.</p><button data-action="resume">BACK TO ARENA</button><button data-action="close">DISCONNECT</button>')}}
+ if(mode==='solo'||mode==='duel'){paused=true;setPanel('<div class="eyebrow">FIELDGRID / PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">The field is frozen. Continue or generate a fresh sector.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">NEW FIELD</button><button data-action="close">MAIN MENU</button></div>')}
+ else if(mode==='host'){paused=true;guestInput={moveX:0,moveY:0,fire:false};setPanel('<div class="eyebrow">FIELDGRID / HOST PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">Both players are paused.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">NEW FIELD</button><button data-action="close">DISCONNECT</button></div>')}
+ else if(mode==='guest'){if(connected)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}});setPanel('<div class="eyebrow">FIELDGRID / PLAYER MENU</div><h2>SECTOR <span>MENU</span></h2><p class="pause-hint">The host controls rematches.</p><div class="pause-actions"><button class="primary" data-action="resume">BACK TO ARENA</button><button data-action="close">DISCONNECT</button></div>')}}
 document.getElementById('menu-button').addEventListener('click',showPauseMenu);
 document.getElementById('quick-rematch')?.addEventListener('click',()=>{if(state.winner>=0&&mode!=='guest'&&mode!=='idle'){resetAll();notice('NEW FIELD · NEW FIGHT',1400)}});
 document.getElementById('interact-btn')?.addEventListener('pointerdown',e=>{e.preventDefault();if(mode==='guest'){if(connected&&!paused&&menu.classList.contains('hidden')&&!state.hostPaused)nativePacket({type:'interact'});}else tryInteract(0)});

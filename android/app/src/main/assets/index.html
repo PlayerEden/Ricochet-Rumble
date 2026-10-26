@@ -37,37 +37,37 @@
     </div>
     <div class="overlay" id="menu">
       <div class="panel" id="panel" role="dialog" aria-label="Game menu">
-        <div class="menu-heading"><div class="eyebrow">FIELDGRID // PILOT TRAINING <button class="menu-help" data-action="help" aria-label="How to play Sector Rebound">? HELP</button></div><h2>SECTOR <span>REBOUND</span></h2><p>One pilot. A new field every match.</p></div>
+        <div class="menu-heading"><div class="eyebrow"><span>FIELDGRID / TRAINING SYSTEM</span> <button class="menu-help" data-action="help" aria-label="How to play Sector Rebound">HELP</button></div><h2>SECTOR <span>REBOUND</span></h2><p>DEPLOY / ADAPT / REBOUND</p></div>
         <div class="menu-content">
           <div class="menu-main">
             
-            <button class="primary" data-action="solo">▶ QUICK PLAY</button>
-            <button class="settings-button" data-action="settings">⚙ MATCH SETTINGS</button>
-            <button data-action="nearby">☷ PLAY TOGETHER · SAME WI-FI</button>
+            <button class="primary" data-action="solo">QUICK PLAY</button>
+            <button class="settings-button" data-action="settings">MATCH SETTINGS</button>
+            <button data-action="nearby">PLAY TOGETHER</button>
           </div>
-          <div class="menu-join"><div class="eyebrow">DEPLOY · EJECT · REBOUND</div><p>Start in a tank. If it breaks, escape on foot, find another, and keep battling.</p><p class="menu-tip">Random field. Random vehicles. No two rounds alike.</p></div>
+          <div class="menu-join"><div class="eyebrow">YOUR NEXT FIELD</div><p>Start ready. If your ride breaks, fight on foot and claim another vehicle.</p><p class="menu-tip">New arena every round. No setup needed.</p></div>
         </div>
-        <p class="note" id="menu-note">One tap to start · MOVE + FIRE · ENTER when nearby</p>
+        <p class="note" id="menu-note">TWO THUMBS / ONE FIELD</p>
       </div>
     </div>
     <div class="rotate-prompt" aria-hidden="true"><div class="rotate-symbol">↻</div><strong>ROTATE TO LANDSCAPE</strong><span>Sector Rebound is played sideways.</span></div>
   </main>
 <template id="settings-template">
-  <div class="settings-head"><div class="eyebrow">FIELDGRID // DEPLOYMENT</div><h2>YOUR <span>RULES</span></h2><p>Only the essentials. Your choices are remembered.</p></div>
+  <div class="settings-head"><div class="eyebrow">FIELDGRID // DEPLOYMENT</div><h2>MATCH <span>SETTINGS</span></h2><p>Choose once. Your settings stay saved.</p></div>
   <div class="settings-grid settings-page">
     <label>FIELD SIZE<select id="map-size"><option value="small">QUICK · CLOSE COMBAT</option><option value="standard">STANDARD</option><option value="large">WIDE · EXPLORE</option></select></label>
     <label>BOTS<select id="bot-count"><option value="0">0 · PRACTICE</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>
     <label>SIDES<select id="team-choice"><option value="ffa">FREE FOR ALL</option><option value="coop">HUMANS VS BOTS</option><option value="teams">TWO TEAMS</option></select></label>
   </div>
-  <details class="extra-rules"><summary>MORE MATCH OPTIONS <span>Lives · Shells · Bot difficulty</span></summary>
+  <details class="extra-rules"><summary>ADVANCED RULES <span>Lives / Shells / Bot skill</span></summary>
     <div class="settings-grid settings-page">
       <label>PILOT LIVES<select id="lives-choice"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>
-      <label>BULLETS / TANK<select id="bullet-cap"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="5">5</option><option value="8">8</option></select></label>
+      <label>ACTIVE SHELLS<select id="bullet-cap"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="5">5</option><option value="8">8</option></select></label>
       <label>BOT SKILL<select id="bot-skill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>
     </div>
   </details>
   <div class="comfort-grid settings-comfort"><label><input type="checkbox" id="pref-autoFire"> AUTO FIRE</label><label><input type="checkbox" id="pref-sound"> SOUND</label><label><input type="checkbox" id="pref-shake"> SCREEN SHAKE</label><label><input type="checkbox" id="pref-leftHanded"> SWAP CONTROLS</label></div>
-  <div class="settings-actions"><button data-action="settings-back">◀ BACK</button><button class="primary" data-action="settings-play">▶ PLAY NOW</button></div>
+  <div class="settings-actions"><button data-action="settings-back">BACK</button><button class="primary" data-action="settings-play">START MATCH</button></div>
 </template>
   <script src="game.js"></script>
 </body>
