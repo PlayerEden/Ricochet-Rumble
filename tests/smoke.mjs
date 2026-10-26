@@ -16,7 +16,7 @@ const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},join
 const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(){return null},setItem(){}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(){return []}};
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,teamOf,botInput,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,teamOf,botInput,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -287,3 +287,50 @@ assert.equal(boardingBay.occupant,0);
  assert.ok(css.includes("'sans-serif-condensed'"),'Android condensed headings have an offline fallback');
 }
 console.log('PASS v0.9.8.1: entry clearance, Android asset parity and offline heading fallback.');
+
+
+// v0.9.9 interface-contract tests: semantics and mobile interaction cannot
+// drift even if the game canvas is rendered by a different Android WebView.
+{
+ const fs=await import('node:fs');
+ const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
+ const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
+ for(const metadata of ['SOLO / AI','LOCAL WI-FI','FIELD BRIEF / 01','FIELDGRID READY'])
+   assert.ok(html.includes(metadata),'missing purposeful action/context label: '+metadata);
+ assert.ok(css.includes('.scorestrip .middle.on-foot')&&css.includes('.interact-btn.busy'),'semantic HUD and bay-busy states must have authored styles');
+ assert.ok(css.includes('max-width:760px')&&css.includes('max-height:390px'),'responsive phone-landscape thresholds retained');
+}
+// On-foot, damaged, paused, and match-ended status belong to separate HUD states.
+click('solo');
+const statusPilot=st().tanks[0],statusVehicle=st().vehicles[statusPilot.vehicleId];
+win.__test.refreshHUD();
+assert.equal(node('round').textContent,'TANK · 3/3');
+statusVehicle.armor=1;
+win.__test.refreshHUD();
+assert.equal(node('round').textContent,'TANK · 1/3');
+assert.equal(node('round').classList.contains('damaged'),true);
+statusVehicle.armor=3;
+assert.equal(win.__test.tryInteract(0),true);
+assert.equal(node('round').textContent,'PILOT · ON FOOT');
+assert.equal(node('round').classList.contains('on-foot'),true);
+// A nearby unoccupied recovery vehicle, if occupied by another live actor,
+// stays visible as an actionable status rather than disappearing on mobile.
+const busyBay=st().vehicles.find(v=>v.occupant===-1&&v.armor>0);
+assert.ok(busyBay);
+const statusRival=st().tanks[1];
+const oldRival=[statusRival.x,statusRival.y];
+statusPilot.x=busyBay.x;statusPilot.y=busyBay.y;
+statusRival.x=busyBay.x;statusRival.y=busyBay.y;
+win.__test.refreshHUD();
+assert.equal(node('interact-btn').classList.contains('hidden'),false,'busy cue remains visible on phone');
+assert.equal(node('interact-btn').classList.contains('busy'),true);
+assert.equal(node('interact-btn').textContent,'BAY BUSY');
+statusRival.x=oldRival[0];statusRival.y=oldRival[1];
+win.__test.refreshHUD();
+assert.equal(node('interact-btn').classList.contains('busy'),false);
+assert.equal(node('interact-btn').textContent,'ENTER '+busyBay.type.toUpperCase());
+assert.equal(win.__test.tryInteract(0),true);
+st().winner=1;st().winnerTeam=1;win.__test.refreshHUD();
+assert.equal(node('round').textContent,'MATCH OVER');
+assert.equal(node('round').classList.contains('match-ended'),true);
+console.log('PASS v0.9.9: labeled menu actions, HUD state transitions, blocked-bay visibility and responsive design contract.');
