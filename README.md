@@ -77,3 +77,7 @@ The compact settings screen now uses larger selectors: 44 CSS pixels at 740×360
 - Consistent compact FIELDGRID instrument design across main, settings, pause, and help menus; improved hierarchy and shorter labels.
 - Offline-safe font stack: condensed system face for tactical headings, normal Roboto for reading. No font downloads needed.
 - Regression tests specifically cover vacant vehicle traversal and active vehicle collision.
+
+### v0.9.8.1 boarding-safety and offline typography QA
+
+This small follow-up keeps vacant vehicles non-solid but prevents boarding on top of another living actor; nearby ENTER feedback explains a blocked bay. Tactical text now falls back to Android's built-in condensed sans. Web and Android source assets are kept identical; see [v0.9.8 UI QA](docs/UI_FLOW_v0.9.8.md).
