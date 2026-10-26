@@ -16,7 +16,7 @@ const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},join
 const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(){return null},setItem(){}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(){return []}};
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,teamOf,botInput,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,teamOf,botInput,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -152,6 +152,23 @@ click('find');win.RR.nativeMessage(JSON.stringify({type:'connected'}));
 const packetsBeforePause=packets.length;
 for(const f of handlers['menu-button:click'])f();
 assert.ok(packets.slice(packetsBeforePause).some(p=>p.type==='input'&&!p.input.fire&&p.input.moveX===0&&p.input.moveY===0),'guest sends neutral input immediately when menu opens');
+
+// VISUAL CONSTRUCTION CONTRACT: vehicle-forward is local +X. Tracks are
+// mirrored from a single definition; both must align with the barrel axis.
+{
+ const ops=[],stack=[];let mirrored=1;
+ const g={save(){stack.push(mirrored)},restore(){mirrored=stack.pop()},scale(x,y){assert.equal(x,1);mirrored*=y;ops.push({kind:'mirror',side:mirrored})},fillRect(x,y,w,h){ops.push({kind:'fill',side:mirrored,x,y,w,h})},strokeRect(x,y,w,h){ops.push({kind:'stroke',side:mirrored,x,y,w,h})},set lineWidth(v){},set strokeStyle(v){},set fillStyle(v){},set lineJoin(v){}};
+ win.__test.drawTopTank(g,'#5ad0e8',false);
+ const tracks=ops.filter(o=>o.kind==='fill'&&o.w===54&&o.h===12&&o.y===15);
+ assert.equal(tracks.length,2,'two tracks are rendered');
+ assert.deepEqual(tracks.map(t=>t.side),[-1,1],'track geometry is mirrored, not independently positioned');
+ for(const side of [-1,1])assert.equal(ops.filter(o=>o.kind==='fill'&&o.side===side&&o.w===2&&o.h===10).length,6,'six forward-facing matching tread seams per side');
+ assert.equal(ops.filter(o=>o.kind==='fill'&&o.w===25&&o.h===12&&o.x===10).length,1,'gun barrel is centered on forward +X axis');
+ // Both mirrored tread assemblies also protect the sense of orientation at any vehicle heading.
+ const legs=[],ctx={...g,scale(x,y){legs.push([x,y])}};
+ win.__test.drawTopMech(ctx,'#b69aff',false);
+ assert.deepEqual(legs,[[1,-1],[1,1]],'mech limbs are also mirrored from one definition');
+}
 console.log('PASS v0.9.2: stranded-pilot recovery cue and guest menu neutral input.');
 console.log('PASS v0.9.1 QA: 0-bot practice, default comfort, contextual hint, win/replay/new seed, vehicle weapon distinction.');
 

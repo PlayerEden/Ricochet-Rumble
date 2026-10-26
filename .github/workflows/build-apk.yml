@@ -1,8 +1,8 @@
-name: Android Test APK # Sector Rebound identity v0.9.5
+name: Android Test APK # Sector Rebound identity v0.9.6
 on:
   workflow_dispatch:
   push:
-    branches: [dev/sector-rebound]
+    branches: [dev/sector-rebound-visual-qa]
     paths:
       - '.github/workflows/build-apk.yml'
 permissions:
@@ -33,7 +33,7 @@ jobs:
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.5-debug-apk
+          name: sector-rebound-v0.9.6-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14

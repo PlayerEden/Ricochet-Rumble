@@ -136,3 +136,25 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit
 .fire-btn{box-shadow:0 0 0 3px #8f484435,0 3px 0 #5d2e2a,inset 0 2px 5px #ffd4c643}
 .control-caption{opacity:.78}
 @media(max-width:850px){.game-identity .brand-stack strong{letter-spacing:0;font-size:clamp(10px,1.7vw,13px)}}
+
+/* v0.9.6 — FIELDGRID authored UI: flat instrument surfaces, one 6px corner system.
+   Intentionally restrained: arena renderer is unchanged. */
+:root{--panel:#112633;--border:#456676;--blue:#5dd4e9;--pink:#f38b79}
+.panel{background:#102632;border-color:#416777;border-radius:7px;box-shadow:0 12px 35px #021017c9}
+.panel button{border-radius:5px;background:#1b3846;border:1px solid #496c78;box-shadow:none;letter-spacing:.1px;font-weight:850}
+.panel button.primary{background:#62c9df;border:1px solid #8fe0ef;color:#061e27;box-shadow:none}
+.panel button:focus-visible,.hud-menu:focus-visible,.fire-btn:focus-visible,.interact-btn:focus-visible{outline:2px solid #e9db99;outline-offset:2px}
+.panel button:active,.hud-menu:active{filter:brightness(1.11);transform:translateY(1px)}
+.panel .settings-button{background:#183340;border-color:#496e7a}
+.menu-join{max-width:100%}.menu-join .eyebrow{font-size:clamp(10px,1.2vw,13px);color:#a5c6cc}
+.panel .menu-join .menu-tip{color:#8faebc}
+.hud-menu{background:#162f3c;border-radius:5px;box-shadow:none}
+.logo-mark{background:#57c7dd;border-radius:5px;border:1px solid #87d8e5;box-shadow:none}
+.quick-rematch{background:#63c9dd;border-radius:5px;border:1px solid #8ee9f5;box-shadow:0 5px 14px #04141d}
+.fire-btn{background:#d97363;border:3px solid #ffb09a;box-shadow:0 0 0 3px #863b3744,0 3px 0 #5f292a;color:#27181b}
+.fire-btn.active{background:#e9917a;box-shadow:0 0 0 3px #863b3744,inset 0 2px 7px #672e2d}
+.stick-knob{background:#2b5969;border-color:#8ed9e6;box-shadow:0 2px 6px #071923}
+.interact-btn{background:#205145;border:2px solid #8dcfb7;box-shadow:0 2px 0 #082a22;border-radius:5px}
+.settings-page select{background:#0d2936;border:1px solid #5b8896;border-radius:5px}
+.extra-rules{border-radius:5px;background:#102b38}
+@media(max-height:380px){.panel{padding:8px 13px}.panel button{margin:2px 0}.menu-heading{margin-bottom:3px}}

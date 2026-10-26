@@ -301,20 +301,34 @@ function sound(freq,len=.09,x=null,y=null){if(!comfort.sound)return;try{const AC
 function updateVisuals(dt){visualClock+=dt;screenKick=Math.max(0,screenKick-dt*22);damagePulse=Math.max(0,damagePulse-dt*1.65);for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.max(0,1-dt*3);p.vy*=Math.max(0,1-dt*3)}particles=particles.filter(p=>p.life>0)}
 
 function drawTopTank(c,paint,parked=false){
- // The whole vehicle faces +X. Treads, hull, turret and barrel share one outline weight.
- c.save();c.lineWidth=2;c.strokeStyle='#07121c';
- c.fillStyle='#071720';c.fillRect(-23,-23,46,46);
- c.fillStyle='#172d3b';c.fillRect(-23,-25,13,50);c.fillRect(10,-25,13,50);
- c.fillStyle='#66818d';for(let x of [-21,12])for(let y=-20;y<=15;y+=10)c.fillRect(x,y,9,4);
- c.fillStyle=paint;c.fillRect(-14,-18,28,36);c.strokeRect(-14,-18,28,36);
- c.fillStyle='#173240';c.fillRect(-10,-14,20,28);
- c.fillStyle='#31515d';c.fillRect(-6,-11,6,22);
- c.fillStyle=paint;c.fillRect(-12,-12,24,24);c.strokeRect(-12,-12,24,24);
- c.fillStyle='#bdebf1';c.fillRect(-8,-5,9,10);
- c.fillStyle='#12303d';c.fillRect(4,-6,30,12);c.strokeRect(4,-6,30,12);
- c.fillStyle=paint;c.fillRect(28,-5,7,10);
- c.fillStyle='#e2f8f6';c.fillRect(33,-3,4,6);
- if(parked){c.strokeStyle='#a3dbbe';c.lineWidth=2;c.strokeRect(-27,-29,54,58)}
+ // Art contract v0.9.6: vehicle local +X is FORWARD (toward the barrel).
+ // Tracks run parallel to +X at BOTH sides of the hull. Mirror them from
+ // one geometry definition, never draw the right tread with separate offsets.
+ c.save();c.lineJoin='miter';c.lineWidth=2;c.strokeStyle='#071820';
+ for(const side of [-1,1]){
+   c.save();c.scale(1,side);
+   // Road track and six identically-spaced treads: all seams are perpendicular to travel.
+   c.fillStyle='#091b25';c.fillRect(-27,15,54,12);
+   c.strokeStyle='#06131c';c.strokeRect(-27,15,54,12);
+   c.fillStyle='#36505d';c.fillRect(-24,17,48,8);
+   c.fillStyle='#7b929b';
+   for(let x=-21;x<=19;x+=8)c.fillRect(x,16,2,10);
+   c.fillStyle='#142b38';c.fillRect(-20,25,40,2);
+   c.restore();
+ }
+ // Center chassis is bilaterally symmetric; armor plate has a visible forward nose.
+ c.fillStyle='#0a1d27';c.fillRect(-23,-16,46,32);
+ c.fillStyle=paint;c.fillRect(-22,-15,43,30);c.strokeStyle='#071a22';c.strokeRect(-22,-15,43,30);
+ c.fillStyle='#193845';c.fillRect(-17,-11,34,22);
+ c.fillStyle='#3d6673';c.fillRect(-17,-11,7,22);
+ c.fillStyle=paint;c.fillRect(-12,-10,24,20);c.strokeRect(-12,-10,24,20);
+ c.fillStyle='#bfe3e6';c.fillRect(-7,-5,8,10);
+ // A single centerline weapon (not an extra sideways track or misaligned gun).
+ c.fillStyle='#081924';c.fillRect(10,-6,25,12);c.strokeRect(10,-6,25,12);
+ c.fillStyle='#477e8b';c.fillRect(13,-3,22,6);
+ c.fillStyle=paint;c.fillRect(33,-5,6,10);
+ c.fillStyle='#eaf9f5';c.fillRect(38,-3,3,6);
+ if(parked){c.strokeStyle='#83bba9';c.lineWidth=1.7;c.strokeRect(-29,-30,58,60)}
  c.restore();
 }
 function drawTopMech(c,paint,parked=false){
@@ -488,9 +502,9 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
  const s=document.getElementById('lan-address').value.trim(),m=s.match(/^([\da-fA-F:.]+):(\d{1,5})$/);
  if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';window.AndroidBridge.joinGame(m[1],Number(m[2]));}});
 function showPauseMenu(){releaseControls();if(mode==='idle')return;
- if(mode==='solo'||mode==='duel'){paused=true;setPanel('<div class="eyebrow">PAUSED</div><h2>GAME MENU</h2><button data-action="resume">RESUME</button><button data-action="restart">REMATCH · NEW MAZE</button><button data-action="close">MAIN MENU</button>')}
- else if(mode==='host'){paused=true;guestInput={moveX:0,moveY:0,fire:false};setPanel('<div class="eyebrow">HOST OPTIONS</div><h2>GAME MENU</h2><p>The match is paused for both players while this menu is open.</p><button data-action="resume">BACK TO ARENA</button><button data-action="restart">REMATCH · NEW MAZE</button><button data-action="close">DISCONNECT</button>')}
- else if(mode==='guest'){if(connected)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}});setPanel('<div class="eyebrow">PLAYER OPTIONS</div><h2>GAME MENU</h2><p>Only the host can restart the match.</p><button data-action="resume">BACK TO ARENA</button><button data-action="close">DISCONNECT</button>')}}
+ if(mode==='solo'||mode==='duel'){paused=true;setPanel('<div class="eyebrow">FIELDGRID // PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><button class="primary" data-action="resume">▶ RESUME</button><button data-action="restart">↻ NEW FIELD</button><button data-action="close">MAIN MENU</button>')}
+ else if(mode==='host'){paused=true;guestInput={moveX:0,moveY:0,fire:false};setPanel('<div class="eyebrow">FIELDGRID // HOST PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p>The match is paused for both players while this menu is open.</p><button data-action="resume">BACK TO ARENA</button><button data-action="restart">REMATCH · NEW MAZE</button><button data-action="close">DISCONNECT</button>')}
+ else if(mode==='guest'){if(connected)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}});setPanel('<div class="eyebrow">FIELDGRID // PLAYER MENU</div><h2>SECTOR <span>MENU</span></h2><p>Only the host can restart the match.</p><button data-action="resume">BACK TO ARENA</button><button data-action="close">DISCONNECT</button>')}}
 document.getElementById('menu-button').addEventListener('click',showPauseMenu);
 document.getElementById('quick-rematch')?.addEventListener('click',()=>{if(state.winner>=0&&mode!=='guest'&&mode!=='idle'){resetAll();notice('NEW FIELD · NEW FIGHT',1400)}});
 document.getElementById('interact-btn')?.addEventListener('pointerdown',e=>{e.preventDefault();if(mode==='guest'){if(connected&&!paused&&menu.classList.contains('hidden')&&!state.hostPaused)nativePacket({type:'interact'});}else tryInteract(0)});
