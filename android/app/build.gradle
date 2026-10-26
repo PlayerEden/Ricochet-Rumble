@@ -6,8 +6,8 @@ android {
         applicationId 'com.playereden.ricochetrumble'
         minSdk 26
         targetSdk 35
-        versionCode 24
-        versionName '0.9.9-fieldgrid-ui'
+        versionCode 25
+        versionName '0.9.10-fullscreen-motion'
     }
     buildTypes {
         release { minifyEnabled false }
