@@ -301,62 +301,90 @@ function sound(freq,len=.09,x=null,y=null){if(!comfort.sound)return;try{const AC
 function updateVisuals(dt){visualClock+=dt;screenKick=Math.max(0,screenKick-dt*22);damagePulse=Math.max(0,damagePulse-dt*1.65);for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.max(0,1-dt*3);p.vy*=Math.max(0,1-dt*3)}particles=particles.filter(p=>p.life>0)}
 
 function drawTopTank(c,paint,parked=false){
- c.save();
- c.fillStyle='#071720';c.fillRect(-22,-24,44,48);
- c.fillStyle='#132b34';c.fillRect(-22,-23,11,46);c.fillRect(11,-23,11,46);
- c.fillStyle='#7493a2';for(let y=-18;y<=15;y+=11){c.fillRect(-20,y,7,4);c.fillRect(13,y,7,4)}
- c.fillStyle=paint;c.fillRect(-13,-18,26,36);c.fillStyle='#1a4555';c.fillRect(-10,-13,20,26);
- c.fillStyle=paint;c.beginPath();c.arc(0,0,13,0,Math.PI*2);c.fill();
- c.strokeStyle='#d7fbff';c.lineWidth=2;c.beginPath();c.arc(0,0,8,0,Math.PI*2);c.stroke();
- c.fillStyle=paint;c.fillRect(5,-6,30,12);c.fillStyle='#d3edec';c.fillRect(31,-4,5,8);
- if(parked){c.strokeStyle='#97f1c8';c.lineWidth=2;c.strokeRect(-23,-25,46,50)}
+ // The whole vehicle faces +X. Treads, hull, turret and barrel share one outline weight.
+ c.save();c.lineWidth=2;c.strokeStyle='#07121c';
+ c.fillStyle='#071720';c.fillRect(-23,-23,46,46);
+ c.fillStyle='#172d3b';c.fillRect(-23,-25,13,50);c.fillRect(10,-25,13,50);
+ c.fillStyle='#66818d';for(let x of [-21,12])for(let y=-20;y<=15;y+=10)c.fillRect(x,y,9,4);
+ c.fillStyle=paint;c.fillRect(-14,-18,28,36);c.strokeRect(-14,-18,28,36);
+ c.fillStyle='#173240';c.fillRect(-10,-14,20,28);
+ c.fillStyle='#31515d';c.fillRect(-6,-11,6,22);
+ c.fillStyle=paint;c.fillRect(-12,-12,24,24);c.strokeRect(-12,-12,24,24);
+ c.fillStyle='#bdebf1';c.fillRect(-8,-5,9,10);
+ c.fillStyle='#12303d';c.fillRect(4,-6,30,12);c.strokeRect(4,-6,30,12);
+ c.fillStyle=paint;c.fillRect(28,-5,7,10);
+ c.fillStyle='#e2f8f6';c.fillRect(33,-3,4,6);
+ if(parked){c.strokeStyle='#a3dbbe';c.lineWidth=2;c.strokeRect(-27,-29,54,58)}
  c.restore();
 }
 function drawTopMech(c,paint,parked=false){
- c.save();c.fillStyle='#091c2b';
- // View straight down: broad shoulder pods, compact cockpit and two articulated legs.
- c.fillRect(-13,-27,10,18);c.fillRect(-13,9,10,18);
- c.fillRect(7,-28,17,15);c.fillRect(7,13,17,15);
- c.fillStyle=paint;c.fillRect(-16,-15,33,30);
- c.fillStyle='#365b6b';c.fillRect(-10,-10,21,20);
- c.fillStyle='#c4f6ff';c.fillRect(-5,-7,12,14);
- c.fillStyle=paint;c.fillRect(15,-8,15,16);
- c.fillStyle='#ecdcff';c.fillRect(24,-4,11,8);
- c.fillStyle='#8c89bd';c.fillRect(-14,-25,10,6);c.fillRect(-14,19,10,6);
- if(parked){c.strokeStyle='#e6b3ff';c.lineWidth=2;c.strokeRect(-21,-30,55,60)}
- c.restore();}
+ // A broad, unmistakable walker silhouette, not a recolored tank.
+ c.save();c.lineWidth=2;c.strokeStyle='#081622';
+ c.fillStyle='#172536';c.fillRect(-24,-27,16,21);c.fillRect(-24,7,16,21);c.fillRect(11,-28,17,19);c.fillRect(11,9,17,19);
+ c.fillStyle='#5a627c';for(const y of [-24,17]){c.fillRect(-22,y,13,7);c.fillRect(12,y,13,7)}
+ c.fillStyle=paint;c.fillRect(-17,-19,34,38);c.strokeRect(-17,-19,34,38);
+ c.fillStyle='#172c3c';c.fillRect(-10,-12,21,24);
+ c.fillStyle='#d3e8fd';c.fillRect(-5,-8,11,16);
+ c.fillStyle=paint;c.fillRect(13,-10,14,20);c.strokeRect(13,-10,14,20);
+ c.fillStyle='#172c3c';c.fillRect(23,-6,11,12);c.fillStyle='#e8f6ff';c.fillRect(32,-3,5,6);
+ if(parked){c.strokeStyle='#cba9f1';c.lineWidth=2;c.strokeRect(-29,-32,61,64)}
+ c.restore();
+}
 function drawTopPilot(c,paint,shooting=false){
- c.save();
- // Symmetric boots and shoulders viewed directly from overhead; facing +X is forward.
- c.fillStyle='#0a2733';c.fillRect(-11,-11,8,7);c.fillRect(-11,5,8,7);
- c.fillStyle=paint;c.fillRect(-9,-10,18,20);c.fillStyle='#183743';c.fillRect(3,-8,8,16);
- c.fillStyle='#f5d1aa';c.beginPath();c.arc(-2,0,7,0,Math.PI*2);c.fill();
- c.fillStyle=paint;c.beginPath();c.arc(-3,0,5,0,Math.PI*2);c.fill();
- c.fillStyle='#e9faff';c.fillRect(0,-4,3,8);
- c.fillStyle='#d4e7e9';c.fillRect(8,-3,10,6);
- if(shooting){c.fillStyle='#ffeb94';c.beginPath();c.arc(20,0,5,0,Math.PI*2);c.fill()}
+ // True overhead pilot: two boots, shoulder pads, helmet visor and sidearm pointing +X.
+ c.save();c.lineWidth=2;c.strokeStyle='#071720';
+ c.fillStyle='#142b39';c.fillRect(-14,-12,10,8);c.fillRect(-14,4,10,8);
+ c.fillStyle=paint;c.fillRect(-10,-11,16,22);c.strokeRect(-10,-11,16,22);
+ c.fillStyle='#243b47';c.fillRect(-6,-7,13,14);
+ c.fillStyle=paint;c.beginPath();c.arc(-1,0,8,0,Math.PI*2);c.fill();c.stroke();
+ c.fillStyle='#c7eff2';c.fillRect(1,-4,5,8);
+ c.fillStyle='#152939';c.fillRect(7,-4,13,8);c.fillStyle='#b8ced4';c.fillRect(16,-3,5,6);
+ if(shooting){c.fillStyle='#ffe5a0';c.beginPath();c.arc(25,0,4,0,Math.PI*2);c.fill()}
  c.restore();
 }
 function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick>0)c.translate(Math.sin(visualClock*130)*screenKick,Math.cos(visualClock*98)*screenKick*.5);const zoom=mazeGrid?1.28:1,viewW=W/zoom,viewH=H/zoom,me=mode==='guest'?1:0,localTank=state.lives[me]>0?state.tanks[me]:(state.tanks.find((t,i)=>state.lives[i]>0)||state.tanks[me]||state.tanks[0]);
  const desiredX=clamp((localTank?.x||W/2)-viewW/2,0,Math.max(0,worldW-viewW)),desiredY=clamp((localTank?.y||H/2)-viewH/2,0,Math.max(0,worldH-viewH));
  const follow=1-Math.exp(-Math.min(.1,dt)*13);camera.x+=(desiredX-camera.x)*follow;camera.y+=(desiredY-camera.y)*follow;if(!mazeGrid){camera.x=0;camera.y=0}
- c.scale(zoom,zoom);c.translate(-camera.x,-camera.y);c.fillStyle='#0e2631';c.fillRect(0,0,worldW,worldH);
- // Floor grid and route markings stay correct on the *whole* procedural world.
- c.strokeStyle='#1e4552';c.lineWidth=1;const left=camera.x-44,right=camera.x+viewW+44,top=camera.y-44,bottom=camera.y+viewH+44;
- for(let x=Math.max(0,Math.floor(left/40)*40);x<=Math.min(worldW,right);x+=40){c.beginPath();c.moveTo(x,Math.max(0,top));c.lineTo(x,Math.min(worldH,bottom));c.stroke()}
- for(let y=Math.max(0,Math.floor(top/40)*40);y<=Math.min(worldH,bottom);y+=40){c.beginPath();c.moveTo(Math.max(0,left),y);c.lineTo(Math.min(worldW,right),y);c.stroke()}
- if(mazeGrid){const cell=mazeGrid.cell;c.fillStyle='#356471';for(let y=Math.max(0,Math.floor(top/cell));y<Math.min(mazeGrid.rows,Math.ceil(bottom/cell));y++)for(let x=Math.max(0,Math.floor(left/cell));x<Math.min(mazeGrid.cols,Math.ceil(right/cell));x++){const cx=(x+.5)*cell,cy=(y+.5)*cell;c.globalAlpha=.14;c.fillRect(cx-4,cy-4,8,8);c.globalAlpha=1}}
-
- c.strokeStyle='#52a0b6';c.lineWidth=13;c.strokeRect(7,7,worldW-14,worldH-14);c.strokeStyle='#234a56';c.lineWidth=3;c.strokeRect(17,17,worldW-34,worldH-34);
- for(const w of wallSet){if(w.x>right+24||w.x+w.w<left-24||w.y>bottom+24||w.y+w.h<top-24)continue;c.fillStyle='#133947';c.fillRect(w.x+5,w.y+6,w.w,w.h);c.fillStyle='#376375';c.fillRect(w.x,w.y,w.w,w.h);c.strokeStyle='#6a9ba9';c.lineWidth=2;c.strokeRect(w.x+2,w.y+2,w.w-4,w.h-4);c.fillStyle='#87bcc7';c.fillRect(w.x+10,w.y+5,Math.max(0,w.w-20),3)}
- for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();c.arc(bump.x,bump.y,bump.r+glow,0,Math.PI*2);c.fillStyle='#34464b';c.fill();c.strokeStyle='#ffd67d';c.lineWidth=4;c.stroke();c.beginPath();c.arc(bump.x,bump.y,11,0,Math.PI*2);c.fillStyle='#ffc76a';c.fill()}
+ c.scale(zoom,zoom);c.translate(-camera.x,-camera.y);
+ c.fillStyle='#101f2b';c.fillRect(0,0,worldW,worldH);
+ // Modular FIELDGRID surface, deterministic from cell coordinates with no per-frame randomness.
+ // Culling ensures large mazes don't draw decorative details outside the camera.
+ const left=camera.x-56,right=camera.x+viewW+56,top=camera.y-56,bottom=camera.y+viewH+56;
+ const tile=132,xmin=Math.max(0,Math.floor(left/tile)),xmax=Math.min(Math.ceil(worldW/tile),Math.ceil(right/tile)),ymin=Math.max(0,Math.floor(top/tile)),ymax=Math.min(Math.ceil(worldH/tile),Math.ceil(bottom/tile));
+ for(let gy=ymin;gy<ymax;gy++)for(let gx=xmin;gx<xmax;gx++){
+   const x=gx*tile,y=gy*tile,hash=(gx*19+gy*37+currentSeed%23)%11;
+   c.fillStyle=hash%3===0?'#132632':hash%3===1?'#142733':'#162a36';c.fillRect(x+1,y+1,tile-2,tile-2);
+   c.strokeStyle='#29424e';c.lineWidth=1;c.strokeRect(x+2,y+2,tile-4,tile-4);
+   c.fillStyle='#29424e';for(const dx of [12,tile-16])for(const dy of [12,tile-16])c.fillRect(x+dx,y+dy,3,3);
+   if(hash===0||hash===6){c.fillStyle='#264654';c.fillRect(x+15,y+16,36,4);c.fillRect(x+15,y+22,20,2)}
+   if(hash===4){c.fillStyle='#33454b';c.fillRect(x+tile-32,y+tile-24,20,8);c.fillStyle='#91773d';c.fillRect(x+tile-32,y+tile-26,8,2)}
+   if(hash===8){c.fillStyle='#314c54';c.font='800 13px system-ui';c.textAlign='left';c.fillText('FG',x+17,y+tile-18)}
+   if(hash===2){c.fillStyle='#564f3b';for(let stripe=0;stripe<4;stripe++)c.fillRect(x+65+stripe*12,y+tile-22,7,3)}
+   if(hash===10){c.strokeStyle='#345261';c.lineWidth=2;c.strokeRect(x+tile-40,y+tile-40,24,24)}
+ }
+ // Facility perimeter is solid in play and visually signals a different layer than floor tiles.
+ c.fillStyle='#253f4e';c.fillRect(0,0,worldW,15);c.fillRect(0,worldH-15,worldW,15);c.fillRect(0,0,15,worldH);c.fillRect(worldW-15,0,15,worldH);
+ c.fillStyle='#66a7b3';c.fillRect(0,0,worldW,3);c.fillRect(0,worldH-3,worldW,3);c.fillRect(0,0,3,worldH);c.fillRect(worldW-3,0,3,worldH);
+ for(const w of wallSet){
+   if(w.x>right+26||w.x+w.w<left-26||w.y>bottom+26||w.y+w.h<top-26)continue;
+   c.fillStyle='#071620';c.fillRect(w.x+5,w.y+7,w.w,w.h);
+   c.fillStyle='#293f4d';c.fillRect(w.x,w.y,w.w,w.h);
+   c.fillStyle='#456574';c.fillRect(w.x+2,w.y+2,w.w-4,Math.max(3,w.h-5));
+   c.fillStyle='#304c5b';c.fillRect(w.x+4,w.y+5,w.w-8,Math.max(2,w.h-10));
+   c.fillStyle='#83a7b1';if(w.w>w.h)c.fillRect(w.x+7,w.y+3,Math.max(0,w.w-14),2);else c.fillRect(w.x+3,w.y+7,2,Math.max(0,w.h-14));
+   c.fillStyle='#9b8250';if(w.w>w.h){if(w.w>70)c.fillRect(w.x+w.w/2-7,w.y+4,14,3)}else if(w.h>70)c.fillRect(w.x+4,w.y+w.h/2-7,3,14);
+   c.fillStyle='#162a36';if(w.w>w.h){for(let x=w.x+25;x<w.x+w.w-10;x+=65)c.fillRect(x,w.y+7,3,4)}else for(let y=w.y+25;y<w.y+w.h-10;y+=65)c.fillRect(w.x+7,y,4,3);
+ }
+ 
+for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();c.arc(bump.x,bump.y,bump.r+glow,0,Math.PI*2);c.fillStyle='#34464b';c.fill();c.strokeStyle='#ffd67d';c.lineWidth=4;c.stroke();c.beginPath();c.arc(bump.x,bump.y,11,0,Math.PI*2);c.fillStyle='#ffc76a';c.fill()}
  for(const p of state.pickups||[]){const def=PICKUPS[p.type];if(!def)continue;const pulse=1+Math.sin(visualClock*5)*.09;c.beginPath();c.arc(p.x,p.y,23*pulse,0,Math.PI*2);c.fillStyle='#0b2630';c.fill();c.strokeStyle=def.color;c.lineWidth=3;c.stroke();c.fillStyle=def.color;c.font='900 22px system-ui';c.textAlign='center';c.fillText(def.label,p.x,p.y+7)}
  if(isPilotMatch())for(const v of state.vehicles){if(v.occupant!==-1)continue;
+   if(v.armor>0){c.beginPath();c.arc(v.x,v.y,v.type==='mech'?42:35,0,Math.PI*2);c.strokeStyle=v.type==='mech'?'#6a5486':'#3e7568';c.lineWidth=2;c.stroke();}
    c.save();c.translate(v.x,v.y);c.rotate(v.a);
    if(v.armor<=0){c.fillStyle='#192b31';c.fillRect(-19,-18,38,36);c.strokeStyle='#fd7858';c.lineWidth=3;c.strokeRect(-19,-18,38,36);}
    else if(v.type==='mech')drawTopMech(c,'#b69aff',true);else drawTopTank(c,'#72c3a8',true);
    c.restore();if(v.armor>0){const me=state.tanks[mode==='guest'?1:0];const near=me?.onFoot&&Math.hypot(me.x-v.x,me.y-v.y)<68;
-     if(near){c.fillStyle='#bff9d9';c.font='bold 12px system-ui';c.textAlign='center';c.fillText('ENTER '+vehicleDef(v).name,v.x,v.y+47);c.strokeStyle='#aaf3da';c.lineWidth=2;c.beginPath();c.arc(v.x,v.y,37+Math.sin(visualClock*5)*3,0,Math.PI*2);c.stroke();}}
+     if(near){c.fillStyle='#bff9d9';c.font='bold 12px system-ui';c.textAlign='center';c.fillText('ENTER  ·  '+vehicleDef(v).name,v.x,v.y+48);c.strokeStyle='#aaf3da';c.lineWidth=2;c.beginPath();c.arc(v.x,v.y,37+Math.sin(visualClock*5)*3,0,Math.PI*2);c.stroke();}}
  }
  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]<=0)continue;
  if(state.config?.teamMode!=='ffa'){c.beginPath();c.arc(t.x,t.y,29,0,Math.PI*2);c.strokeStyle=teamOf(i)===0?'#60dfff':'#ffb06e';c.lineWidth=4;c.stroke()}
@@ -392,9 +420,9 @@ function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick
    }
  }
  if(mazeGrid){const mw=150,mh=Math.round(mw*worldH/worldW),mx=W-mw-16,my=14;
- c.fillStyle='#06131ddc';c.fillRect(mx-5,my-5,mw+10,mh+10);c.strokeStyle='#5993a2';c.lineWidth=1;c.strokeRect(mx-5,my-5,mw+10,mh+10);
- c.save();c.translate(mx,my);c.scale(mw/worldW,mh/worldH);c.fillStyle='#163c4b';c.fillRect(0,0,worldW,worldH);
- c.fillStyle='#7aa8b6';for(const w of wallSet)c.fillRect(w.x,w.y,w.w,w.h);if(isPilotMatch()){for(const v of state.vehicles)if(v.occupant===-1&&v.armor>0){c.fillStyle=v.type==='mech'?'#d7a8ff':'#74e0a6';c.fillRect(v.x-28,v.y-28,56,56);}}
+ c.fillStyle='#071722ed';c.fillRect(mx-5,my-5,mw+10,mh+10);c.strokeStyle='#5b8997';c.lineWidth=1;c.strokeRect(mx-5,my-5,mw+10,mh+10);
+ c.save();c.translate(mx,my);c.scale(mw/worldW,mh/worldH);c.fillStyle='#19313e';c.fillRect(0,0,worldW,worldH);
+ c.fillStyle='#789ba7';for(const w of wallSet)c.fillRect(w.x,w.y,w.w,w.h);if(isPilotMatch()){for(const v of state.vehicles)if(v.occupant===-1&&v.armor>0){c.fillStyle=v.type==='mech'?'#d7a8ff':'#74e0a6';c.fillRect(v.x-28,v.y-28,56,56);}}
  if(state.vehicleBeacon?.ttl>0){c.strokeStyle='#fff6bf';c.lineWidth=19;c.beginPath();c.arc(state.vehicleBeacon.x,state.vehicleBeacon.y,55+Math.sin(visualClock*6)*15,0,Math.PI*2);c.stroke();}
  for(let i=0;i<state.tanks.length;i++){if(state.lives[i]<=0)continue;const t=state.tanks[i],me=mode==='guest'?1:0;if(i!==me&&Math.hypot(t.x-state.tanks[me].x,t.y-state.tanks[me].y)>400)continue;c.beginPath();c.arc(t.x,t.y,37,0,Math.PI*2);c.fillStyle=colors[i];c.fill()}
  // Nearby hostile gunfire briefly appears as a *rough* sound ring, not a permanent wallhack.

@@ -99,3 +99,34 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit
   .brand-stack>span{display:none}
   .scorestrip .middle{font-weight:1000;color:#d7f2f5}
 }
+
+/* FIELDGRID VISUAL SYSTEM 0.9.3 - one UI vocabulary from menu to arena. */
+:root{--bg:#0a1722;--panel:#102330;--border:#365565;--blue:#46d2f5;--pink:#ff8874;--text:#eaf5f7;--muted:#9cb6c2;--gold:#dfc384}
+.game-screen{background:linear-gradient(180deg,#0e2430,#0a1722 58%,#09151f)}
+.game-hud{border-bottom:1px solid #3a5a68;background:#0c1e2b;box-shadow:0 2px 0 #06131d;gap:10px}
+.game-identity{gap:7px}.logo-mark{border-radius:5px;transform:none;background:#46d2f5;border-color:#6ae4f9;color:#071c27;box-shadow:0 2px 0 #126e89;font-style:italic}
+.brand-stack strong{font-weight:900;letter-spacing:.7px}.brand-stack>span{letter-spacing:1.4px;color:#7fa4b2}
+.scorestrip .middle{color:#b4cbd2;font-size:clamp(10px,1.35vw,14px)!important}
+.hud-menu{border-color:#436c7c;border-radius:7px;box-shadow:none;background:#172f3b;letter-spacing:.5px}
+.battlefield{gap:clamp(4px,.55vw,10px)}
+.arena-wrap{background:#112632;border-color:#345869;border-radius:6px;box-shadow:0 3px 0 #06121d}
+.joystick{border:2px solid #608b9d;background:radial-gradient(circle,#193240 0%,#132733 67%,#10212d 80%);box-shadow:0 0 0 4px #28445155,inset 0 0 18px #06121cb3}
+.joystick:before,.joystick:after{opacity:.2}.stick-ring{border-style:solid;opacity:.34}
+.stick-knob{color:#9eebfa;background:linear-gradient(140deg,#326476,#193b4b);border:2px solid #8bd8e8;box-shadow:0 2px 6px #04131a}
+.fire-btn{border:3px solid #ffa48f;background:radial-gradient(circle at 35% 25%,#f7ac8d 0%,#e87462 65%,#b9504a 100%);box-shadow:0 0 0 4px #8f484449,0 4px 0 #5d2e2a,inset 0 2px 5px #ffd4c677;color:#231b20}
+.fire-btn.active{box-shadow:0 0 0 3px #9c534557,inset 0 3px 10px #78372e}
+.control-caption{color:#8dacb7;letter-spacing:1.1px}.shell-meter{color:#86d8c2}
+.overlay{background:#08131ae9;backdrop-filter:blur(3px)}
+.panel{border-color:#466b79;border-radius:10px;background:linear-gradient(135deg,#18313f,#102331 75%);box-shadow:0 15px 40px #000b}
+.panel button{border-color:#436b7a;border-radius:6px;background:#1b3848;box-shadow:inset 0 1px 0 #76929c26}
+.panel button.primary{border-color:#9cedf9;color:#061c2a;background:linear-gradient(#6be4f5,#43b8d5)}
+.panel .settings-button{border-color:#527d8c;background:#183441}
+.panel .menu-join{border-left:1px solid #395a69}.panel .menu-join p{line-height:1.4}
+.eyebrow{color:#a7c0cb;letter-spacing:1.3px}.panel h2{font-weight:950;letter-spacing:.35px}.panel h2 span{color:var(--blue)}
+.extra-rules{background:#102a38;border-color:#416777;border-radius:6px}
+.settings-page select{border-color:#4b7889;background:#0c2532;border-radius:5px}
+.comfort-grid label{color:#d5e9ef}
+.toast{border:1px solid #67b9c6;border-radius:5px;background:#0d2433ee;color:#eaf8f9}
+.interact-btn{border-color:#a0dfc9;background:#21483f;color:#e8fff5;border-radius:7px;box-shadow:0 0 0 2px #183d34aa}
+.quick-rematch{border-radius:7px;box-shadow:0 5px 18px #000a}
+@media(max-width:850px){.brand-stack strong{font-size:clamp(10px,1.45vw,16px)}.scorestrip{justify-content:space-around;gap:5px}.scorestrip .middle{font-size:clamp(9px,1.12vw,12px)!important}}

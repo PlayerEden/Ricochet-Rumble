@@ -1,3 +1,9 @@
+# Ricochet Rumble — FIELDGRID v0.9.3 Visual System
+
+Actual in-engine art and launcher-icon update on `dev/fieldgrid-visual`. See [visual QA record](docs/VISUAL_AUDIT_v0.9.3.md). Previous v0.9.2 text is preserved below for background.
+
+---
+
 # Ricochet Rumble
 
 **v0.9.2 — FIELDGRID comfort refinement** (`dev/procedural-deployments`). A free, offline-first Android arcade game about pilots, tanks, mechs and ricochet combat. Gameplay and assets are bundled in one APK.
