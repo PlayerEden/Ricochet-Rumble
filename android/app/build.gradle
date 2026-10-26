@@ -6,8 +6,8 @@ android {
         applicationId 'com.playereden.ricochetrumble'
         minSdk 26
         targetSdk 35
-        versionCode 25
-        versionName '0.9.10-fullscreen-motion'
+        versionCode 26
+        versionName '0.9.10b-camera-motion-polish'
     }
     buildTypes {
         release { minifyEnabled false }
