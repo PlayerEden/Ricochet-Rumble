@@ -1,3 +1,15 @@
+# Sector Rebound — v0.9.10 Fullscreen Combat & Tank Motion
+
+**Active experimental branch:** `dev/sector-rebound-fullscreen-v0910` · **Android versionCode:** 25
+
+The battle now occupies the phone's full landscape viewport. In-match branding and the old fixed header/control gutters are gone; score/armor, pause, minimap, joystick, FIRE and ENTER/EXIT live as lightweight overlays. The canvas resizes to the actual window aspect ratio and tracks display independent animated left/right belt movement, subtle speed-gated suspension and firing recoil. **Gameplay and LAN mechanics are unchanged.**
+
+**Verification on October 26, 2026:** [GitHub Actions v0.9.10 run](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40420470005) passed gameplay smoke tests, Chromium before/after capture, Android debug APK build and both artifact uploads. 30 browser screenshots at 740×360, 915×412, 1280×720 show the new fullscreen field and retained main-menu branding. The unmerged parent branch `dev/sector-rebound-ui-v099` remains the rollback point.
+
+**Still needs real-device QA:** notch/system-bar padding, tank movement feel, joystick occlusion near edges, Android frame rate, and actual two-phone Wi-Fi multiplayer. See [fullscreen and motion quality handoff](docs/FULLSCREEN_MOTION_v0.9.10.md).
+
+---
+
 # Sector Rebound — FIELDGRID v0.9.9 (UI Instrument Pass)
 
 **Active UI exploration branch:** `dev/sector-rebound-ui-v099` · **Android versionCode 24**. This branch preserves the previously verified `dev/sector-rebound-ui` v0.9.8.1 build for rollback.
