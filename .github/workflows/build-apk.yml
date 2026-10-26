@@ -1,8 +1,8 @@
-name: Android Test APK # Pilot Survival QA v0.7.1
+name: Android Test APK # v0.6.3 combat polish
 on:
   workflow_dispatch:
   push:
-    branches: [main, dev/pilot-survival]
+    branches: [main]
     paths:
       - '.github/workflows/build-apk.yml'
 permissions:
@@ -33,7 +33,7 @@ jobs:
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: ricochet-rumble-0.7.1-pilot-qa-debug-apk
+          name: ricochet-rumble-0.6.3-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14

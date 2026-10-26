@@ -94,7 +94,7 @@ function nearestEmptyVehicle(i){if(!isPilotMatch()||state.lives[i]<=0)return nul
 function pilotExitSite(i,vehicleId){const t=state.tanks[i];
  for(const radius of [46,57,70])for(let n=0;n<16;n++){
    const a=n*Math.PI/8,px=t.x+Math.cos(a)*radius,py=t.y+Math.sin(a)*radius;
-   if(blocked(px,py,13)||parkedVehicleAt(px,py,13,vehicleId))continue;
+   if(blocked(px,py,13)||parkedVehicleAt(px,py,13,vehicleId)||!hasLineOfSight(t.x,t.y,px,py))continue;
    if(state.tanks.some((other,j)=>j!==i&&state.lives[j]>0&&Math.hypot(other.x-px,other.y-py)<(other.onFoot?27:39)))continue;
    return [px,py];
  }

@@ -9,7 +9,7 @@
 - **Core loop:** PASS (simulated). Classic tank combat, bullet limits, lives, respawn, teams, mazes and power-ups remain covered by the previous smoke suite.
 - **Pilot Survival:** PASS after repair (simulated). Pilot entry/exit, two lives, tank armor, ejection, sidearm, pilot mode rematch.
 - **Garage placement:** FIXED. Empty vehicles now choose collision-free locations instead of possibly materializing inside a wall, existing vehicle or player. 240 seeded scenarios across Labyrinth and Maze XL pass; each has a parked vehicle near the spawn.
-- **World collisions:** FIXED. Live parked vehicles now block pilots and moving tanks; destroyed wrecks remain passable to prevent trapping ejected pilots. Exiting and ejecting search more safe positions away from walls, occupied tanks and other actors.
+- **World collisions:** FIXED. Live parked vehicles now block pilots and moving tanks; destroyed wrecks remain passable to prevent trapping ejected pilots. Exiting and ejecting search more safe positions away from walls, occupied tanks and other actors; exit paths also require unobstructed line of sight to prevent jumping through a wall.
 - **Vehicle projectile interactions:** FIXED. Empty tanks now intercept incoming bullets, lose armor and recover after their wreck timer rather than acting like intangible scenery.
 - **Bot recovery:** IMPROVED. Ejected bots path toward available tanks and enter them when near; previously they stayed on foot indefinitely.
 - **Mobile usability:** PASS in desktop Chromium layout checks at 740x360, 915x412 and 1280x720 landscape. Fixed game UI, thumb controls, Enter/Exit and menus fit without document scrolling or page errors. This is **not** an on-device comfort certification.
