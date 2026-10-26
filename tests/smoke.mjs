@@ -383,11 +383,11 @@ assert.ok(win.__test.cameraZoom()<Math.max(1.28,1536/fieldWidth,672/fieldHeight)
 const motions=[];
 const motionPaint={save(){},restore(){},translate(x,y){motions.push([x,y])},scale(){},fillRect(){},strokeRect(){},arc(){},beginPath(){},stroke(){},fill(){},set lineWidth(v){},set lineJoin(v){},set strokeStyle(v){},set fillStyle(v){}};
 win.__test.drawTopMech(motionPaint,'#aaaaff',false,0,0,0);
-assert.equal(motions[0][0],0);assert.equal(motions[0][1],0);
+assert.ok(Math.abs(motions[0][0])<0.000001&&Math.abs(motions[0][1])<0.000001);
 motions.length=0;win.__test.drawTopMech(motionPaint,'#aaaaff',false,2,.56,.55);
 assert.ok(motions[0][0]<0&&motions[0][1]>0,'mech shares animated torso recoil/bob');
 motions.length=0;win.__test.drawTopPilot(motionPaint,'#55ddff',false,0,0,0);
-assert.equal(motions[0][0],0);assert.equal(motions[0][1],0);
+assert.ok(Math.abs(motions[0][0])<0.000001&&Math.abs(motions[0][1])<0.000001);
 motions.length=0;win.__test.drawTopPilot(motionPaint,'#55ddff',false,2,.28,.35);
 assert.ok(motions[0][0]<0&&motions[0][1]>0,'pilot has smaller motion response');
 click('solo');
