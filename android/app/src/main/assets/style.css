@@ -220,3 +220,55 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 /* 0.9.8.1: Short-phone menu guardrails and no-wrap HELP touch target. */
 .panel .menu-help{white-space:nowrap}
 @media(max-height:390px){.panel .menu-heading .eyebrow{gap:8px}.panel .menu-heading .eyebrow span{letter-spacing:.7px}}
+
+
+/* v0.9.9 FIELDGRID / instrumentation, not menu cards.
+   Controls remain full-area touch targets. No remote fonts or UI assets. */
+.panel .menu-main button{display:flex;align-items:center;justify-content:space-between;gap:7px;text-align:left;padding-right:clamp(10px,1.7vw,18px)}
+.panel .menu-main button>span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.panel .menu-main button>small{flex:0 0 auto;color:#94b5c0;font-size:clamp(9px,1.08vw,12px);font-weight:750;letter-spacing:.5px;white-space:nowrap}
+.panel .menu-main button.primary>small{color:#164a57}
+.panel .menu-main button:not(.primary):active>small{color:#e3f8fa}
+.panel .menu-main button:focus-visible{outline-offset:3px}
+.menu-join{justify-content:center;gap:2px}
+.menu-join .brief-lead{font-family:'Roboto Condensed','sans-serif-condensed',Roboto,Arial,sans-serif;font-weight:900;font-size:clamp(15px,2.05vw,23px)!important;letter-spacing:.5px;line-height:1.1!important;color:#d9f4f8!important;margin:1px 0 3px!important}
+.panel .menu-join p:not(.brief-lead){color:#b2d0d8}
+.field-ready{display:flex;align-items:center;gap:6px;min-width:0;margin-top:clamp(4px,1.5dvh,11px);padding-top:7px;border-top:1px solid #3a5b68;color:#acd3d8;font-family:'Roboto Condensed','sans-serif-condensed',Roboto,Arial,sans-serif;font-weight:850;font-size:clamp(9px,1.16vw,12px);letter-spacing:.45px;white-space:nowrap}
+.ready-dot{width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:#88e3bd;box-shadow:0 0 0 2px #1f594c}
+.ready-tag{margin-left:auto;color:#80a4b0;font-size:.9em}
+.scorestrip .middle{display:inline-flex;align-items:center;justify-content:center;max-width:32vw;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:27px;padding:3px 9px;border:1px solid #416675;background:#142e3c;border-radius:3px;color:#c8e2e6!important;font-size:clamp(10px,1.22vw,14px)!important;font-weight:800}
+.scorestrip .middle.on-foot{border-color:#649a86;background:#173b33;color:#b2f1d3!important}
+.scorestrip .middle.damaged{border-color:#ae8068;background:#48352c;color:#f9d1ac!important}
+.scorestrip .middle.match-ended{border-color:#61818e;background:#25343d;color:#d1e8ef!important}
+.scorestrip .middle.host-paused{border-color:#ad9571;background:#3a3324;color:#efdbb2!important}
+.game-identity .logo-mark{letter-spacing:-.8px}
+.hud-menu{letter-spacing:.4px;min-width:clamp(61px,9vw,88px)}
+.interact-btn.busy{background:#3a3d3b;border-color:#a1a999;color:#f1e6cd}
+.interact-btn:focus-visible{outline-offset:3px}
+@media(max-width:850px){
+ .panel .menu-main button{padding-left:21px}
+ .panel .menu-main button>small{letter-spacing:0}
+ .game-hud{gap:5px}
+ .scorestrip{gap:clamp(3px,.7vw,8px)}
+ .scorestrip .middle{max-width:28vw;padding:3px 5px;letter-spacing:.25px}
+ .brand-stack>span{letter-spacing:.5px}
+}
+@media(max-width:760px){
+ .field-ready{font-size:9px}
+ .menu-join .brief-lead{font-size:15px!important}
+ .panel .menu-main button>small{font-size:9px}
+ .panel .menu-main button{padding-right:8px;padding-left:19px}
+ .scorestrip .middle{max-width:25vw}
+}
+@media(max-height:390px){
+ .menu-join .brief-lead{margin:0!important}
+ .field-ready{margin-top:4px;padding-top:5px}
+ .panel .menu-main button{min-height:44px}
+ .scorestrip .middle{min-height:25px}
+}
+@media(max-width:670px) and (orientation:landscape){
+ .panel .menu-main button>small{display:none}
+ .menu-join .ready-tag{display:none}
+ .game-identity .brand-stack>span{display:none}
+ .scorestrip .middle{max-width:24vw}
+}
