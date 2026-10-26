@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const W=960,H=600,START_LIVES=5,STEP=1/60;
+let W=960,H=600;const START_LIVES=5,STEP=1/60;
 const PREF_KEY='rr-options-v06'; // Preserve existing options across this patch.
 let comfort={sound:true,shake:false,autoFire:false,leftHanded:false},fixedAccumulator=0;
 let selectedRules={botCount:2,bulletCap:3,startLives:2,teamMode:'ffa',botSkill:'normal',mapSize:'small'};
@@ -19,6 +19,19 @@ const MAX_VEHICLES=10;
 const PICKUPS={rapid:{label:'R',name:'RAPID FIRE',color:'#ffd46d'},turbo:{label:'»',name:'TURBO',color:'#76efaf'},guard:{label:'+',name:'BARRIER',color:'#b59aff'}};
 const pickupSpots=[[480,300],[195,300],[765,300],[372,300],[587,300],[390,90],[570,510],[395,520],[560,90]];
 const canvas=document.getElementById('arena'),ctx=canvas.getContext('2d');
+// Viewport owns the arena resolution, not a fixed 960:600 content window.
+// Clamp render pixel density for stable Android GPU memory/frame pacing.
+function resizeArenaCanvas(){
+ const vw=Number(window.innerWidth),vh=Number(window.innerHeight);
+ if(!Number.isFinite(vw)||!Number.isFinite(vh)||vw<280||vh<200)return false;
+ W=Math.round(vw);H=Math.round(vh);
+ const dpr=Math.min(1.6,Math.max(1,Number(window.devicePixelRatio)||1));
+ canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);
+ if(typeof ctx.setTransform==='function')ctx.setTransform(dpr,0,0,dpr,0,0);
+ return true;
+}
+window.addEventListener('resize',resizeArenaCanvas);
+window.addEventListener('orientationchange',resizeArenaCanvas);
 const menu=document.getElementById('menu'),panel=document.getElementById('panel'),toast=document.getElementById('toast');
 let wallSet=[],bumpers=[];
 const colors=PALETTE,pressed=new Set(),touch=new Set();
@@ -56,7 +69,7 @@ function selectArena(){return 0;}
 function startingPosition(i){if(mazeGrid){const {cols,rows,cell}=mazeGrid,spots=[[0,Math.floor(rows/2)],[cols-1,Math.floor(rows/2)],[Math.floor(cols/2),0],[Math.floor(cols/2),rows-1],[2,2],[cols-3,rows-3]];
  const [x,y]=spots[i%spots.length];return [(x+.5)*cell,(y+.5)*cell];}
  const spots=[[130,300],[830,300],[480,96],[480,500],[130,100],[830,500]];return spots[i%spots.length]}
-function freshTank(i){const [x,y]=startingPosition(i);return {x,y,a:i%2?Math.PI:0,vx:0,vy:0,shield:0,powerType:null,powerTimer:0,flash:0,onFoot:false,vehicleId:null};}
+function freshTank(i){const [x,y]=startingPosition(i);return {x,y,a:i%2?Math.PI:0,vx:0,vy:0,shield:0,powerType:null,powerTimer:0,flash:0,onFoot:false,vehicleId:null,trackLeft:0,trackRight:0,recoil:0};}
 // All players are pilots. Tank and mech share one enter/exit/armor framework.
 const TANK_ARMOR=3,EJECTION_SHIELD=1.35;
 function vehicleDef(v){return VEHICLE_TYPES[v?.type]||VEHICLE_TYPES.tank;}
@@ -216,14 +229,22 @@ function resetAll(){state=initialState(0,state.config);fixedAccumulator=0;partic
 function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
 function circlesRect(x,y,r,w){const nx=clamp(x,w.x,w.x+w.w),ny=clamp(y,w.y,w.y+w.h);return (x-nx)**2+(y-ny)**2<r*r}
 function blocked(x,y,r=21){return x<r+13||x>worldW-r-13||y<r+13||y>worldH-r-13||nearWall(x,y,r)}
-function tankMove(t,inp,dt,i){let mx=clamp(Number(inp.moveX)||0,-1,1),my=clamp(Number(inp.moveY)||0,-1,1);let mag=Math.hypot(mx,my);
+function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=clamp(Number(inp.moveX)||0,-1,1),my=clamp(Number(inp.moveY)||0,-1,1);let mag=Math.hypot(mx,my);
  if(mag>1){mx/=mag;my/=mag;mag=1}if(mag<.09){mx=0;my=0;mag=0}
  const speed=(t.onFoot?(inp.bot?194:268):(inp.bot?178:222)*vehicleDef(currentVehicle(t)).speed)*(t.powerType==='turbo'&&t.powerTimer>0?1.48:1),blend=Math.min(1,dt*(mag?9:13));t.vx+=(mx*speed-t.vx)*blend;t.vy+=(my*speed-t.vy)*blend;
  if(mag){const target=Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a));t.a+=clamp(diff,-dt*12,dt*12)}
  const nx=t.x+t.vx*dt,ny=t.y+t.vy*dt;
  const radius=t.onFoot?10:21;const collides=(x,y)=>blocked(x,y,radius)||state.tanks.some((other,j)=>i!==j&&state.lives[j]>0&&(other.x-x)**2+(other.y-y)**2<(radius+(other.onFoot?12:21))**2);
  if(!collides(nx,t.y))t.x=nx;else t.vx=0;
- if(!collides(t.x,ny))t.y=ny;else t.vy=0;}
+ if(!collides(t.x,ny))t.y=ny;else t.vy=0;
+ // Differential track travel: turning rotates the two tread belts at different
+ // rates, including a near-stationary pivot. No extra forces or speed changes.
+ if(!t.onFoot){const forward=(t.x-beforeX)*Math.cos(t.a)+(t.y-beforeY)*Math.sin(t.a);
+  const heading=Math.atan2(Math.sin(t.a-beforeA),Math.cos(t.a-beforeA));
+  t.trackLeft=(t.trackLeft||0)+forward*.44-heading*17;
+  t.trackRight=(t.trackRight||0)+forward*.44+heading*17;
+ }
+}
 function hasLineOfSight(x,y,tx,ty){const length=Math.hypot(tx-x,ty-y),steps=Math.ceil(length/15);for(let n=1;n<steps;n++){const p=n/steps;if(nearWall(x+(tx-x)*p,y+(ty-y)*p,4))return false}return true;}
 function botInput(i,dt){const bot=state.tanks[i],enemies=state.tanks.map((t,j)=>({t,j})).filter(({j})=>j!==i&&state.lives[j]>0&&!friendly(i,j));
  if(!enemies.length)return {moveX:0,moveY:0,fire:false,bot:true};enemies.sort((a,b)=>Math.hypot(bot.x-a.t.x,bot.y-a.t.y)-Math.hypot(bot.x-b.t.x,bot.y-b.t.y));const target=enemies[0].t;
@@ -257,7 +278,7 @@ function shoot(owner){if(state.lives[owner]<=0)return false;
  let x=t.x+dx*(isFoot?7:12),y=t.y+dy*(isFoot?7:12);
  for(let distance=isFoot?9:14;distance<=(isFoot?17:34);distance+=2){const bx=t.x+dx*distance,by=t.y+dy*distance;if(blocked(bx,by,isFoot?3:5))break;x=bx;y=by;}
  t.shield=0; // Shooting cancels spawn/ejection immunity.
- const speed=isFoot?475:def.projectileSpeed;state.bullets.push({x,y,vx:dx*speed,vy:dy*speed,owner,life:isFoot?.9:3.8,bounces:0,age:0,kind:isFoot?'sidearm':v?.type==='mech'?'mech':'shell'});t.flash=.11;emitFx('shot',x,y,colors[owner],owner);sound(410+owner*80,.065,x,y);refreshHUD();return true;}
+ const speed=isFoot?475:def.projectileSpeed;state.bullets.push({x,y,vx:dx*speed,vy:dy*speed,owner,life:isFoot?.9:3.8,bounces:0,age:0,kind:isFoot?'sidearm':v?.type==='mech'?'mech':'shell'});t.flash=.11;if(!isFoot)t.recoil=1;emitFx('shot',x,y,colors[owner],owner);sound(410+owner*80,.065,x,y);refreshHUD();return true;}
 function respawn(victim){const enemies=state.tanks.filter((_,i)=>i!==victim&&state.lives[i]>0&&!friendly(victim,i));const spots=[];
  if(mazeGrid){for(let r=0;r<mazeGrid.rows;r++)for(let c=0;c<mazeGrid.cols;c++)spots.push([(c+.5)*mazeGrid.cell,(r+.5)*mazeGrid.cell]);}
  else spots.push(...[[130,300],[830,300],[130,100],[830,500],[480,96],[480,500],[130,480],[830,120],[340,70],[620,525]]);
@@ -295,7 +316,7 @@ function step(dt){if(paused||state.winner>=0)return;
  if(state.pickupTimer<=0){spawnPickup();state.pickupTimer=state.pickups.length?15:3;}
  const inputs=state.tanks.map((t,i)=>i===0?makeControl(true):i===1&&mode==='duel'?makeControl(false):i===1&&mode==='host'?guestInput:botInput(i,dt));
  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]<=0)continue;
- t.powerTimer=Math.max(0,(t.powerTimer||0)-dt);if(t.powerTimer<=0)t.powerType=null;t.flash=Math.max(0,(t.flash||0)-dt);t.ejectAnim=Math.max(0,(t.ejectAnim||0)-dt);
+ t.powerTimer=Math.max(0,(t.powerTimer||0)-dt);if(t.powerTimer<=0)t.powerType=null;t.flash=Math.max(0,(t.flash||0)-dt);t.recoil=Math.max(0,(t.recoil||0)-dt*6);t.ejectAnim=Math.max(0,(t.ejectAnim||0)-dt);
  t.shield=Math.max(0,t.shield-dt);tankMove(t,inputs[i],dt,i);
  for(const p of state.pickups){if(!t.onFoot&&Math.hypot(t.x-p.x,t.y-p.y)<35){collectPickup(t,i,p);break}}
  fireCooldown[i]=Math.max(0,(fireCooldown[i]||0)-dt);if(inputs[i]?.fire&&fireCooldown[i]<=0&&shoot(i))fireCooldown[i]=t.onFoot?.48:(t.powerType==='rapid'?.13:vehicleDef(currentVehicle(t)).fireCooldown);}
@@ -313,11 +334,11 @@ function step(dt){if(paused||state.winner>=0)return;
 function sound(freq,len=.09,x=null,y=null){if(!comfort.sound)return;try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;if(!window.rrAudio)window.rrAudio=new AC;const ac=window.rrAudio;if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.type='square';o.frequency.value=freq;const me=state.tanks[mode==='guest'?1:0],dist=Number.isFinite(x)&&Number.isFinite(y)&&me?Math.hypot(x-me.x,y-me.y):0;const loudness=.028*Math.max(.065,1-dist/950);g.gain.setValueAtTime(loudness,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+len);o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+len)}catch(_){}}
 function updateVisuals(dt){visualClock+=dt;screenKick=Math.max(0,screenKick-dt*22);damagePulse=Math.max(0,damagePulse-dt*1.65);for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.max(0,1-dt*3);p.vy*=Math.max(0,1-dt*3)}particles=particles.filter(p=>p.life>0)}
 
-function drawTopTank(c,paint,parked=false){
+function drawTopTank(c,paint,parked=false,trackLeft=0,trackRight=0,recoil=0,suspension=0){
  // Art contract v0.9.6: vehicle local +X is FORWARD (toward the barrel).
  // Tracks run parallel to +X at BOTH sides of the hull. Mirror them from
  // one geometry definition, never draw the right tread with separate offsets.
- c.save();c.lineJoin='miter';c.lineWidth=2;c.strokeStyle='#071820';
+ c.save();c.translate(-3*recoil,Math.sin((trackLeft+trackRight)*.35)*suspension*.65);c.lineJoin='miter';c.lineWidth=2;c.strokeStyle='#071820';
  for(const side of [-1,1]){
    c.save();c.scale(1,side);
    // Road track and six identically-spaced treads: all seams are perpendicular to travel.
@@ -325,7 +346,11 @@ function drawTopTank(c,paint,parked=false){
    c.strokeStyle='#06131c';c.strokeRect(-27,15,54,12);
    c.fillStyle='#36505d';c.fillRect(-24,17,48,8);
    c.fillStyle='#7b929b';
-   for(let x=-21;x<=19;x+=8)c.fillRect(x,16,2,10);
+   const phase=side<0?trackLeft:trackRight;
+   const offset=((phase%8)+8)%8;
+   for(let n=0;n<6;n++){const x=-24+((3+n*8+offset)%48);c.fillRect(x,16,2,10);}
+   // Dark end caps mask the cycling belt seams at either end.
+   c.fillStyle='#091b25';c.fillRect(-27,15,3,12);c.fillRect(24,15,3,12);
    c.fillStyle='#142b38';c.fillRect(-20,25,40,2);
    c.restore();
  }
@@ -436,7 +461,7 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
    if(t.ejectAnim>0){c.save();c.globalAlpha=Math.min(.7,t.ejectAnim/.62);c.strokeStyle='#e5faff';c.lineWidth=2;c.beginPath();c.arc(t.x,t.y,18+(1-t.ejectAnim/.62)*22,0,Math.PI*2);c.stroke();c.restore();}
  }else{
  if(t.shield>0){c.globalAlpha=.65+.25*Math.sin(t.shield*15)}
- (currentVehicle(t)?.type==='mech'?drawTopMech(c,colors[i],false,Math.sin(visualClock*10+i*1.9)*Math.min(4.1,Math.hypot(t.vx,t.vy)/42)):drawTopTank(c,colors[i]));if(t.flash>0){c.fillStyle='#fff3a0';c.beginPath();c.arc(39,0,8+t.flash*70,0,Math.PI*2);c.fill()}c.restore();
+ (currentVehicle(t)?.type==='mech'?drawTopMech(c,colors[i],false,Math.sin(visualClock*10+i*1.9)*Math.min(4.1,Math.hypot(t.vx,t.vy)/42)):drawTopTank(c,colors[i],false,t.trackLeft||0,t.trackRight||0,t.recoil||0,Math.min(1,Math.hypot(t.vx,t.vy)/170)));if(t.flash>0){c.fillStyle='#fff3a0';c.beginPath();c.arc(39,0,8+t.flash*70,0,Math.PI*2);c.fill()}c.restore();
  if(isPilotMatch()){const v=state.vehicles?.[t.vehicleId];if(v){c.fillStyle='#16313b';c.fillRect(t.x-19,t.y+29,38,5);c.fillStyle='#79eab2';c.fillRect(t.x-19,t.y+29,38*v.armor/vehicleDef(v).armor,5);}}}
  if(t.powerType&&t.powerTimer>0&&PICKUPS[t.powerType]){c.fillStyle=PICKUPS[t.powerType].color;c.font='900 11px system-ui';c.textAlign='center';c.fillText(PICKUPS[t.powerType].name+' '+Math.ceil(t.powerTimer)+'s',t.x,t.y+48)}
  if(t.shield>0){c.beginPath();c.arc(t.x,t.y,32+Math.sin(t.shield*10)*2,0,Math.PI*2);c.strokeStyle=colors[i];c.globalAlpha=clamp(t.shield/1.8*.8,0,.8);c.lineWidth=3;c.stroke();c.globalAlpha=1}
@@ -477,7 +502,7 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
     }
    }
  }
- if(mazeGrid){const mw=150,mh=Math.round(mw*worldH/worldW),mx=W-mw-16,my=14;
+ if(mazeGrid){const mw=clamp(Math.round(W*.16),100,150),mh=Math.round(mw*worldH/worldW),mx=W-mw-12,my=15;
  c.fillStyle='#071722ed';c.fillRect(mx-5,my-5,mw+10,mh+10);c.strokeStyle='#5b8997';c.lineWidth=1;c.strokeRect(mx-5,my-5,mw+10,mh+10);
  // FIELDGRID radar is an instrument, not a floating decorative card.
  c.strokeStyle='#8cd3db';c.lineWidth=2;for(const sx of [mx-5,mx+mw+5])for(const sy of [my-5,my+mh+5]){const dx=sx<mx?1:-1,dy=sy<my?1:-1;c.beginPath();c.moveTo(sx+dx*12,sy);c.lineTo(sx,sy);c.lineTo(sx,sy+dy*12);c.stroke();}
@@ -500,10 +525,10 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
    const msg=String(state.event||'').toUpperCase();const text=msg.length>38?msg.slice(0,35)+'…':msg;
    const secondary=/^BOT \d+ LOSES A LIFE/.test(msg);
    const width=Math.min(400,Math.max(158,text.length*8.4+34));
-   c.fillStyle='#081d29e0';c.fillRect(17,17,width,33);
-   c.fillStyle=secondary?'#738d9b':'#e5be7b';c.fillRect(17,17,3,33);
+   c.fillStyle='#081d29e0';c.fillRect(15,56,width,30);
+   c.fillStyle=secondary?'#738d9b':'#e5be7b';c.fillRect(15,56,3,30);
    c.fillStyle=secondary?'#aac5d0':'#f8eacb';c.font='800 15px system-ui';c.textAlign='left';
-   c.fillText(text,29,39);
+   c.fillText(text,27,76);
  }
  if(state.winner>=0){
    c.fillStyle='#06141ce8';c.fillRect(0,0,W,H);
@@ -574,5 +599,5 @@ window.RR={openMenu(){if(menu.classList.contains('hidden'))showPauseMenu();else 
  case 'interact':if(mode==='host'&&connected&&!paused)tryInteract(1);break;
  case 'disconnected':connected=false;paused=true;guestInput={moveX:0,moveY:0,fire:false};clearStick();notice('Other player disconnected');setPanel('<h2>CONNECTION LOST</h2><p>Return to the main menu and reconnect.</p><button data-action="close">MAIN MENU</button>');break;
  case 'error':notice(msg.message||'Network error');break;}}};
-refreshHUD();requestAnimationFrame(loop);
+resizeArenaCanvas();refreshHUD();requestAnimationFrame(loop);
 })();
