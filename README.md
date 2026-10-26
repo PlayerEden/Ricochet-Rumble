@@ -1,6 +1,6 @@
 # Ricochet Rumble
 
-**v0.9.1 — FIELDGRID experimental build** (`dev/procedural-deployments`). A free, offline-first Android arcade game about pilots, tanks, mechs and ricochet combat. Gameplay and assets are bundled in one APK.
+**v0.9.2 — FIELDGRID comfort refinement** (`dev/procedural-deployments`). A free, offline-first Android arcade game about pilots, tanks, mechs and ricochet combat. Gameplay and assets are bundled in one APK.
 
 ## One game, fresh battlefield every match
 
@@ -31,3 +31,7 @@ Browser and scripted tests are not a human playtest. The new mech's handling, ti
 ## v0.9.1 quality review
 
 See [multi-pass design, accessibility, pacing and systems audit](docs/QA_ROUNDS_v0.9.1.md) for verified changes, research references, and unresolved on-phone acceptance checks.
+
+## v0.9.2 comfort & recovery pass
+
+The compact settings screen now uses larger selectors: 44 CSS pixels at 740×360, and 48 CSS pixels at 915×412 and wider. Tests show its expanded options fit without page scrolling. When an ejected pilot's nearest available vehicle is outside the camera, a modest on-screen arrow points toward it. This is a direction cue, not automatic maze navigation. Host/guest menus and phone backgrounding now force neutral guest movement and firing rather than leaving controls held. One rule set; no new modes or account setup. See `docs/COMFORT_QA_v0.9.2.md` for evidence and limits.

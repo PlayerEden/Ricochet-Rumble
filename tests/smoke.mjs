@@ -16,7 +16,7 @@ const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},join
 const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(){return null},setItem(){}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(){return []}};
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,teamOf,botInput,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,teamOf,botInput,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -44,6 +44,7 @@ assert.ok(player.shield>1,'brief ejection immunity');player.shield=0;
 assert.equal(win.__test.registerHit(1,0),true,'on-foot hit costs life');assert.equal(st().lives[0],1);
 const spare=st().vehicles.find(v=>v.armor>0&&v.occupant===-1);
 assert.ok(spare);
+assert.ok(win.__test.closestAvailableVehicle(0),'dismounted player can locate a safe vehicle for navigation cue');
 // Pilots can move through parked tanks; occupied tanks remain collidable.
 player.x=spare.x-33;player.y=spare.y;player.vx=player.vy=0;
 assert.equal(win.__test.parkedVehicleAt(spare.x-15,spare.y,10),true);
@@ -140,6 +141,18 @@ assert.equal(node('quick-rematch').classList.contains('hidden'),true,'no replay 
 // Mech shell limitation preserves separate tank identity and avoids limitless ricochets.
 assert.ok(script.includes("b.kind==='mech'?2:5"),'mech rounds stop after fewer bounces');
 assert.ok(script.includes("b.kind==='mech'?5:0"),'mech rounds have distinguishable hit width');
+// v0.9.2: menu safety for both host and guest; no sticky auto-fire while paused.
+click('solo');win.__test.comfort.autoFire=true;
+assert.equal(win.__test.makeControl(true).fire,true,'auto-fire works during live match');
+for(const f of handlers['menu-button:click'])f();
+assert.equal(win.__test.makeControl(true).fire,false,'opening the pause menu silences auto-fire');
+click('resume');assert.equal(win.__test.makeControl(true).fire,true,'resume restores desired auto-fire');
+win.__test.comfort.autoFire=false;
+click('find');win.RR.nativeMessage(JSON.stringify({type:'connected'}));
+const packetsBeforePause=packets.length;
+for(const f of handlers['menu-button:click'])f();
+assert.ok(packets.slice(packetsBeforePause).some(p=>p.type==='input'&&!p.input.fire&&p.input.moveX===0&&p.input.moveY===0),'guest sends neutral input immediately when menu opens');
+console.log('PASS v0.9.2: stranded-pilot recovery cue and guest menu neutral input.');
 console.log('PASS v0.9.1 QA: 0-bot practice, default comfort, contextual hint, win/replay/new seed, vehicle weapon distinction.');
 
 console.log('PASS FIELDGRID v0.9: generated map sizes; 180 seed checks; mixed tank/mech spawns; timed drops; armor/ejection; 1,500-frame stress; LAN state and contextual controls.');

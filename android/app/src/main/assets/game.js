@@ -112,6 +112,16 @@ function spawnVehicles(tanks,humans,seed=1){const vehicles=[];
  return vehicles;
 }
 function isPilotMatch(){return state?.config?.pilotMode===true;}
+// A directional hint is only needed while on foot. Unlike ENTER range, this
+// considers all healthy unoccupied vehicles (even around maze corners).
+function closestAvailableVehicle(i){
+ if(!isPilotMatch()||!state?.tanks[i]||state.lives[i]<=0)return null;
+ const pilot=state.tanks[i];let best=null,distance=Infinity;
+ for(const v of state.vehicles||[]){if(v.armor<=0||v.occupant!==-1)continue;
+  const d=Math.hypot(v.x-pilot.x,v.y-pilot.y);
+  if(d<distance){best=v;distance=d;}}
+ return best;
+}
 function nearestEmptyVehicle(i){if(!isPilotMatch()||state.lives[i]<=0)return null;const t=state.tanks[i];let best=null,bestD=58;
  for(const v of state.vehicles||[]){if(v.occupant!==-1||v.armor<=0)continue;const d=Math.hypot(v.x-t.x,v.y-t.y);if(d<bestD&&hasLineOfSight(t.x,t.y,v.x,v.y)){best=v;bestD=d}}
  return best;}
@@ -165,7 +175,7 @@ function notice(t,duration=2400){toast.textContent=t;toast.classList.add('visibl
 function firstMatchHint(){try{if(window.localStorage?.getItem('rr-coach-v091'))return;window.localStorage?.setItem('rr-coach-v091','1')}catch(_){}notice('MOVE · FIRE · ENTER VEHICLES',3300)}
 function setPanel(html){releaseControls();panel.innerHTML=html;menu.classList.remove('hidden')}
 function exitMenu(){menu.classList.add('hidden');refreshHUD()}
-function inputFrom(keys,isLocal){const down=k=>pressed.has(keys[k])||(isLocal&&touch.has(k));let moveX=Number(down('right'))-Number(down('left')),moveY=Number(down('down'))-Number(down('up'));
+function inputFrom(keys,isLocal){const down=k=>menu.classList.contains('hidden')&&(pressed.has(keys[k])||(isLocal&&touch.has(k)));let moveX=Number(down('right'))-Number(down('left')),moveY=Number(down('down'))-Number(down('up'));
  if(isLocal&&stick.pointerId!==null){moveX=stick.x;moveY=stick.y}
  const length=Math.hypot(moveX,moveY);if(length>1){moveX/=length;moveY/=length}
  return {moveX,moveY,fire:down('fire')||(isLocal&&comfort.autoFire&&mode!=='idle'&&menu.classList.contains('hidden')&&!paused)};}
@@ -365,6 +375,22 @@ function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick
  for(const b of state.bullets){const len=Math.min(b.kind==='sidearm'?10:b.kind==='mech'?24:19,Math.hypot(b.vx,b.vy)*.037);c.beginPath();c.moveTo(b.x-b.vx/405*len,b.y-b.vy/405*len);c.lineTo(b.x,b.y);c.strokeStyle=colors[b.owner];c.lineWidth=b.kind==='mech'?6:4;c.stroke();c.beginPath();c.arc(b.x,b.y,b.kind==='sidearm'?3.5:b.kind==='mech'?7.5:6,0,Math.PI*2);c.fillStyle='#f8ffff';c.shadowColor=colors[b.owner];c.shadowBlur=15;c.fill();c.shadowBlur=0}
  for(const p of particles){c.globalAlpha=clamp(p.life/p.maxLife,0,1);c.fillStyle=p.color;c.fillRect(p.x,p.y,p.size,p.size)}c.globalAlpha=1;
  c.restore();
+ // Help a recently ejected pilot recover without a map-reading tutorial.
+ // Never expose an enemy's position or draw this when already near a vehicle.
+ if(state.lives[me]>0&&localTank?.onFoot){
+   const target=closestAvailableVehicle(me);
+   if(target){const tx=(target.x-camera.x)*zoom,ty=(target.y-camera.y)*zoom;
+    if(tx<30||tx>W-30||ty<30||ty>H-30){
+      const cx=W/2,cy=H/2,angle=Math.atan2(ty-cy,tx-cx);
+      const radius=Math.min(W*.37,H*.36);
+      const px=clamp(cx+Math.cos(angle)*radius,52,W-52),py=clamp(cy+Math.sin(angle)*radius,95,H-63);
+      c.save();c.translate(px,py);c.rotate(angle);c.fillStyle='#bbffda';c.strokeStyle='#06352f';c.lineWidth=3;
+      c.beginPath();c.moveTo(15,0);c.lineTo(-4,-10);c.lineTo(-4,10);c.closePath();c.fill();c.stroke();c.restore();
+      c.fillStyle='#ccffe7';c.font='900 13px system-ui';c.textAlign='center';
+      c.fillText(vehicleDef(target).name,px,py+24);
+    }
+   }
+ }
  if(mazeGrid){const mw=150,mh=Math.round(mw*worldH/worldW),mx=W-mw-16,my=14;
  c.fillStyle='#06131ddc';c.fillRect(mx-5,my-5,mw+10,mh+10);c.strokeStyle='#5993a2';c.lineWidth=1;c.strokeRect(mx-5,my-5,mw+10,mh+10);
  c.save();c.translate(mx,my);c.scale(mw/worldW,mh/worldH);c.fillStyle='#163c4b';c.fillRect(0,0,worldW,worldH);
@@ -386,7 +412,7 @@ function loop(now){const dt=clamp((now-lastTime)/1000,0,.085);lastTime=now;
  if(mode==='solo'||mode==='duel'||mode==='host'){if(!paused&&state.winner<0){fixedAccumulator=Math.min(.12,fixedAccumulator+dt);let ticks=0;while(fixedAccumulator>=STEP&&ticks++<5){step(STEP);fixedAccumulator-=STEP}}else fixedAccumulator=0;}
  updateVisuals(dt);hudTimer+=dt;if(hudTimer>.15){hudTimer=0;refreshHUD();}
  if(mode==='host'&&connected){snapshotTimer+=dt;if(snapshotTimer>.09){snapshotTimer=0;nativePacket({type:'state',state:serializeState()})}}
- if(mode==='guest'&&connected){sendTimer+=dt;if(sendTimer>.05){sendTimer=0;nativePacket({type:'input',input:makeControl(true)})}}
+ if(mode==='guest'&&connected){sendTimer+=dt;if(sendTimer>.05){sendTimer=0;nativePacket({type:'input',input:menu.classList.contains('hidden')&&!document.hidden?makeControl(true):{moveX:0,moveY:0,fire:false}})}}
  render(dt);requestAnimationFrame(loop)}
 function bridgeReady(){return !!window.AndroidBridge}
 function host(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('host');setPanel('<div class="eyebrow">NEARBY PLAY</div><h2>HOSTING MATCH</h2><p id="host-status">Starting local game...</p><div class="host-address" id="host-address"></div><button data-action="close">CANCEL</button>');window.AndroidBridge.hostGame()}
@@ -404,14 +430,14 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
 function showPauseMenu(){releaseControls();if(mode==='idle')return;
  if(mode==='solo'||mode==='duel'){paused=true;setPanel('<div class="eyebrow">PAUSED</div><h2>GAME MENU</h2><button data-action="resume">RESUME</button><button data-action="restart">REMATCH · NEW MAZE</button><button data-action="close">MAIN MENU</button>')}
  else if(mode==='host'){paused=true;guestInput={moveX:0,moveY:0,fire:false};setPanel('<div class="eyebrow">HOST OPTIONS</div><h2>GAME MENU</h2><p>The match is paused for both players while this menu is open.</p><button data-action="resume">BACK TO ARENA</button><button data-action="restart">REMATCH · NEW MAZE</button><button data-action="close">DISCONNECT</button>')}
- else if(mode==='guest'){setPanel('<div class="eyebrow">PLAYER OPTIONS</div><h2>GAME MENU</h2><p>Only the host can restart the match.</p><button data-action="resume">BACK TO ARENA</button><button data-action="close">DISCONNECT</button>')}}
+ else if(mode==='guest'){if(connected)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}});setPanel('<div class="eyebrow">PLAYER OPTIONS</div><h2>GAME MENU</h2><p>Only the host can restart the match.</p><button data-action="resume">BACK TO ARENA</button><button data-action="close">DISCONNECT</button>')}}
 document.getElementById('menu-button').addEventListener('click',showPauseMenu);
 document.getElementById('quick-rematch')?.addEventListener('click',()=>{if(state.winner>=0&&mode!=='guest'&&mode!=='idle'){resetAll();notice('NEW FIELD · NEW FIGHT',1400)}});
-document.getElementById('interact-btn')?.addEventListener('pointerdown',e=>{e.preventDefault();if(mode==='guest'){if(connected&&!paused)nativePacket({type:'interact'});}else tryInteract(0)});
+document.getElementById('interact-btn')?.addEventListener('pointerdown',e=>{e.preventDefault();if(mode==='guest'){if(connected&&!paused&&menu.classList.contains('hidden')&&!state.hostPaused)nativePacket({type:'interact'});}else tryInteract(0)});
 menu.addEventListener('click',e=>{const a=e.target?.dataset?.action;
  if(a==='resume'){if(mode==='solo'||mode==='duel'||mode==='host')paused=false;exitMenu()}
  else if(a==='restart'&&mode!=='guest'){resetAll();exitMenu()}});
-window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if([...Object.values(keys1),...Object.values(keys2)].includes(e.code))e.preventDefault();pressed.add(e.code);if(e.code==='KeyR'&&state.winner>=0&&mode!=='guest')resetAll();if(e.code==='KeyE'&&!e.repeat&&menu.classList.contains('hidden')){if(mode==='guest'&&connected)nativePacket({type:'interact'});else if(mode==='solo'||mode==='host'||mode==='duel')tryInteract(0)}});
+window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if([...Object.values(keys1),...Object.values(keys2)].includes(e.code))e.preventDefault();pressed.add(e.code);if(e.code==='KeyR'&&state.winner>=0&&mode!=='guest')resetAll();if(e.code==='KeyE'&&!e.repeat&&menu.classList.contains('hidden')){if(mode==='guest'&&connected&&!state.hostPaused)nativePacket({type:'interact'});else if(mode==='solo'||mode==='host'||mode==='duel')tryInteract(0)}});
 window.addEventListener('keyup',e=>pressed.delete(e.code));window.addEventListener('blur',releaseControls);
 for(const b of document.querySelectorAll('[data-key]')){const k=b.dataset.key;const release=e=>{touch.delete(k);b.classList.remove('active');try{b.releasePointerCapture(e.pointerId)}catch(_){}};
  b.addEventListener('pointerdown',e=>{e.preventDefault();touch.add(k);b.classList.add('active');b.setPointerCapture(e.pointerId)});b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);b.addEventListener('lostpointercapture',()=>{touch.delete(k);b.classList.remove('active')})}
