@@ -1,3 +1,19 @@
+# Sector Rebound — FIELDGRID
+
+**v0.9.5 naming / continuity pass** on `dev/sector-rebound`. Public-facing game name is **Sector Rebound**. The former working title **Ricochet Rumble** remains in historical release notes; this is the same game and not a separate franchise or mode.
+
+- **What you play:** top-down, quick-session tactical arcade combat. Start inside a tank, eject when disabled, and fight on foot or find another tank or mech. Generated arenas change every match.
+- **Fiction:** a later-generation combat simulator whose fictional lineage follows Project CATHODE and Operation PHOSPHOR. FIELDGRID is the matured simulation platform; Sector Rebound is the tactical deployment exercise, emphasizing human pilots operating physical vehicle proxies rather than drawing light trails.
+- **Design choice:** lore is optional and subtle. Instant play and clarity take precedence over briefing screens. The separate Operation PHOSPHOR repository and its open mystery are not retconned or modified.
+- **Android:** the displayed name, mDNS host name and launcher icon say Sector Rebound; `com.playereden.ricochetrumble` and the underlying `window.RR` bridge remain unchanged for technical compatibility. The game and its data are not moved to another Android package. Debug builds may still require uninstall/reinstall when signing keys differ.
+- **Name diligence:** online exact-title search found no obvious indexed same-name game as of Oct 26, 2026. This is preliminary screening, **not legal clearance**; a full trademark search and legal review should precede any commercial release.
+
+See [`docs/SECTOR_REBOUND_IDENTITY.md`](docs/SECTOR_REBOUND_IDENTITY.md) for narrative and naming principles. Gameplay is inherited from v0.9.4; no combat balance changes in this rename pass.
+
+---
+
+## Historical project notes
+
 **v0.9.4 FIELDGRID visual clarity (experimental):** cleaned up combat alerts, clipped minimap effects, clarified distinct mech/pilot/projectile visuals and kept pilot-vs-tank tactics. See [visual QA report](docs/VISUAL_CLARITY_v0.9.4.md).
 
 # Ricochet Rumble — FIELDGRID v0.9.3 Visual System

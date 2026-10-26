@@ -155,7 +155,7 @@ public final class MainActivity extends Activity {
     }
     private void registerHost(int port) {
         NsdServiceInfo info = new NsdServiceInfo();
-        info.setServiceName("Ricochet Rumble");
+        info.setServiceName("Sector Rebound");
         info.setServiceType(SERVICE_TYPE);
         info.setPort(port);
         NsdManager.RegistrationListener listener = new NsdManager.RegistrationListener() {

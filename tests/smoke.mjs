@@ -176,3 +176,11 @@ assert.ok(script.includes('c.clip()'),'radar has clipped deployment pings');
 assert.ok(!script.includes('fillRect(W/2-160,28,320,44)'),'large center-covering event removed');
 assert.ok(menuHtml.includes('aria-hidden="true">●</span>'),'movement knob no longer resembles an ability pickup');
 console.log('PASS v0.9.4 visual clarity: pilot duel advantage, tactical sidearm, radar clipping, event placement, joystick symbol.');
+
+// Public-facing identity regression; internal RR API and Android applicationId deliberately persist.
+{ const fs=await import('node:fs');
+  const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
+  const manifest=fs.readFileSync(new URL('../android/app/src/main/AndroidManifest.xml',import.meta.url),'utf8');
+  if(!html.includes('SECTOR <em>REBOUND</em>') || !html.includes('SECTOR <span>REBOUND</span>') || !manifest.includes('android:label="Sector Rebound"')) throw new Error('Sector Rebound public branding missing');
+  if(html.includes('Ricochet Rumble') || manifest.includes('Ricochet Rumble')) throw new Error('Old title appears in public game UI');
+}
