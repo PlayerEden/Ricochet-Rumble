@@ -10,7 +10,7 @@
 <body>
   <main class="game-screen" id="game-screen">
     <header class="game-hud">
-      <div class="game-identity"><span class="logo-mark">RR</span><div class="brand-stack"><strong>RICOCHET <em>RUMBLE</em></strong><span id="mode-label">ONE ARENA · PILOTS + TANKS</span></div></div>
+      <div class="game-identity"><span class="logo-mark">RR</span><div class="brand-stack"><strong>RICOCHET <em>RUMBLE</em></strong><span id="mode-label">FIELDGRID · ACTIVE PILOT</span></div></div>
       <div class="scorestrip" aria-live="polite">
         <span class="blue-tag"><span id="player0-label">YOU</span> <strong id="score0">2</strong> <span class="hud-life">♥</span></span>
         <span id="round" class="middle">TANK 3/3 ARMOR</span>
@@ -37,7 +37,7 @@
     </div>
     <div class="overlay" id="menu">
       <div class="panel" id="panel" role="dialog" aria-label="Game menu">
-        <div class="menu-heading"><div class="eyebrow">PLAYEREDEN • ARCADE SERIES <button class="menu-help" data-action="help" aria-label="How to play Ricochet Rumble">? HELP</button></div><h2>RICOCHET <span>RUMBLE</span></h2><p>Pilot. Tank. Escape. Repeat.</p></div>
+        <div class="menu-heading"><div class="eyebrow">FIELDGRID · NEXT-GEN COMBAT SIM <button class="menu-help" data-action="help" aria-label="How to play Ricochet Rumble">? HELP</button></div><h2>RICOCHET <span>RUMBLE</span></h2><p>Deploy. Discover. Survive.</p></div>
         <div class="menu-content">
           <div class="menu-main">
             
@@ -45,7 +45,7 @@
             <button class="settings-button" data-action="settings">⚙ MATCH SETTINGS</button>
             <button data-action="nearby">☷ PLAY TOGETHER · SAME WI-FI</button>
           </div>
-          <div class="menu-join"><div class="eyebrow">ONE GAME · YOUR RULES</div><p>Start in a tank. If it breaks, escape on foot, find another, and keep battling.</p><p class="menu-tip">No extra modes to learn. You choose how many bots and which arena.</p></div>
+          <div class="menu-join"><div class="eyebrow">ONE GAME · YOUR RULES</div><p>Start in a tank. If it breaks, escape on foot, find another, and keep battling.</p><p class="menu-tip">New maze every match. Change map size, bots or teams if you like.</p></div>
         </div>
         <p class="note" id="menu-note">One tap to play · Move + Fire · Enter nearby tanks</p>
       </div>
@@ -55,13 +55,17 @@
 <template id="settings-template">
   <div class="settings-head"><div class="eyebrow">MATCH SETUP</div><h2>YOUR <span>RULES</span></h2><p>Optional choices. Quick Play uses these settings.</p></div>
   <div class="settings-grid settings-page">
-    <label>ARENA<select id="arena-choice"><option value="0">FOUNDRY</option><option value="1">CROSSROADS</option><option value="2">PINBALL</option><option value="3">LABYRINTH</option><option value="4">MAZE XL</option></select></label>
+    <label>MAP SIZE<select id="map-size"><option value="small">SMALL · QUICK</option><option value="standard">STANDARD</option><option value="large">LARGE · EXPLORE</option></select></label>
     <label>BOTS<select id="bot-count"><option value="0">0 · NO BOTS</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>
-    <label>BULLETS / TANK<select id="bullet-cap"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="5">5</option><option value="8">8</option></select></label>
-    <label>PILOT LIVES<select id="lives-choice"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>
-    <label>BOT SKILL<select id="bot-skill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>
     <label>TEAMS<select id="team-choice"><option value="ffa">FREE FOR ALL</option><option value="coop">HUMANS VS BOTS</option><option value="teams">TWO TEAMS</option></select></label>
   </div>
+  <details class="extra-rules"><summary>MORE MATCH OPTIONS <span>Lives · Shells · Bot difficulty</span></summary>
+    <div class="settings-grid settings-page">
+      <label>PILOT LIVES<select id="lives-choice"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>
+      <label>BULLETS / TANK<select id="bullet-cap"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="5">5</option><option value="8">8</option></select></label>
+      <label>BOT SKILL<select id="bot-skill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>
+    </div>
+  </details>
   <div class="comfort-grid settings-comfort"><label><input type="checkbox" id="pref-autoFire"> AUTO FIRE</label><label><input type="checkbox" id="pref-sound"> SOUND</label><label><input type="checkbox" id="pref-shake"> SCREEN SHAKE</label><label><input type="checkbox" id="pref-leftHanded"> SWAP CONTROLS</label></div>
   <div class="settings-actions"><button data-action="settings-back">◀ BACK</button><button class="primary" data-action="settings-play">▶ PLAY NOW</button></div>
 </template>

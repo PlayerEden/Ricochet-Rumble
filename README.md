@@ -1,33 +1,29 @@
 # Ricochet Rumble
 
-**v0.8.0 — Unified Arena experimental build** (branch `dev/unified-arena`). A compact, free Android arcade game about pilots, tanks, ricochet shots, and exploring large mazes. The game is entirely bundled in its APK; no additional apps are required for solo and nearby-Wi-Fi matches.
+**v0.9.0 — FIELDGRID experimental build** (`dev/procedural-deployments`). A free, offline-first Android arcade game about pilots, tanks, mechs and ricochet combat. Gameplay and assets are bundled in one APK.
 
-## One game, your settings
+## One game, fresh battlefield every match
 
-Select **Quick Play** to start driving immediately. Every tank has **3 armor** and protects its pilot. If destroyed, the pilot automatically ejects and keeps their lives (default **2**), uses a sidearm, and can enter an empty tank nearby. On-foot pilots can pass through **empty parked tanks** so they aren't trapped in tight corridors. Empty tanks remain valid cover from gunfire.
+Press **Quick Play** to enter the arena immediately in a tank. The game creates a connected, randomly generated maze each match; **Match Settings** offers Small, Standard and Large map sizes, bot count, and team rules. Pilot lives, tank shell limits and bot difficulty live under an optional **More Match Options** section on the same screen. No map picker or overlapping game modes.
 
-- **Quick Play:** instant solo against computer tanks.
-- **Match Settings:** arena, number of bots, bullet cap, pilot lives, AI skill, team rules and comfort preferences. These configure the one game, not distinct game modes.
-- **Play Together:** nearby same-Wi-Fi host / find, no passwords, room codes, servers or accounts. Local-IP join is a backup. Multiplayer pilot/vehicle input is now wired but must still be tested on physical devices.
-- **? Help:** concise in-app controls guide.
+A tank has **3 armor**. A **mech** has **4 armor**, moves more slowly, fires heavier, slower shells, and holds up to two active shots. Both use the same contextual Enter/Exit control. Losing a vehicle ejects its pilot without losing a pilot life. Pilots can walk through empty parked vehicles to avoid getting stuck in maze corridors.
 
-The player can enter/exit a tank with the contextual button; the game only shows ENTER near an empty, usable vehicle. Movement is via thumb joystick with Fire on the opposite side. Control swap, optional auto-fire, sound and shake settings are available.
+At the start of a match, extra vehicles are distributed across the map, with one reasonably close to the player. Every ~30–42 seconds the game *attempts* another vehicle deployment while capacity and spawn safety allow. A temporary message and minimap marker identify the drop; the world does not pause. This is a first gameplay-balance pass, not a final drop economy.
 
-Five arenas include Foundry, Crossroads, Pinball, Labyrinth and Maze XL. Large mazes have a following camera and minimap, while the small arenas allow shorter fights. Bots, hits, power-ups, and team matches are part of this same game.
+**Play Together** remains same-Wi-Fi host/join with guest state from the authoritative host. No extra apps, servers, accounts, or room codes required for LAN. Physical two-phone end-to-end testing is **still pending**; remote P2P and friends are future work.
 
-## Build and verify
+## Build
 
-- Browser: open `web/index.html` in a browser, or use the bundled self-contained demo from the chat.
-- Automated QA: `node tests/smoke.mjs` (no npm install required).
-- Android source: `android/` (Android 8.0/API 26 or newer). GitHub Actions can compile a debug APK using a manually or workflow-triggered build, no paid services and no GitHub secret required.
-- Web and Android game assets are synchronized; keep both copies aligned.
+- Browser: open `web/index.html`, or use the self-contained HTML build delivered in chat.
+- Tests: `node tests/smoke.mjs`.
+- APK: GitHub Actions can build `assembleDebug` using the workflow on this branch, at no charge on standard runners for the public repository.
+- Android API 26+; source resides in `android/`. JavaScript and HTML/CSS Android assets mirror `web/`.
+- Debug build certificate may change; Android may require uninstalling previous debug APK, clearing local settings.
 
-**Installation:** GitHub-hosted debug builds may be signed with different ephemeral certificates; uninstall the previous version if Android rejects an update. That clears app-local settings. Permanent release signing is optional and not used by the basic debug workflow.
+## Design context
 
-### QA and limitations
+[`docs/FIELDGRID_v0.9.md`](docs/FIELDGRID_v0.9.md) records the mechanic decisions, QA, and the **tentative** connection to the separate `Operation-Phosphor` project. Nothing in this update changes PHOSPHOR's canon, files, or UI.
 
-Read [`docs/UNIFIED_ARENA_v0.8.md`](docs/UNIFIED_ARENA_v0.8.md). Unit and browser tests don't prove performance or networking on actual Android phones. Keep this experimental branch separate from `dev/pilot-survival` and `main` until verified.
+## Limitations
 
-### Future ideas
-
-More vehicle types, a two-person driver/turret vehicle, Pocket Racers, and Scrap Climbers are ideas for later development, **not added in v0.8**. The goal remains a game that's easy and fun in seconds.
+Browser and scripted tests are not a human playtest. The new mech's handling, timed drops, phone frame rate and two-phone synchronization need validation on Android devices. The stable `main` and prior development branches remain unchanged.

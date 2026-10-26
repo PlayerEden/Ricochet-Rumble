@@ -2,27 +2,25 @@
 const W=960,H=600,START_LIVES=5,STEP=1/60;
 const PREF_KEY='rr-options-v06'; // Preserve existing options across this patch.
 let comfort={sound:true,shake:true,autoFire:false,leftHanded:false},fixedAccumulator=0;
-let selectedRules={botCount:1,bulletCap:3,startLives:2,teamMode:'ffa',botSkill:'normal'},selectedArena='3';
+let selectedRules={botCount:1,bulletCap:3,startLives:2,teamMode:'ffa',botSkill:'normal',mapSize:'standard'};
 // W/H are the camera canvas resolution. Mazes have much larger world coordinates.
-let worldW=W,worldH=H,mazeGrid=null,currentArena=-1,currentSeed=0;const camera={x:0,y:0};
+let worldW=W,worldH=H,mazeGrid=null,currentArena=-1,currentSeed=0,currentMapSize='';const camera={x:0,y:0};
 // Spatial buckets keep projectile and bot collision checks local, even in Maze XL.
 const WALL_BUCKET=128;let wallLookup=new Map();
 function rebuildWallLookup(){wallLookup=new Map();for(const w of wallSet){const x0=Math.floor(w.x/WALL_BUCKET),x1=Math.floor((w.x+w.w)/WALL_BUCKET),y0=Math.floor(w.y/WALL_BUCKET),y1=Math.floor((w.y+w.h)/WALL_BUCKET);for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const key=x+','+y;if(!wallLookup.has(key))wallLookup.set(key,[]);wallLookup.get(key).push(w)}}}
 function nearWall(x,y,r){const x0=Math.floor((x-r)/WALL_BUCKET),x1=Math.floor((x+r)/WALL_BUCKET),y0=Math.floor((y-r)/WALL_BUCKET),y1=Math.floor((y+r)/WALL_BUCKET);for(let yb=y0;yb<=y1;yb++)for(let xb=x0;xb<=x1;xb++){const nearby=wallLookup.get(xb+','+yb);if(nearby)for(const w of nearby){const nx=Math.max(w.x,Math.min(x,w.x+w.w)),ny=Math.max(w.y,Math.min(y,w.y+w.h));if((x-nx)**2+(y-ny)**2<r*r)return true}}return false}
 const PALETTE=['#46d2f5','#fc856e','#ffdc77','#b69aff','#82e6a1','#fc8bde'];
 const gameNames=['CYAN','CORAL','GOLD','VIOLET','MINT','PINK'];
-const ARENAS=[
- {name:'Foundry',walls:[{x:215,y:145,w:116,h:28},{x:630,y:425,w:116,h:28},{x:438,y:92,w:84,h:146},{x:438,y:361,w:84,h:146},{x:278,y:330,w:28,h:104},{x:654,y:165,w:28,h:104}]},
- {name:'Crossroads',walls:[{x:376,y:220,w:208,h:30},{x:376,y:350,w:208,h:30},{x:310,y:260,w:30,h:80},{x:620,y:260,w:30,h:80},{x:178,y:110,w:120,h:30},{x:662,y:460,w:120,h:30}]},
- {name:'Pinball',bumpers:[{x:229,y:225,r:26},{x:731,y:375,r:26}],walls:[{x:300,y:115,w:32,h:154},{x:628,y:331,w:32,h:154},{x:420,y:280,w:120,h:40},{x:628,y:115,w:32,h:95},{x:300,y:390,w:32,h:95},{x:154,y:440,w:96,h:24},{x:710,y:136,w:96,h:24}]},
- {name:'Labyrinth',maze:{cols:12,rows:8,cell:118}},
- {name:'Maze XL',maze:{cols:20,rows:13,cell:118}}
-];
+// No map picker: every match is a newly generated connected battlefield.
+const MAP_SIZES={small:{cols:9,rows:6,cell:132},standard:{cols:13,rows:9,cell:132},large:{cols:18,rows:12,cell:132}};
+const ARENAS=[{name:'FIELDGRID',maze:MAP_SIZES.standard}];
+const VEHICLE_TYPES={tank:{name:'TANK',armor:3,speed:1,fireCooldown:.41,projectileSpeed:405,bulletCap:3},mech:{name:'MECH',armor:4,speed:.76,fireCooldown:.7,projectileSpeed:350,bulletCap:2}};
+const MAX_VEHICLES=10;
 const PICKUPS={rapid:{label:'R',name:'RAPID FIRE',color:'#ffd46d'},turbo:{label:'»',name:'TURBO',color:'#76efaf'},guard:{label:'+',name:'BARRIER',color:'#b59aff'}};
 const pickupSpots=[[480,300],[195,300],[765,300],[372,300],[587,300],[390,90],[570,510],[395,520],[560,90]];
 const canvas=document.getElementById('arena'),ctx=canvas.getContext('2d');
 const menu=document.getElementById('menu'),panel=document.getElementById('panel'),toast=document.getElementById('toast');
-let wallSet=ARENAS[0].walls,bumpers=ARENAS[0].bumpers||[];
+let wallSet=[],bumpers=[];
 const colors=PALETTE,pressed=new Set(),touch=new Set();
 const stick={x:0,y:0,pointerId:null};
 let mode='idle',connected=false,paused=true,lastTime=performance.now(),sendTimer=0,snapshotTimer=0,toastTimer=0,botTimer=0,hudTimer=0;
@@ -32,10 +30,10 @@ let particles=[],screenKick=0,damagePulse=0,fxSeq=0,lastRemoteFxId=0,visualClock
 const keys1={up:'KeyW',down:'KeyS',left:'KeyA',right:'KeyD',fire:'Space'},keys2={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight',fire:'Enter'};
 const fireCooldown=Array(6).fill(0);
 function value(id,fallback,min,max){const raw=document.getElementById(id)?.value;const n=Number(raw);return raw!==''&&raw!=null&&Number.isInteger(n)&&n>=min&&n<=max?n:fallback;}
-function readSettings(){const prev=selectedRules;return {botCount:value('bot-count',prev.botCount,0,4),bulletCap:value('bullet-cap',prev.bulletCap,1,8),startLives:value('lives-choice',prev.startLives,1,10),teamMode:['ffa','coop','teams'].includes(document.getElementById('team-choice')?.value)?document.getElementById('team-choice').value:prev.teamMode,botSkill:['casual','normal','spicy'].includes(document.getElementById('bot-skill')?.value)?document.getElementById('bot-skill').value:prev.botSkill};}
-function savePrefs(){selectedRules=readSettings();selectedArena=document.getElementById('arena-choice')?.value??selectedArena;try{window.localStorage?.setItem(PREF_KEY,JSON.stringify({arena:selectedArena,settings:selectedRules,comfort}));}catch(_){}}
-function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){if(['0','1','2','3','4'].includes(String(p.arena)))selectedArena=String(p.arena);const st=p.settings||{};selectedRules={botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:1,bulletCap:[1,2,3,5,8].includes(st.bulletCap)?st.bulletCap:3,startLives:[2,3,5].includes(st.startLives)?st.startLives:2,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key]}}catch(_){}applyPrefsToUI()}
-function applyPrefsToUI(){const picks={arena:selectedArena,botCount:selectedRules.botCount,bulletCap:selectedRules.bulletCap,startLives:selectedRules.startLives,teamMode:selectedRules.teamMode,botSkill:selectedRules.botSkill};const ids={arena:'arena-choice',botCount:'bot-count',bulletCap:'bullet-cap',startLives:'lives-choice',teamMode:'team-choice',botSkill:'bot-skill'};for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(el&&el.options&&[...el.options].some(o=>o.value===String(picks[key])))el.value=String(picks[key])}for(const key of Object.keys(comfort)){const el=document.getElementById('pref-'+key);if(el)el.checked=comfort[key]}const el=document.getElementById('fire-mode');if(el)el.textContent=comfort.autoFire?'AUTO ON':'HOLD TO FIRE';document.querySelector('.battlefield')?.classList.toggle('swap-controls',comfort.leftHanded);}
+function readSettings(){const prev=selectedRules;return {mapSize:MAP_SIZES[document.getElementById('map-size')?.value]?document.getElementById('map-size').value:prev.mapSize,botCount:value('bot-count',prev.botCount,0,4),bulletCap:value('bullet-cap',prev.bulletCap,1,8),startLives:value('lives-choice',prev.startLives,1,10),teamMode:['ffa','coop','teams'].includes(document.getElementById('team-choice')?.value)?document.getElementById('team-choice').value:prev.teamMode,botSkill:['casual','normal','spicy'].includes(document.getElementById('bot-skill')?.value)?document.getElementById('bot-skill').value:prev.botSkill};}
+function savePrefs(){selectedRules=readSettings();try{window.localStorage?.setItem(PREF_KEY,JSON.stringify({settings:selectedRules,comfort}));}catch(_){}}
+function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){const st=p.settings||{};selectedRules={mapSize:MAP_SIZES[st.mapSize]?st.mapSize:'standard',botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:1,bulletCap:[1,2,3,5,8].includes(st.bulletCap)?st.bulletCap:3,startLives:[2,3,5].includes(st.startLives)?st.startLives:2,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key]}}catch(_){}applyPrefsToUI()}
+function applyPrefsToUI(){const picks={mapSize:selectedRules.mapSize,botCount:selectedRules.botCount,bulletCap:selectedRules.bulletCap,startLives:selectedRules.startLives,teamMode:selectedRules.teamMode,botSkill:selectedRules.botSkill};const ids={mapSize:'map-size',botCount:'bot-count',bulletCap:'bullet-cap',startLives:'lives-choice',teamMode:'team-choice',botSkill:'bot-skill'};for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(el&&el.options&&[...el.options].some(o=>o.value===String(picks[key])))el.value=String(picks[key])}for(const key of Object.keys(comfort)){const el=document.getElementById('pref-'+key);if(el)el.checked=comfort[key]}const el=document.getElementById('fire-mode');if(el)el.textContent=comfort.autoFire?'AUTO ON':'HOLD TO FIRE';document.querySelector('.battlefield')?.classList.toggle('swap-controls',comfort.leftHanded);}
 function releaseControls(){touch.clear();pressed.clear();clearStick();for(const el of document.querySelectorAll('[data-key]'))el.classList.remove('active')}
 
 function mazeRandom(seed){let x=(seed>>>0)||1;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296};}
@@ -49,20 +47,38 @@ function createMaze(def,seed){const {cols,rows,cell}=def,rng=mazeRandom(seed),op
  if(x<cols-1&&!open[i].includes(i+1))walls.push({x:(x+1)*cell-thick/2,y:y*cell,w:thick,h:cell});
  if(y<rows-1&&!open[i].includes(i+cols))walls.push({x:x*cell,y:(y+1)*cell-thick/2,w:cell,h:thick});}
  return {cols,rows,cell,open,walls};}
-function setArena(id,seed=1){const v=Number(id),arena=Number.isInteger(v)&&v>=0&&v<ARENAS.length?v:0,def=ARENAS[arena];
- if(currentArena===arena&&currentSeed===seed)return arena;currentArena=arena;currentSeed=seed;
- mazeGrid=def.maze?createMaze(def.maze,seed):null;wallSet=mazeGrid?mazeGrid.walls:def.walls;bumpers=def.bumpers||[];
- worldW=mazeGrid?mazeGrid.cols*mazeGrid.cell:W;worldH=mazeGrid?mazeGrid.rows*mazeGrid.cell:H;rebuildWallLookup();return arena;}
-function selectArena(){return setArena(document.getElementById('arena-choice')?.value??selectedArena)}
+function setArena(id=0,seed=1,size=selectedRules.mapSize){const sizeId=MAP_SIZES[size]?size:'standard';
+ if(currentArena===0&&currentSeed===seed&&currentMapSize===sizeId)return 0;
+ currentArena=0;currentSeed=seed;currentMapSize=sizeId;
+ mazeGrid=createMaze(MAP_SIZES[sizeId],seed);wallSet=mazeGrid.walls;bumpers=[];
+ worldW=mazeGrid.cols*mazeGrid.cell;worldH=mazeGrid.rows*mazeGrid.cell;rebuildWallLookup();return 0;}
+function selectArena(){return 0;}
 function startingPosition(i){if(mazeGrid){const {cols,rows,cell}=mazeGrid,spots=[[0,Math.floor(rows/2)],[cols-1,Math.floor(rows/2)],[Math.floor(cols/2),0],[Math.floor(cols/2),rows-1],[2,2],[cols-3,rows-3]];
  const [x,y]=spots[i%spots.length];return [(x+.5)*cell,(y+.5)*cell];}
  const spots=[[130,300],[830,300],[480,96],[480,500],[130,100],[830,500]];return spots[i%spots.length]}
 function freshTank(i){const [x,y]=startingPosition(i);return {x,y,a:i%2?Math.PI:0,vx:0,vy:0,shield:0,powerType:null,powerTimer:0,flash:0,onFoot:false,vehicleId:null};}
-// One unified match: every player is a pilot; tanks are protective vehicles.
+// All players are pilots. Tank and mech share one enter/exit/armor framework.
 const TANK_ARMOR=3,EJECTION_SHIELD=1.35;
+function vehicleDef(v){return VEHICLE_TYPES[v?.type]||VEHICLE_TYPES.tank;}
+function currentVehicle(t){return t&&!t.onFoot?state?.vehicles?.[t.vehicleId]:null;}
+function deploymentSeed(seed,index){return ((seed>>>0)^(Math.imul(index+1,0x9e3779b1)>>>0))>>>0;}
+function deployVehicle(forceType=null){if(!isPilotMatch()||state.winner>=0)return false;
+ const available=state.vehicles.filter(v=>v.armor>0).length;
+ if(available>=MAX_VEHICLES||state.vehicles.length>=MAX_VEHICLES)return false;
+ const rng=mazeRandom(deploymentSeed(state.mazeSeed,state.dropIndex++));
+ const type=forceType|| (rng()<.32?'mech':'tank');
+ const cells=Array.from({length:mazeGrid.cols*mazeGrid.rows},(_,i)=>i);
+ for(let i=cells.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[cells[i],cells[j]]=[cells[j],cells[i]];}
+ for(const i of cells){const x=((i%mazeGrid.cols)+.5)*mazeGrid.cell,y=(Math.floor(i/mazeGrid.cols)+.5)*mazeGrid.cell;
+   if(blocked(x,y,28)||state.vehicles.some(v=>v.armor>0&&Math.hypot(x-v.x,y-v.y)<90)||state.tanks.some((t,j)=>state.lives[j]>0&&Math.hypot(t.x-x,t.y-y)<180))continue;
+   const v={id:state.vehicles.length,x,y,a:Math.floor(rng()*4)*Math.PI/2,type,armor:VEHICLE_TYPES[type].armor,occupant:-1,respawn:0};
+   state.vehicles.push(v);state.vehicleBeacon={x,y,type,ttl:7};state.event=type==='mech'?'MECH DEPLOYED':'TANK DEPLOYED';state.eventTimer=2.25;
+   emitFx('pickup',x,y,type==='mech'?'#e5a8ff':'#7df1c8');return true;}
+ return false;}
+
 // Parked tanks occupy actual space. Only healthy, unoccupied vehicles block movement;
 // destroyed wrecks are cosmetic so an ejected pilot cannot become trapped in one.
-function parkedVehicleAt(x,y,r=12,exceptId=null){return isPilotMatch()&&(state.vehicles||[]).some(v=>v.id!==exceptId&&v.occupant===-1&&v.armor>0&&(v.x-x)**2+(v.y-y)**2<(r+23)**2)}
+function parkedVehicleAt(x,y,r=12,exceptId=null){return isPilotMatch()&&(state.vehicles||[]).some(v=>v.id!==exceptId&&v.occupant===-1&&v.armor>0&&(v.x-x)**2+(v.y-y)**2<(r+(v.type==='mech'?25:23))**2)}
 function vehicleSite(x,y,vehicles=[],pilots=[]){
  // Try positions close to the requested garage first, then search safe cell centers.
  const offsets=[[0,0],[-44,0],[0,-44],[0,44],[44,0],[-44,-44],[-44,44],[44,-44],[44,44],[-88,0],[0,88],[0,-88],[88,0]];
@@ -74,14 +90,25 @@ function vehicleSite(x,y,vehicles=[],pilots=[]){
  if(near)return near;
  return candidates.slice(offsets.length).filter(valid).sort((a,b)=>Math.hypot(a[0]-x,a[1]-y)-Math.hypot(b[0]-x,b[1]-y))[0]||null;
 }
-function spawnVehicles(tanks,humans){const vehicles=[];
- for(let i=0;i<tanks.length;i++){
-  const t=tanks[i];t.onFoot=false;t.vehicleId=vehicles.length;vehicles.push({id:vehicles.length,x:t.x,y:t.y,a:t.a,armor:TANK_ARMOR,occupant:i,respawn:0});
- }
- // Position a first tank within easy reach whenever maze geometry allows it.
- const first=tanks[0],locations=[[first.x+72,first.y],[worldW*.5,worldH*.5],[worldW*.74,worldH*.72]];
- for(const [x,y] of locations){const spot=vehicleSite(x,y,vehicles,tanks.slice(0,humans));if(!spot)continue;
-   const [vx,vy]=spot;vehicles.push({id:vehicles.length,x:vx,y:vy,a:0,armor:TANK_ARMOR,occupant:-1,respawn:0});}
+function spawnVehicles(tanks,humans,seed=1){const vehicles=[];
+ for(let i=0;i<tanks.length;i++){const t=tanks[i];t.onFoot=false;t.vehicleId=vehicles.length;
+  vehicles.push({id:vehicles.length,x:t.x,y:t.y,a:t.a,type:'tank',armor:VEHICLE_TYPES.tank.armor,occupant:i,respawn:0});}
+ const rng=mazeRandom(deploymentSeed(seed,42)),cells=Array.from({length:mazeGrid.cols*mazeGrid.rows},(_,i)=>i);
+ for(let i=cells.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[cells[i],cells[j]]=[cells[j],cells[i]];}
+ // One accessible vehicle near the human starting point; remaining vehicles spread around the map.
+ const first=tanks[0],nearCells=cells.filter(i=>Math.hypot(((i%mazeGrid.cols)+.5)*mazeGrid.cell-first.x,(Math.floor(i/mazeGrid.cols)+.5)*mazeGrid.cell-first.y)<440);
+ const place=index=>{const x=((index%mazeGrid.cols)+.5)*mazeGrid.cell,y=(Math.floor(index/mazeGrid.cols)+.5)*mazeGrid.cell;
+   if(blocked(x,y,28)||vehicles.some(v=>Math.hypot(v.x-x,v.y-y)<150)||tanks.some(t=>Math.hypot(t.x-x,t.y-y)<90))return false;
+   const type=vehicles.some(v=>v.type==='mech')||rng()>=.38?'tank':'mech';
+   vehicles.push({id:vehicles.length,x,y,a:Math.floor(rng()*4)*Math.PI/2,type,armor:VEHICLE_TYPES[type].armor,occupant:-1,respawn:0});return true;};
+ // First spare is discoverable without a long hike. Others use the wider map.
+ for(const index of nearCells){if(place(index))break;}
+ for(const index of cells){if(vehicles.filter(v=>v.occupant===-1).length>=3)break;
+   const x=((index%mazeGrid.cols)+.5)*mazeGrid.cell,y=(Math.floor(index/mazeGrid.cols)+.5)*mazeGrid.cell;
+   if(Math.hypot(first.x-x,first.y-y)>500)place(index);}
+ for(const index of cells){if(vehicles.filter(v=>v.occupant===-1).length>=3)break;place(index);}
+ // Guarantee a mech appears among the spare vehicles when feasible, without forcing the player to select it.
+ const free=vehicles.filter(v=>v.occupant===-1);if(free.length&&!free.some(v=>v.type==='mech')){const v=free.at(-1);v.type='mech';v.armor=VEHICLE_TYPES.mech.armor;}
  return vehicles;
 }
 function isPilotMatch(){return state?.config?.pilotMode===true;}
@@ -101,7 +128,7 @@ function pilotExitSite(i,vehicleId){const t=state.tanks[i];
 }
 function tryInteract(i=0){if(!isPilotMatch()||paused||state.winner>=0||state.lives[i]<=0)return false;const t=state.tanks[i];
  if(t.onFoot){const v=nearestEmptyVehicle(i);if(!v){if(i===0)notice('Find a parked tank and move closer');return false}
-  v.occupant=i;t.vehicleId=v.id;t.onFoot=false;Object.assign(t,{x:v.x,y:v.y,a:v.a,vx:0,vy:0});state.event='TANK ACQUIRED · '+v.armor+' ARMOR';state.eventTimer=.9;emitFx('pickup',v.x,v.y,colors[i],i);}
+  v.occupant=i;t.vehicleId=v.id;t.onFoot=false;Object.assign(t,{x:v.x,y:v.y,a:v.a,vx:0,vy:0});state.event=vehicleDef(v).name+' ACQUIRED · '+v.armor+' ARMOR';state.eventTimer=.9;emitFx('pickup',v.x,v.y,colors[i],i);}
  else{const v=state.vehicles?.[t.vehicleId];if(!v)return false;
   const spot=pilotExitSite(i,v.id);
   if(!spot){if(i===0)notice('Need space beside the tank to exit');return false}
@@ -114,10 +141,10 @@ function ejectPilot(i){const t=state.tanks[i],v=state.vehicles?.[t.vehicleId];if
  state.event=label(i)+' EJECTED · FIND COVER!';state.eventTimer=1.15;emitFx('hit',v.x,v.y,colors[i],-1,i);
 }
 function initialState(arena=0,options=null,seed=null){const config={...readSettings(),pilotMode:true,...(options||{})};let count=mode==='solo'?1:2;
- if((mode==='solo'||config.teamMode==='coop')&&config.botCount===0)config.botCount=1;const id=setArena(arena,seed||1),mazeSeed=seed||Math.floor(Math.random()*0x7fffffff)||1;setArena(id,mazeSeed);
+ if((mode==='solo'||config.teamMode==='coop')&&config.botCount===0)config.botCount=1;const mazeSeed=seed||Math.floor(Math.random()*0x7fffffff)||1,id=setArena(0,mazeSeed,config.mapSize);
  const numBots=config.botCount,humans=count,total=humans+numBots,tanks=Array.from({length:total},(_,i)=>freshTank(i));
- const vehicles=config.pilotMode?spawnVehicles(tanks,humans):[];
- camera.x=0;camera.y=0;botBrains.clear();return {tanks,vehicles,bullets:[],pickups:[],pickupTimer:5.5,arenaId:id,mazeSeed,config,humanCount:humans,fxEvents:[],lives:Array(total).fill(config.startLives),kos:Array(total).fill(0),winner:-1,winnerTeam:-1,event:'',eventTimer:0,matchId:0};}
+ const vehicles=config.pilotMode?spawnVehicles(tanks,humans,mazeSeed):[];
+ camera.x=0;camera.y=0;botBrains.clear();return {tanks,vehicles,vehicleDropTimer:28,dropIndex:0,vehicleBeacon:null,bullets:[],pickups:[],pickupTimer:5.5,arenaId:id,mazeSeed,config,humanCount:humans,fxEvents:[],lives:Array(total).fill(config.startLives),kos:Array(total).fill(0),winner:-1,winnerTeam:-1,event:'',eventTimer:0,matchId:0};}
 state=initialState();
 function teamOf(i,st=state){const mode=st.config?.teamMode||'ffa';if(mode==='ffa')return i;if(mode==='coop')return i<st.humanCount?0:1;
  // Alternating teams; solo play always puts bots on the opposing team.
@@ -141,26 +168,24 @@ function inputFrom(keys,isLocal){const down=k=>pressed.has(keys[k])||(isLocal&&t
  const length=Math.hypot(moveX,moveY);if(length>1){moveX/=length;moveY/=length}
  return {moveX,moveY,fire:down('fire')||(isLocal&&comfort.autoFire&&mode!=='idle'&&menu.classList.contains('hidden'))};}
 function makeControl(isPlayer1){return isPlayer1?inputFrom(keys1,true):inputFrom(keys2,false)}
-function serializeState(){return {tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,hostPaused:mode==='host'&&paused};}
+function serializeState(){return {tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,vehicleDropTimer:state.vehicleDropTimer,dropIndex:state.dropIndex,vehicleBeacon:state.vehicleBeacon?{...state.vehicleBeacon}:null,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,hostPaused:mode==='host'&&paused};}
 function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  document.getElementById('score0').textContent=state.lives[me]??0;document.getElementById('score1').textContent=state.lives[other]??0;
  const botLives=state.lives.slice(state.humanCount||2).filter(v=>v>0).length,active=state.bullets.filter(b=>b.owner===me).length;
- document.getElementById('round').textContent=(mode==='guest'&&state.hostPaused)?'HOST PAUSED':state.winner>=0?'MATCH OVER':state.tanks[me]?.onFoot?'ON FOOT · SIDEARM':`TANK ${(state.vehicles||[])[state.tanks[me]?.vehicleId]?.armor??0}/${TANK_ARMOR} ARMOR`;
- const interact=document.getElementById('interact-btn');if(interact){const active=isPilotMatch()&&state.lives[me]>0;const near=active&&state.tanks[me]?.onFoot?nearestEmptyVehicle(me):null;interact.classList.toggle('hidden',!active||(state.tanks[me]?.onFoot&&!near));interact.textContent=state.tanks[me]?.onFoot?'ENTER TANK':'EXIT TANK';}
+ document.getElementById('round').textContent=(mode==='guest'&&state.hostPaused)?'HOST PAUSED':state.winner>=0?'MATCH OVER':state.tanks[me]?.onFoot?'ON FOOT · SIDEARM':`${vehicleDef(currentVehicle(state.tanks[me])).name} ${currentVehicle(state.tanks[me])?.armor??0}/${vehicleDef(currentVehicle(state.tanks[me])).armor} ARMOR`;
+ const interact=document.getElementById('interact-btn');if(interact){const active=isPilotMatch()&&state.lives[me]>0;const near=active&&state.tanks[me]?.onFoot?nearestEmptyVehicle(me):null;interact.classList.toggle('hidden',!active||(state.tanks[me]?.onFoot&&!near));interact.textContent=state.tanks[me]?.onFoot?'ENTER '+vehicleDef(near).name:'EXIT '+vehicleDef(currentVehicle(state.tanks[me])).name;}
  document.getElementById('game-screen')?.classList.toggle('pilot-match',isPilotMatch());
- const shellMeter=document.getElementById('shell-meter');if(shellMeter){const cap=state.tanks[me]?.onFoot?2:(state.config?.bulletCap||3);shellMeter.textContent=`${Math.max(0,cap-active)}/${cap} READY`;shellMeter.classList.toggle('empty',active>=cap)}
+ const shellMeter=document.getElementById('shell-meter');if(shellMeter){const cap=state.tanks[me]?.onFoot?2:(currentVehicle(state.tanks[me])?.type==='mech'?2:(state.config?.bulletCap||3));shellMeter.textContent=`${Math.max(0,cap-active)}/${cap} READY`;shellMeter.classList.toggle('empty',active>=cap)}
  const label0=document.getElementById('player0-label');if(label0)label0.textContent='YOU';const label1=document.getElementById('player1-label');if(label1)label1.textContent=mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';if(mode==='solo')document.getElementById('score1').textContent=botLives;}
 function newMatch(which){if(bridgeReady())window.AndroidBridge.stopNetwork();mode=which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;savePrefs();
- let arena=selectArena();if(which==='duel'&&ARENAS[arena].maze){arena=0;notice('Maze chase needs separate phones; keyboard duel uses Foundry')}
- state=initialState(arena,{...selectedRules,pilotMode:true});particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();refreshHUD();document.getElementById('mode-label').textContent=which==='solo'?'QUICK MATCH':which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel')exitMenu();}
-function resetAll(nextArena=false){let arena=nextArena?(state.arenaId+1)%ARENAS.length:state.arenaId;if(mode==='duel'&&ARENAS[arena].maze)arena=0;
- state=initialState(arena,state.config);fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();if(mode!=='guest')notice(nextArena?'NEW ARENA — '+ARENAS[arena].name:'REMATCH — GO!');}
+ const arena=selectArena();state=initialState(arena,{...selectedRules,pilotMode:true});particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();refreshHUD();document.getElementById('mode-label').textContent=which==='solo'?'QUICK MATCH':which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel')exitMenu();}
+function resetAll(){state=initialState(0,state.config);fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();if(mode!=='guest')notice('NEW FIELD GENERATED — GO!');}
 function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
 function circlesRect(x,y,r,w){const nx=clamp(x,w.x,w.x+w.w),ny=clamp(y,w.y,w.y+w.h);return (x-nx)**2+(y-ny)**2<r*r}
 function blocked(x,y,r=21){return x<r+13||x>worldW-r-13||y<r+13||y>worldH-r-13||nearWall(x,y,r)}
 function tankMove(t,inp,dt,i){let mx=clamp(Number(inp.moveX)||0,-1,1),my=clamp(Number(inp.moveY)||0,-1,1);let mag=Math.hypot(mx,my);
  if(mag>1){mx/=mag;my/=mag;mag=1}if(mag<.09){mx=0;my=0;mag=0}
- const speed=(t.onFoot?(inp.bot?194:268):(inp.bot?178:222))*(t.powerType==='turbo'&&t.powerTimer>0?1.48:1),blend=Math.min(1,dt*(mag?9:13));t.vx+=(mx*speed-t.vx)*blend;t.vy+=(my*speed-t.vy)*blend;
+ const speed=(t.onFoot?(inp.bot?194:268):(inp.bot?178:222)*vehicleDef(currentVehicle(t)).speed)*(t.powerType==='turbo'&&t.powerTimer>0?1.48:1),blend=Math.min(1,dt*(mag?9:13));t.vx+=(mx*speed-t.vx)*blend;t.vy+=(my*speed-t.vy)*blend;
  if(mag){const target=Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a));t.a+=clamp(diff,-dt*12,dt*12)}
  const nx=t.x+t.vx*dt,ny=t.y+t.vy*dt;
  const radius=t.onFoot?10:21;const collides=(x,y)=>blocked(x,y,radius)||(!t.onFoot&&parkedVehicleAt(x,y,radius))||state.tanks.some((other,j)=>i!==j&&state.lives[j]>0&&(other.x-x)**2+(other.y-y)**2<(radius+(other.onFoot?12:21))**2);
@@ -192,14 +217,14 @@ function botInput(i,dt){const bot=state.tanks[i],enemies=state.tanks.map((t,j)=>
  return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,fire:Math.abs(delta)<aim&&hasLine,bot:true};}
 function shoot(owner){if(state.lives[owner]<=0)return false;
  const isFoot=isPilotMatch()&&state.tanks[owner].onFoot;
- const cap=isFoot?2:state.config?.bulletCap||3;if(state.bullets.filter(b=>b.owner===owner&&b.life>0).length>=cap)return false;
+ const v=currentVehicle(state.tanks[owner]),def=vehicleDef(v);const cap=isFoot?2:(v?.type==='mech'?def.bulletCap:(state.config?.bulletCap||3));if(state.bullets.filter(b=>b.owner===owner&&b.life>0).length>=cap)return false;
  const t=state.tanks[owner],dx=Math.cos(t.a),dy=Math.sin(t.a);
  // Trace the barrel from the tank toward the muzzle. A tank beside a wall
  // must not launch its shell on the opposite side of that wall.
  let x=t.x+dx*(isFoot?7:12),y=t.y+dy*(isFoot?7:12);
  for(let distance=isFoot?9:14;distance<=(isFoot?17:34);distance+=2){const bx=t.x+dx*distance,by=t.y+dy*distance;if(blocked(bx,by,isFoot?3:5))break;x=bx;y=by;}
  t.shield=0; // Shooting cancels spawn/ejection immunity.
- state.bullets.push({x,y,vx:dx*(isFoot?475:405),vy:dy*(isFoot?475:405),owner,life:isFoot?.9:3.8,bounces:0,age:0,kind:isFoot?'sidearm':'shell'});t.flash=.11;emitFx('shot',x,y,colors[owner],owner);sound(410+owner*80,.065,x,y);refreshHUD();return true;}
+ const speed=isFoot?475:def.projectileSpeed;state.bullets.push({x,y,vx:dx*speed,vy:dy*speed,owner,life:isFoot?.9:3.8,bounces:0,age:0,kind:isFoot?'sidearm':v?.type==='mech'?'mech':'shell'});t.flash=.11;emitFx('shot',x,y,colors[owner],owner);sound(410+owner*80,.065,x,y);refreshHUD();return true;}
 function respawn(victim){const enemies=state.tanks.filter((_,i)=>i!==victim&&state.lives[i]>0&&!friendly(victim,i));const spots=[];
  if(mazeGrid){for(let r=0;r<mazeGrid.rows;r++)for(let c=0;c<mazeGrid.cols;c++)spots.push([(c+.5)*mazeGrid.cell,(r+.5)*mazeGrid.cell]);}
  else spots.push(...[[130,300],[830,300],[130,100],[830,500],[480,96],[480,500],[130,480],[830,120],[340,70],[620,525]]);
@@ -212,7 +237,7 @@ function registerHit(attacker,victim){if(state.winner>=0||state.lives[victim]<=0
  if(isPilotMatch()&&!target.onFoot){const vehicle=state.vehicles?.[target.vehicleId];if(vehicle&&vehicle.armor>0){
    vehicle.armor--;emitFx('hit',target.x,target.y,colors[victim],attacker,victim);
    if(victim===0){screenKick=comfort.shake?2.3:0;damagePulse=.28;}
-   if(vehicle.armor===0)ejectPilot(victim);else{state.event=label(victim)+' TANK ARMOR '+vehicle.armor+'/'+TANK_ARMOR;state.eventTimer=.75;}
+   if(vehicle.armor===0)ejectPilot(victim);else{state.event=label(victim)+' '+vehicleDef(vehicle).name+' ARMOR '+vehicle.armor+'/'+vehicleDef(vehicle).armor;state.eventTimer=.75;}
    sound(155,.12,target.x,target.y);refreshHUD();return true;
  }}
  emitFx('hit',target.x,target.y,colors[victim],attacker,victim);if(victim===(mode==='guest'?1:0)){screenKick=comfort.shake?3.2:0;damagePulse=.58;}state.lives[victim]--;if(attacker!==victim)state.kos[attacker]++;state.event=label(victim)+' LOSES A LIFE!';state.eventTimer=.85;sound(130+attacker*80,.16,target.x,target.y);
@@ -223,17 +248,24 @@ function registerHit(attacker,victim){if(state.winner>=0||state.lives[victim]<=0
 function step(dt){if(paused||state.winner>=0)return;
  if(isPilotMatch())for(const vehicle of state.vehicles){
    if(vehicle.occupant>=0){const t=state.tanks[vehicle.occupant];vehicle.x=t.x;vehicle.y=t.y;vehicle.a=t.a;}
-   else if(vehicle.armor<=0){vehicle.respawn-=dt;if(vehicle.respawn<=0){vehicle.armor=TANK_ARMOR;vehicle.respawn=0;}}
+   else if(vehicle.armor<=0){vehicle.respawn-=dt;if(vehicle.respawn<=0){const others=state.vehicles.filter(v=>v.id!==vehicle.id&&v.armor>0);
+     const actors=state.tanks.filter((t,i)=>state.lives[i]>0);
+     const spot=vehicleSite(vehicle.x,vehicle.y,others,actors);
+     if(spot){vehicle.x=spot[0];vehicle.y=spot[1];vehicle.armor=vehicleDef(vehicle).armor;vehicle.respawn=0;}
+     else vehicle.respawn=2;}}
  }
  for(const fx of state.fxEvents)fx.ttl=Math.max(0,(fx.ttl||0)-dt);state.fxEvents=state.fxEvents.filter(fx=>fx.ttl>0);
  state.eventTimer=Math.max(0,state.eventTimer-dt);state.pickupTimer-=dt;
+ if(state.vehicleBeacon){state.vehicleBeacon.ttl-=dt;if(state.vehicleBeacon.ttl<=0)state.vehicleBeacon=null;}
+ state.vehicleDropTimer=(state.vehicleDropTimer??28)-dt;
+ if(state.vehicleDropTimer<=0){deployVehicle();state.vehicleDropTimer=30+mazeRandom(deploymentSeed(state.mazeSeed,state.dropIndex+9))()*12;}
  if(state.pickupTimer<=0){spawnPickup();state.pickupTimer=state.pickups.length?15:3;}
  const inputs=state.tanks.map((t,i)=>i===0?makeControl(true):i===1&&mode==='duel'?makeControl(false):i===1&&mode==='host'?guestInput:botInput(i,dt));
  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]<=0)continue;
  t.powerTimer=Math.max(0,(t.powerTimer||0)-dt);if(t.powerTimer<=0)t.powerType=null;t.flash=Math.max(0,(t.flash||0)-dt);
  t.shield=Math.max(0,t.shield-dt);tankMove(t,inputs[i],dt,i);
  for(const p of state.pickups){if(!t.onFoot&&Math.hypot(t.x-p.x,t.y-p.y)<35){collectPickup(t,i,p);break}}
- fireCooldown[i]=Math.max(0,(fireCooldown[i]||0)-dt);if(inputs[i]?.fire&&fireCooldown[i]<=0&&shoot(i))fireCooldown[i]=t.onFoot?.48:(t.powerType==='rapid'?.17:.42);}
+ fireCooldown[i]=Math.max(0,(fireCooldown[i]||0)-dt);if(inputs[i]?.fire&&fireCooldown[i]<=0&&shoot(i))fireCooldown[i]=t.onFoot?.48:(t.powerType==='rapid'?.13:vehicleDef(currentVehicle(t)).fireCooldown);}
  for(const b of state.bullets){b.age+=dt;b.life-=dt;const substeps=Math.max(1,Math.ceil(Math.max(Math.abs(b.vx),Math.abs(b.vy))*dt/5)),subDt=dt/substeps;
  for(let j=0;j<substeps&&b.life>0&&state.winner<0;j++){const nx=b.x+b.vx*subDt,ny=b.y+b.vy*subDt;
  if(blocked(nx,b.y,b.kind==='sidearm'?3:5)){if(b.kind==='sidearm'){b.life=0;break}b.vx=-b.vx;b.bounces++;emitFx('bounce',b.x,b.y,colors[b.owner]);sound(700,.018,b.x,b.y)}else b.x=nx;
@@ -267,6 +299,19 @@ function drawTopTank(c,paint,parked=false){
  if(parked){c.strokeStyle='#97f1c8';c.lineWidth=2;c.strokeRect(-23,-25,46,50)}
  c.restore();
 }
+function drawTopMech(c,paint,parked=false){
+ c.save();c.fillStyle='#091c2b';
+ // View straight down: broad shoulder pods, compact cockpit and two articulated legs.
+ c.fillRect(-13,-27,10,18);c.fillRect(-13,9,10,18);
+ c.fillRect(7,-28,17,15);c.fillRect(7,13,17,15);
+ c.fillStyle=paint;c.fillRect(-16,-15,33,30);
+ c.fillStyle='#365b6b';c.fillRect(-10,-10,21,20);
+ c.fillStyle='#c4f6ff';c.fillRect(-5,-7,12,14);
+ c.fillStyle=paint;c.fillRect(15,-8,15,16);
+ c.fillStyle='#ecdcff';c.fillRect(24,-4,11,8);
+ c.fillStyle='#8c89bd';c.fillRect(-14,-25,10,6);c.fillRect(-14,19,10,6);
+ if(parked){c.strokeStyle='#e6b3ff';c.lineWidth=2;c.strokeRect(-21,-30,55,60)}
+ c.restore();}
 function drawTopPilot(c,paint,shooting=false){
  c.save();
  // Symmetric boots and shoulders viewed directly from overhead; facing +X is forward.
@@ -296,9 +341,9 @@ function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick
  if(isPilotMatch())for(const v of state.vehicles){if(v.occupant!==-1)continue;
    c.save();c.translate(v.x,v.y);c.rotate(v.a);
    if(v.armor<=0){c.fillStyle='#192b31';c.fillRect(-19,-18,38,36);c.strokeStyle='#fd7858';c.lineWidth=3;c.strokeRect(-19,-18,38,36);}
-   else drawTopTank(c,'#72c3a8',true);
+   else if(v.type==='mech')drawTopMech(c,'#b69aff',true);else drawTopTank(c,'#72c3a8',true);
    c.restore();if(v.armor>0){const me=state.tanks[mode==='guest'?1:0];const near=me?.onFoot&&Math.hypot(me.x-v.x,me.y-v.y)<68;
-     if(near){c.fillStyle='#bff9d9';c.font='bold 12px system-ui';c.textAlign='center';c.fillText('ENTER',v.x,v.y+43);c.strokeStyle='#aaf3da';c.lineWidth=2;c.beginPath();c.arc(v.x,v.y,37+Math.sin(visualClock*5)*3,0,Math.PI*2);c.stroke();}}
+     if(near){c.fillStyle='#bff9d9';c.font='bold 12px system-ui';c.textAlign='center';c.fillText('ENTER '+vehicleDef(v).name,v.x,v.y+47);c.strokeStyle='#aaf3da';c.lineWidth=2;c.beginPath();c.arc(v.x,v.y,37+Math.sin(visualClock*5)*3,0,Math.PI*2);c.stroke();}}
  }
  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]<=0)continue;
  if(state.config?.teamMode!=='ffa'){c.beginPath();c.arc(t.x,t.y,29,0,Math.PI*2);c.strokeStyle=teamOf(i)===0?'#60dfff':'#ffb06e';c.lineWidth=4;c.stroke()}
@@ -308,19 +353,20 @@ function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick
    c.restore();
  }else{
  if(t.shield>0){c.globalAlpha=.65+.25*Math.sin(t.shield*15)}
- drawTopTank(c,colors[i]);if(t.flash>0){c.fillStyle='#fff3a0';c.beginPath();c.arc(39,0,8+t.flash*70,0,Math.PI*2);c.fill()}c.restore();
- if(isPilotMatch()){const v=state.vehicles?.[t.vehicleId];if(v){c.fillStyle='#16313b';c.fillRect(t.x-19,t.y+29,38,5);c.fillStyle='#79eab2';c.fillRect(t.x-19,t.y+29,38*v.armor/TANK_ARMOR,5);}}}
+ (currentVehicle(t)?.type==='mech'?drawTopMech(c,colors[i]):drawTopTank(c,colors[i]));if(t.flash>0){c.fillStyle='#fff3a0';c.beginPath();c.arc(39,0,8+t.flash*70,0,Math.PI*2);c.fill()}c.restore();
+ if(isPilotMatch()){const v=state.vehicles?.[t.vehicleId];if(v){c.fillStyle='#16313b';c.fillRect(t.x-19,t.y+29,38,5);c.fillStyle='#79eab2';c.fillRect(t.x-19,t.y+29,38*v.armor/vehicleDef(v).armor,5);}}}
  if(t.powerType&&t.powerTimer>0&&PICKUPS[t.powerType]){c.fillStyle=PICKUPS[t.powerType].color;c.font='900 11px system-ui';c.textAlign='center';c.fillText(PICKUPS[t.powerType].name+' '+Math.ceil(t.powerTimer)+'s',t.x,t.y+48)}
  if(t.shield>0){c.beginPath();c.arc(t.x,t.y,32+Math.sin(t.shield*10)*2,0,Math.PI*2);c.strokeStyle=colors[i];c.globalAlpha=clamp(t.shield/1.8*.8,0,.8);c.lineWidth=3;c.stroke();c.globalAlpha=1}
  c.fillStyle=colors[i];c.font='bold 13px system-ui';c.textAlign='center';c.fillText(i<state.humanCount?'P'+(i+1):'AI'+(i-state.humanCount+1),t.x,t.y-38);
  if(i===(mode==='guest'?1:0)){c.beginPath();c.moveTo(t.x,t.y-59);c.lineTo(t.x-8,t.y-71);c.lineTo(t.x+8,t.y-71);c.closePath();c.fillStyle='#ffffff';c.fill();}}
- for(const b of state.bullets){const len=Math.min(b.kind==='sidearm'?10:19,Math.hypot(b.vx,b.vy)*.037);c.beginPath();c.moveTo(b.x-b.vx/405*len,b.y-b.vy/405*len);c.lineTo(b.x,b.y);c.strokeStyle=colors[b.owner];c.lineWidth=4;c.stroke();c.beginPath();c.arc(b.x,b.y,b.kind==='sidearm'?3.5:6,0,Math.PI*2);c.fillStyle='#f8ffff';c.shadowColor=colors[b.owner];c.shadowBlur=15;c.fill();c.shadowBlur=0}
+ for(const b of state.bullets){const len=Math.min(b.kind==='sidearm'?10:b.kind==='mech'?24:19,Math.hypot(b.vx,b.vy)*.037);c.beginPath();c.moveTo(b.x-b.vx/405*len,b.y-b.vy/405*len);c.lineTo(b.x,b.y);c.strokeStyle=colors[b.owner];c.lineWidth=b.kind==='mech'?6:4;c.stroke();c.beginPath();c.arc(b.x,b.y,b.kind==='sidearm'?3.5:b.kind==='mech'?7.5:6,0,Math.PI*2);c.fillStyle='#f8ffff';c.shadowColor=colors[b.owner];c.shadowBlur=15;c.fill();c.shadowBlur=0}
  for(const p of particles){c.globalAlpha=clamp(p.life/p.maxLife,0,1);c.fillStyle=p.color;c.fillRect(p.x,p.y,p.size,p.size)}c.globalAlpha=1;
  c.restore();
  if(mazeGrid){const mw=150,mh=Math.round(mw*worldH/worldW),mx=W-mw-16,my=14;
  c.fillStyle='#06131ddc';c.fillRect(mx-5,my-5,mw+10,mh+10);c.strokeStyle='#5993a2';c.lineWidth=1;c.strokeRect(mx-5,my-5,mw+10,mh+10);
  c.save();c.translate(mx,my);c.scale(mw/worldW,mh/worldH);c.fillStyle='#163c4b';c.fillRect(0,0,worldW,worldH);
- c.fillStyle='#7aa8b6';for(const w of wallSet)c.fillRect(w.x,w.y,w.w,w.h);if(isPilotMatch()){c.fillStyle='#74e0a6';for(const v of state.vehicles)if(v.occupant===-1&&v.armor>0)c.fillRect(v.x-28,v.y-28,56,56);}
+ c.fillStyle='#7aa8b6';for(const w of wallSet)c.fillRect(w.x,w.y,w.w,w.h);if(isPilotMatch()){for(const v of state.vehicles)if(v.occupant===-1&&v.armor>0){c.fillStyle=v.type==='mech'?'#d7a8ff':'#74e0a6';c.fillRect(v.x-28,v.y-28,56,56);}}
+ if(state.vehicleBeacon?.ttl>0){c.strokeStyle='#fff6bf';c.lineWidth=19;c.beginPath();c.arc(state.vehicleBeacon.x,state.vehicleBeacon.y,55+Math.sin(visualClock*6)*15,0,Math.PI*2);c.stroke();}
  for(let i=0;i<state.tanks.length;i++){if(state.lives[i]<=0)continue;const t=state.tanks[i],me=mode==='guest'?1:0;if(i!==me&&Math.hypot(t.x-state.tanks[me].x,t.y-state.tanks[me].y)>400)continue;c.beginPath();c.arc(t.x,t.y,37,0,Math.PI*2);c.fillStyle=colors[i];c.fill()}
  // Nearby hostile gunfire briefly appears as a *rough* sound ring, not a permanent wallhack.
  const local=state.tanks[me];if(local)for(const fx of (state.fxEvents||[])){if(fx.kind!=='shot'||!(fx.ttl>0)||!Number.isInteger(fx.owner)||fx.owner<0||fx.owner>=state.tanks.length||friendly(fx.owner,me))continue;
@@ -349,18 +395,18 @@ panel.addEventListener('change',e=>{const el=e.target;if(el.id?.startsWith('pref
 loadPrefs();
 
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
- if(a==='help'){setPanel('<div class="eyebrow">QUICK GUIDE</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>MOVE:</strong> Push the joystick in any direction. The tank points where it drives.</p><p><strong>FIRE:</strong> Hold FIRE, or enable AUTO FIRE in settings. Only a few shells can be active per tank.</p><p><strong>WIN:</strong> Bounce shots around corners, find pickups, and outlast the other tanks. Hits cost a life, not the whole round.</p><p><strong>MAZES:</strong> The camera follows you. Orange minimap rings show nearby gunfire; teammates cannot hurt each other.</p><p><strong>PILOTS + TANKS:</strong> Start in a tank. Three armor hits force you out, without taking a life. On foot, dodge, shoot, and get near an empty tank to see ENTER.</p></div><button class="primary" data-action="help-back">◀ BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
+ if(a==='help'){setPanel('<div class="eyebrow">QUICK GUIDE</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>MOVE:</strong> Push the joystick in any direction. The tank points where it drives.</p><p><strong>FIRE:</strong> Hold FIRE, or enable AUTO FIRE in settings. Only a few shells can be active per tank.</p><p><strong>WIN:</strong> Bounce shots around corners, find pickups, and outlast the other tanks. Hits cost a life, not the whole round.</p><p><strong>MAZES:</strong> The camera follows you. Orange minimap rings show nearby gunfire; teammates cannot hurt each other.</p><p><strong>PILOTS + VEHICLES:</strong> Start in a tank. Tanks have 3 armor; slower mechs have 4 armor and heavier shots. On foot, get near any empty vehicle to enter.</p><p><strong>FIELDGRID:</strong> Every match generates a fresh maze. Vehicle deployments are marked on the minimap briefly.</p></div><button class="primary" data-action="help-back">◀ BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
  const s=document.getElementById('lan-address').value.trim(),m=s.match(/^([\da-fA-F:.]+):(\d{1,5})$/);
  if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';window.AndroidBridge.joinGame(m[1],Number(m[2]));}});
 function showPauseMenu(){releaseControls();if(mode==='idle')return;
- if(mode==='solo'||mode==='duel'){paused=true;setPanel('<div class="eyebrow">PAUSED</div><h2>GAME MENU</h2><button data-action="resume">RESUME</button><button data-action="restart">REMATCH · FULL LIVES</button><button data-action="next-arena">NEXT ARENA</button><button data-action="close">MAIN MENU</button>')}
- else if(mode==='host'){paused=true;guestInput={moveX:0,moveY:0,fire:false};setPanel('<div class="eyebrow">HOST OPTIONS</div><h2>GAME MENU</h2><p>The match is paused for both players while this menu is open.</p><button data-action="resume">BACK TO ARENA</button><button data-action="restart">REMATCH · BOTH PLAYERS</button><button data-action="next-arena">NEXT ARENA · BOTH PLAYERS</button><button data-action="close">DISCONNECT</button>')}
+ if(mode==='solo'||mode==='duel'){paused=true;setPanel('<div class="eyebrow">PAUSED</div><h2>GAME MENU</h2><button data-action="resume">RESUME</button><button data-action="restart">REMATCH · NEW MAZE</button><button data-action="close">MAIN MENU</button>')}
+ else if(mode==='host'){paused=true;guestInput={moveX:0,moveY:0,fire:false};setPanel('<div class="eyebrow">HOST OPTIONS</div><h2>GAME MENU</h2><p>The match is paused for both players while this menu is open.</p><button data-action="resume">BACK TO ARENA</button><button data-action="restart">REMATCH · NEW MAZE</button><button data-action="close">DISCONNECT</button>')}
  else if(mode==='guest'){setPanel('<div class="eyebrow">PLAYER OPTIONS</div><h2>GAME MENU</h2><p>Only the host can restart the match.</p><button data-action="resume">BACK TO ARENA</button><button data-action="close">DISCONNECT</button>')}}
 document.getElementById('menu-button').addEventListener('click',showPauseMenu);
 document.getElementById('interact-btn')?.addEventListener('pointerdown',e=>{e.preventDefault();if(mode==='guest'){if(connected&&!paused)nativePacket({type:'interact'});}else tryInteract(0)});
 menu.addEventListener('click',e=>{const a=e.target?.dataset?.action;
  if(a==='resume'){if(mode==='solo'||mode==='duel'||mode==='host')paused=false;exitMenu()}
- else if(a==='restart'&&mode!=='guest'){resetAll();exitMenu()}else if(a==='next-arena'&&mode!=='guest'){resetAll(true);exitMenu()}});
+ else if(a==='restart'&&mode!=='guest'){resetAll();exitMenu()}});
 window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if([...Object.values(keys1),...Object.values(keys2)].includes(e.code))e.preventDefault();pressed.add(e.code);if(e.code==='KeyR'&&state.winner>=0&&mode!=='guest')resetAll();if(e.code==='KeyE'&&!e.repeat&&menu.classList.contains('hidden')){if(mode==='guest'&&connected)nativePacket({type:'interact'});else if(mode==='solo'||mode==='host'||mode==='duel')tryInteract(0)}});
 window.addEventListener('keyup',e=>pressed.delete(e.code));window.addEventListener('blur',releaseControls);
 for(const b of document.querySelectorAll('[data-key]')){const k=b.dataset.key;const release=e=>{touch.delete(k);b.classList.remove('active');try{b.releasePointerCapture(e.pointerId)}catch(_){}};
@@ -380,7 +426,7 @@ window.RR={openMenu(){if(menu.classList.contains('hidden'))showPauseMenu();else 
  switch(msg.type){case 'hosting':{const p=document.getElementById('host-status');if(p)p.textContent='Waiting for another phone to join...';const a=document.getElementById('host-address');if(a)a.textContent=(msg.address||'LOCAL NETWORK')+':'+msg.port;break}
  case 'found':{const r=document.getElementById('rooms');if(r&&!r.querySelector('[data-host="'+msg.host+'"]')){const b=document.createElement('button');b.textContent='JOIN '+(msg.name||'NEARBY GAME');b.dataset.host=msg.host;b.onclick=()=>{window.AndroidBridge.joinGame(msg.host,msg.port);document.getElementById('find-status').textContent='Connecting...'};r.appendChild(b)}break}
  case 'connected':{connected=true;paused=false;document.getElementById('mode-label').textContent=mode==='guest'?'YOU: CORAL':mode==='host'?'YOU: CYAN':'CONNECTED';exitMenu();notice('Player connected — FIGHT!');if(mode==='host'){state=initialState(state.arenaId,state.config,state.mazeSeed);refreshHUD()}break}
- case 'state':if(mode==='guest'&&msg.state&&Array.isArray(msg.state.tanks)&&msg.state.tanks.length>=2&&msg.state.tanks.length<=6&&Array.isArray(msg.state.lives)&&msg.state.lives.length===msg.state.tanks.length&&Array.isArray(msg.state.kos)&&msg.state.kos.length===msg.state.tanks.length){const upcoming=msg.state;const currentEvents=Array.isArray(upcoming.fxEvents)?upcoming.fxEvents:[];for(const event of currentEvents){if(event.id>lastRemoteFxId&&event.id<lastRemoteFxId+1000&&Number.isFinite(event.x)&&Number.isFinite(event.y)){spawnParticles(event.kind,event.x,event.y,event.color);if(event.kind==='hit'&&event.target===1){damagePulse=.58;screenKick=comfort.shake?3.2:0}if(event.kind==='shot')sound(420,.06,event.x,event.y);if(event.kind==='hit')sound(170,.13,event.x,event.y);lastRemoteFxId=event.id}}state=upcoming;setArena(state.arenaId,state.mazeSeed);refreshHUD()}break;
+ case 'state':if(mode==='guest'&&msg.state&&Array.isArray(msg.state.tanks)&&msg.state.tanks.length>=2&&msg.state.tanks.length<=6&&Array.isArray(msg.state.lives)&&msg.state.lives.length===msg.state.tanks.length&&Array.isArray(msg.state.kos)&&msg.state.kos.length===msg.state.tanks.length){const upcoming=msg.state;const currentEvents=Array.isArray(upcoming.fxEvents)?upcoming.fxEvents:[];for(const event of currentEvents){if(event.id>lastRemoteFxId&&event.id<lastRemoteFxId+1000&&Number.isFinite(event.x)&&Number.isFinite(event.y)){spawnParticles(event.kind,event.x,event.y,event.color);if(event.kind==='hit'&&event.target===1){damagePulse=.58;screenKick=comfort.shake?3.2:0}if(event.kind==='shot')sound(420,.06,event.x,event.y);if(event.kind==='hit')sound(170,.13,event.x,event.y);lastRemoteFxId=event.id}}state=upcoming;setArena(0,state.mazeSeed,state.config?.mapSize);refreshHUD()}break;
  case 'input':if(mode==='host'&&msg.input){guestInput.moveX=clamp(Number(msg.input.moveX)||0,-1,1);guestInput.moveY=clamp(Number(msg.input.moveY)||0,-1,1);guestInput.fire=msg.input.fire===true}break;
  case 'interact':if(mode==='host'&&connected&&!paused)tryInteract(1);break;
  case 'disconnected':connected=false;paused=true;guestInput={moveX:0,moveY:0,fire:false};clearStick();notice('Other player disconnected');setPanel('<h2>CONNECTION LOST</h2><p>Return to the main menu and reconnect.</p><button data-action="close">MAIN MENU</button>');break;
