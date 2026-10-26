@@ -1,5 +1,29 @@
 # Ricochet Rumble
 
+**v0.5 — Maze Chase + Match Rules (Android test build)**
+
+## What's new
+
+- Five arenas: original Foundry, Crossroads, Pinball, plus two **seeded, connected, large labyrinths** (12×8 and 20×13 cells). Each maze includes loops, walls and dead-end routes.
+- Local player's **smooth following camera** on both Android phones. One player cannot see the entire giant map at once. A small minimap shows maze geometry, your position and nearby opponents.
+- **Bullet capacity per tank**: 1, 2, 3, 5 or 8 active shells. Firing again at capacity does not spawn another shell; shells expire or disappear on hits and can be fired again.
+- **Match configuration**: 0–4 extra bots in two-phone modes (solo always requires at least one), 3/5/10 lives, Free-for-all / Humans vs Bots / alternating Teams. Friendly fire is disabled in team modes.
+- Bot navigation uses grid paths through the procedural maze, not just straight-line pursuit. Larger local maze modes are disabled for same-screen keyboard duel since players couldn't both follow separate cameras.
+- The host serializes the **maze seed, bots, lives, teams, shells and match config** so guests reconstruct the exact same map. The Android LAN packet maximum is raised to 32 KB for larger state snapshots.
+- Existing full-screen landscape, thumb joystick, respawn protection, power-ups, bounces and Pinball bumpers preserved.
+
+## Verification
+
+- `node tests/smoke.mjs` verifies bullet caps, respawns, 4 bots, friendly fire, seeded maze consistency, following camera, LAN snapshots, and old Pinball collisions.
+- Chromium layout/script checks at 915×412, 740×360 and 1280×720; no runtime errors or document scroll overflow in those runs. Screen captures are available in the ChatGPT session.
+- GitHub Actions builds the Android debug APK on workflow changes; no paid infrastructure is required for a public repository's standard hosted runner.
+- Two physical Android phones still need to test discovery, connection handling, larger snapshot behavior, and real gameplay performance. The first APK is a **test build**, not device-certified multiplayer.
+- Debug signing keys may differ between runs. Uninstall older debug APK before installing a new build when Android reports signature incompatibility.
+
+---
+
+# Ricochet Rumble
+
 **v0.4 — Full-screen landscape Android game pass**
 
 Ricochet Rumble is a self-contained Android tank arcade game with local Wi-Fi two-phone play support. The Android app uses a hardware-accelerated WebView to render an offline canvas game. This is **not a native OpenGL renderer**, but it behaves like a fixed full-screen game rather than a scrolling webpage.

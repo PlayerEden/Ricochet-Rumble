@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,viewport-fit=cover,user-scalable=no">
   <meta name="theme-color" content="#07141c">
-  <title>Ricochet Rumble · v0.4</title>
+  <title>Ricochet Rumble · v0.5</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,9 +12,9 @@
     <header class="game-hud">
       <div class="game-identity"><span class="logo-mark">RR</span><div class="brand-stack"><strong>RICOCHET <em>RUMBLE</em></strong><span id="mode-label">READY TO RUMBLE</span></div></div>
       <div class="scorestrip" aria-live="polite">
-        <span class="blue-tag"><span class="player-pip"></span> CYAN <strong id="score0">5</strong> <span class="hud-life">♥</span></span>
+        <span class="blue-tag"><span class="player-pip"></span> <span id="player0-label">CYAN</span> <strong id="score0">5</strong> <span class="hud-life">♥</span></span>
         <span id="round" class="middle">5 LIVES EACH</span>
-        <span class="pink-tag"><span class="hud-life">♥</span> <strong id="score1">5</strong> CORAL <span class="player-pip"></span></span>
+        <span class="pink-tag"><span class="hud-life">♥</span> <strong id="score1">5</strong> <span id="player1-label">CORAL</span> <span class="player-pip"></span></span>
       </div>
       <button class="hud-menu" id="menu-button" aria-label="Pause or open game menu"><span aria-hidden="true">☰</span> MENU</button>
     </header>
@@ -39,13 +39,21 @@
         <div class="menu-heading"><div class="eyebrow">PLAYEREDEN • ARCADE SERIES</div><h2>RICOCHET <span>RUMBLE</span></h2><p>Two tanks. Five lives. No stopping.</p></div>
         <div class="menu-content">
           <div class="menu-main">
-            <label class="arena-label" for="arena-choice">SELECT ARENA<select id="arena-choice" aria-label="Select arena"><option value="0">01 / FOUNDRY</option><option value="1">02 / CROSSROADS</option><option value="2">03 / PINBALL</option></select></label>
+            <label class="arena-label" for="arena-choice">SELECT ARENA<select id="arena-choice" aria-label="Select arena"><option value="0">01 / FOUNDRY</option><option value="1">02 / CROSSROADS</option><option value="2">03 / PINBALL</option><option value="3" selected>04 / LABYRINTH</option><option value="4">05 / MAZE XL</option></select></label>
+            <details class="settings-fold"><summary>MATCH RULES · CUSTOMIZE</summary>
+              <div class="settings-grid">
+                <label>BOTS<select id="bot-count"><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
+                <label>BULLETS / TANK<select id="bullet-cap"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="5">5</option><option value="8">8</option></select></label>
+                <label>LIVES<select id="lives-choice"><option value="3">3</option><option value="5" selected>5</option><option value="10">10</option></select></label>
+                <label>TEAMS<select id="team-choice"><option value="ffa" selected>EVERY TANK FOR ITSELF</option><option value="coop">HUMANS VS BOTS</option><option value="teams">TWO TEAMS</option></select></label>
+              </div>
+            </details>
             <button class="primary" data-action="solo">▶ PLAY VS BOT</button>
             <button data-action="duel">LOCAL DUEL · KEYBOARD</button>
           </div>
           <div class="menu-join"><div class="eyebrow">TWO PHONES · SAME WI-FI</div><button data-action="host">HOST NEARBY MATCH</button><button data-action="find">FIND NEARBY MATCH</button><button data-action="manual">JOIN BY LOCAL IP</button></div>
         </div>
-        <p class="note" id="menu-note">Left stick to move · Hold FIRE to shoot · Collect glowing power-ups</p>
+        <p class="note" id="menu-note">Explore the maze · Bounce shots · Limited shells · Host chooses match rules</p>
       </div>
     </div>
     <div class="rotate-prompt" aria-hidden="true"><div class="rotate-symbol">↻</div><strong>ROTATE TO LANDSCAPE</strong><span>Ricochet Rumble is played sideways.</span></div>

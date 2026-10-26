@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class MainActivity extends Activity {
     private static final String SERVICE_TYPE = "_rrtank._tcp.";
-    private static final int MAX_PACKET = 9000;
+    private static final int MAX_PACKET = 32768;
     private WebView web;
     private NsdManager nsd;
     private NsdManager.RegistrationListener registration;
