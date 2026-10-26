@@ -188,8 +188,24 @@ function serializeState(){return {tanks:state.tanks.map(t=>({...t})),vehicles:(s
 function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  document.getElementById('score0').textContent=state.lives[me]??0;document.getElementById('score1').textContent=state.lives[other]??0;
  const botLives=state.lives.slice(state.humanCount||2).filter(v=>v>0).length,active=state.bullets.filter(b=>b.owner===me).length;
- document.getElementById('round').textContent=(mode==='guest'&&state.hostPaused)?'HOST PAUSED':state.winner>=0?'MATCH OVER':state.tanks[me]?.onFoot?'ON FOOT · FAST + ARMED':`${vehicleDef(currentVehicle(state.tanks[me])).name} ${currentVehicle(state.tanks[me])?.armor??0}/${vehicleDef(currentVehicle(state.tanks[me])).armor} ARMOR`;
- const interact=document.getElementById('interact-btn');if(interact){const active=isPilotMatch()&&state.lives[me]>0;const near=active&&state.tanks[me]?.onFoot?nearestEmptyVehicle(me):null;interact.classList.toggle('hidden',!active||(state.tanks[me]?.onFoot&&!near));interact.textContent=state.tanks[me]?.onFoot?'ENTER '+vehicleDef(near).name:'EXIT '+vehicleDef(currentVehicle(state.tanks[me])).name;}
+ const phase=document.getElementById('round'),localPilot=state.tanks[me],localVehicle=currentVehicle(localPilot),foot=!!localPilot?.onFoot,hostPaused=mode==='guest'&&state.hostPaused;
+ const armor=localVehicle?.armor??0,maxArmor=vehicleDef(localVehicle).armor;
+ phase.textContent=hostPaused?'HOST PAUSED':state.winner>=0?'MATCH OVER':foot?'PILOT · ON FOOT':`${vehicleDef(localVehicle).name} · ${armor}/${maxArmor}`;
+ phase.classList.toggle('on-foot',foot&&state.winner<0&&!hostPaused);
+ phase.classList.toggle('damaged',!foot&&armor<=1&&state.winner<0&&!hostPaused);
+ phase.classList.toggle('match-ended',state.winner>=0);
+ phase.classList.toggle('host-paused',hostPaused);
+ if(typeof phase.setAttribute==='function')phase.setAttribute('aria-label',hostPaused?'Host paused the match':state.winner>=0?'Match over':foot?'Pilot on foot':`${vehicleDef(localVehicle).name} armor ${armor} of ${maxArmor}`);
+ const interact=document.getElementById('interact-btn');if(interact){const canUse=isPilotMatch()&&state.lives[me]>0&&state.winner<0;
+  const near=canUse&&foot?nearestEmptyVehicle(me):null;
+  // A temporary occupied bay is still visible and provides useful feedback,
+  // rather than making the mobile ENTER button mysteriously disappear.
+  const bayBusy=canUse&&foot&&!near&&(state.vehicles||[]).some(v=>v.occupant===-1&&v.armor>0&&!vehicleEntryClear(me,v)&&Math.hypot(v.x-localPilot.x,v.y-localPilot.y)<58&&hasLineOfSight(localPilot.x,localPilot.y,v.x,v.y));
+  interact.classList.toggle('hidden',!canUse||(foot&&!near&&!bayBusy));
+  interact.classList.toggle('busy',!!bayBusy);
+  interact.textContent=foot?(near?'ENTER '+vehicleDef(near).name:'BAY BUSY'):'EXIT '+vehicleDef(localVehicle).name;
+  if(typeof interact.setAttribute==='function')interact.setAttribute('aria-label',bayBusy?'Vehicle bay occupied. Move clear to enter a vehicle':foot?'Enter nearby '+vehicleDef(near).name:'Exit '+vehicleDef(localVehicle).name);
+ }
  document.getElementById('game-screen')?.classList.toggle('pilot-match',isPilotMatch());
  const shellMeter=document.getElementById('shell-meter');if(shellMeter){const cap=state.tanks[me]?.onFoot?2:(currentVehicle(state.tanks[me])?.type==='mech'?2:(state.config?.bulletCap||3));shellMeter.textContent=`${Math.max(0,cap-active)}/${cap} READY`;shellMeter.classList.toggle('empty',active>=cap)}
  const ended=state.winner>=0&&mode!=='idle';if(ended||state.eventTimer>0)toast.classList.remove('visible');document.getElementById('game-screen')?.classList.toggle('match-finished',ended);const replay=document.getElementById('quick-rematch');if(replay)replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));
@@ -463,6 +479,8 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  }
  if(mazeGrid){const mw=150,mh=Math.round(mw*worldH/worldW),mx=W-mw-16,my=14;
  c.fillStyle='#071722ed';c.fillRect(mx-5,my-5,mw+10,mh+10);c.strokeStyle='#5b8997';c.lineWidth=1;c.strokeRect(mx-5,my-5,mw+10,mh+10);
+ // FIELDGRID radar is an instrument, not a floating decorative card.
+ c.strokeStyle='#8cd3db';c.lineWidth=2;for(const sx of [mx-5,mx+mw+5])for(const sy of [my-5,my+mh+5]){const dx=sx<mx?1:-1,dy=sy<my?1:-1;c.beginPath();c.moveTo(sx+dx*12,sy);c.lineTo(sx,sy);c.lineTo(sx,sy+dy*12);c.stroke();}
  c.save();c.translate(mx,my);
  // Constrain *all* minimap markers and deployment rings to the actual radar panel.
  // Without this, near-edge deployment rings spill across its frame and HUD.
