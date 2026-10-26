@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,viewport-fit=cover,user-scalable=no">
   <meta name="theme-color" content="#07141c">
-  <title>Ricochet Rumble · v0.6.3</title>
+  <title>Ricochet Rumble · Pilot Survival Alpha</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -30,6 +30,7 @@
         <div id="toast" class="toast" role="status" aria-live="polite"></div>
       </section>
       <div class="touch-zone touch-right" aria-label="Fire control">
+        <button class="interact-btn hidden" id="interact-btn" aria-label="Enter or exit a nearby vehicle">ENTER</button>
         <button class="fire-btn" data-key="fire" aria-label="Hold to fire"><span class="fire-icon">◎</span><span>FIRE</span></button>
         <span class="control-caption" id="fire-mode">HOLD TO FIRE</span><span class="shell-meter" id="shell-meter">3/3 READY</span>
       </div>
@@ -41,7 +42,8 @@
           <div class="menu-main">
             <label class="arena-label" for="arena-choice">SELECT ARENA<select id="arena-choice" aria-label="Select arena"><option value="0">01 / FOUNDRY</option><option value="1">02 / CROSSROADS</option><option value="2">03 / PINBALL</option><option value="3" selected>04 / LABYRINTH</option><option value="4">05 / MAZE XL</option></select></label>
             <button class="settings-button" data-action="settings">⚙ MATCH SETTINGS · CONTROLS</button>
-            <button class="primary" data-action="solo">▶ PLAY VS BOT</button>
+            <button class="primary" data-action="solo">▶ CLASSIC · PLAY VS BOT</button>
+            <button class="pilot-button" data-action="pilot">★ PILOT SURVIVAL · NEW ALPHA</button>
             <button data-action="duel">LOCAL DUEL · KEYBOARD</button>
           </div>
           <div class="menu-join"><div class="eyebrow">TWO PHONES · SAME WI-FI</div><button data-action="host">HOST NEARBY MATCH</button><button data-action="find">FIND NEARBY MATCH</button><button data-action="manual">JOIN BY LOCAL IP</button></div>

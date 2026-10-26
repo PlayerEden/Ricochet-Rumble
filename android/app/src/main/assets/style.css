@@ -48,3 +48,9 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit
 .help-copy{font-size:clamp(10px,1.35vw,13px);line-height:1.25;display:grid;grid-template-columns:1fr 1fr;gap:5px 13px;margin:7px 0 10px;text-align:left}
 .help-copy p{margin:0;color:#d2e8ef}.help-copy strong{color:#81ddf1}
 @media(max-width:760px){.help-copy{gap:3px 9px;font-size:10px;margin:3px 0 6px}}
+
+/* Experimental vehicle entry/exit control, intentionally absent from Classic. */
+.interact-btn{width:min(13vw,31dvh,132px);min-width:77px;min-height:30px;border:2px solid #9cf1ce;background:linear-gradient(#285f5c,#16433c);border-radius:11px;color:#eaffef;font-size:clamp(10px,1.15vw,13px);font-weight:1000;letter-spacing:.3px;touch-action:manipulation;box-shadow:0 3px 0 #102b28}
+.interact-btn.hidden{display:none}.interact-btn:active{transform:translateY(2px)}
+.panel .pilot-button{background:linear-gradient(120deg,#477063,#234a54);border-color:#9fedc5;color:#efffec}
+@media(max-height:380px){.pilot-match .touch-zone{gap:3px;padding-bottom:3px}.pilot-match .fire-btn{height:min(12vw,26dvh,96px);min-height:72px}.pilot-match .interact-btn{min-height:27px}}

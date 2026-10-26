@@ -16,7 +16,7 @@ const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},join
 const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(){return null},setItem(){}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(){return []}};
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,teamOf,botInput,hasLineOfSight,blocked,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,teamOf,botInput,hasLineOfSight,blocked,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -133,3 +133,27 @@ click('solo');for(let i=0;i<220;i++)win.__test.step(1/60);
 assert.ok(st().bullets.length<=st().tanks.length*st().config.bulletCap,'per-tank shell limit held under stress');
 assert.ok(st().fxEvents.length<=12,'effects history stays small');
 console.log('PASS v0.6.3: 700 indexed-wall parity samples, local-only hit feedback, expiring gunfire pings, match HUD semantics, 4-bot Maze XL stress and prior v0.6.2 regressions.');
+
+// Pilot Survival alpha: verify separated actor lives/vehicle armor, enter, exit and emergency ejection.
+node('arena-choice').value='3';node('team-choice').value='ffa';node('bot-count').value='1';click('pilot');
+assert.equal(st().config.pilotMode,true,'Pilot Survival is an explicit mode');
+assert.equal(st().lives[0],2,'pilot starts with two lives');
+assert.equal(st().tanks[0].onFoot,true,'pilot starts outside the tank');
+assert.ok(st().vehicles.filter(v=>v.occupant===-1&&v.armor>0).length>=1,'parked tanks available');
+let pilot=st().tanks[0],parked=st().vehicles.find(v=>v.occupant===-1&&v.armor>0);
+pilot.x=parked.x-25;pilot.y=parked.y;pilot.shield=0;
+assert.equal(win.__test.tryInteract(0),true,'nearby tank enter');
+assert.equal(pilot.onFoot,false);assert.equal(parked.occupant,0);assert.equal(parked.armor,3);
+assert.equal(win.__test.registerHit(1,0),true);assert.equal(parked.armor,2);assert.equal(st().lives[0],2,'armor damage does not cost pilot life');
+assert.equal(win.__test.registerHit(1,0),true);assert.equal(parked.armor,1);
+assert.equal(win.__test.registerHit(1,0),true);assert.equal(parked.armor,0);assert.equal(pilot.onFoot,true);assert.equal(st().lives[0],2,'forced ejection saves pilot');
+assert.ok(pilot.shield>=1,'brief safe escape');
+pilot.shield=0;assert.equal(win.__test.registerHit(1,0),true);assert.equal(st().lives[0],1,'on-foot hit removes pilot life');
+assert.equal(pilot.onFoot,true,'pilot respawns on foot');
+click('restart');assert.equal(st().config.pilotMode,true,'rematches remain in pilot mode');
+const v0=st().vehicles.find(v=>v.occupant===-1&&v.armor>0);pilot=st().tanks[0];pilot.x=v0.x-18;pilot.y=v0.y;pilot.shield=0;
+assert.equal(win.__test.tryInteract(0),true);assert.equal(win.__test.tryInteract(0),true,'manual exit');
+assert.equal(v0.occupant,-1);assert.equal(pilot.onFoot,true);
+assert.equal(win.__test.shoot(0),true);assert.equal(st().bullets.at(-1).kind,'sidearm','foot weapon differs from tank cannon');
+click('solo');assert.equal(st().config.pilotMode,undefined,'Classic remains intact');
+console.log('PASS Pilot Survival alpha: entering/exiting, 3-point vehicle armor, no pilot life loss on ejection, on-foot sidearm, preserved Classic mode.');

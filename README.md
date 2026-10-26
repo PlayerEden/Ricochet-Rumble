@@ -60,3 +60,11 @@ Full findings, test scope and deferred items: [`docs/QUALITY_AUDIT_v0.6.md`](doc
 - **Scrap Climbers**: build eccentric blocky vehicles and compete for climbing distance.
 
 The long-term goal is reusable zero-cost local multiplayer technology, while each game stays enjoyable offline. The project does not require ads, external game assets, subscriptions or server hosting for solo/LAN play.
+
+## Experimental Pilot Survival (v0.7.0 alpha)
+
+This is intentionally **not** part of Classic Rumble. On the `dev/pilot-survival` branch, tap **Pilot Survival · New Alpha** to test the new solo rules. You begin on foot with two lives and a short-range sidearm. A parked tank appears near your spawn; approach it and tap **ENTER**, or use **E** on a keyboard. Tanks have three armor points. When the tank loses its last armor point, you eject with brief protection; pilot lives remain untouched. You can also leave a healthy tank at any time using **EXIT TANK**. Wrecked garages respawn usable tanks after a cooldown.
+
+This is a foundation for future vehicle types, not a finished mode: vehicle variety, repairs, balancing and **pilot-mode two-phone networking** remain future work. Current LAN multiplayer continues to use the **Classic** rules. No login or extra setup is required for this experimental solo version.
+
+The Android app now has a distinct Ricochet Rumble launcher icon, using the artwork concept previously generated for this project.
