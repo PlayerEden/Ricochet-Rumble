@@ -1,4 +1,4 @@
-# v0.5 maze chase Android build. Manual trigger remains available.
+# v0.6 quality pass Android build. Manual trigger remains available.
 name: Manual Android Debug APK
 on:
   workflow_dispatch:
@@ -32,7 +32,7 @@ jobs:
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: ricochet-rumble-0.5-debug-apk
+          name: ricochet-rumble-0.6-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 7

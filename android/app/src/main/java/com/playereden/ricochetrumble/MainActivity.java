@@ -6,6 +6,9 @@ import android.content.Context;
 import android.graphics.Color;
 import android.view.View;
 import android.view.WindowManager;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.nsd.NsdManager;
 import android.net.nsd.NsdServiceInfo;
 import android.webkit.JavascriptInterface;
@@ -61,7 +64,7 @@ public final class MainActivity extends Activity {
         web.setHorizontalScrollBarEnabled(false);
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         web.getSettings().setJavaScriptEnabled(true);
-        web.getSettings().setDomStorageEnabled(false);
+        web.getSettings().setDomStorageEnabled(true);
         web.getSettings().setBlockNetworkLoads(true);
         web.getSettings().setAllowFileAccess(true);
         web.getSettings().setAllowFileAccessFromFileURLs(false);
@@ -109,15 +112,20 @@ public final class MainActivity extends Activity {
     private String ipv4() {
         try {
             Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
+            String fallback = null;
             while (nets != null && nets.hasMoreElements()) {
                 NetworkInterface n = nets.nextElement();
                 if (!n.isUp() || n.isLoopback()) continue;
                 Enumeration<InetAddress> ips = n.getInetAddresses();
                 while (ips.hasMoreElements()) {
                     InetAddress a = ips.nextElement();
-                    if (a instanceof Inet4Address && a.isSiteLocalAddress()) return a.getHostAddress();
+                    if (a instanceof Inet4Address && a.isSiteLocalAddress()) {
+                        if (n.getName().startsWith("wlan") || n.getName().startsWith("ap")) return a.getHostAddress();
+                        if (fallback == null) fallback = a.getHostAddress();
+                    }
                 }
             }
+            if (fallback != null) return fallback;
         } catch (Exception ignored) { }
         return "Check your Wi-Fi IP";
     }
@@ -216,6 +224,16 @@ public final class MainActivity extends Activity {
         try { nsd.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, listener); }
         catch (Exception ex) { error("Discovery unavailable; use Join by IP."); }
     }
+    private Network connectedWifi() {
+        try {
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm != null) for (Network network : cm.getAllNetworks()) {
+                NetworkCapabilities caps = cm.getNetworkCapabilities(network);
+                if (caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) return network;
+            }
+        } catch (Exception ignored) { }
+        return null;
+    }
     private void join(String ip, int port) {
         if (ip == null || ip.isEmpty() || ip.length() > 64 || port < 1 || port > 65535) { error("Invalid connection address"); return; }
         closeNetwork();
@@ -224,7 +242,9 @@ public final class MainActivity extends Activity {
         int myGen = generation.get();
         new Thread(() -> {
             try {
-                Socket sock = new Socket();
+                // LAN game traffic must use Wi-Fi even if cellular is Android's default network.
+                Network wifi = connectedWifi();
+                Socket sock = wifi != null ? wifi.getSocketFactory().createSocket() : new Socket();
                 sock.connect(new InetSocketAddress(ip, port), 3500);
                 if (myGen != generation.get()) { sock.close(); return; }
                 attachPeer(sock, myGen, false);

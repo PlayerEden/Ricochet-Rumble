@@ -1,5 +1,8 @@
 (()=>{'use strict';
-const W=960,H=600,START_LIVES=5;
+const W=960,H=600,START_LIVES=5,STEP=1/60;
+const PREF_KEY='rr-options-v06';
+let comfort={sound:true,shake:true,autoFire:false},fixedAccumulator=0;
+let selectedRules={botCount:1,bulletCap:3,startLives:5,teamMode:'ffa',botSkill:'normal'},selectedArena='3';
 // W/H are the camera canvas resolution. Mazes have much larger world coordinates.
 let worldW=W,worldH=H,mazeGrid=null,currentArena=-1,currentSeed=0;const camera={x:0,y:0};
 const PALETTE=['#46d2f5','#fc856e','#ffdc77','#b69aff','#82e6a1','#fc8bde'];
@@ -25,7 +28,12 @@ let particles=[],screenKick=0,fxSeq=0,lastRemoteFxId=0,visualClock=0;
 const keys1={up:'KeyW',down:'KeyS',left:'KeyA',right:'KeyD',fire:'Space'},keys2={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight',fire:'Enter'};
 const fireCooldown=Array(6).fill(0);
 function value(id,fallback,min,max){const raw=document.getElementById(id)?.value;const n=Number(raw);return raw!==''&&raw!=null&&Number.isInteger(n)&&n>=min&&n<=max?n:fallback;}
-function readSettings(){return {botCount:value('bot-count',1,0,4),bulletCap:value('bullet-cap',3,1,8),startLives:value('lives-choice',5,1,10),teamMode:['ffa','coop','teams'].includes(document.getElementById('team-choice')?.value)?document.getElementById('team-choice').value:'ffa'};}
+function readSettings(){const prev=selectedRules;return {botCount:value('bot-count',prev.botCount,0,4),bulletCap:value('bullet-cap',prev.bulletCap,1,8),startLives:value('lives-choice',prev.startLives,1,10),teamMode:['ffa','coop','teams'].includes(document.getElementById('team-choice')?.value)?document.getElementById('team-choice').value:prev.teamMode,botSkill:['casual','normal','spicy'].includes(document.getElementById('bot-skill')?.value)?document.getElementById('bot-skill').value:prev.botSkill};}
+function savePrefs(){selectedRules=readSettings();selectedArena=document.getElementById('arena-choice')?.value??selectedArena;try{window.localStorage?.setItem(PREF_KEY,JSON.stringify({arena:selectedArena,settings:selectedRules,comfort}));}catch(_){}}
+function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){if(['0','1','2','3','4'].includes(String(p.arena)))selectedArena=String(p.arena);const st=p.settings||{};selectedRules={botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:1,bulletCap:[1,2,3,5,8].includes(st.bulletCap)?st.bulletCap:3,startLives:[3,5,10].includes(st.startLives)?st.startLives:5,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key]}}catch(_){}applyPrefsToUI()}
+function applyPrefsToUI(){const picks={arena:selectedArena,botCount:selectedRules.botCount,bulletCap:selectedRules.bulletCap,startLives:selectedRules.startLives,teamMode:selectedRules.teamMode,botSkill:selectedRules.botSkill};const ids={arena:'arena-choice',botCount:'bot-count',bulletCap:'bullet-cap',startLives:'lives-choice',teamMode:'team-choice',botSkill:'bot-skill'};for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(el&&el.options&&[...el.options].some(o=>o.value===String(picks[key])))el.value=String(picks[key])}for(const key of Object.keys(comfort)){const el=document.getElementById('pref-'+key);if(el)el.checked=comfort[key]}const el=document.getElementById('fire-mode');if(el)el.textContent=comfort.autoFire?'AUTO ON':'HOLD TO FIRE';}
+function releaseControls(){touch.clear();pressed.clear();clearStick();for(const el of document.querySelectorAll('[data-key]'))el.classList.remove('active')}
+
 function mazeRandom(seed){let x=(seed>>>0)||1;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296};}
 function createMaze(def,seed){const {cols,rows,cell}=def,rng=mazeRandom(seed),open=Array.from({length:cols*rows},()=>[]),visited=new Set([0]),stack=[0];
  const adjacent=(i)=>{const x=i%cols,y=Math.floor(i/cols),a=[];if(x>0)a.push(i-1);if(x<cols-1)a.push(i+1);if(y>0)a.push(i-cols);if(y<rows-1)a.push(i+cols);return a};
@@ -41,7 +49,7 @@ function setArena(id,seed=1){const v=Number(id),arena=Number.isInteger(v)&&v>=0&
  if(currentArena===arena&&currentSeed===seed)return arena;currentArena=arena;currentSeed=seed;
  mazeGrid=def.maze?createMaze(def.maze,seed):null;wallSet=mazeGrid?mazeGrid.walls:def.walls;bumpers=def.bumpers||[];
  worldW=mazeGrid?mazeGrid.cols*mazeGrid.cell:W;worldH=mazeGrid?mazeGrid.rows*mazeGrid.cell:H;return arena;}
-function selectArena(){return setArena(document.getElementById('arena-choice')?.value||0)}
+function selectArena(){return setArena(document.getElementById('arena-choice')?.value??selectedArena)}
 function startingPosition(i){if(mazeGrid){const {cols,rows,cell}=mazeGrid,spots=[[0,Math.floor(rows/2)],[cols-1,Math.floor(rows/2)],[Math.floor(cols/2),0],[Math.floor(cols/2),rows-1],[2,2],[cols-3,rows-3]];
  const [x,y]=spots[i%spots.length];return [(x+.5)*cell,(y+.5)*cell];}
  const spots=[[130,300],[830,300],[480,96],[480,500],[130,100],[830,500]];return spots[i%spots.length]}
@@ -65,24 +73,25 @@ function spawnPickup(){if(state.pickups.length||state.winner>=0)return;
 function collectPickup(t,i,p){t.powerType=p.type;t.powerTimer=p.type==='guard'?4.0:7.0;state.event=label(i)+' GOT '+PICKUPS[p.type].name;state.eventTimer=1;emitFx('pickup',p.x,p.y,PICKUPS[p.type].color);state.pickups=[];state.pickupTimer=8+Math.random()*4;refreshHUD();}
 
 function notice(t){toast.textContent=t;toast.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('visible'),2400)}
-function setPanel(html){panel.innerHTML=html;menu.classList.remove('hidden')}
+function setPanel(html){releaseControls();panel.innerHTML=html;menu.classList.remove('hidden')}
 function exitMenu(){menu.classList.add('hidden')}
 function inputFrom(keys,isLocal){const down=k=>pressed.has(keys[k])||(isLocal&&touch.has(k));let moveX=Number(down('right'))-Number(down('left')),moveY=Number(down('down'))-Number(down('up'));
  if(isLocal&&stick.pointerId!==null){moveX=stick.x;moveY=stick.y}
  const length=Math.hypot(moveX,moveY);if(length>1){moveX/=length;moveY/=length}
- return {moveX,moveY,fire:down('fire')};}
+ return {moveX,moveY,fire:down('fire')||(isLocal&&comfort.autoFire&&mode!=='idle'&&menu.classList.contains('hidden'))};}
 function makeControl(isPlayer1){return isPlayer1?inputFrom(keys1,true):inputFrom(keys2,false)}
-function serializeState(){return {tanks:state.tanks.map(t=>({...t})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId};}
+function serializeState(){return {tanks:state.tanks.map(t=>({...t})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,hostPaused:mode==='host'&&paused};}
 function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  document.getElementById('score0').textContent=state.lives[me]??0;document.getElementById('score1').textContent=state.lives[other]??0;
  const botLives=state.lives.slice(state.humanCount||2).filter(v=>v>0).length,active=state.bullets.filter(b=>b.owner===me).length;
- document.getElementById('round').textContent=state.winner>=0?'MATCH OVER · MENU TO REMATCH':`${active}/${state.config?.bulletCap||3} SHELLS · ${botLives} BOTS · ${state.kos[me]||0} KO`;
+ document.getElementById('round').textContent=(mode==='guest'&&state.hostPaused)?'HOST PAUSED':state.winner>=0?'MATCH OVER · MENU TO REMATCH':`${active}/${state.config?.bulletCap||3} SHELLS · ${botLives} BOTS · ${state.kos[me]||0} KO`;
+ const shellMeter=document.getElementById('shell-meter');if(shellMeter){const cap=state.config?.bulletCap||3;shellMeter.textContent=`${Math.max(0,cap-active)}/${cap} READY`;shellMeter.classList.toggle('empty',active>=cap)}
  const label0=document.getElementById('player0-label');if(label0)label0.textContent=mode==='guest'?'YOU':'CYAN';const label1=document.getElementById('player1-label');if(label1)label1.textContent=mode==='solo'?'BOT':mode==='guest'?'HOST':'CORAL';}
-function newMatch(which){mode=which;paused=(which==='host'||which==='guest');connected=false;
+function newMatch(which){if(bridgeReady())window.AndroidBridge.stopNetwork();mode=which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;savePrefs();
  let arena=selectArena();if(which==='duel'&&ARENAS[arena].maze){arena=0;notice('Maze chase needs separate phones; keyboard duel uses Foundry')}
  state=initialState(arena);particles=[];fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();refreshHUD();document.getElementById('mode-label').textContent={solo:'SOLO VS BOTS',duel:'LOCAL DUEL',host:'HOST NEARBY',guest:'JOIN NEARBY'}[which]||'WAITING';if(which==='solo'||which==='duel')exitMenu();}
 function resetAll(nextArena=false){let arena=nextArena?(state.arenaId+1)%ARENAS.length:state.arenaId;if(mode==='duel'&&ARENAS[arena].maze)arena=0;
- state=initialState(arena,state.config);particles=[];screenKick=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();if(mode!=='guest')notice(nextArena?'NEW ARENA — '+ARENAS[arena].name:'REMATCH — GO!');}
+ state=initialState(arena,state.config);fixedAccumulator=0;particles=[];screenKick=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();if(mode!=='guest')notice(nextArena?'NEW ARENA — '+ARENAS[arena].name:'REMATCH — GO!');}
 function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
 function circlesRect(x,y,r,w){const nx=clamp(x,w.x,w.x+w.w),ny=clamp(y,w.y,w.y+w.h);return (x-nx)**2+(y-ny)**2<r*r}
 function blocked(x,y,r=21){return x<r+13||x>worldW-r-13||y<r+13||y>worldH-r-13||wallSet.some(w=>circlesRect(x,y,r,w))}
@@ -94,6 +103,7 @@ function tankMove(t,inp,dt,i){let mx=clamp(Number(inp.moveX)||0,-1,1),my=clamp(N
  const collides=(x,y)=>blocked(x,y)||state.tanks.some((other,j)=>i!==j&&state.lives[j]>0&&(other.x-x)**2+(other.y-y)**2<42**2);
  if(!collides(nx,t.y))t.x=nx;else t.vx=0;
  if(!collides(t.x,ny))t.y=ny;else t.vy=0;}
+function hasLineOfSight(x,y,tx,ty){const length=Math.hypot(tx-x,ty-y),steps=Math.ceil(length/15);for(let n=1;n<steps;n++){const p=n/steps;if(wallSet.some(w=>circlesRect(x+(tx-x)*p,y+(ty-y)*p,4,w)))return false}return true;}
 function botInput(i,dt){const bot=state.tanks[i],enemies=state.tanks.map((t,j)=>({t,j})).filter(({j})=>j!==i&&state.lives[j]>0&&!friendly(i,j));
  if(!enemies.length)return {moveX:0,moveY:0,fire:false,bot:true};enemies.sort((a,b)=>Math.hypot(bot.x-a.t.x,bot.y-a.t.y)-Math.hypot(bot.x-b.t.x,bot.y-b.t.y));const target=enemies[0].t;
  let direction=Math.atan2(target.y-bot.y,target.x-bot.x),brain=botBrains.get(i)||{timer:0,path:[],goal:-1};brain.timer-=dt;
@@ -104,11 +114,14 @@ function botInput(i,dt){const bot=state.tanks[i],enemies=state.tanks.map((t,j)=>
  }else{const aheadX=bot.x+Math.cos(direction)*72,aheadY=bot.y+Math.sin(direction)*72;if(blocked(aheadX,aheadY,27))direction+=Math.sin(visualClock*.9+i)>0?1.4:-1.4;}
  botBrains.set(i,brain);
  const delta=Math.atan2(Math.sin(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a),Math.cos(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a));
- const hasLine=!mazeGrid||Math.hypot(bot.x-target.x,bot.y-target.y)<310;
- return {moveX:Math.cos(direction)*.84,moveY:Math.sin(direction)*.84,fire:Math.abs(delta)<.31&&hasLine,bot:true};}
+ const skill=state.config?.botSkill||'normal',pace=skill==='casual'?.61:skill==='spicy'?.98:.81;
+ const aim=skill==='casual'?.27:skill==='spicy'?.39:.33;
+ const hasLine=Math.hypot(bot.x-target.x,bot.y-target.y)<(mazeGrid?385:750)&&hasLineOfSight(bot.x,bot.y,target.x,target.y);
+ return {moveX:Math.cos(direction)*pace,moveY:Math.sin(direction)*pace,fire:Math.abs(delta)<aim&&hasLine,bot:true};}
 function shoot(owner){if(state.lives[owner]<=0)return false;
  const cap=state.config?.bulletCap||3;if(state.bullets.filter(b=>b.owner===owner&&b.life>0).length>=cap)return false;
  const t=state.tanks[owner],x=t.x+Math.cos(t.a)*34,y=t.y+Math.sin(t.a)*34;
+ t.shield=0; // Shooting cancels spawn immunity: no free attacks while invulnerable.
  state.bullets.push({x,y,vx:Math.cos(t.a)*405,vy:Math.sin(t.a)*405,owner,life:3.8,bounces:0,age:0});t.flash=.11;emitFx('shot',x,y,colors[owner]);sound(410+owner*80,.065);refreshHUD();return true;}
 function respawn(victim){const enemies=state.tanks.filter((_,i)=>i!==victim&&state.lives[i]>0&&!friendly(victim,i));const spots=[];
  if(mazeGrid){for(let r=0;r<mazeGrid.rows;r++)for(let c=0;c<mazeGrid.cols;c++)spots.push([(c+.5)*mazeGrid.cell,(r+.5)*mazeGrid.cell]);}
@@ -117,9 +130,9 @@ function respawn(victim){const enemies=state.tanks.filter((_,i)=>i!==victim&&sta
  pool.sort((a,b)=>Math.min(...enemies.map(t=>Math.hypot(b[0]-t.x,b[1]-t.y)),10000)-Math.min(...enemies.map(t=>Math.hypot(a[0]-t.x,a[1]-t.y)),10000));
  const [x,y]=pool[0]||startingPosition(victim),t=state.tanks[victim];Object.assign(t,{x,y,a:0,vx:0,vy:0,shield:1.8,powerType:null,powerTimer:0,flash:0});
  state.bullets=state.bullets.filter(b=>Math.hypot(b.x-x,b.y-y)>50);}
-function registerHit(attacker,victim){if(state.winner>=0||state.lives[victim]<=0||state.tanks[victim].shield>0||friendly(attacker,victim))return false;
+function registerHit(attacker,victim){if(state.winner>=0||state.lives[victim]<=0||state.tanks[victim].shield>0||(attacker!==victim&&friendly(attacker,victim)))return false;
  const target=state.tanks[victim];if(target.powerType==='guard'&&target.powerTimer>0){target.powerType=null;target.powerTimer=0;emitFx('pickup',target.x,target.y,'#b59aff');state.event='BARRIER BLOCKED THE HIT!';state.eventTimer=.8;return false;}
- emitFx('hit',target.x,target.y,colors[victim]);screenKick=4;state.lives[victim]--;state.kos[attacker]++;state.event=label(victim)+' LOSES A LIFE!';state.eventTimer=.85;sound(130+attacker*80,.16);
+ emitFx('hit',target.x,target.y,colors[victim]);screenKick=comfort.shake?3.2:0;state.lives[victim]--;if(attacker!==victim)state.kos[attacker]++;state.event=label(victim)+' LOSES A LIFE!';state.eventTimer=.85;sound(130+attacker*80,.16);
  if(state.lives[victim]>0)respawn(victim);else{target.vx=target.vy=0;state.bullets=state.bullets.filter(b=>b.owner!==victim);
  const active=state.tanks.map((_,i)=>i).filter(i=>state.lives[i]>0),teams=[...new Set(active.map(i=>teamOf(i)))];
  if(teams.length<=1){state.winnerTeam=teams[0]??teamOf(attacker);state.winner=active[0]??attacker;state.event=state.config.teamMode==='coop'?(state.winnerTeam===0?'HUMANS WIN!':'BOTS WIN!'):state.config.teamMode==='teams'?(`TEAM ${state.winnerTeam===0?'BLUE':'RED'} WINS!`):(label(state.winner)+' WINS!');state.eventTimer=0;}}
@@ -139,27 +152,34 @@ function step(dt){if(paused||state.winner>=0)return;
  if(blocked(b.x,ny,5)){b.vy=-b.vy;b.bounces++;emitFx('bounce',b.x,b.y,colors[b.owner]);sound(700,.018)}else b.y=ny;
  for(const bump of bumpers){const dx=b.x-bump.x,dy=b.y-bump.y,dist=Math.hypot(dx,dy);if(dist>0&&dist<bump.r+6&&(b.bumpDelay||0)<=0){const ux=dx/dist,uy=dy/dist,dot=b.vx*ux+b.vy*uy;if(dot<0){b.vx-=2*dot*ux;b.vy-=2*dot*uy;b.x=bump.x+ux*(bump.r+7);b.y=bump.y+uy*(bump.r+7);b.bounces++;b.bumpDelay=.09;emitFx('bounce',b.x,b.y,'#ffdf7b');sound(940,.05)}}}
  b.bumpDelay=Math.max(0,(b.bumpDelay||0)-subDt);if(b.bounces>5){b.life=0;break}
- for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]>0&&!friendly(i,b.owner)&&t.shield<=0&&(t.x-b.x)**2+(t.y-b.y)**2<26**2){b.life=0;registerHit(b.owner,i);break}}}}
+ for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]>0&&(i===b.owner?(b.age>.38&&b.bounces>0):!friendly(i,b.owner))&&t.shield<=0&&(t.x-b.x)**2+(t.y-b.y)**2<26**2){b.life=0;registerHit(b.owner,i);break}}}}
  state.bullets=state.bullets.filter(b=>b.life>0);}
-function sound(freq,len=.09){try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;if(!window.rrAudio)window.rrAudio=new AC;const ac=window.rrAudio;if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.type='square';o.frequency.value=freq;g.gain.setValueAtTime(.028,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+len);o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+len)}catch(_){}}
+function sound(freq,len=.09){if(!comfort.sound)return;try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;if(!window.rrAudio)window.rrAudio=new AC;const ac=window.rrAudio;if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.type='square';o.frequency.value=freq;g.gain.setValueAtTime(.028,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+len);o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+len)}catch(_){}}
 function updateVisuals(dt){visualClock+=dt;screenKick=Math.max(0,screenKick-dt*22);for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.max(0,1-dt*3);p.vy*=Math.max(0,1-dt*3)}particles=particles.filter(p=>p.life>0)}
-function render(){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick>0)c.translate(Math.sin(visualClock*130)*screenKick,Math.cos(visualClock*98)*screenKick*.5);const zoom=mazeGrid?1.28:1,viewW=W/zoom,viewH=H/zoom,localTank=state.tanks[mode==='guest'?1:0]||state.tanks[0];
+function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick>0)c.translate(Math.sin(visualClock*130)*screenKick,Math.cos(visualClock*98)*screenKick*.5);const zoom=mazeGrid?1.28:1,viewW=W/zoom,viewH=H/zoom,me=mode==='guest'?1:0,localTank=state.lives[me]>0?state.tanks[me]:(state.tanks.find((t,i)=>state.lives[i]>0)||state.tanks[me]||state.tanks[0]);
  const desiredX=clamp((localTank?.x||W/2)-viewW/2,0,Math.max(0,worldW-viewW)),desiredY=clamp((localTank?.y||H/2)-viewH/2,0,Math.max(0,worldH-viewH));
- camera.x+=(desiredX-camera.x)*.14;camera.y+=(desiredY-camera.y)*.14;if(!mazeGrid){camera.x=0;camera.y=0}
- c.scale(zoom,zoom);c.translate(-camera.x,-camera.y);c.fillStyle='#0e2631';c.fillRect(0,0,worldW,worldH);c.strokeStyle='#1e4552';c.lineWidth=1;
- for(let x=0;x<=worldW;x+=40){c.beginPath();c.moveTo(x,0);c.lineTo(x,H);c.stroke()}for(let y=0;y<=worldH;y+=40){c.beginPath();c.moveTo(0,y);c.lineTo(W,y);c.stroke()}
+ const follow=1-Math.exp(-Math.min(.1,dt)*13);camera.x+=(desiredX-camera.x)*follow;camera.y+=(desiredY-camera.y)*follow;if(!mazeGrid){camera.x=0;camera.y=0}
+ c.scale(zoom,zoom);c.translate(-camera.x,-camera.y);c.fillStyle='#0e2631';c.fillRect(0,0,worldW,worldH);
+ // Floor grid and route markings stay correct on the *whole* procedural world.
+ c.strokeStyle='#1e4552';c.lineWidth=1;const left=camera.x-44,right=camera.x+viewW+44,top=camera.y-44,bottom=camera.y+viewH+44;
+ for(let x=Math.max(0,Math.floor(left/40)*40);x<=Math.min(worldW,right);x+=40){c.beginPath();c.moveTo(x,Math.max(0,top));c.lineTo(x,Math.min(worldH,bottom));c.stroke()}
+ for(let y=Math.max(0,Math.floor(top/40)*40);y<=Math.min(worldH,bottom);y+=40){c.beginPath();c.moveTo(Math.max(0,left),y);c.lineTo(Math.min(worldW,right),y);c.stroke()}
+ if(mazeGrid){const cell=mazeGrid.cell;c.fillStyle='#356471';for(let y=Math.max(0,Math.floor(top/cell));y<Math.min(mazeGrid.rows,Math.ceil(bottom/cell));y++)for(let x=Math.max(0,Math.floor(left/cell));x<Math.min(mazeGrid.cols,Math.ceil(right/cell));x++){const cx=(x+.5)*cell,cy=(y+.5)*cell;c.globalAlpha=.14;c.fillRect(cx-4,cy-4,8,8);c.globalAlpha=1}}
+
  c.strokeStyle='#52a0b6';c.lineWidth=13;c.strokeRect(7,7,worldW-14,worldH-14);c.strokeStyle='#234a56';c.lineWidth=3;c.strokeRect(17,17,worldW-34,worldH-34);
- for(const w of wallSet){c.fillStyle='#133947';c.fillRect(w.x+5,w.y+6,w.w,w.h);c.fillStyle='#376375';c.fillRect(w.x,w.y,w.w,w.h);c.strokeStyle='#6a9ba9';c.lineWidth=2;c.strokeRect(w.x+2,w.y+2,w.w-4,w.h-4);c.fillStyle='#87bcc7';c.fillRect(w.x+10,w.y+5,Math.max(0,w.w-20),3)}
+ for(const w of wallSet){if(w.x>right+24||w.x+w.w<left-24||w.y>bottom+24||w.y+w.h<top-24)continue;c.fillStyle='#133947';c.fillRect(w.x+5,w.y+6,w.w,w.h);c.fillStyle='#376375';c.fillRect(w.x,w.y,w.w,w.h);c.strokeStyle='#6a9ba9';c.lineWidth=2;c.strokeRect(w.x+2,w.y+2,w.w-4,w.h-4);c.fillStyle='#87bcc7';c.fillRect(w.x+10,w.y+5,Math.max(0,w.w-20),3)}
  for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();c.arc(bump.x,bump.y,bump.r+glow,0,Math.PI*2);c.fillStyle='#34464b';c.fill();c.strokeStyle='#ffd67d';c.lineWidth=4;c.stroke();c.beginPath();c.arc(bump.x,bump.y,11,0,Math.PI*2);c.fillStyle='#ffc76a';c.fill()}
  for(const p of state.pickups||[]){const def=PICKUPS[p.type];if(!def)continue;const pulse=1+Math.sin(visualClock*5)*.09;c.beginPath();c.arc(p.x,p.y,23*pulse,0,Math.PI*2);c.fillStyle='#0b2630';c.fill();c.strokeStyle=def.color;c.lineWidth=3;c.stroke();c.fillStyle=def.color;c.font='900 22px system-ui';c.textAlign='center';c.fillText(def.label,p.x,p.y+7)}
  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]<=0)continue;
  if(state.config?.teamMode!=='ffa'){c.beginPath();c.arc(t.x,t.y,29,0,Math.PI*2);c.strokeStyle=teamOf(i)===0?'#60dfff':'#ffb06e';c.lineWidth=4;c.stroke()}
  c.save();c.translate(t.x,t.y);c.rotate(t.a);
  if(t.shield>0){c.globalAlpha=.65+.25*Math.sin(t.shield*15)}
- c.fillStyle='#07161d';c.fillRect(-20,-23,43,47);c.fillStyle=colors[i];c.fillRect(-22,-20,44,40);c.fillStyle='#143442';c.fillRect(-15,-12,30,24);c.fillStyle=colors[i];c.fillRect(7,-7,28,14);c.fillStyle='#d6faff';c.fillRect(27,-4,7,8); c.fillStyle='#081e28';c.fillRect(-17,-24,30,6);c.fillRect(-17,18,30,6);if(t.flash>0){c.fillStyle='#fff3a0';c.beginPath();c.arc(39,0,8+t.flash*70,0,Math.PI*2);c.fill()}c.restore();
+ c.fillStyle='#07161d';c.fillRect(-20,-23,43,47);c.fillStyle=colors[i];c.fillRect(-22,-20,44,40);c.fillStyle='#143442';c.fillRect(-15,-12,30,24);c.fillStyle=colors[i];c.fillRect(7,-7,28,14);c.fillStyle='#d6faff';c.fillRect(27,-4,7,8); c.fillStyle='#081e28';c.fillRect(-17,-24,30,6);c.fillRect(-17,18,30,6);c.fillStyle='#a8d0d5';for(let k=-14;k<=9;k+=9){c.globalAlpha=.45;c.fillRect(k,-23,4,4);c.fillRect(k,19,4,4)}c.globalAlpha=1;
+ c.fillStyle='#ffffff63';c.fillRect(-10,-9,4,18);if(t.flash>0){c.fillStyle='#fff3a0';c.beginPath();c.arc(39,0,8+t.flash*70,0,Math.PI*2);c.fill()}c.restore();
  if(t.powerType&&t.powerTimer>0&&PICKUPS[t.powerType]){c.fillStyle=PICKUPS[t.powerType].color;c.font='900 11px system-ui';c.textAlign='center';c.fillText(PICKUPS[t.powerType].name+' '+Math.ceil(t.powerTimer)+'s',t.x,t.y+48)}
  if(t.shield>0){c.beginPath();c.arc(t.x,t.y,32+Math.sin(t.shield*10)*2,0,Math.PI*2);c.strokeStyle=colors[i];c.globalAlpha=clamp(t.shield/1.8*.8,0,.8);c.lineWidth=3;c.stroke();c.globalAlpha=1}
- c.fillStyle=colors[i];c.font='bold 13px system-ui';c.textAlign='center';c.fillText(i<state.humanCount?'P'+(i+1):'AI'+(i-state.humanCount+1),t.x,t.y-38)}
+ c.fillStyle=colors[i];c.font='bold 13px system-ui';c.textAlign='center';c.fillText(i<state.humanCount?'P'+(i+1):'AI'+(i-state.humanCount+1),t.x,t.y-38);
+ if(i===(mode==='guest'?1:0)){c.beginPath();c.moveTo(t.x,t.y-59);c.lineTo(t.x-8,t.y-71);c.lineTo(t.x+8,t.y-71);c.closePath();c.fillStyle='#ffffff';c.fill();}}
  for(const b of state.bullets){const len=Math.min(19,Math.hypot(b.vx,b.vy)*.037);c.beginPath();c.moveTo(b.x-b.vx/405*len,b.y-b.vy/405*len);c.lineTo(b.x,b.y);c.strokeStyle=colors[b.owner];c.lineWidth=4;c.stroke();c.beginPath();c.arc(b.x,b.y,6,0,Math.PI*2);c.fillStyle='#f8ffff';c.shadowColor=colors[b.owner];c.shadowBlur=15;c.fill();c.shadowBlur=0}
  for(const p of particles){c.globalAlpha=clamp(p.life/p.maxLife,0,1);c.fillStyle=p.color;c.fillRect(p.x,p.y,p.size,p.size)}c.globalAlpha=1;
  c.restore();
@@ -174,30 +194,35 @@ function render(){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick>0)c.tr
  if(paused&&mode==='host'&&!connected){c.fillStyle='#071b26b5';c.fillRect(0,0,W,H);c.fillStyle='#d4f0f2';c.font='bold 28px system-ui';c.textAlign='center';c.fillText('WAITING FOR PLAYER TWO',W/2,H/2)}
  }
 function nativePacket(packet){if(!window.AndroidBridge)return;try{window.AndroidBridge.sendPacket(JSON.stringify(packet))}catch(e){notice('Network send failed')}}
-function loop(now){const dt=Math.min((now-lastTime)/1000,.04);lastTime=now;if(mode==='solo'||mode==='duel'||mode==='host')step(dt);updateVisuals(dt);hudTimer+=dt;if(hudTimer>.15){hudTimer=0;refreshHUD();}
+function loop(now){const dt=clamp((now-lastTime)/1000,0,.085);lastTime=now;
+ if(mode==='solo'||mode==='duel'||mode==='host'){if(!paused&&state.winner<0){fixedAccumulator=Math.min(.12,fixedAccumulator+dt);let ticks=0;while(fixedAccumulator>=STEP&&ticks++<5){step(STEP);fixedAccumulator-=STEP}}else fixedAccumulator=0;}
+ updateVisuals(dt);hudTimer+=dt;if(hudTimer>.15){hudTimer=0;refreshHUD();}
  if(mode==='host'&&connected){snapshotTimer+=dt;if(snapshotTimer>.09){snapshotTimer=0;nativePacket({type:'state',state:serializeState()})}}
  if(mode==='guest'&&connected){sendTimer+=dt;if(sendTimer>.05){sendTimer=0;nativePacket({type:'input',input:makeControl(true)})}}
- render();requestAnimationFrame(loop)}
+ render(dt);requestAnimationFrame(loop)}
 function bridgeReady(){return !!window.AndroidBridge}
 function host(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('host');setPanel('<div class="eyebrow">NEARBY PLAY</div><h2>HOSTING MATCH</h2><p id="host-status">Starting local game...</p><div class="host-address" id="host-address"></div><button data-action="close">CANCEL</button>');window.AndroidBridge.hostGame()}
 function find(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('guest');setPanel('<div class="eyebrow">NEARBY PLAY</div><h2>FIND A MATCH</h2><p id="find-status">Looking for games on the same Wi-Fi...</p><div id="rooms"></div><button data-action="manual">JOIN BY LOCAL IP</button><button data-action="close">BACK</button>');window.AndroidBridge.findGames()}
 function manual(){if(!bridgeReady()){notice('Manual LAN join requires the Android APK');return}newMatch('guest');setPanel('<div class="eyebrow">FALLBACK</div><h2>JOIN BY ADDRESS</h2><p>Enter the IP:port shown on the host screen, such as 192.168.1.25:47321</p><input id="lan-address" placeholder="192.168.1.25:47321" inputmode="url" autocapitalize="off"><button data-action="ip-join">CONNECT</button><button data-action="find">FIND NEARBY</button>')}
-function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;mode='idle';clearStick();document.getElementById('mode-label').textContent='NO GAME ACTIVE';panel.innerHTML=originalPanel;menu.classList.remove('hidden')}
+function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;mode='idle';releaseControls();document.getElementById('mode-label').textContent='NO GAME ACTIVE';panel.innerHTML=originalPanel;applyPrefsToUI();menu.classList.remove('hidden')}
 const originalPanel=panel.innerHTML;
+panel.addEventListener('change',e=>{const el=e.target;if(el.id?.startsWith('pref-')){const key=el.id.slice(5);if(key in comfort)comfort[key]=el.checked;applyPrefsToUI()}savePrefs()});
+loadPrefs();
+
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
- if(a==='solo')newMatch('solo');else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
+ if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
  const s=document.getElementById('lan-address').value.trim(),m=s.match(/^([\da-fA-F:.]+):(\d{1,5})$/);
  if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';window.AndroidBridge.joinGame(m[1],Number(m[2]));}});
-function showPauseMenu(){clearStick();if(mode==='idle')return;
+function showPauseMenu(){releaseControls();if(mode==='idle')return;
  if(mode==='solo'||mode==='duel'){paused=true;setPanel('<div class="eyebrow">PAUSED</div><h2>GAME MENU</h2><button data-action="resume">RESUME</button><button data-action="restart">REMATCH · FULL LIVES</button><button data-action="next-arena">NEXT ARENA</button><button data-action="close">MAIN MENU</button>')}
- else if(mode==='host'){setPanel('<div class="eyebrow">HOST OPTIONS</div><h2>GAME MENU</h2><p>Remote play continues while this menu is open.</p><button data-action="resume">BACK TO ARENA</button><button data-action="restart">REMATCH · BOTH PLAYERS</button><button data-action="next-arena">NEXT ARENA · BOTH PLAYERS</button><button data-action="close">DISCONNECT</button>')}
+ else if(mode==='host'){paused=true;guestInput={moveX:0,moveY:0,fire:false};setPanel('<div class="eyebrow">HOST OPTIONS</div><h2>GAME MENU</h2><p>The match is paused for both players while this menu is open.</p><button data-action="resume">BACK TO ARENA</button><button data-action="restart">REMATCH · BOTH PLAYERS</button><button data-action="next-arena">NEXT ARENA · BOTH PLAYERS</button><button data-action="close">DISCONNECT</button>')}
  else if(mode==='guest'){setPanel('<div class="eyebrow">PLAYER OPTIONS</div><h2>GAME MENU</h2><p>Only the host can restart the match.</p><button data-action="resume">BACK TO ARENA</button><button data-action="close">DISCONNECT</button>')}}
 document.getElementById('menu-button').addEventListener('click',showPauseMenu);
 menu.addEventListener('click',e=>{const a=e.target?.dataset?.action;
- if(a==='resume'){if(mode==='solo'||mode==='duel')paused=false;exitMenu()}
+ if(a==='resume'){if(mode==='solo'||mode==='duel'||mode==='host')paused=false;exitMenu()}
  else if(a==='restart'&&mode!=='guest'){resetAll();exitMenu()}else if(a==='next-arena'&&mode!=='guest'){resetAll(true);exitMenu()}});
 window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if([...Object.values(keys1),...Object.values(keys2)].includes(e.code))e.preventDefault();pressed.add(e.code);if(e.code==='KeyR'&&state.winner>=0&&mode!=='guest')resetAll()});
-window.addEventListener('keyup',e=>pressed.delete(e.code));window.addEventListener('blur',()=>{pressed.clear();touch.clear();clearStick()});
+window.addEventListener('keyup',e=>pressed.delete(e.code));window.addEventListener('blur',releaseControls);
 for(const b of document.querySelectorAll('[data-key]')){const k=b.dataset.key;const release=e=>{touch.delete(k);b.classList.remove('active');try{b.releasePointerCapture(e.pointerId)}catch(_){}};
  b.addEventListener('pointerdown',e=>{e.preventDefault();touch.add(k);b.classList.add('active');b.setPointerCapture(e.pointerId)});b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);b.addEventListener('lostpointercapture',()=>{touch.delete(k);b.classList.remove('active')})}
 const joystick=document.getElementById('joystick'),knob=document.getElementById('stick-knob');
@@ -209,7 +234,7 @@ function updateStick(e){const r=joystick.getBoundingClientRect(),cx=r.left+r.wid
 joystick.addEventListener('pointerdown',e=>{if(stick.pointerId!==null)return;e.preventDefault();stick.pointerId=e.pointerId;joystick.setPointerCapture(e.pointerId);joystick.classList.add('active');updateStick(e)});
 joystick.addEventListener('pointermove',e=>{if(stick.pointerId===e.pointerId){e.preventDefault();updateStick(e)}});
 for(const key of ['pointerup','pointercancel','lostpointercapture'])joystick.addEventListener(key,e=>{if(stick.pointerId===e.pointerId){clearStick();try{joystick.releasePointerCapture(e.pointerId)}catch(_){}}});
-window.RR={openMenu(){if(menu.classList.contains('hidden'))showPauseMenu();else if(mode==='idle')stop();else if(mode==='solo'||mode==='duel'){paused=false;exitMenu()}else exitMenu()},appPause(){pressed.clear();touch.clear();clearStick();if((mode==='solo'||mode==='duel')&&menu.classList.contains('hidden'))showPauseMenu()},nativeMessage(json){let msg;try{msg=JSON.parse(json)}catch(_){return}if(!msg||typeof msg.type!=='string')return;
+window.RR={openMenu(){if(menu.classList.contains('hidden'))showPauseMenu();else if(mode==='idle')stop();else if(mode==='solo'||mode==='duel'||mode==='host'){paused=false;exitMenu()}else exitMenu()},appPause(){releaseControls();if((mode==='solo'||mode==='duel')&&menu.classList.contains('hidden'))showPauseMenu()},nativeMessage(json){let msg;try{msg=JSON.parse(json)}catch(_){return}if(!msg||typeof msg.type!=='string')return;
  switch(msg.type){case 'hosting':{const p=document.getElementById('host-status');if(p)p.textContent='Waiting for another phone to join...';const a=document.getElementById('host-address');if(a)a.textContent=(msg.address||'LOCAL NETWORK')+':'+msg.port;break}
  case 'found':{const r=document.getElementById('rooms');if(r&&!r.querySelector('[data-host="'+msg.host+'"]')){const b=document.createElement('button');b.textContent='JOIN '+(msg.name||'NEARBY GAME');b.dataset.host=msg.host;b.onclick=()=>{window.AndroidBridge.joinGame(msg.host,msg.port);document.getElementById('find-status').textContent='Connecting...'};r.appendChild(b)}break}
  case 'connected':{connected=true;paused=false;document.getElementById('mode-label').textContent=mode==='guest'?'YOU: CORAL':mode==='host'?'YOU: CYAN':'CONNECTED';exitMenu();notice('Player connected — FIGHT!');if(mode==='host'){state=initialState(state.arenaId,state.config,state.mazeSeed);refreshHUD()}break}
