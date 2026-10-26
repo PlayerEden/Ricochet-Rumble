@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#08151e">
+  <title>Ricochet Rumble — Prototype 0.3</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div><div class="eyebrow">PLAYEREDEN // TWO-PLAYER LAB</div><h1>RICOCHET <span>RUMBLE</span></h1></div>
+      <div class="version">v0.3<br><span>POWER-UP MAYHEM</span></div>
+    </header>
+    <div class="scorestrip" aria-live="polite"><span class="blue-tag">◆ CYAN <strong id="score0">5</strong> ♥</span><span id="round" class="middle">5 LIVES EACH</span><span class="pink-tag">♥ <strong id="score1">5</strong> CORAL ◆</span></div>
+    <section class="arena-wrap">
+      <canvas id="arena" width="960" height="600" aria-label="Tank duel arena"></canvas>
+      <div class="overlay" id="menu">
+        <div class="panel" id="panel">
+          <div class="eyebrow">COMBAT READY?</div>
+          <h2>ONE ARENA. TWO TANKS.</h2>
+          <p>Five lives each. Get hit, respawn with a brief shield, and keep fighting! Grab power-ups for rapid fire, turbo speed, or a one-hit barrier. Drag the analog stick to move, hold Fire to shoot.</p>
+          <label class="arena-label" for="arena-choice">ARENA <select id="arena-choice" aria-label="Select the arena"><option value="0">01 / FOUNDRY</option><option value="1">02 / CROSSROADS</option><option value="2">03 / PINBALL</option></select></label>
+          <button class="primary" data-action="solo">PLAY VS BOT</button>
+          <button data-action="duel">TWO PLAYERS · ONE DEVICE</button>
+          <div class="line"></div>
+          <div class="eyebrow">ANDROID APK · SAME WI-FI</div>
+          <button data-action="host">HOST NEARBY MATCH</button>
+          <button data-action="find">FIND NEARBY MATCH</button>
+          <button data-action="manual">JOIN BY LOCAL IP</button>
+          <p class="note" id="menu-note">Browser version plays offline. Nearby multiplayer is enabled by the included Android wrapper.</p>
+        </div>
+      </div>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </section>
+    <section class="controlarea" aria-label="Touch controls">
+      <div class="controls-title"><span>TOUCH CONTROLS</span><span id="mode-label">NO GAME ACTIVE</span></div>
+      <div class="controls">
+        <div class="joystick-group">
+          <div class="joystick" id="joystick" role="group" aria-label="Analog movement joystick; drag in any direction">
+            <div class="stick-ring"></div><div class="stick-knob" id="stick-knob"><span>✦</span></div>
+          </div>
+          <span class="stick-label">MOVE · 360°</span>
+        </div>
+        <div class="action-group"><button class="fire-btn" data-key="fire">FIRE <span>◎</span></button><button class="small-btn" id="menu-button">MENU</button></div>
+      </div>
+      <p class="help">Drag to steer, hold FIRE to shoot; collect glowing power-ups. Keyboard: P1 WASD + Space · P2 arrows + Enter.</p>
+    </section>
+    <footer>FREE • 3 ARENAS • ZERO EXTRA ASSETS • LOCAL P2P FOUNDATION</footer>
+  </main>
+  <script src="game.js"></script>
+</body>
+</html>
