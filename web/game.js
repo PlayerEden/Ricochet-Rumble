@@ -123,8 +123,11 @@ function closestAvailableVehicle(i){
   if(d<distance){best=v;distance=d;}}
  return best;
 }
+// Empty vehicles are pass-through, but must have a clear deployment footprint
+// before a new driver materializes. Otherwise two live actors can overlap.
+function vehicleEntryClear(i,v){return !state.tanks.some((other,j)=>j!==i&&state.lives[j]>0&&Math.hypot(other.x-v.x,other.y-v.y)<(other.onFoot?37:47));}
 function nearestEmptyVehicle(i){if(!isPilotMatch()||state.lives[i]<=0)return null;const t=state.tanks[i];let best=null,bestD=58;
- for(const v of state.vehicles||[]){if(v.occupant!==-1||v.armor<=0)continue;const d=Math.hypot(v.x-t.x,v.y-t.y);if(d<bestD&&hasLineOfSight(t.x,t.y,v.x,v.y)){best=v;bestD=d}}
+ for(const v of state.vehicles||[]){if(v.occupant!==-1||v.armor<=0||!vehicleEntryClear(i,v))continue;const d=Math.hypot(v.x-t.x,v.y-t.y);if(d<bestD&&hasLineOfSight(t.x,t.y,v.x,v.y)){best=v;bestD=d}}
  return best;}
 // Use the same safe exit search for manual exits and forced ejections.
 // Search a compact ring before falling back to the vacated tank's position.
@@ -138,7 +141,7 @@ function pilotExitSite(i,vehicleId){const t=state.tanks[i];
  return null;
 }
 function tryInteract(i=0){if(!isPilotMatch()||paused||state.winner>=0||state.lives[i]<=0)return false;const t=state.tanks[i];
- if(t.onFoot){const v=nearestEmptyVehicle(i);if(!v){if(i===0)notice('Find a parked tank and move closer');return false}
+ if(t.onFoot){const v=nearestEmptyVehicle(i);if(!v){if(i===0){const bay=(state.vehicles||[]).some(q=>q.occupant===-1&&q.armor>0&&Math.hypot(q.x-t.x,q.y-t.y)<58&&hasLineOfSight(t.x,t.y,q.x,q.y)&&!vehicleEntryClear(i,q));notice(bay?'Vehicle bay occupied · clear the area':'Find a parked tank and move closer');}return false}
   v.occupant=i;t.vehicleId=v.id;t.onFoot=false;Object.assign(t,{x:v.x,y:v.y,a:v.a,vx:0,vy:0});state.event=vehicleDef(v).name+' ONLINE · '+v.armor+' ARMOR';state.eventTimer=.9;emitFx('pickup',v.x,v.y,colors[i],i);}
  else{const v=state.vehicles?.[t.vehicleId];if(!v)return false;
   const spot=pilotExitSite(i,v.id);
