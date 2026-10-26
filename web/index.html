@@ -9,8 +9,8 @@
 </head>
 <body>
   <main class="game-screen" id="game-screen">
-    <header class="game-hud">
-      <div class="game-identity"><span class="logo-mark">SR</span><div class="brand-stack"><strong>SECTOR <em>REBOUND</em></strong><span id="mode-label">FIELDGRID // OPERATIONS</span></div></div>
+    <header class="game-hud" aria-label="Live match HUD">
+      <span id="mode-label" class="hud-mode-hidden">FIELDGRID // OPERATIONS</span>
       <div class="scorestrip" aria-live="polite">
         <span class="blue-tag"><span id="player0-label">YOU</span> <strong id="score0">2</strong> <span class="hud-life">♥</span></span>
         <span id="round" class="middle" aria-label="Vehicle armor: 3 of 3">TANK · 3/3</span>
@@ -18,8 +18,8 @@
       </div>
       <button class="hud-menu" id="menu-button" aria-label="Pause or open game menu"><span aria-hidden="true">☰</span> MENU</button>
     </header>
-    <div class="battlefield" aria-label="Battle arena and touch controls">
-      <div class="touch-zone touch-left" aria-label="Movement">
+    <div class="battlefield" aria-label="Fullscreen combat field and overlay touch controls">
+      <div class="touch-zone touch-left overlay-control" aria-label="Movement">
         <div class="joystick" id="joystick" role="group" aria-label="Move using the analog joystick; drag any direction">
           <div class="stick-ring"></div><div class="stick-knob" id="stick-knob"><span aria-hidden="true">●</span></div>
         </div>
@@ -29,7 +29,7 @@
         <canvas id="arena" width="960" height="600" aria-label="Top-down pilot and vehicle arena"></canvas>
         <div id="toast" class="toast" role="status" aria-live="polite"></div><button id="quick-rematch" class="quick-rematch hidden" type="button" aria-label="Play another match in a newly generated maze">↻ PLAY AGAIN</button>
       </section>
-      <div class="touch-zone touch-right" aria-label="Fire control">
+      <div class="touch-zone touch-right overlay-control" aria-label="Fire control">
         <button class="interact-btn hidden" id="interact-btn" aria-label="Enter or exit a nearby vehicle">ENTER</button>
         <button class="fire-btn" data-key="fire" aria-label="Hold to fire"><span class="fire-icon">◎</span><span>FIRE</span></button>
         <span class="control-caption" id="fire-mode">HOLD / FIRE</span><span class="shell-meter" id="shell-meter">3/3 READY</span>
