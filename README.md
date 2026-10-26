@@ -1,3 +1,9 @@
+# Sector Rebound — FIELDGRID v0.9.7
+
+**Animation and combat-feedback refinement** on `dev/sector-rebound-motion` following v0.9.6. Adds mirrored mech gait and pilot footfalls, compact hit/ejection visuals and an after-action result panel with disabled inactive controls. Gameplay balance and the approved arena remain unchanged. See [motion QA](docs/MOTION_QA_v0.9.7.md).
+
+---
+
 # Sector Rebound — FIELDGRID v0.9.6
 
 **Visual construction / mobile UI quality pass** (`dev/sector-rebound-visual-qa`). Corrected the tank's tread axis so both tracks run parallel with the barrel along vehicle-local +X. Both sides are mirrored from the same geometry, preventing accidental mismatches. Flattened the menu/button styling and standardized the pause vocabulary without changing the approved arena art or gameplay mechanics. Added tank/mech construction regression checks. See [`docs/VISUAL_CONSTRUCTION_v0.9.6.md`](docs/VISUAL_CONSTRUCTION_v0.9.6.md).

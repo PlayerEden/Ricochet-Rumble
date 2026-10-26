@@ -6,8 +6,8 @@ android {
         applicationId 'com.playereden.ricochetrumble'
         minSdk 26
         targetSdk 35
-        versionCode 20
-        versionName '0.9.6-geometry'
+        versionCode 21
+        versionName '0.9.7-motion'
     }
     buildTypes {
         release { minifyEnabled false }

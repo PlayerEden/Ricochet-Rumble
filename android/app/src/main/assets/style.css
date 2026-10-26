@@ -158,3 +158,9 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit
 .settings-page select{background:#0d2936;border:1px solid #5b8896;border-radius:5px}
 .extra-rules{border-radius:5px;background:#102b38}
 @media(max-height:380px){.panel{padding:8px 13px}.panel button{margin:2px 0}.menu-heading{margin-bottom:3px}}
+
+/* v0.9.7: End-of-match controls no longer imply a live tank. */
+.match-finished .touch-zone{opacity:.28;pointer-events:none;filter:saturate(.5)}
+.match-finished .quick-rematch{z-index:5;top:77%;background:#62c9df;border:2px solid #a0edf1;color:#09232d;box-shadow:0 4px 14px #020c15}
+.match-finished .quick-rematch:focus-visible{outline:2px solid #f0d88a;outline-offset:3px}
+@media(max-height:390px){.match-finished .quick-rematch{top:79%;min-height:46px}}

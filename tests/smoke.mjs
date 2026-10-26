@@ -157,7 +157,7 @@ assert.ok(packets.slice(packetsBeforePause).some(p=>p.type==='input'&&!p.input.f
 // mirrored from a single definition; both must align with the barrel axis.
 {
  const ops=[],stack=[];let mirrored=1;
- const g={save(){stack.push(mirrored)},restore(){mirrored=stack.pop()},scale(x,y){assert.equal(x,1);mirrored*=y;ops.push({kind:'mirror',side:mirrored})},fillRect(x,y,w,h){ops.push({kind:'fill',side:mirrored,x,y,w,h})},strokeRect(x,y,w,h){ops.push({kind:'stroke',side:mirrored,x,y,w,h})},set lineWidth(v){},set strokeStyle(v){},set fillStyle(v){},set lineJoin(v){}};
+ const g={save(){stack.push(mirrored)},restore(){mirrored=stack.pop()},translate(x,y){ops.push({kind:'translate',side:mirrored,x,y})},scale(x,y){assert.equal(x,1);mirrored*=y;ops.push({kind:'mirror',side:mirrored})},fillRect(x,y,w,h){ops.push({kind:'fill',side:mirrored,x,y,w,h})},strokeRect(x,y,w,h){ops.push({kind:'stroke',side:mirrored,x,y,w,h})},set lineWidth(v){},set strokeStyle(v){},set fillStyle(v){},set lineJoin(v){}};
  win.__test.drawTopTank(g,'#5ad0e8',false);
  const tracks=ops.filter(o=>o.kind==='fill'&&o.w===54&&o.h===12&&o.y===15);
  assert.equal(tracks.length,2,'two tracks are rendered');
@@ -201,3 +201,39 @@ console.log('PASS v0.9.4 visual clarity: pilot duel advantage, tactical sidearm,
   if(!html.includes('SECTOR <em>REBOUND</em>') || !html.includes('SECTOR <span>REBOUND</span>') || !manifest.includes('android:label="Sector Rebound"')) throw new Error('Sector Rebound public branding missing');
   if(html.includes('Ricochet Rumble') || manifest.includes('Ricochet Rumble')) throw new Error('Old title appears in public game UI');
 }
+
+// 0.9.7 motion pass: animation must not change game physics or break the
+// construction contract. Both idle and moving mechs retain mirrored limbs.
+{
+ const geom=(fn,stride)=>{const out=[],stack=[];let side=1,dx=0;const c={save(){stack.push([side,dx])},restore(){[side,dx]=stack.pop()},scale(x,y){side*=y},translate(x,y){dx+=x},fillRect(x,y,w,h){out.push({side,x:x+dx,y,w,h})},strokeRect(){},arc(){},beginPath(){},stroke(){},fill(){},set fillStyle(v){},set strokeStyle(v){},set lineWidth(v){}};
+  if(fn==='mech')win.__test.drawTopMech(c,'#b69aff',false,stride);else win.__test.drawTopPilot(c,'#51d9ff',false,stride);
+  return out};
+ const mechIdle=geom('mech',0).filter(o=>o.w===17&&o.h===12&&o.y===12);
+ const mechMove=geom('mech',3).filter(o=>o.w===17&&o.h===12&&o.y===12);
+ assert.equal(mechIdle.length,2,'mech has two leg bases');
+ assert.equal(mechMove.length,2,'gait keeps both legs');
+ assert.notEqual(mechIdle[0].x,mechMove[0].x,'left leg advances when walking');
+ assert.notEqual(mechIdle[1].x,mechMove[1].x,'right leg counter-steps');
+ assert.equal(mechMove[0].x+mechMove[1].x,mechIdle[0].x+mechIdle[1].x,'walking gait remains centered');
+ const bootsIdle=geom('pilot',0).filter(o=>o.w===10&&o.h===8);
+ const bootsMove=geom('pilot',2).filter(o=>o.w===10&&o.h===8);
+ assert.equal(bootsMove.length,2);assert.notEqual(bootsIdle[0].x,bootsMove[0].x);assert.equal(bootsMove[0].x+bootsMove[1].x,bootsIdle[0].x+bootsIdle[1].x);
+}
+// Emergency ejection is a cosmetic event, not damage to pilot lives.
+click('solo');const v0=st().vehicles[st().tanks[0].vehicleId],pilot=st().tanks[0],lives=st().lives[0];
+pilot.shield=0;win.__test.ejectPilot(0);
+assert.equal(v0.armor,0);assert.equal(pilot.onFoot,true);assert.equal(st().lives[0],lives);
+assert.ok(pilot.ejectAnim>.5,'short local ejection animation');
+assert.ok(st().fxEvents.some(f=>f.kind==='eject'&&f.ttl>.5),'ejection ring is carried in serialized FX');
+assert.ok(win.__test.serializeState().fxEvents.some(f=>f.kind==='eject'),'guest will get same cue');
+win.__test.step(1/60);assert.ok(pilot.ejectAnim<.62,'animation timer advances with world simulation');
+// After-action overlay dims non-functional controls, and clears on replay.
+st().winner=1;st().winnerTeam=1;st().event='BOT 1 WINS!';
+for(const f of handlers['menu-button:click'])f(); // pause-menu path still usable after combat
+click('resume'); // hides menu
+runFrames(10);
+assert.equal(node('game-screen').classList.contains('match-finished'),true);
+assert.equal(node('quick-rematch').classList.contains('hidden'),false);
+for(const f of handlers['quick-rematch:click'])f();
+assert.equal(st().winner,-1);assert.equal(node('game-screen').classList.contains('match-finished'),false);
+console.log('PASS v0.9.7 motion/UX: mirrored animation, pilot ejection, serialized feedback, after-action controls and replay.');
