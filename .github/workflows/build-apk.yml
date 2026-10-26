@@ -1,4 +1,4 @@
-# Deliberately manual: conserve GitHub Actions minutes.
+# v0.4 mobile landscape build. Manual trigger remains available.
 name: Manual Android Debug APK
 on:
   workflow_dispatch:
