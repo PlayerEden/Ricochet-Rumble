@@ -1,78 +1,33 @@
 # Ricochet Rumble
 
-**v0.6.3 — Combat Feedback & Maze Performance** · Self-contained Android tank arcade with offline solo and local same-Wi-Fi multiplayer foundation.
+**v0.8.0 — Unified Arena experimental build** (branch `dev/unified-arena`). A compact, free Android arcade game about pilots, tanks, ricochet shots, and exploring large mazes. The game is entirely bundled in its APK; no additional apps are required for solo and nearby-Wi-Fi matches.
 
-Ricochet Rumble is a tiny, free tank-maze game. Move with the left analog stick and hold Fire at the right. Shells ricochet around maze corners, tanks have multiple lives, and fights continue across individual respawns. Play in five arenas including two much larger, seeded mazes with a following camera and minimap.
+## One game, your settings
 
+Select **Quick Play** to start driving immediately. Every tank has **3 armor** and protects its pilot. If destroyed, the pilot automatically ejects and keeps their lives (default **2**), uses a sidearm, and can enter an empty tank nearby. On-foot pilots can pass through **empty parked tanks** so they aren't trapped in tight corridors. Empty tanks remain valid cover from gunfire.
 
-## v0.6.3 refinement (2026-10-26)
+- **Quick Play:** instant solo against computer tanks.
+- **Match Settings:** arena, number of bots, bullet cap, pilot lives, AI skill, team rules and comfort preferences. These configure the one game, not distinct game modes.
+- **Play Together:** nearby same-Wi-Fi host / find, no passwords, room codes, servers or accounts. Local-IP join is a backup. Multiplayer pilot/vehicle input is now wired but must still be tested on physical devices.
+- **? Help:** concise in-app controls guide.
 
-- Added **nearby-wall spatial lookup** for tank movement, shells, and bot visibility checks. Large mazes no longer scan every wall for each collision test; wall-collision parity is regression-tested across all arenas.
-- **Local-only damage feedback**: taking a hit briefly highlights the screen edges. Distant bot-on-bot hits no longer shake your camera. Guest damage is presented using synchronized hit events.
-- **Gunfire sound radar**: recent *hostile* shots within hearing range produce short-lived orange pulses on the maze minimap. Does not expose enemy positions constantly or through a permanent radar wallhack.
-- **Distance-aware sound effects** for shots, collisions and hits. Faraway tank sounds are quieter; the network guest receives the shared combat effects too.
-- **Bots ease off at point-blank range** when they have a clear shot instead of constantly ramming opponents.
-- HUD now says **HITS** instead of misleading **KO** (the recorded counter counts successful hits, not final eliminations).
-- Preserved five arenas, teams, lives, projectile limits, continuous respawns, fixed-step gameplay and the no-password test APK build. No new network servers or accounts.
+The player can enter/exit a tank with the contextual button; the game only shows ENTER near an empty, usable vehicle. Movement is via thumb joystick with Fire on the opposite side. Control swap, optional auto-fire, sound and shake settings are available.
 
-See [`docs/RELEASE_v0.6.3.md`](docs/RELEASE_v0.6.3.md) for verification scope and remaining device tests.
+Five arenas include Foundry, Crossroads, Pinball, Labyrinth and Maze XL. Large mazes have a following camera and minimap, while the small arenas allow shorter fights. Bots, hits, power-ups, and team matches are part of this same game.
 
-## v0.6.2 refinement (2026-10-26)
+## Build and verify
 
-- Optional **Swap Controls** for left-handed/right-handed comfort; swaps Fire and joystick sides without changing tank handling, and saves locally.
-- Compact **? Help** guide available on the main menu, explaining ricochets, lives, teams and basic touch controls.
-- Shells now spawn against the *near side* of a wall when your turret is close, rather than potentially passing through a wall during the initial shot.
-- When Android backgrounds the game, an active host receives a local pause and the app attempts to send an immediate paused snapshot; guests send a neutral input. Android may disconnect a hosted game on stop, so this is not a promise of background networking.
-- Short-landscape menu alignment/controls verified using Chromium at 740×360, 915×412 and 1280×720 without webpage overflow.
-- No new game modes, monetization, backend accounts or required apps.
+- Browser: open `web/index.html` in a browser, or use the bundled self-contained demo from the chat.
+- Automated QA: `node tests/smoke.mjs` (no npm install required).
+- Android source: `android/` (Android 8.0/API 26 or newer). GitHub Actions can compile a debug APK using a manually or workflow-triggered build, no paid services and no GitHub secret required.
+- Web and Android game assets are synchronized; keep both copies aligned.
 
-## Play modes
+**Installation:** GitHub-hosted debug builds may be signed with different ephemeral certificates; uninstall the previous version if Android rejects an update. That clears app-local settings. Permanent release signing is optional and not used by the basic debug workflow.
 
-- **Solo vs bots**: start right from the main menu; set 1–4 bots, lives, shots-per-tank and Relaxed / Standard / Challenge bot AI.
-- **Two-phone nearby game**: host or discover a session on the same Wi-Fi network through the bundled Android app. Join by local IP is a fallback. **Physical two-phone acceptance testing is still pending.**
-- **Keyboard duel**: two players on one keyboard in a compact arena (WASD + Space / arrows + Enter).
-- **Match modes**: free-for-all, humans vs bots, or two teams. Friendly fire is off for teammates.
+### QA and limitations
 
-## v0.6 refinements
+Read [`docs/UNIFIED_ARENA_v0.8.md`](docs/UNIFIED_ARENA_v0.8.md). Unit and browser tests don't prove performance or networking on actual Android phones. Keep this experimental branch separate from `dev/pilot-survival` and `main` until verified.
 
-- Fast-access mobile game menu; separate settings screen avoids burying Play under a tall form.
-- Settings and comfort preferences persist locally (arena, bots, rules, sound, screen shake and optional auto-fire). No account or remote storage.
-- Fixed-time simulation for more consistent pace at lower rendering rates; better camera smoothing and maze floor drawing/culling.
-- Readable bullet-ready indicator near the Fire button, clearer local tank indicator and minor tank/floor graphic polish.
-- Wall-aware bot shots, bot difficulty, shooting cancels respawn immunity, and ricocheted shells can hit their own shooter after a grace period.
-- Host menu pauses for both participants, clears held controls, and resumes properly; client Wi-Fi routing preferred even when cellular is on.
+### Future ideas
 
-Full findings, test scope and deferred items: [`docs/QUALITY_AUDIT_v0.6.md`](docs/QUALITY_AUDIT_v0.6.md).
-
-## Building and testing
-
-- Browser: open `web/index.html` with a local static server (or use the self-contained HTML preview supplied in the chat).
-- Game logic QA: `node tests/smoke.mjs`.
-- Android: project is in `android/`; GitHub Actions workflow `.github/workflows/build-apk.yml` builds an unsigned-for-release, **debug-signed APK** through `gradle :app:assembleDebug`. The APK contains all HTML, CSS, JavaScript and game assets, with no downloads during play.
-- App package: `com.playereden.ricochetrumble`; Android 8.0+ minimum.
-- Same-Wi-Fi multiplayer is experimental: test discovery, connectivity and controls on two real devices before calling it production-ready. Remote internet P2P, cross-network friends and push invites are not implemented.
-
-**Distribution/signing note:** GitHub debug APKs may use a different signing certificate on different runners. If Android refuses to install an updated debug build over a previous one, uninstall the old debug version. Establish a persistent **private** release-signing identity before shipping reliable in-place updates; never commit private keystores to this public repository.
-
-## Future independent games
-
-- **Pocket Racers**: short top-down racing game for two phones.
-- **Scrap Climbers**: build eccentric blocky vehicles and compete for climbing distance.
-
-The long-term goal is reusable zero-cost local multiplayer technology, while each game stays enjoyable offline. The project does not require ads, external game assets, subscriptions or server hosting for solo/LAN play.
-
-## Experimental Pilot Survival (v0.7.0 alpha)
-
-This is intentionally **not** part of Classic Rumble. On the `dev/pilot-survival` branch, tap **Pilot Survival · New Alpha** to test the new solo rules. You begin on foot with two lives and a short-range sidearm. A parked tank appears near your spawn; approach it and tap **ENTER**, or use **E** on a keyboard. Tanks have three armor points. When the tank loses its last armor point, you eject with brief protection; pilot lives remain untouched. You can also leave a healthy tank at any time using **EXIT TANK**. Wrecked garages respawn usable tanks after a cooldown.
-
-This is a foundation for future vehicle types, not a finished mode: vehicle variety, repairs, balancing and **pilot-mode two-phone networking** remain future work. Current LAN multiplayer continues to use the **Classic** rules. No login or extra setup is required for this experimental solo version.
-
-The Android app now has a distinct Ricochet Rumble launcher icon, using the artwork concept previously generated for this project.
-
-## Pilot Survival v0.7.1 quality audit
-
-This branch adds a **focused QA repair pass**, not a new feature mode. It makes empty tanks block movement, lets parked tanks absorb incoming shells and respawn when destroyed, chooses more reliable pilot exit/ejection spaces, validates garage locations against wall and player collisions, and teaches ejected bots to seek another empty tank.
-
-Regression tests now include 240 seeded procedural mazes, a 3,000-frame mixed pilot/vehicle battle, and the prior Classic smoke suite. Browser layout tests ran at three landscape resolutions without overflow or uncaught JS errors. See [`docs/PILOT_QA_v0.7.1.md`](docs/PILOT_QA_v0.7.1.md).
-
-Pilot Survival remains **offline solo only**, and physical Android and two-phone LAN testing are outstanding. The `main` branch remains the v0.6.3 Classic line.
+More vehicle types, a two-person driver/turret vehicle, Pocket Racers, and Scrap Climbers are ideas for later development, **not added in v0.8**. The goal remains a game that's easy and fun in seconds.

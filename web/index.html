@@ -4,17 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,viewport-fit=cover,user-scalable=no">
   <meta name="theme-color" content="#07141c">
-  <title>Ricochet Rumble · Pilot Survival Alpha</title>
+  <title>Ricochet Rumble</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="game-screen" id="game-screen">
     <header class="game-hud">
-      <div class="game-identity"><span class="logo-mark">RR</span><div class="brand-stack"><strong>RICOCHET <em>RUMBLE</em></strong><span id="mode-label">READY TO RUMBLE</span></div></div>
+      <div class="game-identity"><span class="logo-mark">RR</span><div class="brand-stack"><strong>RICOCHET <em>RUMBLE</em></strong><span id="mode-label">ONE ARENA · PILOTS + TANKS</span></div></div>
       <div class="scorestrip" aria-live="polite">
-        <span class="blue-tag"><span class="player-pip"></span> <span id="player0-label">CYAN</span> <strong id="score0">5</strong> <span class="hud-life">♥</span></span>
-        <span id="round" class="middle">5 LIVES EACH</span>
-        <span class="pink-tag"><span class="hud-life">♥</span> <strong id="score1">5</strong> <span id="player1-label">CORAL</span> <span class="player-pip"></span></span>
+        <span class="blue-tag"><span id="player0-label">YOU</span> <strong id="score0">2</strong> <span class="hud-life">♥</span></span>
+        <span id="round" class="middle">TANK 3/3 ARMOR</span>
+        <span class="pink-tag"><strong id="score1">1</strong> <span id="player1-label">ENEMIES</span></span>
       </div>
       <button class="hud-menu" id="menu-button" aria-label="Pause or open game menu"><span aria-hidden="true">☰</span> MENU</button>
     </header>
@@ -26,7 +26,7 @@
         <span class="control-caption">MOVE</span>
       </div>
       <section class="arena-wrap" aria-label="Game field">
-        <canvas id="arena" width="960" height="600" aria-label="Top-down tank duel arena"></canvas>
+        <canvas id="arena" width="960" height="600" aria-label="Top-down pilot and vehicle arena"></canvas>
         <div id="toast" class="toast" role="status" aria-live="polite"></div>
       </section>
       <div class="touch-zone touch-right" aria-label="Fire control">
@@ -37,29 +37,28 @@
     </div>
     <div class="overlay" id="menu">
       <div class="panel" id="panel" role="dialog" aria-label="Game menu">
-        <div class="menu-heading"><div class="eyebrow">PLAYEREDEN • ARCADE SERIES <button class="menu-help" data-action="help" aria-label="How to play Ricochet Rumble">? HELP</button></div><h2>RICOCHET <span>RUMBLE</span></h2><p>Ricochets, mazes, and nonstop tank battles.</p></div>
+        <div class="menu-heading"><div class="eyebrow">PLAYEREDEN • ARCADE SERIES <button class="menu-help" data-action="help" aria-label="How to play Ricochet Rumble">? HELP</button></div><h2>RICOCHET <span>RUMBLE</span></h2><p>Pilot. Tank. Escape. Repeat.</p></div>
         <div class="menu-content">
           <div class="menu-main">
-            <label class="arena-label" for="arena-choice">SELECT ARENA<select id="arena-choice" aria-label="Select arena"><option value="0">01 / FOUNDRY</option><option value="1">02 / CROSSROADS</option><option value="2">03 / PINBALL</option><option value="3" selected>04 / LABYRINTH</option><option value="4">05 / MAZE XL</option></select></label>
-            <button class="settings-button" data-action="settings">⚙ MATCH SETTINGS · CONTROLS</button>
-            <button class="primary" data-action="solo">▶ CLASSIC · PLAY VS BOT</button>
-            <button class="pilot-button" data-action="pilot">★ PILOT SURVIVAL · NEW ALPHA</button>
-            <button data-action="duel">LOCAL DUEL · KEYBOARD</button>
+            
+            <button class="primary" data-action="solo">▶ QUICK PLAY</button>
+            <button class="settings-button" data-action="settings">⚙ MATCH SETTINGS</button>
+            <button data-action="nearby">☷ PLAY TOGETHER · SAME WI-FI</button>
           </div>
-          <div class="menu-join"><div class="eyebrow">TWO PHONES · SAME WI-FI</div><button data-action="host">HOST NEARBY MATCH</button><button data-action="find">FIND NEARBY MATCH</button><button data-action="manual">JOIN BY LOCAL IP</button></div>
+          <div class="menu-join"><div class="eyebrow">ONE GAME · YOUR RULES</div><p>Start in a tank. If it breaks, escape on foot, find another, and keep battling.</p><p class="menu-tip">No extra modes to learn. You choose how many bots and which arena.</p></div>
         </div>
-        <p class="note" id="menu-note">Thumbs on move + fire · Menu pauses solo play · Host chooses match rules</p>
+        <p class="note" id="menu-note">One tap to play · Move + Fire · Enter nearby tanks</p>
       </div>
     </div>
     <div class="rotate-prompt" aria-hidden="true"><div class="rotate-symbol">↻</div><strong>ROTATE TO LANDSCAPE</strong><span>Ricochet Rumble is played sideways.</span></div>
   </main>
 <template id="settings-template">
-  <div class="settings-head"><div class="eyebrow">MATCH SETUP</div><h2>YOUR <span>RULES</span></h2><p>Adjust once, then jump right into a fight. Saved on this phone.</p></div>
+  <div class="settings-head"><div class="eyebrow">MATCH SETUP</div><h2>YOUR <span>RULES</span></h2><p>Optional choices. Quick Play uses these settings.</p></div>
   <div class="settings-grid settings-page">
     <label>ARENA<select id="arena-choice"><option value="0">FOUNDRY</option><option value="1">CROSSROADS</option><option value="2">PINBALL</option><option value="3">LABYRINTH</option><option value="4">MAZE XL</option></select></label>
     <label>BOTS<select id="bot-count"><option value="0">0 · NO BOTS</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>
     <label>BULLETS / TANK<select id="bullet-cap"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="5">5</option><option value="8">8</option></select></label>
-    <label>LIVES<select id="lives-choice"><option value="3">3</option><option value="5">5</option><option value="10">10</option></select></label>
+    <label>PILOT LIVES<select id="lives-choice"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>
     <label>BOT SKILL<select id="bot-skill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>
     <label>TEAMS<select id="team-choice"><option value="ffa">FREE FOR ALL</option><option value="coop">HUMANS VS BOTS</option><option value="teams">TWO TEAMS</option></select></label>
   </div>

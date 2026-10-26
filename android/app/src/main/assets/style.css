@@ -54,3 +54,11 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit
 .interact-btn.hidden{display:none}.interact-btn:active{transform:translateY(2px)}
 .panel .pilot-button{background:linear-gradient(120deg,#477063,#234a54);border-color:#9fedc5;color:#efffec}
 @media(max-height:380px){.pilot-match .touch-zone{gap:3px;padding-bottom:3px}.pilot-match .fire-btn{height:min(12vw,26dvh,96px);min-height:72px}.pilot-match .interact-btn{min-height:27px}}
+
+/* Unified arcade: keep Play primary and reduce first-screen decisions. */
+.panel .menu-main .primary{min-height:clamp(41px,10dvh,55px);font-size:clamp(14px,2vw,19px)}
+.panel .menu-join{align-self:center;justify-content:center;border-left:1px solid #355c6b;padding-left:14px}
+.panel .menu-join p{font-size:clamp(12px,1.6vw,15px);line-height:1.48;color:#d7ecf2}
+.panel .menu-join .menu-tip{color:#9bbbc7}
+.scorestrip{gap:clamp(6px,1.3vw,16px)}.scorestrip strong{font-size:clamp(18px,3.4dvh,28px)}
+@media (max-width:760px){.panel .menu-join{padding-left:8px}.panel .menu-join .menu-tip{display:none}}

@@ -1,8 +1,8 @@
-name: Android Test APK # Pilot Survival QA v0.7.1
+name: Android Test APK # Unified Arena v0.8.0
 on:
   workflow_dispatch:
   push:
-    branches: [main, dev/pilot-survival]
+    branches: [dev/unified-arena]
     paths:
       - '.github/workflows/build-apk.yml'
 permissions:
@@ -33,7 +33,7 @@ jobs:
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: ricochet-rumble-0.7.1-pilot-qa-debug-apk
+          name: ricochet-rumble-v0.8.0-unified-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
