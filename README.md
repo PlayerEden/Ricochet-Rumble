@@ -1,8 +1,18 @@
 # Ricochet Rumble
 
-**v0.6 — Mobile Quality Pass** · Self-contained Android tank arcade with offline solo and local same-Wi-Fi multiplayer foundation.
+**v0.6.2 — Mobile Comfort & Reliability** · Self-contained Android tank arcade with offline solo and local same-Wi-Fi multiplayer foundation.
 
 Ricochet Rumble is a tiny, free tank-maze game. Move with the left analog stick and hold Fire at the right. Shells ricochet around maze corners, tanks have multiple lives, and fights continue across individual respawns. Play in five arenas including two much larger, seeded mazes with a following camera and minimap.
+
+
+## v0.6.2 refinement (2026-10-26)
+
+- Optional **Swap Controls** for left-handed/right-handed comfort; swaps Fire and joystick sides without changing tank handling, and saves locally.
+- Compact **? Help** guide available on the main menu, explaining ricochets, lives, teams and basic touch controls.
+- Shells now spawn against the *near side* of a wall when your turret is close, rather than potentially passing through a wall during the initial shot.
+- When Android backgrounds the game, an active host receives a local pause and the app attempts to send an immediate paused snapshot; guests send a neutral input. Android may disconnect a hosted game on stop, so this is not a promise of background networking.
+- Short-landscape menu alignment/controls verified using Chromium at 740×360, 915×412 and 1280×720 without webpage overflow.
+- No new game modes, monetization, backend accounts or required apps.
 
 ## Play modes
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,viewport-fit=cover,user-scalable=no">
   <meta name="theme-color" content="#07141c">
-  <title>Ricochet Rumble · v0.6</title>
+  <title>Ricochet Rumble · v0.6.2</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -36,7 +36,7 @@
     </div>
     <div class="overlay" id="menu">
       <div class="panel" id="panel" role="dialog" aria-label="Game menu">
-        <div class="menu-heading"><div class="eyebrow">PLAYEREDEN • ARCADE SERIES</div><h2>RICOCHET <span>RUMBLE</span></h2><p>Ricochets, mazes, and nonstop tank battles.</p></div>
+        <div class="menu-heading"><div class="eyebrow">PLAYEREDEN • ARCADE SERIES <button class="menu-help" data-action="help" aria-label="How to play Ricochet Rumble">? HELP</button></div><h2>RICOCHET <span>RUMBLE</span></h2><p>Ricochets, mazes, and nonstop tank battles.</p></div>
         <div class="menu-content">
           <div class="menu-main">
             <label class="arena-label" for="arena-choice">SELECT ARENA<select id="arena-choice" aria-label="Select arena"><option value="0">01 / FOUNDRY</option><option value="1">02 / CROSSROADS</option><option value="2">03 / PINBALL</option><option value="3" selected>04 / LABYRINTH</option><option value="4">05 / MAZE XL</option></select></label>
@@ -61,7 +61,7 @@
     <label>BOT SKILL<select id="bot-skill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>
     <label>TEAMS<select id="team-choice"><option value="ffa">FREE FOR ALL</option><option value="coop">HUMANS VS BOTS</option><option value="teams">TWO TEAMS</option></select></label>
   </div>
-  <div class="comfort-grid settings-comfort"><label><input type="checkbox" id="pref-autoFire"> AUTO FIRE</label><label><input type="checkbox" id="pref-sound"> SOUND</label><label><input type="checkbox" id="pref-shake"> SCREEN SHAKE</label></div>
+  <div class="comfort-grid settings-comfort"><label><input type="checkbox" id="pref-autoFire"> AUTO FIRE</label><label><input type="checkbox" id="pref-sound"> SOUND</label><label><input type="checkbox" id="pref-shake"> SCREEN SHAKE</label><label><input type="checkbox" id="pref-leftHanded"> SWAP CONTROLS</label></div>
   <div class="settings-actions"><button data-action="settings-back">◀ BACK</button><button class="primary" data-action="settings-play">▶ PLAY NOW</button></div>
 </template>
   <script src="game.js"></script>

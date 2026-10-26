@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import assert from 'node:assert/strict';
 const handlers={},nodes=new Map();
 function node(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',value:'',dataset:{},style:{},
-  classList:{add(){},remove(){},contains(){return false},toggle(){}},setPointerCapture(){},releasePointerCapture(){},
+  classList:(()=>{const flags=new Set();return {add(k){flags.add(k)},remove(k){flags.delete(k)},contains(k){return flags.has(k)},toggle(k,v){const active=v===undefined?!flags.has(k):!!v;if(active)flags.add(k);else flags.delete(k);return active}}})(),setPointerCapture(){},releasePointerCapture(){},
   getBoundingClientRect(){return {left:0,top:0,width:148,height:148}},
   addEventListener(name,fn){(handlers[id+':'+name]??=[]).push(fn)},querySelector(){return null}});return nodes.get(id)}
 const ctx=new Proxy({fillText(){},scale(){},clearRect(){},fillRect(){},strokeRect(){},beginPath(){},closePath(){},moveTo(){},lineTo(){},stroke(){},arc(){},fill(){},save(){},restore(){},translate(){},rotate(){}},{get(t,p){return t[p]},set(t,p,v){t[p]=v;return true}});
@@ -13,7 +13,7 @@ node('bot-skill').value='normal';
 node('bot-count').value='1';node('bullet-cap').value='3';node('lives-choice').value='5';node('team-choice').value='ffa';node('arena-choice').value='0';
 let frame=null,tick=0,hostCalled=false,discoverCalled=false,packets=[];
 const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},joinGame(){},stopNetwork(){},sendPacket(p){packets.push(JSON.parse(p))}};
-const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(){return null},setItem(){}}},document={getElementById:node,querySelectorAll(){return []}};
+const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(){return null},setItem(){}}},document={getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(){return []}};
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
 script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,teamOf,botInput,hasLineOfSight,comfort,releaseControls};})();');
@@ -59,6 +59,18 @@ const authoritative=packets.find(p=>p.type==='state').state;
 win.RR.nativeMessage(JSON.stringify({type:'state',state:authoritative}));
 assert.equal(st().tanks.length,6);assert.equal(st().mazeSeed,authoritative.mazeSeed);
 runFrames(6);assert.ok(packets.some(p=>p.type==='input'&&'moveX' in p.input),'guest sends analog input');
+// New mobile accessibility: swappable touch columns, controls guide, and pause on background.
+click('solo');click('help');assert.ok(node('panel').innerHTML.includes('HOW TO <span>PLAY</span>'));
+click('help-back');assert.equal(node('panel').innerHTML,'','returns to original menu markup in this DOM test');
+node('pref-leftHanded').checked=true;for(const cb of handlers['panel:change'])cb({target:{id:'pref-leftHanded',checked:true}});
+assert.equal(win.__test.comfort.leftHanded,true);assert.equal(node('battlefield').classList.contains('swap-controls'),true);
+// The muzzle cannot cross a solid wall even if the tank body is right beside it.
+node('arena-choice').value='0';click('solo');const nearWall=st().tanks[0];nearWall.x=190;nearWall.y=160;nearWall.a=0;
+assert.equal(win.__test.shoot(0),true);assert.ok(st().bullets.at(-1).x<=210,'shell starts in front of wall, not behind it');
+click('host');win.RR.nativeMessage(JSON.stringify({type:'connected'}));
+assert.equal(win.__test.serializeState().hostPaused,false);
+win.RR.appPause();assert.equal(win.__test.serializeState().hostPaused,true,'background host must pause');
+assert.ok(packets.some(p=>p.type==='state'&&p.state.hostPaused===true),'paused state immediately sent to guest');
 // Existing compact Pinball bumper remains functional in solo.
 node('bot-count').value='1';node('team-choice').value='ffa';node('lives-choice').value='5';node('arena-choice').value='2';
 click('solo');assert.equal(st().arenaId,2);st().bullets=[{x:197,y:225,vx:200,vy:0,owner:0,life:1,bounces:0,age:0}];
@@ -87,4 +99,4 @@ const md=handlers['joystick:pointerdown'][0],mm=handlers['joystick:pointermove']
 assert.ok(win.__test.makeControl(true).moveX>.8);
 handlers['menu-button:click'][0]();assert.equal(win.__test.makeControl(true).moveX,0);
 assert.equal(win.__test.serializeState().hostPaused,true,'host pause is synchronized');
-console.log('PASS v0.6: originals + visual options, bot skill, safe wall aiming, shield fairness, reflected self-hits, fixed-step simulation, synced host pause and input release.');
+console.log('PASS v0.6.2: originals + visual options, bot skill, safe wall aiming, shield fairness, reflected self-hits, fixed-step simulation, synced host pause and input release.');

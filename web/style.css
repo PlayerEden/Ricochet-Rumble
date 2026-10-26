@@ -31,6 +31,12 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit
 .comfort-fold{margin:4px 0 7px;border:1px solid #3a6678;border-radius:8px;background:#0b2734}.comfort-fold summary{touch-action:manipulation;cursor:pointer;color:#d0e8f0;padding:7px 10px;font-size:clamp(10px,1.15vw,12px);font-weight:900;letter-spacing:.5px}.comfort-grid{display:flex;flex-wrap:wrap;gap:4px 12px;padding:4px 10px 9px}.comfort-grid label{display:inline-flex;align-items:center;gap:5px;color:#d1e9ee;font-size:clamp(10px,1.2vw,12px);font-weight:800;white-space:nowrap;touch-action:manipulation}.comfort-grid input{width:18px;height:18px;accent-color:#51d9ff;touch-action:manipulation}
 @media(max-height:390px){.shell-meter{display:none}.menu-heading p{display:none}.panel{padding:7px 12px}.panel button{min-height:30px;margin:2px 0}.arena-label{margin-bottom:4px}.settings-fold summary,.comfort-fold summary{padding:5px 8px}.panel .note{display:none}}
 
+/* No extra UI rows: keep the mobile menu playable on 740px landscape screens. */
+.menu-heading .eyebrow{display:flex;justify-content:center;align-items:center;gap:12px}
+.panel .menu-help{flex:0 0 auto;width:auto;min-height:26px;margin:0;padding:2px 9px;border:1px solid #4d8190;background:#0d3240;color:#d7f5ff;border-radius:6px;font-weight:900;font-size:11px;touch-action:manipulation}
+.battlefield.swap-controls .touch-left{grid-column:3;grid-row:1}
+.battlefield.swap-controls .arena-wrap{grid-column:2;grid-row:1}
+.battlefield.swap-controls .touch-right{grid-column:1;grid-row:1}
 /* Main menu stays one-tap; advanced rules are an intentional second screen. */
 .panel .settings-button{border-color:#4a8192;background:#112f40;color:#dbeef0;font-size:clamp(11px,1.35vw,14px)}
 .settings-head{text-align:center}.settings-head h2{font-size:clamp(18px,3.8dvh,28px)}.settings-head p{margin:2px 0 4px}
@@ -38,3 +44,7 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit
 .settings-comfort{justify-content:center;border-top:1px solid #376375;margin-top:5px;padding:7px 0 3px}
 .settings-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.settings-actions button{margin:0!important}
 @media(max-width:760px){.settings-page{gap:4px 6px}.settings-head p{display:none}.settings-comfort{margin-top:3px;padding:4px 0}.settings-page select{height:30px}}
+
+.help-copy{font-size:clamp(10px,1.35vw,13px);line-height:1.25;display:grid;grid-template-columns:1fr 1fr;gap:5px 13px;margin:7px 0 10px;text-align:left}
+.help-copy p{margin:0;color:#d2e8ef}.help-copy strong{color:#81ddf1}
+@media(max-width:760px){.help-copy{gap:3px 9px;font-size:10px;margin:3px 0 6px}}
