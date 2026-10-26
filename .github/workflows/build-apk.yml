@@ -1,4 +1,4 @@
-name: Android Test APK # Unified Arena v0.8.0
+name: Android Test APK # Unified Arena v0.8.0 final readability
 on:
   workflow_dispatch:
   push:
