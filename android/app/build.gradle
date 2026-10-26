@@ -6,8 +6,8 @@ android {
         applicationId 'com.playereden.ricochetrumble'
         minSdk 26
         targetSdk 35
-        versionCode 16
-        versionName '0.9.3-fieldgrid-visual'
+        versionCode 17
+        versionName '0.9.4-fieldgrid-clarity'
     }
     buildTypes {
         release { minifyEnabled false }

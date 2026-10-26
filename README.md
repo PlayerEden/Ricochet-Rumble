@@ -1,3 +1,5 @@
+**v0.9.4 FIELDGRID visual clarity (experimental):** cleaned up combat alerts, clipped minimap effects, clarified distinct mech/pilot/projectile visuals and kept pilot-vs-tank tactics. See [visual QA report](docs/VISUAL_CLARITY_v0.9.4.md).
+
 # Ricochet Rumble — FIELDGRID v0.9.3 Visual System
 
 Actual in-engine art and launcher-icon update on `dev/fieldgrid-visual`. See [visual QA record](docs/VISUAL_AUDIT_v0.9.3.md). Previous v0.9.2 text is preserved below for background.

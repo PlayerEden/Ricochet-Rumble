@@ -130,3 +130,9 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit
 .interact-btn{border-color:#a0dfc9;background:#21483f;color:#e8fff5;border-radius:7px;box-shadow:0 0 0 2px #183d34aa}
 .quick-rematch{border-radius:7px;box-shadow:0 5px 18px #000a}
 @media(max-width:850px){.brand-stack strong{font-size:clamp(10px,1.45vw,16px)}.scorestrip{justify-content:space-around;gap:5px}.scorestrip .middle{font-size:clamp(9px,1.12vw,12px)!important}}
+
+/* v0.9.4 visual clarity: tactile but restrained controls; no hit-area reduction. */
+.stick-knob span{font-size:clamp(13px,1.9vw,18px);line-height:1;color:#c6f7ff;opacity:.9}
+.fire-btn{box-shadow:0 0 0 3px #8f484435,0 3px 0 #5d2e2a,inset 0 2px 5px #ffd4c643}
+.control-caption{opacity:.78}
+@media(max-width:850px){.game-identity .brand-stack strong{letter-spacing:0;font-size:clamp(10px,1.7vw,13px)}}

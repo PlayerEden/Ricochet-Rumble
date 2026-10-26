@@ -184,7 +184,7 @@ function serializeState(){return {tanks:state.tanks.map(t=>({...t})),vehicles:(s
 function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  document.getElementById('score0').textContent=state.lives[me]??0;document.getElementById('score1').textContent=state.lives[other]??0;
  const botLives=state.lives.slice(state.humanCount||2).filter(v=>v>0).length,active=state.bullets.filter(b=>b.owner===me).length;
- document.getElementById('round').textContent=(mode==='guest'&&state.hostPaused)?'HOST PAUSED':state.winner>=0?'MATCH OVER':state.tanks[me]?.onFoot?'ON FOOT · FIND VEHICLE':`${vehicleDef(currentVehicle(state.tanks[me])).name} ${currentVehicle(state.tanks[me])?.armor??0}/${vehicleDef(currentVehicle(state.tanks[me])).armor} ARMOR`;
+ document.getElementById('round').textContent=(mode==='guest'&&state.hostPaused)?'HOST PAUSED':state.winner>=0?'MATCH OVER':state.tanks[me]?.onFoot?'ON FOOT · FAST + ARMED':`${vehicleDef(currentVehicle(state.tanks[me])).name} ${currentVehicle(state.tanks[me])?.armor??0}/${vehicleDef(currentVehicle(state.tanks[me])).armor} ARMOR`;
  const interact=document.getElementById('interact-btn');if(interact){const active=isPilotMatch()&&state.lives[me]>0;const near=active&&state.tanks[me]?.onFoot?nearestEmptyVehicle(me):null;interact.classList.toggle('hidden',!active||(state.tanks[me]?.onFoot&&!near));interact.textContent=state.tanks[me]?.onFoot?'ENTER '+vehicleDef(near).name:'EXIT '+vehicleDef(currentVehicle(state.tanks[me])).name;}
  document.getElementById('game-screen')?.classList.toggle('pilot-match',isPilotMatch());
  const shellMeter=document.getElementById('shell-meter');if(shellMeter){const cap=state.tanks[me]?.onFoot?2:(currentVehicle(state.tanks[me])?.type==='mech'?2:(state.config?.bulletCap||3));shellMeter.textContent=`${Math.max(0,cap-active)}/${cap} READY`;shellMeter.classList.toggle('empty',active>=cap)}
@@ -318,16 +318,26 @@ function drawTopTank(c,paint,parked=false){
  c.restore();
 }
 function drawTopMech(c,paint,parked=false){
- // A broad, unmistakable walker silhouette, not a recolored tank.
- c.save();c.lineWidth=2;c.strokeStyle='#081622';
- c.fillStyle='#172536';c.fillRect(-24,-27,16,21);c.fillRect(-24,7,16,21);c.fillRect(11,-28,17,19);c.fillRect(11,9,17,19);
- c.fillStyle='#5a627c';for(const y of [-24,17]){c.fillRect(-22,y,13,7);c.fillRect(12,y,13,7)}
- c.fillStyle=paint;c.fillRect(-17,-19,34,38);c.strokeRect(-17,-19,34,38);
- c.fillStyle='#172c3c';c.fillRect(-10,-12,21,24);
- c.fillStyle='#d3e8fd';c.fillRect(-5,-8,11,16);
- c.fillStyle=paint;c.fillRect(13,-10,14,20);c.strokeRect(13,-10,14,20);
- c.fillStyle='#172c3c';c.fillRect(23,-6,11,12);c.fillStyle='#e8f6ff';c.fillRect(32,-3,5,6);
- if(parked){c.strokeStyle='#cba9f1';c.lineWidth=2;c.strokeRect(-29,-32,61,64)}
+ // True top-down walker: two separate articulated legs, shoulders and central cockpit.
+ // Readable at phone scale; the dark gaps distinguish the mech from tracked tanks.
+ c.save();c.lineWidth=2;c.strokeStyle='#071723';
+ for(const side of [-1,1]){
+   c.save();c.scale(1,side);
+   c.fillStyle='#111f2c';c.fillRect(-25,12,17,12);c.fillRect(-22,19,15,17);
+   c.fillStyle=paint;c.fillRect(-23,15,12,9);c.strokeRect(-23,15,12,9);
+   c.fillStyle='#6c84a0';c.fillRect(-20,28,16,7);c.strokeRect(-20,28,16,7);
+   // Forward shoulder/arm, separated visibly from the torso.
+   c.fillStyle=paint;c.fillRect(2,17,17,12);c.strokeRect(2,17,17,12);
+   c.fillStyle='#192a3e';c.fillRect(13,19,12,7);c.strokeRect(13,19,12,7);
+   c.restore();
+ }
+ c.fillStyle='#17283a';c.fillRect(-14,-17,32,34);
+ c.fillStyle=paint;c.fillRect(-13,-15,27,30);c.strokeRect(-13,-15,27,30);
+ c.fillStyle='#243d55';c.fillRect(-8,-10,16,20);
+ c.fillStyle='#e5e5ff';c.fillRect(-3,-8,9,16);
+ c.fillStyle='#162639';c.fillRect(12,-6,20,12);c.strokeRect(12,-6,20,12);
+ c.fillStyle=paint;c.fillRect(27,-5,8,10);c.fillStyle='#e6f8ff';c.fillRect(33,-3,5,6);
+ if(parked){c.strokeStyle='#cfb4fd';c.lineWidth=2;c.strokeRect(-29,-38,67,76)}
  c.restore();
 }
 function drawTopPilot(c,paint,shooting=false){
@@ -400,7 +410,15 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  if(t.shield>0){c.beginPath();c.arc(t.x,t.y,32+Math.sin(t.shield*10)*2,0,Math.PI*2);c.strokeStyle=colors[i];c.globalAlpha=clamp(t.shield/1.8*.8,0,.8);c.lineWidth=3;c.stroke();c.globalAlpha=1}
  c.fillStyle=colors[i];c.font='bold 13px system-ui';c.textAlign='center';c.fillText(i<state.humanCount?'P'+(i+1):'AI'+(i-state.humanCount+1),t.x,t.y-38);
  if(i===(mode==='guest'?1:0)){c.beginPath();c.moveTo(t.x,t.y-59);c.lineTo(t.x-8,t.y-71);c.lineTo(t.x+8,t.y-71);c.closePath();c.fillStyle='#ffffff';c.fill();}}
- for(const b of state.bullets){const len=Math.min(b.kind==='sidearm'?10:b.kind==='mech'?24:19,Math.hypot(b.vx,b.vy)*.037);c.beginPath();c.moveTo(b.x-b.vx/405*len,b.y-b.vy/405*len);c.lineTo(b.x,b.y);c.strokeStyle=colors[b.owner];c.lineWidth=b.kind==='mech'?6:4;c.stroke();c.beginPath();c.arc(b.x,b.y,b.kind==='sidearm'?3.5:b.kind==='mech'?7.5:6,0,Math.PI*2);c.fillStyle='#f8ffff';c.shadowColor=colors[b.owner];c.shadowBlur=15;c.fill();c.shadowBlur=0}
+ for(const b of state.bullets){
+   const foot=b.kind==='sidearm',heavy=b.kind==='mech';
+   const length=Math.min(foot?10:heavy?24:19,Math.hypot(b.vx,b.vy)*.037);
+   c.beginPath();c.moveTo(b.x-b.vx/405*length,b.y-b.vy/405*length);c.lineTo(b.x,b.y);
+   c.strokeStyle=foot?'#d9f3e8':colors[b.owner];c.lineWidth=foot?2.5:heavy?6:4;c.stroke();
+   c.beginPath();c.arc(b.x,b.y,foot?3.2:heavy?8:6,0,Math.PI*2);
+   c.fillStyle=foot?'#dbffd8':'#f8ffff';c.shadowColor=colors[b.owner];c.shadowBlur=foot?3:heavy?17:12;c.fill();c.shadowBlur=0;
+   if(heavy){c.beginPath();c.arc(b.x,b.y,11,0,Math.PI*2);c.strokeStyle='#c5a6ff';c.lineWidth=2;c.stroke();}
+ }
  for(const p of particles){c.globalAlpha=clamp(p.life/p.maxLife,0,1);c.fillStyle=p.color;c.fillRect(p.x,p.y,p.size,p.size)}c.globalAlpha=1;
  c.restore();
  // Help a recently ejected pilot recover without a map-reading tutorial.
@@ -421,7 +439,11 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  }
  if(mazeGrid){const mw=150,mh=Math.round(mw*worldH/worldW),mx=W-mw-16,my=14;
  c.fillStyle='#071722ed';c.fillRect(mx-5,my-5,mw+10,mh+10);c.strokeStyle='#5b8997';c.lineWidth=1;c.strokeRect(mx-5,my-5,mw+10,mh+10);
- c.save();c.translate(mx,my);c.scale(mw/worldW,mh/worldH);c.fillStyle='#19313e';c.fillRect(0,0,worldW,worldH);
+ c.save();c.translate(mx,my);
+ // Constrain *all* minimap markers and deployment rings to the actual radar panel.
+ // Without this, near-edge deployment rings spill across its frame and HUD.
+ c.beginPath();c.moveTo(0,0);c.lineTo(mw,0);c.lineTo(mw,mh);c.lineTo(0,mh);c.closePath();c.clip();
+ c.scale(mw/worldW,mh/worldH);c.fillStyle='#19313e';c.fillRect(0,0,worldW,worldH);
  c.fillStyle='#789ba7';for(const w of wallSet)c.fillRect(w.x,w.y,w.w,w.h);if(isPilotMatch()){for(const v of state.vehicles)if(v.occupant===-1&&v.armor>0){c.fillStyle=v.type==='mech'?'#d7a8ff':'#74e0a6';c.fillRect(v.x-28,v.y-28,56,56);}}
  if(state.vehicleBeacon?.ttl>0){c.strokeStyle='#fff6bf';c.lineWidth=19;c.beginPath();c.arc(state.vehicleBeacon.x,state.vehicleBeacon.y,55+Math.sin(visualClock*6)*15,0,Math.PI*2);c.stroke();}
  for(let i=0;i<state.tanks.length;i++){if(state.lives[i]<=0)continue;const t=state.tanks[i],me=mode==='guest'?1:0;if(i!==me&&Math.hypot(t.x-state.tanks[me].x,t.y-state.tanks[me].y)>400)continue;c.beginPath();c.arc(t.x,t.y,37,0,Math.PI*2);c.fillStyle=colors[i];c.fill()}
@@ -430,7 +452,17 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
    if(Math.hypot(fx.x-local.x,fx.y-local.y)>1000)continue;
    c.globalAlpha=.75*Math.min(1,fx.ttl/.4);c.strokeStyle='#ffd17c';c.lineWidth=22;c.beginPath();c.arc(fx.x,fx.y,80+(1.8-fx.ttl)*95,0,Math.PI*2);c.stroke();}
  c.globalAlpha=1;c.strokeStyle='#ffffff';c.lineWidth=9;c.strokeRect(camera.x,camera.y,viewW,viewH);c.restore();}
- if(state.eventTimer>0&&state.winner<0){c.fillStyle='#071b26c9';c.fillRect(W/2-160,28,320,44);c.fillStyle='#f7e9b9';c.font='900 19px system-ui';c.textAlign='center';c.fillText(state.event,W/2,56)}
+ if(state.eventTimer>0&&state.winner<0){
+   // Events belong to the world and should not interrupt center-screen combat.
+   // Enemy life losses are secondary information, not a blocking announcement.
+   const msg=String(state.event||'').toUpperCase();const text=msg.length>38?msg.slice(0,35)+'…':msg;
+   const secondary=/^BOT \d+ LOSES A LIFE/.test(msg);
+   const width=Math.min(400,Math.max(158,text.length*8.4+34));
+   c.fillStyle='#081d29e0';c.fillRect(17,17,width,33);
+   c.fillStyle=secondary?'#738d9b':'#e5be7b';c.fillRect(17,17,3,33);
+   c.fillStyle=secondary?'#aac5d0':'#f8eacb';c.font='800 15px system-ui';c.textAlign='left';
+   c.fillText(text,29,39);
+ }
  if(state.winner>=0){c.fillStyle='#071b26df';c.fillRect(0,0,W,H);c.fillStyle=colors[state.winner]||'#fff';c.font='900 46px system-ui';c.textAlign='center';c.fillText(state.event,W/2,H/2-38);c.fillStyle='#deedf0';c.font='bold 18px system-ui';c.fillText(mode==='guest'?'WAITING FOR HOST TO START NEXT MATCH':'READY FOR ANOTHER ROUND?',W/2,H/2+12)}
  if(paused&&mode==='host'&&!connected){c.fillStyle='#071b26b5';c.fillRect(0,0,W,H);c.fillStyle='#d4f0f2';c.font='bold 28px system-ui';c.textAlign='center';c.fillText('WAITING FOR PLAYER TWO',W/2,H/2)}
  if(damagePulse>0){c.strokeStyle='#ff766d';c.globalAlpha=Math.min(.65,damagePulse);c.lineWidth=12+damagePulse*24;c.strokeRect(7,7,W-14,H-14);c.globalAlpha=1}
@@ -452,7 +484,7 @@ panel.addEventListener('change',e=>{const el=e.target;if(el.id?.startsWith('pref
 loadPrefs();
 
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
- if(a==='help'){setPanel('<div class="eyebrow">QUICK GUIDE</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>MOVE:</strong> Push the joystick in any direction. The tank points where it drives.</p><p><strong>FIRE:</strong> Hold FIRE, or enable AUTO FIRE in settings. Only a few shells can be active per tank.</p><p><strong>WIN:</strong> Bounce shots around corners, find pickups, and outlast the other tanks. Hits cost a life, not the whole round.</p><p><strong>MAZES:</strong> The camera follows you. Orange minimap rings show nearby gunfire; teammates cannot hurt each other.</p><p><strong>PILOTS + VEHICLES:</strong> Start in a tank. Tanks have 3 armor; slower mechs have 4 armor and heavier shots. On foot, get near any empty vehicle to enter.</p><p><strong>FIELDGRID:</strong> Every match generates a fresh maze. Vehicle deployments are marked on the minimap briefly.</p></div><button class="primary" data-action="help-back">◀ BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
+ if(a==='help'){setPanel('<div class="eyebrow">QUICK GUIDE</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>MOVE:</strong> Push the joystick in any direction. The tank points where it drives.</p><p><strong>FIRE:</strong> Hold FIRE, or enable AUTO FIRE in settings. Only a few shells can be active per tank.</p><p><strong>WIN:</strong> Outlast enemy pilots. Hits first damage vehicle armor; getting hit on foot costs a pilot life.</p><p><strong>MAZES:</strong> The camera follows you. Orange minimap rings show nearby gunfire; teammates cannot hurt each other.</p><p><strong>PILOTS + VEHICLES:</strong> Start in a tank (3 armor). Mechs have 4 armor and heavier shots. On foot you are faster, smaller, and still armed; dodge or fight, then ENTER a nearby vehicle.</p><p><strong>FIELDGRID:</strong> Every match generates a fresh maze. Vehicle deployments are marked on the minimap briefly.</p></div><button class="primary" data-action="help-back">◀ BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
  const s=document.getElementById('lan-address').value.trim(),m=s.match(/^([\da-fA-F:.]+):(\d{1,5})$/);
  if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';window.AndroidBridge.joinGame(m[1],Number(m[2]));}});
 function showPauseMenu(){releaseControls();if(mode==='idle')return;

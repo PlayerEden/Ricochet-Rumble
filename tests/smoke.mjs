@@ -7,7 +7,7 @@ function node(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',va
   classList:(()=>{const flags=new Set();return {add(k){flags.add(k)},remove(k){flags.delete(k)},contains(k){return flags.has(k)},toggle(k,v){const active=v===undefined?!flags.has(k):!!v;if(active)flags.add(k);else flags.delete(k);return active}}})(),setPointerCapture(){},releasePointerCapture(){},
   getBoundingClientRect(){return {left:0,top:0,width:148,height:148}},
   addEventListener(name,fn){(handlers[id+':'+name]??=[]).push(fn)},querySelector(){return null}});return nodes.get(id)}
-const ctx=new Proxy({fillText(){},scale(){},clearRect(){},fillRect(){},strokeRect(){},beginPath(){},closePath(){},moveTo(){},lineTo(){},stroke(){},arc(){},fill(){},save(){},restore(){},translate(){},rotate(){}},{get(t,p){return t[p]},set(t,p,v){t[p]=v;return true}});
+const ctx=new Proxy({fillText(){},scale(){},clearRect(){},fillRect(){},strokeRect(){},beginPath(){},closePath(){},moveTo(){},lineTo(){},stroke(){},clip(){},arc(){},fill(){},save(){},restore(){},translate(){},rotate(){}},{get(t,p){return t[p]},set(t,p,v){t[p]=v;return true}});
 node('arena').getContext=()=>ctx;
 node('bot-skill').value='normal';
 node('bot-count').value='1';node('bullet-cap').value='3';node('lives-choice').value='5';node('team-choice').value='ffa';node('map-size').value='standard';
@@ -39,7 +39,7 @@ const player=st().tanks[0],homeTank=st().vehicles[player.vehicleId];
 assert.equal(homeTank.type,'tank');assert.equal(homeTank.armor,3);assert.equal(node('round').textContent.includes('3/3 ARMOR'),true);
 player.shield=0;
 for(let i=2;i>=0;i--){assert.equal(win.__test.registerHit(1,0),true);assert.equal(homeTank.armor,i);assert.equal(st().lives[0],2)}
-assert.equal(player.onFoot,true,'tank destruction ejects alive pilot');assert.equal(node('round').textContent,'ON FOOT · FIND VEHICLE');
+assert.equal(player.onFoot,true,'tank destruction ejects alive pilot');assert.equal(node('round').textContent,'ON FOOT · FAST + ARMED');
 assert.ok(player.shield>1,'brief ejection immunity');player.shield=0;
 assert.equal(win.__test.registerHit(1,0),true,'on-foot hit costs life');assert.equal(st().lives[0],1);
 const spare=st().vehicles.find(v=>v.armor>0&&v.occupant===-1);
@@ -156,3 +156,23 @@ console.log('PASS v0.9.2: stranded-pilot recovery cue and guest menu neutral inp
 console.log('PASS v0.9.1 QA: 0-bot practice, default comfort, contextual hint, win/replay/new seed, vehicle weapon distinction.');
 
 console.log('PASS FIELDGRID v0.9: generated map sizes; 180 seed checks; mixed tank/mech spawns; timed drops; armor/ejection; 1,500-frame stress; LAN state and contextual controls.');
+
+// v0.9.4 clarity audit: retained fast, small pilot can destroy armor from outside a vehicle.
+click('solo');
+const footP=st().tanks[0], opponent=st().tanks[1];
+const enemyArmor=st().vehicles[opponent.vehicleId];
+assert.equal(footP.onFoot,false,'default still starts in a tank for instant combat');
+assert.equal(win.__test.tryInteract(0),true,'voluntary ejection is always available');
+assert.equal(footP.onFoot,true);assert.equal(footP.vehicleId,null);
+assert.ok(script.includes('inp.bot?194:268'),'human pilot keeps its faster movement');
+assert.ok(script.includes('const radius=t.onFoot?10:21'),'pilot can use narrower passages');
+assert.ok(script.includes('(t.onFoot?14:26)'),'pilot remains a smaller projectile target');
+assert.equal(win.__test.shoot(0),true);assert.equal(st().bullets.at(-1).kind,'sidearm');
+opponent.shield=0;
+for(let a=2;a>=0;a--){assert.equal(win.__test.registerHit(0,1),true);assert.equal(enemyArmor.armor,a)}
+assert.equal(opponent.onFoot,true,'a pilot can defeat an armored tank');
+assert.ok(st().lives[1]>0,'tank destruction ejects instead of removing pilot lives');
+assert.ok(script.includes('c.clip()'),'radar has clipped deployment pings');
+assert.ok(!script.includes('fillRect(W/2-160,28,320,44)'),'large center-covering event removed');
+assert.ok(menuHtml.includes('aria-hidden="true">●</span>'),'movement knob no longer resembles an ability pickup');
+console.log('PASS v0.9.4 visual clarity: pilot duel advantage, tactical sidearm, radar clipping, event placement, joystick symbol.');
