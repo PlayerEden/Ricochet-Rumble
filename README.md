@@ -1,6 +1,6 @@
 # Ricochet Rumble
 
-**v0.9.0 — FIELDGRID experimental build** (`dev/procedural-deployments`). A free, offline-first Android arcade game about pilots, tanks, mechs and ricochet combat. Gameplay and assets are bundled in one APK.
+**v0.9.1 — FIELDGRID experimental build** (`dev/procedural-deployments`). A free, offline-first Android arcade game about pilots, tanks, mechs and ricochet combat. Gameplay and assets are bundled in one APK.
 
 ## One game, fresh battlefield every match
 
@@ -27,3 +27,7 @@ At the start of a match, extra vehicles are distributed across the map, with one
 ## Limitations
 
 Browser and scripted tests are not a human playtest. The new mech's handling, timed drops, phone frame rate and two-phone synchronization need validation on Android devices. The stable `main` and prior development branches remain unchanged.
+
+## v0.9.1 quality review
+
+See [multi-pass design, accessibility, pacing and systems audit](docs/QA_ROUNDS_v0.9.1.md) for verified changes, research references, and unresolved on-phone acceptance checks.

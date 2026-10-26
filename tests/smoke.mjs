@@ -28,7 +28,7 @@ assert.equal(menuHtml.includes('data-action="pilot"'),false);
 assert.equal(menuHtml.includes('data-action="solo"'),true);
 assert.equal(menuHtml.includes('data-action="nearby"'),true);
 assert.equal(menuHtml.includes('data-action="duel"'),false);
-assert.ok(menuHtml.includes('PILOT LIVES'));assert.ok(menuHtml.includes('MAP SIZE'));assert.equal(menuHtml.includes('arena-choice'),false,'No map picker');
+assert.ok(menuHtml.includes('PILOT LIVES'));assert.ok(menuHtml.includes('FIELD SIZE'));assert.equal(menuHtml.includes('arena-choice'),false,'No map picker');
 node('lives-choice').value='2';node('map-size').value='standard';
 click('solo');runFrames(8);assert.equal(node('mode-label').textContent,'QUICK MATCH');
 assert.equal(st().config.pilotMode,true);assert.equal(st().lives[0],2);
@@ -39,7 +39,7 @@ const player=st().tanks[0],homeTank=st().vehicles[player.vehicleId];
 assert.equal(homeTank.type,'tank');assert.equal(homeTank.armor,3);assert.equal(node('round').textContent.includes('3/3 ARMOR'),true);
 player.shield=0;
 for(let i=2;i>=0;i--){assert.equal(win.__test.registerHit(1,0),true);assert.equal(homeTank.armor,i);assert.equal(st().lives[0],2)}
-assert.equal(player.onFoot,true,'tank destruction ejects alive pilot');assert.equal(node('round').textContent,'ON FOOT · SIDEARM');
+assert.equal(player.onFoot,true,'tank destruction ejects alive pilot');assert.equal(node('round').textContent,'ON FOOT · FIND VEHICLE');
 assert.ok(player.shield>1,'brief ejection immunity');player.shield=0;
 assert.equal(win.__test.registerHit(1,0),true,'on-foot hit costs life');assert.equal(st().lives[0],1);
 const spare=st().vehicles.find(v=>v.armor>0&&v.occupant===-1);
@@ -118,4 +118,28 @@ click('help');assert.ok(node('panel').innerHTML.includes('HOW TO <span>PLAY</spa
 click('help-back');click('settings');node('pref-leftHanded').checked=true;for(const cb of handlers['panel:change'])cb({target:{id:'pref-leftHanded',checked:true}});
 assert.equal(win.__test.comfort.leftHanded,true);assert.equal(node('battlefield').classList.contains('swap-controls'),true);
 assert.ok(script.includes('drawTopPilot')&&script.includes('drawTopTank')&&script.includes('drawTopMech'),'top-down drawing shared by occupied and parked vehicles');
+
+// v0.9.1 QA pass — learnability, default friction, and accessible no-bot practice.
+assert.ok(menuHtml.includes('id="quick-rematch"'),'visible one-tap replay control exists');
+assert.ok(menuHtml.includes('0 · PRACTICE'),'no-bots selection explains its purpose');
+assert.ok(script.includes('rr-coach-v091'),'nonmodal first-time coaching');
+assert.equal(win.__test.comfort.shake,false,'screen shake off by default for comfort');
+click('settings');node('bot-count').value='0';node('map-size').value='small';node('team-choice').value='ffa';
+click('settings-play');assert.equal(st().tanks.length,1,'0 bots should be a real safe practice field');
+assert.equal(st().config.botCount,0,'do not silently add a bot');
+assert.equal(node('mode-label').textContent,'PRACTICE FIELD');
+assert.equal(st().winner,-1);runFrames(60);assert.equal(st().winner,-1,'practice cannot win by itself');
+node('bot-count').value='2';click('solo');assert.equal(st().config.mapSize,'small');assert.equal(st().config.botCount,2);
+const initialMaze=st().mazeSeed;
+st().winner=0;st().event='CYAN WINS!';runFrames(14);
+assert.equal(node('quick-rematch').classList.contains('hidden'),false,'show replay at result screen');
+for(const f of handlers['quick-rematch:click'])f();
+assert.equal(st().winner,-1,'replay starts another match');
+assert.notEqual(st().mazeSeed,initialMaze,'replay refreshes procedural field');
+assert.equal(node('quick-rematch').classList.contains('hidden'),true,'no replay button during combat');
+// Mech shell limitation preserves separate tank identity and avoids limitless ricochets.
+assert.ok(script.includes("b.kind==='mech'?2:5"),'mech rounds stop after fewer bounces');
+assert.ok(script.includes("b.kind==='mech'?5:0"),'mech rounds have distinguishable hit width');
+console.log('PASS v0.9.1 QA: 0-bot practice, default comfort, contextual hint, win/replay/new seed, vehicle weapon distinction.');
+
 console.log('PASS FIELDGRID v0.9: generated map sizes; 180 seed checks; mixed tank/mech spawns; timed drops; armor/ejection; 1,500-frame stress; LAN state and contextual controls.');
