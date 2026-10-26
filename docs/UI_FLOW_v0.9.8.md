@@ -15,3 +15,10 @@
 
 ## Outstanding
 Physical device readability and thumb reach; two-phone host/guest test and on-device frame rate; Android debug key means users may need to uninstall before upgrading.
+
+## v0.9.8.1 corrective QA (October 26, 2026)
+- **Entry safety:** unoccupied tank/mech remains intangible for movement and bullets. Boarding now checks that no other living actor is standing on its deployment point. The vehicle stays available and a short message explains why ENTER could not activate.
+- **Mobile typography:** added Android's offline `sans-serif-condensed` fallback so FIELDGRID headings remain compact even without an installed Roboto Condensed font. Body font continues to favor readable Roboto/system sans.
+- **Small landscape:** keep the HELP caption on one line, with tighter eyebrow spacing at 390px height and below.
+- **New smoke coverage:** checks attempted overlapping boarding, successful boarding once clear, identical web/Android assets, and the offline font fallback. Game rules, arena art and network messages are otherwise unchanged.
+- **Verification:** the earlier v0.9.8 GitHub build and smoke tests succeeded. Run the v0.9.8.1 workflow before treating this patch as Android-verified; physical two-phone testing remains outstanding.
