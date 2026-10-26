@@ -1,7 +1,6 @@
-name: Signed Android APK
+name: Android Test APK
 on:
   workflow_dispatch:
-  # One-time signing setup check; automatic builds only on workflow changes.
   push:
     branches: [main]
     paths:
@@ -18,22 +17,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Restore the stable release signing key
-        env:
-          RR_SIGNING_PASSWORD: ${{ secrets.RR_SIGNING_PASSWORD }}
-        run: |
-          set -euo pipefail
-          if [[ -z "${RR_SIGNING_PASSWORD:-}" ]]; then
-            echo '::error::Missing RR_SIGNING_PASSWORD. See docs/SIGNING.md to set up the one-time GitHub secret.'
-            exit 1
-          fi
-          mkdir -p android/.signing
-          chmod 700 android/.signing
-          base64 --decode signing/ricochet-release.p12.gpg.b64 > android/.signing/ricochet-release.p12.gpg
-          printf '%s\n' "$RR_SIGNING_PASSWORD" | gpg --batch --yes --quiet --pinentry-mode loopback --no-symkey-cache --passphrase-fd 0 --decrypt --output android/.signing/ricochet-release.p12 android/.signing/ricochet-release.p12.gpg
-          chmod 600 android/.signing/ricochet-release.p12
-          rm -f android/.signing/ricochet-release.p12.gpg
-          keytool -list -keystore android/.signing/ricochet-release.p12 -storetype PKCS12 -storepass "$RR_SIGNING_PASSWORD" -alias ricochet >/dev/null
       - name: Install required Android SDK
         run: |
           set -euo pipefail
@@ -45,17 +28,12 @@ jobs:
           gradle-version: '8.9'
       - name: Run gameplay smoke tests
         run: node tests/smoke.mjs
-      - name: Build permanently signed release APK
+      - name: Build debug APK (no secrets required)
         working-directory: android
-        env:
-          RR_SIGNING_PASSWORD: ${{ secrets.RR_SIGNING_PASSWORD }}
-        run: gradle --no-daemon :app:assembleRelease
-      - name: Verify signed APK certificate
-        run: |
-          "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/apksigner" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk
+        run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: ricochet-rumble-0.6.1-SIGNED-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          name: ricochet-rumble-0.6.1-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
