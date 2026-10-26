@@ -22,3 +22,8 @@ The screenshot step is non-blocking; the gameplay tests and Android debug APK bu
 3. On a real phone at landscape sizes: check fingers do not obscure the ENTER/BAY BUSY cue, the primary HUD is not cut by a notch, and controls remain comfortable.
 4. Test two real phones on same Wi-Fi; scripts alone cannot verify network pairing/latency.
 5. Continue with short targeted UI iterations rather than introducing additional modes or vehicles yet.
+
+## Verified workflow result — October 26, 2026
+- [GitHub Actions run 40416502522](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40416502522): gameplay smoke tests **PASS**; screenshot capture **PASS**; both artifact uploads **PASS**; Android debug APK compilation **PASS**.
+- **30 Chromium screenshots** were captured, including baseline and updated screens. Home and collapsed-settings panel overflow was **false** at 740×360, 915×412, and 1280×720 in both versions.
+- The screenshots are artifacts for human visual review, not an independently completed artistic/pixel-by-pixel audit. Two-Android-device playtesting remains the next release gate.
