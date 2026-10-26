@@ -36,10 +36,10 @@ assert.equal(st().tanks[0].onFoot,false,'quick play begins inside a tank');
 assert.equal(st().vehicles[st().tanks[0].vehicleId].occupant,0);
 assert.ok(st().vehicles.some(v=>v.occupant===-1&&v.armor>0),'free vehicles available');assert.ok(st().vehicles.some(v=>v.type==='mech'&&v.occupant===-1),'mech to discover');
 const player=st().tanks[0],homeTank=st().vehicles[player.vehicleId];
-assert.equal(homeTank.type,'tank');assert.equal(homeTank.armor,3);assert.equal(node('round').textContent.includes('3/3 ARMOR'),true);
+assert.equal(homeTank.type,'tank');assert.equal(homeTank.armor,3);assert.equal(node('round').textContent.includes('TANK · 3/3'),true);
 player.shield=0;
 for(let i=2;i>=0;i--){assert.equal(win.__test.registerHit(1,0),true);assert.equal(homeTank.armor,i);assert.equal(st().lives[0],2)}
-assert.equal(player.onFoot,true,'tank destruction ejects alive pilot');assert.equal(node('round').textContent,'ON FOOT · FAST + ARMED');
+assert.equal(player.onFoot,true,'tank destruction ejects alive pilot');assert.equal(node('round').textContent,'PILOT · ON FOOT');
 assert.ok(player.shield>1,'brief ejection immunity');player.shield=0;
 assert.equal(win.__test.registerHit(1,0),true,'on-foot hit costs life');assert.equal(st().lives[0],1);
 const spare=st().vehicles.find(v=>v.armor>0&&v.occupant===-1);
@@ -88,7 +88,7 @@ assert.equal(st().config.mapSize,'large');
 const playerMech=st().tanks[0],occupiedMech=st().vehicles[playerMech.vehicleId],freeMech=st().vehicles.find(v=>v.type==='mech'&&v.occupant===-1&&v.armor>0);
 assert.ok(freeMech);assert.equal(win.__test.tryInteract(0),true,'exit starting tank');
 playerMech.x=freeMech.x-10;playerMech.y=freeMech.y;assert.equal(win.__test.tryInteract(0),true,'enter nearby mech');
-assert.equal(freeMech.occupant,0);assert.equal(node('round').textContent,'MECH 4/4 ARMOR');
+assert.equal(freeMech.occupant,0);assert.equal(node('round').textContent,'MECH · 4/4');
 win.__test.state.bullets=[];assert.equal(win.__test.shoot(0),true);assert.equal(st().bullets.at(-1).kind,'mech');assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),false,'mech has two active shells');
 for(let k=3;k>=0;k--){playerMech.shield=0;assert.equal(win.__test.registerHit(1,0),true);assert.equal(freeMech.armor,k);}
 assert.equal(playerMech.onFoot,true,'mech breaks and ejects pilot');assert.equal(st().lives[0],3,'mech loss does not consume pilot life');
