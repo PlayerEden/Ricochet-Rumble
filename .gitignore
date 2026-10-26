@@ -6,4 +6,6 @@ local.properties
 *.apk
 *.keystore
 *.jks
+*.p12
+android/.signing/
 .DS_Store

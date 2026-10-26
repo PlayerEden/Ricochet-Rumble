@@ -1,38 +1,56 @@
-# v0.6 quality pass Android build. Manual trigger remains available.
-name: Manual Android Debug APK
+name: Signed Android APK
 on:
   workflow_dispatch:
-  # Only auto-build when this workflow itself changes; gameplay pushes stay manual.
-  push:
-    paths:
-      - '.github/workflows/build-apk.yml'
 permissions:
   contents: read
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+      - name: Restore the stable release signing key
+        env:
+          RR_SIGNING_PASSWORD: ${{ secrets.RR_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${RR_SIGNING_PASSWORD:-}" ]]; then
+            echo '::error::Missing RR_SIGNING_PASSWORD. See docs/SIGNING.md to set up the one-time GitHub secret.'
+            exit 1
+          fi
+          mkdir -p android/.signing
+          chmod 700 android/.signing
+          base64 --decode signing/ricochet-release.p12.gpg.b64 > android/.signing/ricochet-release.p12.gpg
+          printf '%s\n' "$RR_SIGNING_PASSWORD" | gpg --batch --yes --quiet --pinentry-mode loopback --no-symkey-cache --passphrase-fd 0 --decrypt --output android/.signing/ricochet-release.p12 android/.signing/ricochet-release.p12.gpg
+          chmod 600 android/.signing/ricochet-release.p12
+          rm -f android/.signing/ricochet-release.p12.gpg
+          keytool -list -keystore android/.signing/ricochet-release.p12 -storetype PKCS12 -storepass "$RR_SIGNING_PASSWORD" -alias ricochet >/dev/null
       - name: Install required Android SDK
         run: |
-          echo "Using Android SDK at ${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          set -euo pipefail
           SDKMANAGER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
           test -n "$SDKMANAGER"
           "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Build debug APK
+      - name: Run gameplay smoke tests
+        run: node tests/smoke.mjs
+      - name: Build permanently signed release APK
         working-directory: android
-        run: gradle --no-daemon :app:assembleDebug
+        env:
+          RR_SIGNING_PASSWORD: ${{ secrets.RR_SIGNING_PASSWORD }}
+        run: gradle --no-daemon :app:assembleRelease
+      - name: Verify signed APK certificate
+        run: |
+          "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/apksigner" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: ricochet-rumble-0.6-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: ricochet-rumble-0.6.1-SIGNED-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 14

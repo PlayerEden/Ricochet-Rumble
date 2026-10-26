@@ -1,17 +1,36 @@
 plugins { id 'com.android.application' }
+
 android {
     namespace 'com.playereden.ricochetrumble'
     compileSdk 35
+
     defaultConfig {
         applicationId 'com.playereden.ricochetrumble'
         minSdk 26
         targetSdk 35
-        versionCode 6
-        versionName '0.6.0'
+        versionCode 7
+        versionName '0.6.1'
     }
+
+    // Use a stable app identity for updates. Never commit the decrypted keystore
+    // or the password to the public repository.
+    signingConfigs {
+        stableRelease {
+            storeFile file("${rootProject.projectDir}/.signing/ricochet-release.p12")
+            storePassword System.getenv('RR_SIGNING_PASSWORD') ?: ''
+            keyAlias 'ricochet'
+            keyPassword System.getenv('RR_SIGNING_PASSWORD') ?: ''
+            storeType 'PKCS12'
+        }
+    }
+
     buildTypes {
-        release { minifyEnabled false }
+        release {
+            signingConfig signingConfigs.stableRelease
+            minifyEnabled false
+        }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
