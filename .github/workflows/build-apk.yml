@@ -1,4 +1,4 @@
-name: Android Test APK
+name: Android Test APK # v0.6.2 visibility reliability patch
 on:
   workflow_dispatch:
   push:

@@ -238,7 +238,7 @@ function updateStick(e){const r=joystick.getBoundingClientRect(),cx=r.left+r.wid
 joystick.addEventListener('pointerdown',e=>{if(stick.pointerId!==null)return;e.preventDefault();stick.pointerId=e.pointerId;joystick.setPointerCapture(e.pointerId);joystick.classList.add('active');updateStick(e)});
 joystick.addEventListener('pointermove',e=>{if(stick.pointerId===e.pointerId){e.preventDefault();updateStick(e)}});
 for(const key of ['pointerup','pointercancel','lostpointercapture'])joystick.addEventListener(key,e=>{if(stick.pointerId===e.pointerId){clearStick();try{joystick.releasePointerCapture(e.pointerId)}catch(_){}}});
-window.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&window.RR?.appPause)window.RR.appPause()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&window.RR?.appPause)window.RR.appPause()});
 window.RR={openMenu(){if(menu.classList.contains('hidden'))showPauseMenu();else if(mode==='idle')stop();else if(mode==='solo'||mode==='duel'||mode==='host'){paused=false;exitMenu()}else exitMenu()},appPause(){releaseControls();if((mode==='solo'||mode==='duel'||mode==='host')&&menu.classList.contains('hidden')){showPauseMenu();if(mode==='host'&&connected)nativePacket({type:'state',state:serializeState()});}
   if(mode==='guest'&&connected)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}})},nativeMessage(json){let msg;try{msg=JSON.parse(json)}catch(_){return}if(!msg||typeof msg.type!=='string')return;
  switch(msg.type){case 'hosting':{const p=document.getElementById('host-status');if(p)p.textContent='Waiting for another phone to join...';const a=document.getElementById('host-address');if(a)a.textContent=(msg.address||'LOCAL NETWORK')+':'+msg.port;break}
