@@ -28,3 +28,10 @@ Rollback branch: `dev/sector-rebound-fullscreen-v0910`.
 
 ## Release gate
 Review screenshots, gameplay checks, Android APK; obtain a physical phone playtest before merging.
+
+## Verified build checkpoint — October 26, 2026
+- GitHub Actions: https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40423057451 — **success** (regression suite, Chromium screenshots, Android debug APK build, both artifact uploads).
+- Artifacts: `sector-rebound-v0.9.10b-debug-apk` and `sector-rebound-v0.9.10b-visual-before-after`; retention 14 days.
+- **36 real browser screenshots**, 18 before and 18 after; `layout-report.json` reports all `after` canvas bounds full bleed, no sampled screen needing menu scroll.
+- First workflow attempt failed a JS test assertion on signed negative zero (`-0` vs `0`), not a gameplay failure. Corrected test checks near-zero idle displacement; second workflow run passed all gates.
+- Screenshots use random procedural seeds and thus should not be interpreted as a pixel-identical experiment; compare screen coverage, framing, visible actor size, and usability.
