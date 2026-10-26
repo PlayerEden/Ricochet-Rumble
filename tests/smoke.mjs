@@ -16,7 +16,7 @@ const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},join
 const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(){return null},setItem(){}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(){return []}};
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,teamOf,botInput,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,teamOf,botInput,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -371,3 +371,39 @@ assert.ok(driving.recoil>0,'gunfire kicks the hull');
 win.__test.step(1/60);
 assert.ok(driving.recoil<1,'recoil eases away');
 console.log('PASS v0.9.10 fullscreen canvas, overlay HUD, independently moving treads and recoil.');
+
+
+// v0.9.10b — calibrated camera and a common motion language for all actors.
+win.innerWidth=1536;win.innerHeight=672;win.devicePixelRatio=1;
+assert.equal(win.__test.resizeArenaCanvas(),true);
+const [fieldWidth,fieldHeight]=win.__test.world;
+const expectedZoom=Math.max(1.20,1536/(fieldWidth+160),672/(fieldHeight+120));
+assert.ok(Math.abs(win.__test.cameraZoom()-expectedZoom)<1e-9,'zoom accounts for playable perimeter without black side gutters');
+assert.ok(win.__test.cameraZoom()<Math.max(1.28,1536/fieldWidth,672/fieldHeight),'new widescreen camera genuinely shows more world');
+const motions=[];
+const motionPaint={save(){},restore(){},translate(x,y){motions.push([x,y])},scale(){},fillRect(){},strokeRect(){},arc(){},beginPath(){},stroke(){},fill(){},set lineWidth(v){},set lineJoin(v){},set strokeStyle(v){},set fillStyle(v){}};
+win.__test.drawTopMech(motionPaint,'#aaaaff',false,0,0,0);
+assert.equal(motions[0][0],0);assert.equal(motions[0][1],0);
+motions.length=0;win.__test.drawTopMech(motionPaint,'#aaaaff',false,2,.56,.55);
+assert.ok(motions[0][0]<0&&motions[0][1]>0,'mech shares animated torso recoil/bob');
+motions.length=0;win.__test.drawTopPilot(motionPaint,'#55ddff',false,0,0,0);
+assert.equal(motions[0][0],0);assert.equal(motions[0][1],0);
+motions.length=0;win.__test.drawTopPilot(motionPaint,'#55ddff',false,2,.28,.35);
+assert.ok(motions[0][0]<0&&motions[0][1]>0,'pilot has smaller motion response');
+click('solo');
+const motionTank=st().tanks[0];
+assert.equal(win.__test.shoot(0),true);
+assert.equal(motionTank.recoil,.72,'tank kick dampened');
+const motionTankStart=motionTank.trackLeft;
+win.__test.tankMove(motionTank,{moveX:1,moveY:0},1/60,0);
+assert.notEqual(motionTank.trackLeft,motionTankStart,'tank belt animation retained after softer suspension');
+const motionModel=st().vehicles[motionTank.vehicleId];motionModel.type='mech';
+motionModel.armor=4;
+motionTank.shield=0;st().bullets.length=0;
+assert.equal(win.__test.shoot(0),true);
+assert.equal(motionTank.recoil,.56,'mech recoil is weighted separately from tank');
+assert.equal(win.__test.tryInteract(0),true);
+st().bullets.length=0;
+assert.equal(win.__test.shoot(0),true);
+assert.equal(motionTank.recoil,.28,'on-foot pistol recoil is lightweight');
+console.log('PASS v0.9.10b: zoom-out, perimeter fill, softer tank motion, mech gait and pilot recoil.');
