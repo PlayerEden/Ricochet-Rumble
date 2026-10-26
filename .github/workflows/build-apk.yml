@@ -2,6 +2,10 @@
 name: Manual Android Debug APK
 on:
   workflow_dispatch:
+  # Only auto-build when this workflow itself changes; gameplay pushes stay manual.
+  push:
+    paths:
+      - '.github/workflows/build-apk.yml'
 permissions:
   contents: read
 jobs:
@@ -14,9 +18,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
       - name: Install required Android SDK
-        run: sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
+        run: |
+          echo "Using Android SDK at ${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
