@@ -23,7 +23,10 @@ try{
    await page.waitForTimeout(170);
    async function shot(stage){
     const panel=await page.locator('#panel').evaluate(el=>({scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,rect:(()=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height}})()})).catch(()=>null);
-    report.push({version:name,viewport:label,screen:stage,panel,scrollNeeded:!!panel&&panel.scrollHeight>panel.clientHeight+2});
+    const canvas=await page.locator('#arena').boundingBox();
+    const fullBleed=!!canvas&&Math.abs(canvas.x)<2&&Math.abs(canvas.y)<2&&Math.abs(canvas.width-width)<2&&Math.abs(canvas.height-height)<2;
+    if(name==='after'&&stage==='arena'&&!fullBleed)throw new Error('Fullscreen arena regression at '+label);
+    report.push({version:name,viewport:label,screen:stage,panel,scrollNeeded:!!panel&&panel.scrollHeight>panel.clientHeight+2,canvas,fullBleed});
     await page.screenshot({path:path.join(out,label+'-'+stage+'.png'),animations:'disabled'});
    }
    await shot('home');
@@ -36,12 +39,17 @@ try{
    await page.locator('#menu button[data-action="solo"]').click();
    await page.waitForTimeout(180);
    await shot('arena');
+   // Movement footage as a deterministic held-key frame, not a mockup.
+   await page.keyboard.down('d');
+   await page.waitForTimeout(520);
+   await shot('moving-tank');
+   await page.keyboard.up('d');
    await page.locator('#menu-button').click();
    await shot('pause');
    await page.close();
   }
  }
  fs.writeFileSync(path.join(root,'qa-screens','layout-report.json'),JSON.stringify(report,null,2));
- console.log('PASS visual snapshots: '+report.length+' screens captured; inspect layout-report.json for overflow');
+ console.log('PASS visual snapshots: '+report.length+' screens; fullscreen assertion plus overflow report');
  console.log(JSON.stringify(report.filter(x=>x.screen==='home'||x.screen==='settings').map(x=>({version:x.version,viewport:x.viewport,screen:x.screen,scrollNeeded:x.scrollNeeded}))));
 }finally{await browser.close();}
