@@ -21,4 +21,4 @@ Physical device readability and thumb reach; two-phone host/guest test and on-de
 - **Mobile typography:** added Android's offline `sans-serif-condensed` fallback so FIELDGRID headings remain compact even without an installed Roboto Condensed font. Body font continues to favor readable Roboto/system sans.
 - **Small landscape:** keep the HELP caption on one line, with tighter eyebrow spacing at 390px height and below.
 - **New smoke coverage:** checks attempted overlapping boarding, successful boarding once clear, identical web/Android assets, and the offline font fallback. Game rules, arena art and network messages are otherwise unchanged.
-- **Verification:** the earlier v0.9.8 GitHub build and smoke tests succeeded. Run the v0.9.8.1 workflow before treating this patch as Android-verified; physical two-phone testing remains outstanding.
+- **Verification:** gameplay smoke tests, Android debug APK build, and artifact upload all PASSED on October 26, 2026 ([workflow run 40414962370](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40414962370)). Physical phone/thumb-reach and two-phone LAN testing remain outstanding.
