@@ -324,3 +324,15 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  .battlefield .control-caption{display:none}
  .game-hud .scorestrip{top:max(7px,env(safe-area-inset-top))}
 }
+
+
+/* v0.9.10b — restrained FIELDGRID optical polish.
+   Soften the overlay's weight while preserving generous input hit targets. */
+.game-hud .hud-menu{background:#102837bc;border-color:#79a8b572;box-shadow:0 2px 7px #03121d69}
+.game-hud .scorestrip>span{background:#0b2131a5;border-color:#6688947a;box-shadow:0 2px 7px #020c145a}
+.game-hud .scorestrip .middle{background:#122936af;border-color:#7197a17a}
+.battlefield .joystick{background:#0d293a65;border-color:#7cc5d48c;box-shadow:0 0 0 4px #102f403c,inset 0 0 10px #04172385}
+.battlefield .fire-btn{background:#db7765c6;border-color:#ffb5a5ba;box-shadow:0 0 0 4px #5e302f39,0 3px 7px #03111b90}
+.battlefield .interact-btn{background:#235044cf;box-shadow:0 2px 7px #0719238c}
+.battlefield .control-caption{color:#c9e0e8b9}
+@media(prefers-reduced-motion:reduce){.game-hud .hud-menu,.game-hud .scorestrip>span,.battlefield .joystick,.battlefield .fire-btn{backdrop-filter:none}}
