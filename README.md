@@ -68,3 +68,11 @@ This is intentionally **not** part of Classic Rumble. On the `dev/pilot-survival
 This is a foundation for future vehicle types, not a finished mode: vehicle variety, repairs, balancing and **pilot-mode two-phone networking** remain future work. Current LAN multiplayer continues to use the **Classic** rules. No login or extra setup is required for this experimental solo version.
 
 The Android app now has a distinct Ricochet Rumble launcher icon, using the artwork concept previously generated for this project.
+
+## Pilot Survival v0.7.1 quality audit
+
+This branch adds a **focused QA repair pass**, not a new feature mode. It makes empty tanks block movement, lets parked tanks absorb incoming shells and respawn when destroyed, chooses more reliable pilot exit/ejection spaces, validates garage locations against wall and player collisions, and teaches ejected bots to seek another empty tank.
+
+Regression tests now include 240 seeded procedural mazes, a 3,000-frame mixed pilot/vehicle battle, and the prior Classic smoke suite. Browser layout tests ran at three landscape resolutions without overflow or uncaught JS errors. See [`docs/PILOT_QA_v0.7.1.md`](docs/PILOT_QA_v0.7.1.md).
+
+Pilot Survival remains **offline solo only**, and physical Android and two-phone LAN testing are outstanding. The `main` branch remains the v0.6.3 Classic line.

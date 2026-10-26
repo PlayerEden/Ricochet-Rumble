@@ -60,34 +60,57 @@ function startingPosition(i){if(mazeGrid){const {cols,rows,cell}=mazeGrid,spots=
 function freshTank(i){const [x,y]=startingPosition(i);return {x,y,a:i%2?Math.PI:0,vx:0,vy:0,shield:0,powerType:null,powerTimer:0,flash:0,onFoot:false,vehicleId:null};}
 // Pilot Survival uses the same actors as Classic, but their vehicles have separate health.
 const PILOT_LIVES=2,TANK_ARMOR=3,EJECTION_SHIELD=1.35;
-function vehicleSite(x,y){const offsets=[[0,0],[50,0],[-50,0],[0,50],[0,-50],[52,52],[-52,-52],[85,0]];
- for(const [dx,dy] of offsets){const px=clamp(x+dx,40,worldW-40),py=clamp(y+dy,40,worldH-40);if(!blocked(px,py,25))return [px,py]}
- return [x,y];}
+// Parked tanks occupy actual space. Only healthy, unoccupied vehicles block movement;
+// destroyed wrecks are cosmetic so an ejected pilot cannot become trapped in one.
+function parkedVehicleAt(x,y,r=12,exceptId=null){return isPilotMatch()&&(state.vehicles||[]).some(v=>v.id!==exceptId&&v.occupant===-1&&v.armor>0&&(v.x-x)**2+(v.y-y)**2<(r+23)**2)}
+function vehicleSite(x,y,vehicles=[],pilots=[]){
+ // Try positions close to the requested garage first, then search safe cell centers.
+ const offsets=[[0,0],[-44,0],[0,-44],[0,44],[44,0],[-44,-44],[-44,44],[44,-44],[44,44],[-88,0],[0,88],[0,-88],[88,0]];
+ const candidates=offsets.map(([dx,dy])=>[x+dx,y+dy]);
+ if(mazeGrid)for(let row=0;row<mazeGrid.rows;row++)for(let col=0;col<mazeGrid.cols;col++)candidates.push([(col+.5)*mazeGrid.cell,(row+.5)*mazeGrid.cell]);
+ const valid=([px,py])=>!blocked(px,py,24)&&vehicles.every(v=>v.armor<=0||Math.hypot(px-v.x,py-v.y)>=58)&&pilots.every(t=>Math.hypot(px-t.x,py-t.y)>=38);
+ // Prefer the requested location, without allowing a tank to materialize in a wall or another actor.
+ const near=candidates.slice(0,offsets.length).find(valid);
+ if(near)return near;
+ return candidates.slice(offsets.length).filter(valid).sort((a,b)=>Math.hypot(a[0]-x,a[1]-y)-Math.hypot(b[0]-x,b[1]-y))[0]||null;
+}
 function spawnVehicles(tanks,humans){const vehicles=[];
  for(let i=0;i<tanks.length;i++){
   const t=tanks[i];if(i<humans){t.onFoot=true;t.vehicleId=null;continue}
   t.onFoot=false;t.vehicleId=vehicles.length;vehicles.push({id:vehicles.length,x:t.x,y:t.y,a:t.a,armor:TANK_ARMOR,occupant:i,respawn:0});
  }
- // A vehicle is placed near the starting pilot, with spare garages further into the maze.
- const first=tanks[0],locations=[[first.x+27,first.y+3],[worldW*.5,worldH*.5],[worldW*.74,worldH*.72]];
- for(const [x,y] of locations){const [vx,vy]=vehicleSite(x,y);if(vehicles.some(v=>Math.hypot(v.x-vx,v.y-vy)<72))continue;vehicles.push({id:vehicles.length,x:vx,y:vy,a:0,armor:TANK_ARMOR,occupant:-1,respawn:0});}
- return vehicles;}
+ // Position a first tank within easy reach whenever maze geometry allows it.
+ const first=tanks[0],locations=[[first.x+44,first.y],[worldW*.5,worldH*.5],[worldW*.74,worldH*.72]];
+ for(const [x,y] of locations){const spot=vehicleSite(x,y,vehicles,tanks.slice(0,humans));if(!spot)continue;
+   const [vx,vy]=spot;vehicles.push({id:vehicles.length,x:vx,y:vy,a:0,armor:TANK_ARMOR,occupant:-1,respawn:0});}
+ return vehicles;
+}
 function isPilotMatch(){return state?.config?.pilotMode===true;}
 function nearestEmptyVehicle(i){if(!isPilotMatch()||state.lives[i]<=0)return null;const t=state.tanks[i];let best=null,bestD=58;
  for(const v of state.vehicles||[]){if(v.occupant!==-1||v.armor<=0)continue;const d=Math.hypot(v.x-t.x,v.y-t.y);if(d<bestD&&hasLineOfSight(t.x,t.y,v.x,v.y)){best=v;bestD=d}}
  return best;}
+// Use the same safe exit search for manual exits and forced ejections.
+// Search a compact ring before falling back to the vacated tank's position.
+function pilotExitSite(i,vehicleId){const t=state.tanks[i];
+ for(const radius of [46,57,70])for(let n=0;n<16;n++){
+   const a=n*Math.PI/8,px=t.x+Math.cos(a)*radius,py=t.y+Math.sin(a)*radius;
+   if(blocked(px,py,13)||parkedVehicleAt(px,py,13,vehicleId))continue;
+   if(state.tanks.some((other,j)=>j!==i&&state.lives[j]>0&&Math.hypot(other.x-px,other.y-py)<(other.onFoot?27:39)))continue;
+   return [px,py];
+ }
+ return null;
+}
 function tryInteract(i=0){if(!isPilotMatch()||paused||state.winner>=0||state.lives[i]<=0)return false;const t=state.tanks[i];
  if(t.onFoot){const v=nearestEmptyVehicle(i);if(!v){if(i===0)notice('Find a parked tank and move closer');return false}
   v.occupant=i;t.vehicleId=v.id;t.onFoot=false;Object.assign(t,{x:v.x,y:v.y,a:v.a,vx:0,vy:0});state.event='TANK ACQUIRED · '+v.armor+' ARMOR';state.eventTimer=.9;emitFx('pickup',v.x,v.y,colors[i],i);}
- else{const v=state.vehicles?.[t.vehicleId];if(!v)return false;const offsets=[[46,0],[-46,0],[0,46],[0,-46],[40,40],[-40,-40]];
-  const spot=offsets.map(([dx,dy])=>[t.x+dx,t.y+dy]).find(([x,y])=>!blocked(x,y,14)&&state.tanks.every((u,j)=>j===i||state.lives[j]<=0||Math.hypot(u.x-x,u.y-y)>32));
+ else{const v=state.vehicles?.[t.vehicleId];if(!v)return false;
+  const spot=pilotExitSite(i,v.id);
   if(!spot){if(i===0)notice('Need space beside the tank to exit');return false}
   v.x=t.x;v.y=t.y;v.a=t.a;v.occupant=-1;t.onFoot=true;t.vehicleId=null;Object.assign(t,{x:spot[0],y:spot[1],vx:0,vy:0,shield:Math.max(t.shield,.35)});state.event='TANK ABANDONED';state.eventTimer=.8;}
  refreshHUD();return true;}
 function ejectPilot(i){const t=state.tanks[i],v=state.vehicles?.[t.vehicleId];if(!v)return;
  v.x=t.x;v.y=t.y;v.a=t.a;v.occupant=-1;v.armor=0;v.respawn=9;
- const offsets=[[43,0],[-43,0],[0,43],[0,-43],[34,34],[-34,-34]];
- const exit=offsets.map(([dx,dy])=>[t.x+dx,t.y+dy]).find(([x,y])=>!blocked(x,y,14))||[t.x,t.y];
+ const exit=pilotExitSite(i,v.id)||[t.x,t.y];
  t.onFoot=true;t.vehicleId=null;Object.assign(t,{x:exit[0],y:exit[1],vx:0,vy:0,shield:EJECTION_SHIELD,powerType:null,powerTimer:0});
  state.event=label(i)+' EJECTED · FIND COVER!';state.eventTimer=1.15;emitFx('hit',v.x,v.y,colors[i],-1,i);
 }
@@ -140,18 +163,24 @@ function tankMove(t,inp,dt,i){let mx=clamp(Number(inp.moveX)||0,-1,1),my=clamp(N
  const speed=(t.onFoot?(inp.bot?194:268):(inp.bot?178:222))*(t.powerType==='turbo'&&t.powerTimer>0?1.48:1),blend=Math.min(1,dt*(mag?9:13));t.vx+=(mx*speed-t.vx)*blend;t.vy+=(my*speed-t.vy)*blend;
  if(mag){const target=Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a));t.a+=clamp(diff,-dt*12,dt*12)}
  const nx=t.x+t.vx*dt,ny=t.y+t.vy*dt;
- const radius=t.onFoot?12:21;const collides=(x,y)=>blocked(x,y,radius)||state.tanks.some((other,j)=>i!==j&&state.lives[j]>0&&(other.x-x)**2+(other.y-y)**2<(radius+(other.onFoot?12:21))**2);
+ const radius=t.onFoot?12:21;const collides=(x,y)=>blocked(x,y,radius)||parkedVehicleAt(x,y,radius)||state.tanks.some((other,j)=>i!==j&&state.lives[j]>0&&(other.x-x)**2+(other.y-y)**2<(radius+(other.onFoot?12:21))**2);
  if(!collides(nx,t.y))t.x=nx;else t.vx=0;
  if(!collides(t.x,ny))t.y=ny;else t.vy=0;}
 function hasLineOfSight(x,y,tx,ty){const length=Math.hypot(tx-x,ty-y),steps=Math.ceil(length/15);for(let n=1;n<steps;n++){const p=n/steps;if(nearWall(x+(tx-x)*p,y+(ty-y)*p,4))return false}return true;}
 function botInput(i,dt){const bot=state.tanks[i],enemies=state.tanks.map((t,j)=>({t,j})).filter(({j})=>j!==i&&state.lives[j]>0&&!friendly(i,j));
  if(!enemies.length)return {moveX:0,moveY:0,fire:false,bot:true};enemies.sort((a,b)=>Math.hypot(bot.x-a.t.x,bot.y-a.t.y)-Math.hypot(bot.x-b.t.x,bot.y-b.t.y));const target=enemies[0].t;
- let direction=Math.atan2(target.y-bot.y,target.x-bot.x),brain=botBrains.get(i)||{timer:0,path:[],goal:-1};brain.timer-=dt;
- if(mazeGrid){const {cols,cell,open}=mazeGrid,cellIndex=t=>clamp(Math.floor(t.y/cell),0,mazeGrid.rows-1)*cols+clamp(Math.floor(t.x/cell),0,cols-1),start=cellIndex(bot),goal=cellIndex(target);
+ // A dismounted bot should try to recover a nearby empty tank, not charge a tank forever with a pistol.
+ let objective=target;
+ if(isPilotMatch()&&bot.onFoot){const candidate=(state.vehicles||[]).filter(v=>v.occupant===-1&&v.armor>0)
+   .sort((a,b)=>Math.hypot(a.x-bot.x,a.y-bot.y)-Math.hypot(b.x-bot.x,b.y-bot.y))[0];
+  if(candidate){if(Math.hypot(candidate.x-bot.x,candidate.y-bot.y)<58&&hasLineOfSight(bot.x,bot.y,candidate.x,candidate.y))tryInteract(i);
+    if(bot.onFoot)objective=candidate;}}
+ let direction=Math.atan2(objective.y-bot.y,objective.x-bot.x),brain=botBrains.get(i)||{timer:0,path:[],goal:-1};brain.timer-=dt;
+ if(mazeGrid){const {cols,cell,open}=mazeGrid,cellIndex=t=>clamp(Math.floor(t.y/cell),0,mazeGrid.rows-1)*cols+clamp(Math.floor(t.x/cell),0,cols-1),start=cellIndex(bot),goal=cellIndex(objective);
  if(brain.timer<=0||brain.goal!==goal){const prev=Array(open.length).fill(-1),q=[start];prev[start]=start;for(let h=0;h<q.length&&prev[goal]===-1;h++)for(const j of open[q[h]])if(prev[j]===-1){prev[j]=q[h];q.push(j)}
  const path=[];if(prev[goal]!==-1){let n=goal;while(n!==start&&path.length<open.length){path.push(n);n=prev[n]}}brain.path=path.reverse();brain.goal=goal;brain.timer=.45+(i%4)*.09;}
  const waypoint=brain.path[0];if(waypoint!==undefined){const wx=((waypoint%cols)+.5)*cell,wy=(Math.floor(waypoint/cols)+.5)*cell;if(Math.hypot(wx-bot.x,wy-bot.y)<18){brain.path.shift()}else direction=Math.atan2(wy-bot.y,wx-bot.x);}
- }else{const aheadX=bot.x+Math.cos(direction)*72,aheadY=bot.y+Math.sin(direction)*72;if(blocked(aheadX,aheadY,27))direction+=Math.sin(visualClock*.9+i)>0?1.4:-1.4;}
+ }else{const aheadX=bot.x+Math.cos(direction)*72,aheadY=bot.y+Math.sin(direction)*72;if(blocked(aheadX,aheadY,27)||parkedVehicleAt(aheadX,aheadY,27))direction+=Math.sin(visualClock*.9+i)>0?1.4:-1.4;}
  botBrains.set(i,brain);
  const delta=Math.atan2(Math.sin(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a),Math.cos(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a));
  const skill=state.config?.botSkill||'normal',pace=skill==='casual'?.61:skill==='spicy'?.98:.81;
@@ -159,7 +188,7 @@ function botInput(i,dt){const bot=state.tanks[i],enemies=state.tanks.map((t,j)=>
  const enemyDist=Math.hypot(bot.x-target.x,bot.y-target.y);
  const hasLine=enemyDist<(mazeGrid?385:750)&&hasLineOfSight(bot.x,bot.y,target.x,target.y);
  // Stop blindly ramming the player. Bots ease off the throttle for close duels.
- const chasePace=hasLine&&enemyDist<115?pace*.34:pace;
+ const chasePace=objective===target&&hasLine&&enemyDist<115?pace*.34:pace;
  return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,fire:Math.abs(delta)<aim&&hasLine,bot:true};}
 function shoot(owner){if(state.lives[owner]<=0)return false;
  const isFoot=isPilotMatch()&&state.tanks[owner].onFoot;
@@ -174,7 +203,7 @@ function shoot(owner){if(state.lives[owner]<=0)return false;
 function respawn(victim){const enemies=state.tanks.filter((_,i)=>i!==victim&&state.lives[i]>0&&!friendly(victim,i));const spots=[];
  if(mazeGrid){for(let r=0;r<mazeGrid.rows;r++)for(let c=0;c<mazeGrid.cols;c++)spots.push([(c+.5)*mazeGrid.cell,(r+.5)*mazeGrid.cell]);}
  else spots.push(...[[130,300],[830,300],[130,100],[830,500],[480,96],[480,500],[130,480],[830,120],[340,70],[620,525]]);
- const pool=spots.filter(([x,y])=>!blocked(x,y,25)&&state.tanks.every((other,j)=>j===victim||state.lives[j]===0||Math.hypot(x-other.x,y-other.y)>65));
+ const pool=spots.filter(([x,y])=>!blocked(x,y,isPilotMatch()?13:25)&&!parkedVehicleAt(x,y,isPilotMatch()?13:25)&&state.tanks.every((other,j)=>j===victim||state.lives[j]===0||Math.hypot(x-other.x,y-other.y)>65));
  pool.sort((a,b)=>Math.min(...enemies.map(t=>Math.hypot(b[0]-t.x,b[1]-t.y)),10000)-Math.min(...enemies.map(t=>Math.hypot(a[0]-t.x,a[1]-t.y)),10000));
  const [x,y]=pool[0]||startingPosition(victim),t=state.tanks[victim];Object.assign(t,{x,y,a:0,vx:0,vy:0,shield:1.8,powerType:null,powerTimer:0,flash:0,onFoot:isPilotMatch()?true:false,vehicleId:null});
  state.bullets=state.bullets.filter(b=>Math.hypot(b.x-x,b.y-y)>50);}
@@ -211,6 +240,16 @@ function step(dt){if(paused||state.winner>=0)return;
  if(blocked(b.x,ny,b.kind==='sidearm'?3:5)){if(b.kind==='sidearm'){b.life=0;break}b.vy=-b.vy;b.bounces++;emitFx('bounce',b.x,b.y,colors[b.owner]);sound(700,.018)}else b.y=ny;
  for(const bump of bumpers){const dx=b.x-bump.x,dy=b.y-bump.y,dist=Math.hypot(dx,dy);if(dist>0&&dist<bump.r+6&&(b.bumpDelay||0)<=0){const ux=dx/dist,uy=dy/dist,dot=b.vx*ux+b.vy*uy;if(dot<0){b.vx-=2*dot*ux;b.vy-=2*dot*uy;b.x=bump.x+ux*(bump.r+7);b.y=bump.y+uy*(bump.r+7);b.bounces++;b.bumpDelay=.09;emitFx('bounce',b.x,b.y,'#ffdf7b');sound(940,.05,b.x,b.y)}}}
  b.bumpDelay=Math.max(0,(b.bumpDelay||0)-subDt);if(b.bounces>5){b.life=0;break}
+ // Empty vehicles are real cover, not just scenery. They absorb incoming rounds and can be wrecked.
+ if(isPilotMatch())for(const v of state.vehicles){
+   if(v.occupant!==-1||v.armor<=0)continue;
+   if((v.x-b.x)**2+(v.y-b.y)**2<27**2){
+     b.life=0;v.armor--;if(v.armor===0)v.respawn=9;
+     emitFx('hit',b.x,b.y,'#79eab2',b.owner);
+     sound(160,.09,b.x,b.y);break;
+   }
+ }
+ if(b.life<=0)break;
  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]>0&&(i===b.owner?(b.age>.38&&b.bounces>0):!friendly(i,b.owner))&&t.shield<=0&&(t.x-b.x)**2+(t.y-b.y)**2<(t.onFoot?14:26)**2){b.life=0;registerHit(b.owner,i);break}}}}
  state.bullets=state.bullets.filter(b=>b.life>0);}
 function sound(freq,len=.09,x=null,y=null){if(!comfort.sound)return;try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;if(!window.rrAudio)window.rrAudio=new AC;const ac=window.rrAudio;if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.type='square';o.frequency.value=freq;const me=state.tanks[mode==='guest'?1:0],dist=Number.isFinite(x)&&Number.isFinite(y)&&me?Math.hypot(x-me.x,y-me.y):0;const loudness=.028*Math.max(.065,1-dist/950);g.gain.setValueAtTime(loudness,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+len);o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+len)}catch(_){}}

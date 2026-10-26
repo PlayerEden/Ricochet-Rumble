@@ -1,4 +1,4 @@
-name: Android Test APK # Pilot Survival Alpha v0.7.0
+name: Android Test APK # Pilot Survival QA v0.7.1
 on:
   workflow_dispatch:
   push:
@@ -33,7 +33,7 @@ jobs:
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: ricochet-rumble-0.7.0-pilot-alpha-debug-apk
+          name: ricochet-rumble-0.7.1-pilot-qa-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
