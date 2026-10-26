@@ -272,3 +272,55 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  .game-identity .brand-stack>span{display:none}
  .scorestrip .middle{max-width:24vw}
 }
+
+
+/* 0.9.10 — FULLSCREEN COMBAT. The game world owns every usable pixel.
+   No fixed header row, no control gutters, no viewport-aspect canvas matte.
+   Only interactive HUD/touch surfaces receive pointer input. */
+.game-screen{display:block!important;position:fixed;inset:0;width:100%;height:100dvh;padding:0;overflow:hidden;background:#101f2b}
+.game-hud{position:absolute;top:0;left:0;right:0;z-index:7;height:56px;padding:0;border:0!important;background:none!important;box-shadow:none!important;pointer-events:none}
+.hud-mode-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.game-hud .game-identity{display:none!important}
+.game-hud .hud-menu{position:absolute;top:max(9px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));width:57px;min-width:57px;height:38px;margin:0;padding:0 4px;border:1px solid #75a5b680;border-radius:8px;background:#102837db;box-shadow:0 3px 10px #03121d77;font-size:11px;color:#e2f3f6;pointer-events:auto;backdrop-filter:blur(4px)}
+.game-hud .hud-menu span{font-size:15px;margin-right:2px}
+.game-hud .scorestrip{position:absolute;top:max(9px,env(safe-area-inset-top));left:max(75px,calc(env(safe-area-inset-left) + 75px));right:max(165px,calc(env(safe-area-inset-right) + 165px));height:38px;min-width:0;display:flex;align-items:center;justify-content:center;gap:clamp(5px,1.3vw,16px);font-size:clamp(10px,1.35vw,14px);letter-spacing:0;pointer-events:none}
+.game-hud .scorestrip>span{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:4px clamp(6px,.95vw,11px);background:#0b2131ba;border:1px solid #56788491;border-radius:8px;box-shadow:0 2px 7px #020c1460;backdrop-filter:blur(3px)}
+.game-hud .scorestrip strong{font-size:clamp(15px,2.2vw,23px);margin:0 5px;line-height:1}
+.game-hud .scorestrip .middle{max-width:none;min-height:30px;flex:0 1 auto;white-space:nowrap;font-size:clamp(10px,1.25vw,13px)!important;padding:4px clamp(6px,.9vw,10px);background:#122936c9;border:1px solid #5d7e8c91;border-radius:8px}
+.battlefield{position:absolute;inset:0;display:block!important;padding:0!important;gap:0!important;margin:0;min-height:0;min-width:0;overflow:hidden;pointer-events:none}
+.arena-wrap,.battlefield.swap-controls .arena-wrap{position:absolute;inset:0;display:block!important;width:100%;height:100%;padding:0;margin:0;border:0!important;border-radius:0!important;box-shadow:none!important;background:#101f2b;pointer-events:none}
+.arena-wrap canvas{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:fill;pointer-events:none}
+.battlefield .touch-zone{position:absolute!important;z-index:5;bottom:max(12px,calc(env(safe-area-inset-bottom) + 12px));height:auto;width:clamp(110px,18vw,180px);padding:0;margin:0;display:flex!important;flex-direction:column;align-items:center;justify-content:end;gap:4px;pointer-events:none}
+.battlefield .touch-left{left:max(17px,calc(env(safe-area-inset-left) + 17px));right:auto;grid-column:auto!important;grid-row:auto!important}
+.battlefield .touch-right{right:max(17px,calc(env(safe-area-inset-right) + 17px));left:auto;grid-column:auto!important;grid-row:auto!important}
+.battlefield.swap-controls .touch-left{left:auto!important;right:max(17px,calc(env(safe-area-inset-right) + 17px))!important}
+.battlefield.swap-controls .touch-right{right:auto!important;left:max(17px,calc(env(safe-area-inset-left) + 17px))!important}
+.battlefield .joystick{width:clamp(84px,15vw,150px);height:clamp(84px,15vw,150px);min-width:0;min-height:0;border:2px solid #7cc5d4a1;background:#0d293a79;box-shadow:0 0 0 5px #102f404a,inset 0 0 12px #04172390;pointer-events:auto;backdrop-filter:blur(1px)}
+.battlefield .stick-knob{background:#2a657aab;box-shadow:0 2px 6px #0310199e}
+.battlefield .fire-btn{width:clamp(84px,14vw,144px);height:clamp(84px,14vw,144px);min-width:0;min-height:0;background:#db7765d9;border:3px solid #ffb5a5ca;box-shadow:0 0 0 5px #5e302f44,0 4px 8px #03111b90;pointer-events:auto;backdrop-filter:blur(1px)}
+.battlefield .fire-btn.active{box-shadow:0 0 0 4px #9a62534d,inset 0 4px 9px #7c342e77}
+.battlefield .interact-btn{width:clamp(112px,15.5vw,156px);height:38px;min-height:38px;max-height:38px;margin-bottom:6px;font-size:clamp(11px,1.35vw,14px);border-radius:6px;background:#235044d8;box-shadow:0 2px 8px #0719239e;pointer-events:auto}
+.battlefield .control-caption{color:#c9e0e8cf;text-shadow:0 1px 4px #07131f;font-size:clamp(10px,1.2vw,12px);letter-spacing:.4px}
+.battlefield .shell-meter{margin-top:0;color:#cae7e2;font-size:clamp(9px,1vw,11px);text-shadow:0 1px 5px #07131f}
+.arena-wrap .toast{top:max(56px,calc(env(safe-area-inset-top) + 56px));max-width:calc(100vw - 24px);white-space:normal;text-align:center}
+.arena-wrap .quick-rematch{pointer-events:auto;z-index:6;top:75%;left:50%}
+@media(max-width:760px){
+ .game-hud .hud-menu{width:51px;min-width:51px;height:35px;font-size:10px}
+ .game-hud .scorestrip{left:max(67px,calc(env(safe-area-inset-left) + 67px));right:max(125px,calc(env(safe-area-inset-right) + 125px));gap:4px}
+ .game-hud .scorestrip>span{padding:3px 5px;min-height:28px}
+ .game-hud .scorestrip strong{margin:0 3px;font-size:16px}
+ .game-hud .scorestrip .middle{min-height:28px;padding:3px 5px}
+ .battlefield .touch-zone{width:110px;bottom:max(8px,calc(env(safe-area-inset-bottom) + 8px))}
+ .battlefield .joystick,.battlefield .fire-btn{width:96px;height:96px}
+ .battlefield .interact-btn{width:112px;min-height:35px;height:35px}
+ .battlefield .touch-left{left:max(14px,calc(env(safe-area-inset-left) + 14px))}
+ .battlefield .touch-right{right:max(14px,calc(env(safe-area-inset-right) + 14px))}
+ .battlefield.swap-controls .touch-left{right:max(14px,calc(env(safe-area-inset-right) + 14px))!important}
+ .battlefield.swap-controls .touch-right{left:max(14px,calc(env(safe-area-inset-left) + 14px))!important}
+}
+@media(max-height:350px){
+ .battlefield .joystick,.battlefield .fire-btn{height:82px;width:82px}
+ .battlefield .interact-btn{height:33px;min-height:33px;margin-bottom:2px}
+ .battlefield .control-caption{display:none}
+ .game-hud .scorestrip{top:max(7px,env(safe-area-inset-top))}
+}
