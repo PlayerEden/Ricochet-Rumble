@@ -13,7 +13,7 @@
       <div class="game-identity"><span class="logo-mark">SR</span><div class="brand-stack"><strong>SECTOR <em>REBOUND</em></strong><span id="mode-label">FIELDGRID // OPERATIONS</span></div></div>
       <div class="scorestrip" aria-live="polite">
         <span class="blue-tag"><span id="player0-label">YOU</span> <strong id="score0">2</strong> <span class="hud-life">♥</span></span>
-        <span id="round" class="middle">TANK 3/3 ARMOR</span>
+        <span id="round" class="middle" aria-label="Vehicle armor: 3 of 3">TANK · 3/3</span>
         <span class="pink-tag"><strong id="score1">1</strong> <span id="player1-label">ENEMIES</span></span>
       </div>
       <button class="hud-menu" id="menu-button" aria-label="Pause or open game menu"><span aria-hidden="true">☰</span> MENU</button>
@@ -23,7 +23,7 @@
         <div class="joystick" id="joystick" role="group" aria-label="Move using the analog joystick; drag any direction">
           <div class="stick-ring"></div><div class="stick-knob" id="stick-knob"><span aria-hidden="true">●</span></div>
         </div>
-        <span class="control-caption">MOVE · DRAG</span>
+        <span class="control-caption">MOVE</span>
       </div>
       <section class="arena-wrap" aria-label="Game field">
         <canvas id="arena" width="960" height="600" aria-label="Top-down pilot and vehicle arena"></canvas>
@@ -32,7 +32,7 @@
       <div class="touch-zone touch-right" aria-label="Fire control">
         <button class="interact-btn hidden" id="interact-btn" aria-label="Enter or exit a nearby vehicle">ENTER</button>
         <button class="fire-btn" data-key="fire" aria-label="Hold to fire"><span class="fire-icon">◎</span><span>FIRE</span></button>
-        <span class="control-caption" id="fire-mode">HOLD TO FIRE</span><span class="shell-meter" id="shell-meter">3/3 READY</span>
+        <span class="control-caption" id="fire-mode">HOLD / FIRE</span><span class="shell-meter" id="shell-meter">3/3 READY</span>
       </div>
     </div>
     <div class="overlay" id="menu">
@@ -41,13 +41,13 @@
         <div class="menu-content">
           <div class="menu-main">
             
-            <button class="primary" data-action="solo">QUICK PLAY</button>
-            <button class="settings-button" data-action="settings">MATCH SETTINGS</button>
-            <button data-action="nearby">PLAY TOGETHER</button>
+            <button class="primary" data-action="solo"><span>QUICK PLAY</span><small>SOLO / AI</small></button>
+            <button class="settings-button" data-action="settings"><span>MATCH SETTINGS</span><small>RULES</small></button>
+            <button data-action="nearby"><span>PLAY TOGETHER</span><small>LOCAL WI-FI</small></button>
           </div>
-          <div class="menu-join"><div class="eyebrow">YOUR NEXT FIELD</div><p>Start ready. If your ride breaks, fight on foot and claim another vehicle.</p><p class="menu-tip">New arena every round. No setup needed.</p></div>
+          <div class="menu-join"><div class="eyebrow">FIELD BRIEF / 01</div><p class="brief-lead">START ARMORED.</p><p>If the vehicle fails, keep fighting on foot. Reclaim an empty tank or mech to get back in.</p><div class="field-ready"><span class="ready-dot" aria-hidden="true"></span><span>FIELDGRID READY</span><span class="ready-tag">LOCAL</span></div></div>
         </div>
-        <p class="note" id="menu-note">TWO THUMBS / ONE FIELD</p>
+        <p class="note" id="menu-note">ONE PILOT / MANY WAYS BACK IN</p>
       </div>
     </div>
     <div class="rotate-prompt" aria-hidden="true"><div class="rotate-symbol">↻</div><strong>ROTATE TO LANDSCAPE</strong><span>Sector Rebound is played sideways.</span></div>
