@@ -1,6 +1,11 @@
 name: Signed Android APK
 on:
   workflow_dispatch:
+  # One-time signing setup check; automatic builds only on workflow changes.
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-apk.yml'
 permissions:
   contents: read
 jobs:
