@@ -16,7 +16,7 @@ const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},join
 const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(){return null},setItem(){}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(){return []}};
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,teamOf,botInput,hasLineOfSight,comfort,releaseControls};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,teamOf,botInput,hasLineOfSight,blocked,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -99,4 +99,37 @@ const md=handlers['joystick:pointerdown'][0],mm=handlers['joystick:pointermove']
 assert.ok(win.__test.makeControl(true).moveX>.8);
 handlers['menu-button:click'][0]();assert.equal(win.__test.makeControl(true).moveX,0);
 assert.equal(win.__test.serializeState().hostPaused,true,'host pause is synchronized');
-console.log('PASS v0.6.2: originals + visual options, bot skill, safe wall aiming, shield fairness, reflected self-hits, fixed-step simulation, synced host pause and input release.');
+// v0.6.3: indexed wall collisions must be bit-for-bit equivalent to the old all-walls scan.
+for(const arenaId of [0,1,2,3,4]){
+ win.__test.setArena(arenaId,198402);
+ const [maxX,maxY]=win.__test.world,wallData=win.__test.walls;
+ for(let k=0;k<140;k++){
+   const x=13+(k*73.31)%maxX,y=13+(k*211.63)%maxY,r=[5,21,32][k%3];
+   const expected=x<r+13||x>maxX-r-13||y<r+13||y>maxY-r-13||wallData.some(w=>{
+     const nx=Math.max(w.x,Math.min(x,w.x+w.w)),ny=Math.max(w.y,Math.min(y,w.y+w.h));
+     return (x-nx)**2+(y-ny)**2<r*r;
+   });
+   assert.equal(win.__test.blocked(x,y,r),expected,`indexed collision parity arena ${arenaId} sample ${k}`);
+ }
+}
+// Shooting now creates a temporary, owner-tagged sound/radar event.
+node('arena-choice').value='4';node('bot-count').value='4';node('bullet-cap').value='8';click('solo');
+const shooter=st().tanks[0];shooter.shield=0;
+assert.equal(win.__test.shoot(0),true);
+assert.equal(st().fxEvents.at(-1).owner,0);
+assert.ok(st().fxEvents.at(-1).ttl>1,'shot can be briefly located by sound');
+for(const e of st().fxEvents)e.ttl=.001;
+win.__test.step(.016);
+assert.equal(st().fxEvents.some(e=>e.ttl<=0),false,'sound pings expire on the host');
+// Damage feedback only follows your own loss of a life, not an unrelated bot hit.
+click('solo');st().tanks[0].shield=0;
+assert.equal(win.__test.registerHit(0,1),true,'attack bot');
+assert.equal(win.__test.damagePulse,0,'enemy damage does not flash your screen');
+assert.equal(win.__test.registerHit(1,0),true,'player receives a hit');
+assert.ok(win.__test.damagePulse>.5,'local hit briefly flashes viewport edge');
+assert.equal(node('round').textContent.includes('HITS'),true,'score labels reflect per-life hits, not eliminations');
+// Sustain an intense maze battle: bots, projectiles and snapshots stay bounded.
+click('solo');for(let i=0;i<220;i++)win.__test.step(1/60);
+assert.ok(st().bullets.length<=st().tanks.length*st().config.bulletCap,'per-tank shell limit held under stress');
+assert.ok(st().fxEvents.length<=12,'effects history stays small');
+console.log('PASS v0.6.3: 700 indexed-wall parity samples, local-only hit feedback, expiring gunfire pings, match HUD semantics, 4-bot Maze XL stress and prior v0.6.2 regressions.');

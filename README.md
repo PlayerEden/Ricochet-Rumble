@@ -1,9 +1,21 @@
 # Ricochet Rumble
 
-**v0.6.2 — Mobile Comfort & Reliability** · Self-contained Android tank arcade with offline solo and local same-Wi-Fi multiplayer foundation.
+**v0.6.3 — Combat Feedback & Maze Performance** · Self-contained Android tank arcade with offline solo and local same-Wi-Fi multiplayer foundation.
 
 Ricochet Rumble is a tiny, free tank-maze game. Move with the left analog stick and hold Fire at the right. Shells ricochet around maze corners, tanks have multiple lives, and fights continue across individual respawns. Play in five arenas including two much larger, seeded mazes with a following camera and minimap.
 
+
+## v0.6.3 refinement (2026-10-26)
+
+- Added **nearby-wall spatial lookup** for tank movement, shells, and bot visibility checks. Large mazes no longer scan every wall for each collision test; wall-collision parity is regression-tested across all arenas.
+- **Local-only damage feedback**: taking a hit briefly highlights the screen edges. Distant bot-on-bot hits no longer shake your camera. Guest damage is presented using synchronized hit events.
+- **Gunfire sound radar**: recent *hostile* shots within hearing range produce short-lived orange pulses on the maze minimap. Does not expose enemy positions constantly or through a permanent radar wallhack.
+- **Distance-aware sound effects** for shots, collisions and hits. Faraway tank sounds are quieter; the network guest receives the shared combat effects too.
+- **Bots ease off at point-blank range** when they have a clear shot instead of constantly ramming opponents.
+- HUD now says **HITS** instead of misleading **KO** (the recorded counter counts successful hits, not final eliminations).
+- Preserved five arenas, teams, lives, projectile limits, continuous respawns, fixed-step gameplay and the no-password test APK build. No new network servers or accounts.
+
+See [`docs/RELEASE_v0.6.3.md`](docs/RELEASE_v0.6.3.md) for verification scope and remaining device tests.
 
 ## v0.6.2 refinement (2026-10-26)
 

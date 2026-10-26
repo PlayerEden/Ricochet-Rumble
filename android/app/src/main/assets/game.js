@@ -5,6 +5,10 @@ let comfort={sound:true,shake:true,autoFire:false,leftHanded:false},fixedAccumul
 let selectedRules={botCount:1,bulletCap:3,startLives:5,teamMode:'ffa',botSkill:'normal'},selectedArena='3';
 // W/H are the camera canvas resolution. Mazes have much larger world coordinates.
 let worldW=W,worldH=H,mazeGrid=null,currentArena=-1,currentSeed=0;const camera={x:0,y:0};
+// Spatial buckets keep projectile and bot collision checks local, even in Maze XL.
+const WALL_BUCKET=128;let wallLookup=new Map();
+function rebuildWallLookup(){wallLookup=new Map();for(const w of wallSet){const x0=Math.floor(w.x/WALL_BUCKET),x1=Math.floor((w.x+w.w)/WALL_BUCKET),y0=Math.floor(w.y/WALL_BUCKET),y1=Math.floor((w.y+w.h)/WALL_BUCKET);for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const key=x+','+y;if(!wallLookup.has(key))wallLookup.set(key,[]);wallLookup.get(key).push(w)}}}
+function nearWall(x,y,r){const x0=Math.floor((x-r)/WALL_BUCKET),x1=Math.floor((x+r)/WALL_BUCKET),y0=Math.floor((y-r)/WALL_BUCKET),y1=Math.floor((y+r)/WALL_BUCKET);for(let yb=y0;yb<=y1;yb++)for(let xb=x0;xb<=x1;xb++){const nearby=wallLookup.get(xb+','+yb);if(nearby)for(const w of nearby){const nx=Math.max(w.x,Math.min(x,w.x+w.w)),ny=Math.max(w.y,Math.min(y,w.y+w.h));if((x-nx)**2+(y-ny)**2<r*r)return true}}return false}
 const PALETTE=['#46d2f5','#fc856e','#ffdc77','#b69aff','#82e6a1','#fc8bde'];
 const gameNames=['CYAN','CORAL','GOLD','VIOLET','MINT','PINK'];
 const ARENAS=[
@@ -24,7 +28,7 @@ const stick={x:0,y:0,pointerId:null};
 let mode='idle',connected=false,paused=true,lastTime=performance.now(),sendTimer=0,snapshotTimer=0,toastTimer=0,botTimer=0,hudTimer=0;
 const botBrains=new Map();
 let state=initialState();let guestInput={moveX:0,moveY:0,fire:false};
-let particles=[],screenKick=0,fxSeq=0,lastRemoteFxId=0,visualClock=0;
+let particles=[],screenKick=0,damagePulse=0,fxSeq=0,lastRemoteFxId=0,visualClock=0;
 const keys1={up:'KeyW',down:'KeyS',left:'KeyA',right:'KeyD',fire:'Space'},keys2={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight',fire:'Enter'};
 const fireCooldown=Array(6).fill(0);
 function value(id,fallback,min,max){const raw=document.getElementById(id)?.value;const n=Number(raw);return raw!==''&&raw!=null&&Number.isInteger(n)&&n>=min&&n<=max?n:fallback;}
@@ -48,7 +52,7 @@ function createMaze(def,seed){const {cols,rows,cell}=def,rng=mazeRandom(seed),op
 function setArena(id,seed=1){const v=Number(id),arena=Number.isInteger(v)&&v>=0&&v<ARENAS.length?v:0,def=ARENAS[arena];
  if(currentArena===arena&&currentSeed===seed)return arena;currentArena=arena;currentSeed=seed;
  mazeGrid=def.maze?createMaze(def.maze,seed):null;wallSet=mazeGrid?mazeGrid.walls:def.walls;bumpers=def.bumpers||[];
- worldW=mazeGrid?mazeGrid.cols*mazeGrid.cell:W;worldH=mazeGrid?mazeGrid.rows*mazeGrid.cell:H;return arena;}
+ worldW=mazeGrid?mazeGrid.cols*mazeGrid.cell:W;worldH=mazeGrid?mazeGrid.rows*mazeGrid.cell:H;rebuildWallLookup();return arena;}
 function selectArena(){return setArena(document.getElementById('arena-choice')?.value??selectedArena)}
 function startingPosition(i){if(mazeGrid){const {cols,rows,cell}=mazeGrid,spots=[[0,Math.floor(rows/2)],[cols-1,Math.floor(rows/2)],[Math.floor(cols/2),0],[Math.floor(cols/2),rows-1],[2,2],[cols-3,rows-3]];
  const [x,y]=spots[i%spots.length];return [(x+.5)*cell,(y+.5)*cell];}
@@ -63,7 +67,7 @@ function teamOf(i,st=state){const mode=st.config?.teamMode||'ffa';if(mode==='ffa
  return st.humanCount===1?(i===0?0:1):i%2;}
 function friendly(a,b){return teamOf(a)===teamOf(b)}
 function label(i){return i===0?'CYAN':i===1&&state.humanCount===2?'CORAL':`BOT ${i-state.humanCount+1}`;}
-function emitFx(kind,x,y,color){const id=++fxSeq;state.fxEvents.push({id,kind,x,y,color});if(state.fxEvents.length>12)state.fxEvents.shift();spawnParticles(kind,x,y,color);lastRemoteFxId=id}
+function emitFx(kind,x,y,color,owner=-1,target=-1){const id=++fxSeq;state.fxEvents.push({id,kind,x,y,color,owner,target,ttl:kind==='shot'?1.8:kind==='hit'?.75:.4});if(state.fxEvents.length>12)state.fxEvents.shift();spawnParticles(kind,x,y,color);lastRemoteFxId=id}
 function spawnParticles(kind,x,y,color){const count=kind==='hit'?24:kind==='pickup'?17:kind==='bounce'?5:kind==='shot'?7:12;const speed=kind==='hit'?205:kind==='bounce'?95:kind==='shot'?115:135;
  for(let i=0;i<count;i++){const a=(i/count)*Math.PI*2+Math.random()*.4,velocity=speed*(.28+Math.random()*.72),life=(kind==='shot'?.17:kind==='bounce'?.14:.42)+Math.random()*.26;particles.push({x,y,vx:Math.cos(a)*velocity,vy:Math.sin(a)*velocity,life,maxLife:life,color,size:kind==='hit'?2.5+Math.random()*3:1.5+Math.random()*2.2})}if(particles.length>260)particles.splice(0,particles.length-260);}
 function spawnPickup(){if(state.pickups.length||state.winner>=0)return;
@@ -84,17 +88,17 @@ function serializeState(){return {tanks:state.tanks.map(t=>({...t})),bullets:sta
 function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  document.getElementById('score0').textContent=state.lives[me]??0;document.getElementById('score1').textContent=state.lives[other]??0;
  const botLives=state.lives.slice(state.humanCount||2).filter(v=>v>0).length,active=state.bullets.filter(b=>b.owner===me).length;
- document.getElementById('round').textContent=(mode==='guest'&&state.hostPaused)?'HOST PAUSED':state.winner>=0?'MATCH OVER · MENU TO REMATCH':`${active}/${state.config?.bulletCap||3} SHELLS · ${botLives} BOTS · ${state.kos[me]||0} KO`;
+ document.getElementById('round').textContent=(mode==='guest'&&state.hostPaused)?'HOST PAUSED':state.winner>=0?'MATCH OVER · MENU TO REMATCH':`${active}/${state.config?.bulletCap||3} SHELLS · ${botLives} BOTS · ${state.kos[me]||0} HITS`;
  const shellMeter=document.getElementById('shell-meter');if(shellMeter){const cap=state.config?.bulletCap||3;shellMeter.textContent=`${Math.max(0,cap-active)}/${cap} READY`;shellMeter.classList.toggle('empty',active>=cap)}
  const label0=document.getElementById('player0-label');if(label0)label0.textContent=mode==='guest'?'YOU':'CYAN';const label1=document.getElementById('player1-label');if(label1)label1.textContent=mode==='solo'?'BOT':mode==='guest'?'HOST':'CORAL';}
 function newMatch(which){if(bridgeReady())window.AndroidBridge.stopNetwork();mode=which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;savePrefs();
  let arena=selectArena();if(which==='duel'&&ARENAS[arena].maze){arena=0;notice('Maze chase needs separate phones; keyboard duel uses Foundry')}
- state=initialState(arena);particles=[];fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();refreshHUD();document.getElementById('mode-label').textContent={solo:'SOLO VS BOTS',duel:'LOCAL DUEL',host:'HOST NEARBY',guest:'JOIN NEARBY'}[which]||'WAITING';if(which==='solo'||which==='duel')exitMenu();}
+ state=initialState(arena);particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();refreshHUD();document.getElementById('mode-label').textContent={solo:'SOLO VS BOTS',duel:'LOCAL DUEL',host:'HOST NEARBY',guest:'JOIN NEARBY'}[which]||'WAITING';if(which==='solo'||which==='duel')exitMenu();}
 function resetAll(nextArena=false){let arena=nextArena?(state.arenaId+1)%ARENAS.length:state.arenaId;if(mode==='duel'&&ARENAS[arena].maze)arena=0;
- state=initialState(arena,state.config);fixedAccumulator=0;particles=[];screenKick=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();if(mode!=='guest')notice(nextArena?'NEW ARENA — '+ARENAS[arena].name:'REMATCH — GO!');}
+ state=initialState(arena,state.config);fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();if(mode!=='guest')notice(nextArena?'NEW ARENA — '+ARENAS[arena].name:'REMATCH — GO!');}
 function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
 function circlesRect(x,y,r,w){const nx=clamp(x,w.x,w.x+w.w),ny=clamp(y,w.y,w.y+w.h);return (x-nx)**2+(y-ny)**2<r*r}
-function blocked(x,y,r=21){return x<r+13||x>worldW-r-13||y<r+13||y>worldH-r-13||wallSet.some(w=>circlesRect(x,y,r,w))}
+function blocked(x,y,r=21){return x<r+13||x>worldW-r-13||y<r+13||y>worldH-r-13||nearWall(x,y,r)}
 function tankMove(t,inp,dt,i){let mx=clamp(Number(inp.moveX)||0,-1,1),my=clamp(Number(inp.moveY)||0,-1,1);let mag=Math.hypot(mx,my);
  if(mag>1){mx/=mag;my/=mag;mag=1}if(mag<.09){mx=0;my=0;mag=0}
  const speed=(inp.bot?178:222)*(t.powerType==='turbo'&&t.powerTimer>0?1.48:1),blend=Math.min(1,dt*(mag?9:13));t.vx+=(mx*speed-t.vx)*blend;t.vy+=(my*speed-t.vy)*blend;
@@ -103,7 +107,7 @@ function tankMove(t,inp,dt,i){let mx=clamp(Number(inp.moveX)||0,-1,1),my=clamp(N
  const collides=(x,y)=>blocked(x,y)||state.tanks.some((other,j)=>i!==j&&state.lives[j]>0&&(other.x-x)**2+(other.y-y)**2<42**2);
  if(!collides(nx,t.y))t.x=nx;else t.vx=0;
  if(!collides(t.x,ny))t.y=ny;else t.vy=0;}
-function hasLineOfSight(x,y,tx,ty){const length=Math.hypot(tx-x,ty-y),steps=Math.ceil(length/15);for(let n=1;n<steps;n++){const p=n/steps;if(wallSet.some(w=>circlesRect(x+(tx-x)*p,y+(ty-y)*p,4,w)))return false}return true;}
+function hasLineOfSight(x,y,tx,ty){const length=Math.hypot(tx-x,ty-y),steps=Math.ceil(length/15);for(let n=1;n<steps;n++){const p=n/steps;if(nearWall(x+(tx-x)*p,y+(ty-y)*p,4))return false}return true;}
 function botInput(i,dt){const bot=state.tanks[i],enemies=state.tanks.map((t,j)=>({t,j})).filter(({j})=>j!==i&&state.lives[j]>0&&!friendly(i,j));
  if(!enemies.length)return {moveX:0,moveY:0,fire:false,bot:true};enemies.sort((a,b)=>Math.hypot(bot.x-a.t.x,bot.y-a.t.y)-Math.hypot(bot.x-b.t.x,bot.y-b.t.y));const target=enemies[0].t;
  let direction=Math.atan2(target.y-bot.y,target.x-bot.x),brain=botBrains.get(i)||{timer:0,path:[],goal:-1};brain.timer-=dt;
@@ -116,8 +120,11 @@ function botInput(i,dt){const bot=state.tanks[i],enemies=state.tanks.map((t,j)=>
  const delta=Math.atan2(Math.sin(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a),Math.cos(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a));
  const skill=state.config?.botSkill||'normal',pace=skill==='casual'?.61:skill==='spicy'?.98:.81;
  const aim=skill==='casual'?.27:skill==='spicy'?.39:.33;
- const hasLine=Math.hypot(bot.x-target.x,bot.y-target.y)<(mazeGrid?385:750)&&hasLineOfSight(bot.x,bot.y,target.x,target.y);
- return {moveX:Math.cos(direction)*pace,moveY:Math.sin(direction)*pace,fire:Math.abs(delta)<aim&&hasLine,bot:true};}
+ const enemyDist=Math.hypot(bot.x-target.x,bot.y-target.y);
+ const hasLine=enemyDist<(mazeGrid?385:750)&&hasLineOfSight(bot.x,bot.y,target.x,target.y);
+ // Stop blindly ramming the player. Bots ease off the throttle for close duels.
+ const chasePace=hasLine&&enemyDist<115?pace*.34:pace;
+ return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,fire:Math.abs(delta)<aim&&hasLine,bot:true};}
 function shoot(owner){if(state.lives[owner]<=0)return false;
  const cap=state.config?.bulletCap||3;if(state.bullets.filter(b=>b.owner===owner&&b.life>0).length>=cap)return false;
  const t=state.tanks[owner],dx=Math.cos(t.a),dy=Math.sin(t.a);
@@ -126,7 +133,7 @@ function shoot(owner){if(state.lives[owner]<=0)return false;
  let x=t.x+dx*12,y=t.y+dy*12;
  for(let distance=14;distance<=34;distance+=2){const bx=t.x+dx*distance,by=t.y+dy*distance;if(blocked(bx,by,5))break;x=bx;y=by;}
  t.shield=0; // Shooting cancels spawn immunity: no free attacks while invulnerable.
- state.bullets.push({x,y,vx:dx*405,vy:dy*405,owner,life:3.8,bounces:0,age:0});t.flash=.11;emitFx('shot',x,y,colors[owner]);sound(410+owner*80,.065);refreshHUD();return true;}
+ state.bullets.push({x,y,vx:dx*405,vy:dy*405,owner,life:3.8,bounces:0,age:0});t.flash=.11;emitFx('shot',x,y,colors[owner],owner);sound(410+owner*80,.065,x,y);refreshHUD();return true;}
 function respawn(victim){const enemies=state.tanks.filter((_,i)=>i!==victim&&state.lives[i]>0&&!friendly(victim,i));const spots=[];
  if(mazeGrid){for(let r=0;r<mazeGrid.rows;r++)for(let c=0;c<mazeGrid.cols;c++)spots.push([(c+.5)*mazeGrid.cell,(r+.5)*mazeGrid.cell]);}
  else spots.push(...[[130,300],[830,300],[130,100],[830,500],[480,96],[480,500],[130,480],[830,120],[340,70],[620,525]]);
@@ -136,12 +143,13 @@ function respawn(victim){const enemies=state.tanks.filter((_,i)=>i!==victim&&sta
  state.bullets=state.bullets.filter(b=>Math.hypot(b.x-x,b.y-y)>50);}
 function registerHit(attacker,victim){if(state.winner>=0||state.lives[victim]<=0||state.tanks[victim].shield>0||(attacker!==victim&&friendly(attacker,victim)))return false;
  const target=state.tanks[victim];if(target.powerType==='guard'&&target.powerTimer>0){target.powerType=null;target.powerTimer=0;emitFx('pickup',target.x,target.y,'#b59aff');state.event='BARRIER BLOCKED THE HIT!';state.eventTimer=.8;return false;}
- emitFx('hit',target.x,target.y,colors[victim]);screenKick=comfort.shake?3.2:0;state.lives[victim]--;if(attacker!==victim)state.kos[attacker]++;state.event=label(victim)+' LOSES A LIFE!';state.eventTimer=.85;sound(130+attacker*80,.16);
+ emitFx('hit',target.x,target.y,colors[victim],attacker,victim);if(victim===(mode==='guest'?1:0)){screenKick=comfort.shake?3.2:0;damagePulse=.58;}state.lives[victim]--;if(attacker!==victim)state.kos[attacker]++;state.event=label(victim)+' LOSES A LIFE!';state.eventTimer=.85;sound(130+attacker*80,.16,target.x,target.y);
  if(state.lives[victim]>0)respawn(victim);else{target.vx=target.vy=0;state.bullets=state.bullets.filter(b=>b.owner!==victim);
  const active=state.tanks.map((_,i)=>i).filter(i=>state.lives[i]>0),teams=[...new Set(active.map(i=>teamOf(i)))];
  if(teams.length<=1){state.winnerTeam=teams[0]??teamOf(attacker);state.winner=active[0]??attacker;state.event=state.config.teamMode==='coop'?(state.winnerTeam===0?'HUMANS WIN!':'BOTS WIN!'):state.config.teamMode==='teams'?(`TEAM ${state.winnerTeam===0?'BLUE':'RED'} WINS!`):(label(state.winner)+' WINS!');state.eventTimer=0;}}
  refreshHUD();return true;}
 function step(dt){if(paused||state.winner>=0)return;
+ for(const fx of state.fxEvents)fx.ttl=Math.max(0,(fx.ttl||0)-dt);state.fxEvents=state.fxEvents.filter(fx=>fx.ttl>0);
  state.eventTimer=Math.max(0,state.eventTimer-dt);state.pickupTimer-=dt;
  if(state.pickupTimer<=0){spawnPickup();state.pickupTimer=state.pickups.length?15:3;}
  const inputs=state.tanks.map((t,i)=>i===0?makeControl(true):i===1&&mode==='duel'?makeControl(false):i===1&&mode==='host'?guestInput:botInput(i,dt));
@@ -152,14 +160,14 @@ function step(dt){if(paused||state.winner>=0)return;
  fireCooldown[i]=Math.max(0,(fireCooldown[i]||0)-dt);if(inputs[i]?.fire&&fireCooldown[i]<=0&&shoot(i))fireCooldown[i]=t.powerType==='rapid'?.17:.42;}
  for(const b of state.bullets){b.age+=dt;b.life-=dt;const substeps=Math.max(1,Math.ceil(Math.max(Math.abs(b.vx),Math.abs(b.vy))*dt/5)),subDt=dt/substeps;
  for(let j=0;j<substeps&&b.life>0&&state.winner<0;j++){const nx=b.x+b.vx*subDt,ny=b.y+b.vy*subDt;
- if(blocked(nx,b.y,5)){b.vx=-b.vx;b.bounces++;emitFx('bounce',b.x,b.y,colors[b.owner]);sound(700,.018)}else b.x=nx;
+ if(blocked(nx,b.y,5)){b.vx=-b.vx;b.bounces++;emitFx('bounce',b.x,b.y,colors[b.owner]);sound(700,.018,b.x,b.y)}else b.x=nx;
  if(blocked(b.x,ny,5)){b.vy=-b.vy;b.bounces++;emitFx('bounce',b.x,b.y,colors[b.owner]);sound(700,.018)}else b.y=ny;
- for(const bump of bumpers){const dx=b.x-bump.x,dy=b.y-bump.y,dist=Math.hypot(dx,dy);if(dist>0&&dist<bump.r+6&&(b.bumpDelay||0)<=0){const ux=dx/dist,uy=dy/dist,dot=b.vx*ux+b.vy*uy;if(dot<0){b.vx-=2*dot*ux;b.vy-=2*dot*uy;b.x=bump.x+ux*(bump.r+7);b.y=bump.y+uy*(bump.r+7);b.bounces++;b.bumpDelay=.09;emitFx('bounce',b.x,b.y,'#ffdf7b');sound(940,.05)}}}
+ for(const bump of bumpers){const dx=b.x-bump.x,dy=b.y-bump.y,dist=Math.hypot(dx,dy);if(dist>0&&dist<bump.r+6&&(b.bumpDelay||0)<=0){const ux=dx/dist,uy=dy/dist,dot=b.vx*ux+b.vy*uy;if(dot<0){b.vx-=2*dot*ux;b.vy-=2*dot*uy;b.x=bump.x+ux*(bump.r+7);b.y=bump.y+uy*(bump.r+7);b.bounces++;b.bumpDelay=.09;emitFx('bounce',b.x,b.y,'#ffdf7b');sound(940,.05,b.x,b.y)}}}
  b.bumpDelay=Math.max(0,(b.bumpDelay||0)-subDt);if(b.bounces>5){b.life=0;break}
  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]>0&&(i===b.owner?(b.age>.38&&b.bounces>0):!friendly(i,b.owner))&&t.shield<=0&&(t.x-b.x)**2+(t.y-b.y)**2<26**2){b.life=0;registerHit(b.owner,i);break}}}}
  state.bullets=state.bullets.filter(b=>b.life>0);}
-function sound(freq,len=.09){if(!comfort.sound)return;try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;if(!window.rrAudio)window.rrAudio=new AC;const ac=window.rrAudio;if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.type='square';o.frequency.value=freq;g.gain.setValueAtTime(.028,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+len);o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+len)}catch(_){}}
-function updateVisuals(dt){visualClock+=dt;screenKick=Math.max(0,screenKick-dt*22);for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.max(0,1-dt*3);p.vy*=Math.max(0,1-dt*3)}particles=particles.filter(p=>p.life>0)}
+function sound(freq,len=.09,x=null,y=null){if(!comfort.sound)return;try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;if(!window.rrAudio)window.rrAudio=new AC;const ac=window.rrAudio;if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.type='square';o.frequency.value=freq;const me=state.tanks[mode==='guest'?1:0],dist=Number.isFinite(x)&&Number.isFinite(y)&&me?Math.hypot(x-me.x,y-me.y):0;const loudness=.028*Math.max(.065,1-dist/950);g.gain.setValueAtTime(loudness,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+len);o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+len)}catch(_){}}
+function updateVisuals(dt){visualClock+=dt;screenKick=Math.max(0,screenKick-dt*22);damagePulse=Math.max(0,damagePulse-dt*1.65);for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.max(0,1-dt*3);p.vy*=Math.max(0,1-dt*3)}particles=particles.filter(p=>p.life>0)}
 function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick>0)c.translate(Math.sin(visualClock*130)*screenKick,Math.cos(visualClock*98)*screenKick*.5);const zoom=mazeGrid?1.28:1,viewW=W/zoom,viewH=H/zoom,me=mode==='guest'?1:0,localTank=state.lives[me]>0?state.tanks[me]:(state.tanks.find((t,i)=>state.lives[i]>0)||state.tanks[me]||state.tanks[0]);
  const desiredX=clamp((localTank?.x||W/2)-viewW/2,0,Math.max(0,worldW-viewW)),desiredY=clamp((localTank?.y||H/2)-viewH/2,0,Math.max(0,worldH-viewH));
  const follow=1-Math.exp(-Math.min(.1,dt)*13);camera.x+=(desiredX-camera.x)*follow;camera.y+=(desiredY-camera.y)*follow;if(!mazeGrid){camera.x=0;camera.y=0}
@@ -192,10 +200,15 @@ function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick
  c.save();c.translate(mx,my);c.scale(mw/worldW,mh/worldH);c.fillStyle='#163c4b';c.fillRect(0,0,worldW,worldH);
  c.fillStyle='#7aa8b6';for(const w of wallSet)c.fillRect(w.x,w.y,w.w,w.h);
  for(let i=0;i<state.tanks.length;i++){if(state.lives[i]<=0)continue;const t=state.tanks[i],me=mode==='guest'?1:0;if(i!==me&&Math.hypot(t.x-state.tanks[me].x,t.y-state.tanks[me].y)>400)continue;c.beginPath();c.arc(t.x,t.y,37,0,Math.PI*2);c.fillStyle=colors[i];c.fill()}
- c.strokeStyle='#ffffff';c.lineWidth=9;c.strokeRect(camera.x,camera.y,viewW,viewH);c.restore();}
+ // Nearby hostile gunfire briefly appears as a *rough* sound ring, not a permanent wallhack.
+ const local=state.tanks[me];if(local)for(const fx of (state.fxEvents||[])){if(fx.kind!=='shot'||!(fx.ttl>0)||!Number.isInteger(fx.owner)||fx.owner<0||fx.owner>=state.tanks.length||friendly(fx.owner,me))continue;
+   if(Math.hypot(fx.x-local.x,fx.y-local.y)>1000)continue;
+   c.globalAlpha=.75*Math.min(1,fx.ttl/.4);c.strokeStyle='#ffd17c';c.lineWidth=22;c.beginPath();c.arc(fx.x,fx.y,80+(1.8-fx.ttl)*95,0,Math.PI*2);c.stroke();}
+ c.globalAlpha=1;c.strokeStyle='#ffffff';c.lineWidth=9;c.strokeRect(camera.x,camera.y,viewW,viewH);c.restore();}
  if(state.eventTimer>0&&state.winner<0){c.fillStyle='#071b26c9';c.fillRect(W/2-160,28,320,44);c.fillStyle='#f7e9b9';c.font='900 19px system-ui';c.textAlign='center';c.fillText(state.event,W/2,56)}
  if(state.winner>=0){c.fillStyle='#071b26da';c.fillRect(0,0,W,H);c.fillStyle=colors[state.winner]||'#fff';c.font='900 48px system-ui';c.textAlign='center';c.fillText(state.event,W/2,H/2-20);c.fillStyle='#deedf0';c.font='bold 18px system-ui';c.fillText('MATCH COMPLETE · OPEN MENU FOR REMATCH',W/2,H/2+28)}
  if(paused&&mode==='host'&&!connected){c.fillStyle='#071b26b5';c.fillRect(0,0,W,H);c.fillStyle='#d4f0f2';c.font='bold 28px system-ui';c.textAlign='center';c.fillText('WAITING FOR PLAYER TWO',W/2,H/2)}
+ if(damagePulse>0){c.strokeStyle='#ff766d';c.globalAlpha=Math.min(.65,damagePulse);c.lineWidth=12+damagePulse*24;c.strokeRect(7,7,W-14,H-14);c.globalAlpha=1}
  }
 function nativePacket(packet){if(!window.AndroidBridge)return;try{window.AndroidBridge.sendPacket(JSON.stringify(packet))}catch(e){notice('Network send failed')}}
 function loop(now){const dt=clamp((now-lastTime)/1000,0,.085);lastTime=now;
@@ -214,7 +227,7 @@ panel.addEventListener('change',e=>{const el=e.target;if(el.id?.startsWith('pref
 loadPrefs();
 
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
- if(a==='help'){setPanel('<div class="eyebrow">QUICK GUIDE</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>MOVE:</strong> Push the joystick in any direction. The tank points where it drives.</p><p><strong>FIRE:</strong> Hold FIRE, or enable AUTO FIRE in settings. Only a few shells can be active per tank.</p><p><strong>WIN:</strong> Bounce shots around corners, find pickups, and outlast the other tanks. Hits cost a life, not the whole round.</p><p><strong>TEAMS:</strong> Allies cannot hurt each other. In Maze XL, the camera follows your tank and the minimap guides you.</p></div><button class="primary" data-action="help-back">◀ BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
+ if(a==='help'){setPanel('<div class="eyebrow">QUICK GUIDE</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>MOVE:</strong> Push the joystick in any direction. The tank points where it drives.</p><p><strong>FIRE:</strong> Hold FIRE, or enable AUTO FIRE in settings. Only a few shells can be active per tank.</p><p><strong>WIN:</strong> Bounce shots around corners, find pickups, and outlast the other tanks. Hits cost a life, not the whole round.</p><p><strong>MAZES:</strong> The camera follows you. Orange minimap rings show nearby gunfire; teammates cannot hurt each other.</p></div><button class="primary" data-action="help-back">◀ BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
  const s=document.getElementById('lan-address').value.trim(),m=s.match(/^([\da-fA-F:.]+):(\d{1,5})$/);
  if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';window.AndroidBridge.joinGame(m[1],Number(m[2]));}});
 function showPauseMenu(){releaseControls();if(mode==='idle')return;
@@ -244,7 +257,7 @@ window.RR={openMenu(){if(menu.classList.contains('hidden'))showPauseMenu();else 
  switch(msg.type){case 'hosting':{const p=document.getElementById('host-status');if(p)p.textContent='Waiting for another phone to join...';const a=document.getElementById('host-address');if(a)a.textContent=(msg.address||'LOCAL NETWORK')+':'+msg.port;break}
  case 'found':{const r=document.getElementById('rooms');if(r&&!r.querySelector('[data-host="'+msg.host+'"]')){const b=document.createElement('button');b.textContent='JOIN '+(msg.name||'NEARBY GAME');b.dataset.host=msg.host;b.onclick=()=>{window.AndroidBridge.joinGame(msg.host,msg.port);document.getElementById('find-status').textContent='Connecting...'};r.appendChild(b)}break}
  case 'connected':{connected=true;paused=false;document.getElementById('mode-label').textContent=mode==='guest'?'YOU: CORAL':mode==='host'?'YOU: CYAN':'CONNECTED';exitMenu();notice('Player connected — FIGHT!');if(mode==='host'){state=initialState(state.arenaId,state.config,state.mazeSeed);refreshHUD()}break}
- case 'state':if(mode==='guest'&&msg.state&&Array.isArray(msg.state.tanks)&&msg.state.tanks.length>=2&&msg.state.tanks.length<=6&&Array.isArray(msg.state.lives)&&msg.state.lives.length===msg.state.tanks.length&&Array.isArray(msg.state.kos)&&msg.state.kos.length===msg.state.tanks.length){const upcoming=msg.state;const currentEvents=Array.isArray(upcoming.fxEvents)?upcoming.fxEvents:[];for(const event of currentEvents){if(event.id>lastRemoteFxId&&event.id<lastRemoteFxId+1000&&Number.isFinite(event.x)&&Number.isFinite(event.y)){spawnParticles(event.kind,event.x,event.y,event.color);lastRemoteFxId=event.id}}state=upcoming;setArena(state.arenaId,state.mazeSeed);refreshHUD()}break;
+ case 'state':if(mode==='guest'&&msg.state&&Array.isArray(msg.state.tanks)&&msg.state.tanks.length>=2&&msg.state.tanks.length<=6&&Array.isArray(msg.state.lives)&&msg.state.lives.length===msg.state.tanks.length&&Array.isArray(msg.state.kos)&&msg.state.kos.length===msg.state.tanks.length){const upcoming=msg.state;const currentEvents=Array.isArray(upcoming.fxEvents)?upcoming.fxEvents:[];for(const event of currentEvents){if(event.id>lastRemoteFxId&&event.id<lastRemoteFxId+1000&&Number.isFinite(event.x)&&Number.isFinite(event.y)){spawnParticles(event.kind,event.x,event.y,event.color);if(event.kind==='hit'&&event.target===1){damagePulse=.58;screenKick=comfort.shake?3.2:0}if(event.kind==='shot')sound(420,.06,event.x,event.y);if(event.kind==='hit')sound(170,.13,event.x,event.y);lastRemoteFxId=event.id}}state=upcoming;setArena(state.arenaId,state.mazeSeed);refreshHUD()}break;
  case 'input':if(mode==='host'&&msg.input){guestInput.moveX=clamp(Number(msg.input.moveX)||0,-1,1);guestInput.moveY=clamp(Number(msg.input.moveY)||0,-1,1);guestInput.fire=msg.input.fire===true}break;
  case 'disconnected':connected=false;paused=true;guestInput={moveX:0,moveY:0,fire:false};clearStick();notice('Other player disconnected');setPanel('<h2>CONNECTION LOST</h2><p>Return to the main menu and reconnect.</p><button data-action="close">MAIN MENU</button>');break;
  case 'error':notice(msg.message||'Network error');break;}}};

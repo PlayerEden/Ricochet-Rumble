@@ -1,4 +1,4 @@
-name: Android Test APK # v0.6.2 visibility reliability patch
+name: Android Test APK # v0.6.3 combat polish
 on:
   workflow_dispatch:
   push:
@@ -33,7 +33,7 @@ jobs:
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: ricochet-rumble-0.6.2-debug-apk
+          name: ricochet-rumble-0.6.3-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
