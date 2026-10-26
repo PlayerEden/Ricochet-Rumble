@@ -28,6 +28,28 @@ jobs:
           gradle-version: '8.9'
       - name: Run gameplay smoke tests
         run: node tests/smoke.mjs
+      - name: Checkout v0.9.8.1 visual baseline
+        uses: actions/checkout@v4
+        with:
+          ref: dev/sector-rebound-ui
+          path: visual-baseline
+      - name: Capture visual before/after QA
+        continue-on-error: true
+        run: |
+          set -e
+          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          export CHROME_BIN
+          if [ -z "$CHROME_BIN" ]; then echo "Chrome not installed; visual snapshots unavailable"; exit 0; fi
+          npm install --no-save --ignore-scripts playwright-core@1.56.1
+          node tests/visual-qa.mjs
+      - name: Upload visual QA screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sector-rebound-v0.9.9-visual-before-after
+          path: qa-screens/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Build debug APK (no secrets required)
         working-directory: android
         run: gradle --no-daemon :app:assembleDebug
