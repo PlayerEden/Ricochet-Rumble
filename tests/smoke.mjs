@@ -260,3 +260,30 @@ win.__test.tankMove(lone,{moveX:1,moveY:0},.13,0);
 assert.ok(lone.x<=vacant.x-37+1,'living occupied actors still block vehicles');
 assert.ok(menuHtml.includes('PLAY TOGETHER')&&menuHtml.includes('ADVANCED RULES'));
 console.log('PASS v0.9.8: vacant vehicle is passable and non-cover; occupied actors block; UI hierarchy present.');
+
+// v0.9.8.1 entry-clearance regression. Empty deployments never block movement,
+// but turning a projection into an occupied actor must not overlap a live rival.
+click('solo');
+assert.equal(win.__test.tryInteract(0),true,'player can still dismount');
+const boardingPilot=st().tanks[0],blockingRival=st().tanks[1];
+const boardingBay=st().vehicles.find(v=>v.occupant===-1&&v.armor>0);
+assert.ok(boardingBay,'test needs a reclaimable vehicle');
+boardingPilot.x=boardingBay.x;boardingPilot.y=boardingBay.y;
+const rivalX=blockingRival.x,rivalY=blockingRival.y;
+blockingRival.x=boardingBay.x;blockingRival.y=boardingBay.y;
+assert.equal(win.__test.tryInteract(0),false,'cannot spawn a piloted tank on top of a live rival');
+assert.equal(boardingBay.occupant,-1,'failed entry leaves the bay available');
+blockingRival.x=rivalX;blockingRival.y=rivalY;
+assert.equal(win.__test.tryInteract(0),true,'same bay remains enterable once the rival moves away');
+assert.equal(boardingBay.occupant,0);
+{
+ const fs=await import('node:fs');
+ for(const name of ['game.js','style.css','index.html']){
+  const web=fs.readFileSync(new URL('../web/'+name,import.meta.url),'utf8');
+  const android=fs.readFileSync(new URL('../android/app/src/main/assets/'+name,import.meta.url),'utf8');
+  assert.equal(android,web,'Android/browser parity for '+name);
+ }
+ const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
+ assert.ok(css.includes("'sans-serif-condensed'"),'Android condensed headings have an offline fallback');
+}
+console.log('PASS v0.9.8.1: entry clearance, Android asset parity and offline heading fallback.');
