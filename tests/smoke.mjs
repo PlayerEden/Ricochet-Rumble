@@ -16,7 +16,7 @@ const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},join
 const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(){return null},setItem(){}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(){return []}};
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,teamOf,botInput,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,teamOf,botInput,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -198,7 +198,7 @@ console.log('PASS v0.9.4 visual clarity: pilot duel advantage, tactical sidearm,
 { const fs=await import('node:fs');
   const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
   const manifest=fs.readFileSync(new URL('../android/app/src/main/AndroidManifest.xml',import.meta.url),'utf8');
-  if(!html.includes('SECTOR <em>REBOUND</em>') || !html.includes('SECTOR <span>REBOUND</span>') || !manifest.includes('android:label="Sector Rebound"')) throw new Error('Sector Rebound public branding missing');
+  if(!html.includes('SECTOR <span>REBOUND</span>') || !manifest.includes('android:label="Sector Rebound"')) throw new Error('Sector Rebound public branding missing');
   if(html.includes('Ricochet Rumble') || manifest.includes('Ricochet Rumble')) throw new Error('Old title appears in public game UI');
 }
 
@@ -334,3 +334,40 @@ st().winner=1;st().winnerTeam=1;win.__test.refreshHUD();
 assert.equal(node('round').textContent,'MATCH OVER');
 assert.equal(node('round').classList.contains('match-ended'),true);
 console.log('PASS v0.9.9: labeled menu actions, HUD state transitions, blocked-bay visibility and responsive design contract.');
+
+{
+ const fs=await import('node:fs');
+ const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
+ const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
+ const hud=html.split('<header class="game-hud"')[1]?.split('</header>')[0]||'';
+ assert.ok(!hud.includes('SECTOR <em>REBOUND</em>'),'no game title in live HUD');
+ assert.ok(html.includes('SECTOR <span>REBOUND</span>'),'title remains on main menu');
+ assert.ok(css.includes('FULLSCREEN COMBAT'),'fullscreen CSS contract');
+ assert.ok(css.includes('safe-area-inset-left')&&css.includes('safe-area-inset-right'),'safe-area overlay controls');
+}
+win.innerWidth=740;win.innerHeight=360;win.devicePixelRatio=2;
+assert.equal(win.__test.resizeArenaCanvas(),true);
+assert.equal(node('arena').width,1184);
+assert.equal(node('arena').height,576);
+win.innerWidth=915;win.innerHeight=412;win.devicePixelRatio=1;
+assert.equal(win.__test.resizeArenaCanvas(),true);
+assert.equal(node('arena').width,915);assert.equal(node('arena').height,412);
+click('solo');
+const driving=st().tanks[0],origTracks=[driving.trackLeft,driving.trackRight];
+win.__test.tankMove(driving,{moveX:1,moveY:0},1/60,0);
+assert.notEqual(driving.trackLeft,origTracks[0]);
+assert.notEqual(driving.trackRight,origTracks[1]);
+const turnStart=[driving.trackLeft,driving.trackRight];
+win.__test.tankMove(driving,{moveX:0,moveY:1},1/60,0);
+assert.notEqual(driving.trackLeft-turnStart[0],driving.trackRight-turnStart[1],'differential tread movement');
+const seams=[],paint={save(){},restore(){},translate(){},scale(){},fillRect(x,y,w,h){if(w===2&&h===10)seams.push(x)},strokeRect(){},set lineWidth(v){},set lineJoin(v){},set strokeStyle(v){},set fillStyle(v){}};
+win.__test.drawTopTank(paint,'#62cddf',false,0,0,0,0);
+const idleSeams=seams.slice();seams.length=0;
+win.__test.drawTopTank(paint,'#62cddf',false,3,6,0,0);
+assert.equal(idleSeams.length,12);assert.equal(seams.length,12);
+assert.notDeepEqual(seams,idleSeams,'rendered treads animate');
+assert.equal(win.__test.shoot(0),true);
+assert.ok(driving.recoil>0,'gunfire kicks the hull');
+win.__test.step(1/60);
+assert.ok(driving.recoil<1,'recoil eases away');
+console.log('PASS v0.9.10 fullscreen canvas, overlay HUD, independently moving treads and recoil.');
