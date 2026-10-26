@@ -408,9 +408,10 @@ function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
  if(shooting){c.fillStyle='#ffe5a0';c.beginPath();c.arc(25,0,4,0,Math.PI*2);c.fill()}
  c.restore();
 }
+function cameraZoom(){return mazeGrid?Math.max(1.20,W/(worldW+160),H/(worldH+120)):1;}
 function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick>0)c.translate(Math.sin(visualClock*130)*screenKick,Math.cos(visualClock*98)*screenKick*.5);// A 6.25% camera pullback. The perimeter includes a small rendered exterior
  // apron so wide Android screens never reveal blank letterbox gutters.
- const zoom=mazeGrid?Math.max(1.20,W/(worldW+160),H/(worldH+120)):1,viewW=W/zoom,viewH=H/zoom,me=mode==='guest'?1:0,localTank=state.lives[me]>0?state.tanks[me]:(state.tanks.find((t,i)=>state.lives[i]>0)||state.tanks[me]||state.tanks[0]);
+ const zoom=cameraZoom(),viewW=W/zoom,viewH=H/zoom,me=mode==='guest'?1:0,localTank=state.lives[me]>0?state.tanks[me]:(state.tanks.find((t,i)=>state.lives[i]>0)||state.tanks[me]||state.tanks[0]);
  const apron=mazeGrid?80:0;const desiredX=clamp((localTank?.x||W/2)-viewW/2,-apron,Math.max(-apron,worldW+apron-viewW)),desiredY=clamp((localTank?.y||H/2)-viewH/2,-apron,Math.max(-apron,worldH+apron-viewH));
  const follow=1-Math.exp(-Math.min(.1,dt)*13);camera.x+=(desiredX-camera.x)*follow;camera.y+=(desiredY-camera.y)*follow;if(!mazeGrid){camera.x=0;camera.y=0}
  c.scale(zoom,zoom);c.translate(-camera.x,-camera.y);
