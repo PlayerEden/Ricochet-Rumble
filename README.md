@@ -1,3 +1,15 @@
+# Sector Rebound — v0.9.10b Camera & Motion Polish
+
+**Current experimental branch:** `dev/sector-rebound-motion-polish-v0910b` · **Android versionCode:** 26
+
+Based on the user's Android screenshot and playtest of v0.9.10, this pass slightly pulls back the camera without reintroducing blank bars, softens tank suspension/recoil, gives mechs and on-foot pilots their own subtle movement/recoil reactions, and lightens the floating HUD/control borders. All occupied vehicles, enemies, bots and networked players share the existing rendering paths. No changes to movement speeds, combat rules, procedural maze generation or LAN packet structure.
+
+**Verified October 26, 2026:** [Successful smoke + Chromium QA + APK workflow](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40423057451). Gameplay tests PASS; Android APK build PASS; 36 before/after live Chromium screenshots captured at 740×360, 915×412 and 1280×720, including held-input moving tank states. `layout-report.json` confirms fullscreen canvas bounds for every after viewport and no menu scrolling in these snapshots.
+
+**Awaiting physical phone playtest:** precise tank/mech/pilot feel, touch reach/safe areas, frame pacing, and a two-phone LAN multiplayer match. The earlier `dev/sector-rebound-fullscreen-v0910` remains unchanged for rollback. See [v0.9.10b tuning handoff](docs/CAMERA_MOTION_v0.9.10b.md).
+
+---
+
 # Sector Rebound — v0.9.10 Fullscreen Combat & Tank Motion
 
 **Active experimental branch:** `dev/sector-rebound-fullscreen-v0910` · **Android versionCode:** 25
