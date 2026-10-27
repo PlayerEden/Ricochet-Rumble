@@ -47,6 +47,14 @@ try{
    await page.locator('#menu button[data-action="solo"]').click();
    await page.waitForTimeout(180);
    await shot('arena');
+   if(name==='after'){
+    const coach=page.locator('#field-coach');
+    if(!await coach.isVisible())throw new Error('First-match field guidance unavailable at '+label);
+    const bounds=await coach.boundingBox();
+    if(!bounds||bounds.x<0||bounds.y<0||bounds.x+bounds.width>width+1||bounds.y+bounds.height>height+1)
+      throw new Error('Coach guidance clipped on '+label);
+    await shot('context-coach');
+   }
    // Movement footage as a deterministic held-key frame, not a mockup.
    await page.keyboard.down('d');
    await page.waitForTimeout(520);
