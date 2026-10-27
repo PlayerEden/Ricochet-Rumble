@@ -16,7 +16,7 @@ const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},join
 const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(){return null},setItem(){}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(){return []}};
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,teamOf,botInput,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,collectPickup,spawnPickup,teamOf,botInput,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -95,7 +95,7 @@ assert.equal(playerMech.onFoot,true,'mech breaks and ejects pilot');assert.equal
 
 // Reset maze state to coherent config after above generated states.
 click('solo');const stress=st();stress.tanks[0].shield=500;stress.lives.fill(20);
-for(let n=0;n<1500;n++){win.__test.step(1/60);if(n%150===0){assert.ok(stress.bullets.length<=stress.tanks.length*stress.config.bulletCap);for(const v of stress.vehicles)assert.ok(v.armor>=0&&v.armor<=(v.type==='mech'?4:3));assert.ok(stress.vehicles.length<=10);}}
+for(let n=0;n<1500;n++){win.__test.step(1/60);if(n%150===0){assert.ok(stress.bullets.length<=stress.tanks.length*(stress.config.bulletCap+2));for(const v of stress.vehicles)assert.ok(v.armor>=0&&v.armor<=(v.type==='mech'?4:3));assert.ok(stress.vehicles.length<=10);}}
 // LAN sync uses unified pilot rules; remote interaction goes to authoritative host.
 click('host');assert.equal(hostCalled,true);
 assert.equal(st().config.pilotMode,true);assert.equal(st().tanks[0].onFoot,false);assert.equal(st().tanks[1].onFoot,false);
@@ -513,3 +513,71 @@ assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-1.20)<1e-9);
 zoomOperator.onFoot=true;
 assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-1.36)<1e-9);
 console.log('PASS v0.9.12a closer pilot/tank/mech zoom with unchanged viewport floor.');
+
+
+// v0.9.13 Combat feel contract: distinct sustained shell pressure and supply choice.
+{
+ const fs=await import('node:fs');
+ const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
+ const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
+ assert.ok(html.includes('value="4">4 · STANDARD'),'four active tank shells have an explicit menu default');
+ assert.ok(html.includes('TANK SHELL LIMIT')&&html.includes('power-status'));
+ assert.ok(css.includes('.power-status'),'buff information belongs in the HUD');
+}
+node('bullet-cap').value='4';node('bot-count').value='1';node('map-size').value='standard';
+click('solo');
+const fighter=st().tanks[0],hull=st().vehicles[fighter.vehicleId];
+assert.equal(win.__test.activeBulletCap(fighter),4,'standard tank can control four shells');
+assert.equal(win.__test.fireInterval(fighter),.36,'tank has measured suppression cadence');
+hull.type='mech';hull.armor=4;
+assert.equal(win.__test.activeBulletCap(fighter),3,'mech trades a shell for extra armor');
+assert.equal(win.__test.fireInterval(fighter),.62,'mech fires heavy controlled pulses');
+hull.type='tank';hull.armor=3;
+st().bullets.length=0;
+for(let j=0;j<4;j++)assert.equal(win.__test.shoot(0),true);
+assert.equal(win.__test.shoot(0),false,'tank max active shells enforced');
+assert.equal(st().bullets[0].life,2.55,'tank shells expire sooner, avoiding stale capacity lockouts');
+st().bullets.length=0;
+hull.type='mech';hull.armor=4;
+for(let j=0;j<3;j++)assert.equal(win.__test.shoot(0),true);
+assert.equal(win.__test.shoot(0),false,'mech independent shell limit');
+assert.equal(st().bullets[0].life,2.05,'mech weapon commits to shorter heavy volleys');
+st().bullets.length=0;
+hull.type='tank';hull.armor=3;
+fighter.onFoot=true;fighter.vehicleId=null;
+assert.equal(win.__test.activeBulletCap(fighter),2,'pilot pistol is close-range recovery weapon');
+assert.equal(win.__test.fireInterval(fighter),.43);
+assert.equal(win.__test.shoot(0),true);
+assert.equal(st().bullets[0].life,.82);
+st().bullets.length=0;
+const pp={x:fighter.x,y:fighter.y,type:'rapid'};
+st().pickups=[pp];
+assert.equal(win.__test.collectPickup(fighter,0,pp),true);
+assert.equal(fighter.powerType,'rapid');
+assert.equal(win.__test.activeBulletCap(fighter),3,'rapid helps the pilot without infinite bullets');
+assert.ok(win.__test.fireInterval(fighter)<.43);
+assert.equal(st().pickups.length,0,'pickup removed exactly once');
+fighter.onFoot=false;fighter.vehicleId=hull.id;hull.occupant=0;
+assert.equal(win.__test.activeBulletCap(fighter),5);
+const pow={x:fighter.x,y:fighter.y,type:'overcharge'};
+st().pickups=[pow];
+assert.equal(win.__test.collectPickup(fighter,0,pow),true);
+assert.equal(win.__test.activeBulletCap(fighter),6,'capacitor creates temporary pressure window');
+assert.equal(fighter.powerType,'overcharge');
+hull.armor=2;
+const med={x:fighter.x,y:fighter.y,type:'repair'};
+st().pickups=[med];
+assert.equal(win.__test.collectPickup(fighter,0,med),true);
+assert.equal(hull.armor,3,'repair only restores one armor plate');
+assert.equal(fighter.powerType,'overcharge','instant repair does not remove active timed buff');
+st().pickups=[med];
+assert.equal(win.__test.collectPickup(fighter,0,med),false,'full armor cannot waste repair');
+assert.equal(st().pickups.length,1,'unusable repair remains available');
+fighter.powerTimer=0;fighter.powerType=null;
+win.__test.refreshHUD();
+assert.equal(node('power-status').classList.contains('hidden'),true,'expired boost hides HUD label');
+const guard={x:fighter.x,y:fighter.y,type:'guard'};
+st().pickups=[guard];assert.equal(win.__test.collectPickup(fighter,0,guard),true);
+assert.equal(node('power-status').classList.contains('hidden'),false,'active boost visible to player');
+assert.ok(node('power-status').textContent.includes('BARRIER'));
+console.log('PASS v0.9.13: four-shell tank, three-shell mech, two-shot pilot, rapid/capacitor/repair/guard balance and power UI.');
