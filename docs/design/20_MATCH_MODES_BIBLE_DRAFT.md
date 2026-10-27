@@ -5,8 +5,8 @@
 
 ## Camera and mode-identity decision — 2026-10-27 owner phone feedback
 
-- **Pilot-only Close Quarters** will intentionally retain a **closer on-foot camera**. In the current v0.9.22-dev4 *proposal*, the pilot stays at zoom **1.07**; this is a tested technical target, not proof that CQC is implemented.
-- **Vehicle battles** should use wider tactical views. Current dev4 camera target: tank **0.87**, mech **0.82**; lower zoom values mean more of the procedural field is visible. No pilot zoom or combat rules changed.
+- **Pilot-only Close Quarters** will intentionally retain a **closer on-foot camera**. In the latest tested v0.9.22-dev5 *camera candidate*, the pilot stays at zoom **1.07**; this is a tested technical target, not proof that CQC is implemented.
+- **Vehicle battles** should use wider tactical views. Latest dev5 camera targets: tank **0.82**, mech **0.77** (compared with dev4's 0.87 and 0.82); lower zoom values mean more of the procedural field is visible. No pilot zoom or combat rules changed.
 - Camera scale is a **readability/pacing policy**, not a replacement for mode logic. CQC must explicitly disable vehicle spawns and boarding, create close-quarters pilot-only objectives/respawn rules, and receive its own QA gate before appearing in Quick Play.
 - Review pilot-only sightlines, target readability, spawn fairness, arrows, walls and joystick area on physical Android before making any CQC-specific camera changes. Do not port vehicle view settings to foot mode by accident.
 
