@@ -1,0 +1,30 @@
+name: Validate FIELDGRID design archive
+on:
+  push:
+    branches:
+      - design/fieldgrid-cosmetics-bible-v1
+    paths:
+      - 'docs/design/**'
+      - 'game-data/cosmetics/**'
+      - 'tools/validate-cosmetic-catalog.mjs'
+      - '.github/workflows/validate-design.yml'
+  pull_request:
+    paths:
+      - 'docs/design/**'
+      - 'game-data/cosmetics/**'
+      - 'tools/validate-cosmetic-catalog.mjs'
+      - '.github/workflows/validate-design.yml'
+  workflow_dispatch:
+
+jobs:
+  design-catalog-contract:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate pilot roster and design references
+        run: node tools/validate-cosmetic-catalog.mjs
