@@ -19,7 +19,7 @@ const testMath=Object.create(Math);testMath.random=()=>simRand?simRand():Math.ra
 function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5;return(z>>>0)/4294967296;};}
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math:testMath,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,soloOptionsFor,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -33,7 +33,7 @@ assert.equal(menuHtml.includes('data-action="nearby"'),true);
 assert.equal(menuHtml.includes('data-action="duel"'),false);
 assert.ok(menuHtml.includes('PILOT LIVES'));assert.ok(menuHtml.includes('FIELD SIZE'));assert.equal(menuHtml.includes('arena-choice'),false,'No map picker');
 node('lives-choice').value='2';node('map-size').value='standard';
-click('solo');runFrames(8);assert.equal(node('mode-label').textContent,'QUICK MATCH');
+click('solo');runFrames(8);assert.ok(['SOLO SURVIVAL','TEAM SURVIVAL'].includes(node('mode-label').textContent));
 assert.equal(st().config.pilotMode,true);assert.equal(st().lives[0],2);
 assert.equal(st().tanks[0].onFoot,false,'quick play begins inside a tank');
 assert.equal(st().vehicles[st().tanks[0].vehicleId].occupant,0);
@@ -63,10 +63,11 @@ player.x=spare.x-12;player.y=spare.y;assert.equal(win.__test.shoot(0),true);asse
 const seed=st().mazeSeed,hash=JSON.stringify(win.__test.walls);
 win.__test.setArena(0,12345,'small');win.__test.setArena(0,seed,'standard');assert.equal(JSON.stringify(win.__test.walls),hash);
 runFrames(12);const x0=win.__test.camera.x;player.x=960;player.y=720;runFrames(18);assert.ok(win.__test.camera.x>x0);
-// Settings remain match customization, not extra modes.
+// Settings continue to customize bot count, shells and lives; solo presets control sides.
+win.__test.setPlaylistModes(['survival_teams']);
 node('map-size').value='large';node('bot-count').value='4';node('lives-choice').value='3';node('bullet-cap').value='2';node('bot-skill').value='casual';node('team-choice').value='coop';
 click('solo');assert.equal(st().tanks.length,5);assert.equal(st().lives[0],3);
-assert.equal(st().config.bulletCap,2);assert.equal(st().config.teamMode,'coop');
+assert.equal(st().config.bulletCap,2);assert.equal(st().config.teamMode,'teams');assert.equal(st().config.matchModeId,'survival_teams');
 assert.equal(win.__test.teamOf(1),win.__test.teamOf(4));
 const shooter=st().tanks[0];shooter.shield=0;
 assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),false,'shell cap');
@@ -906,3 +907,36 @@ console.log('PASS v0.9.19 on-foot readability, safe parked-vehicle labeling and 
  win.__test.comfort.sound=oldSetting;win.__test.comfort.music=oldMusic;
 }
 console.log('PASS v0.9.21 menu cleanup, separate music/SFX options and 7% wider class cameras.');
+
+// v0.9.22 Slice A: two actually supported survival presets, not the future score modes.
+{
+ const api=win.__test;
+ assert.ok(menuHtml.includes('data-playlist-mode="survival_ffa"')&&menuHtml.includes('data-playlist-mode="survival_teams"'));
+ assert.equal(api.normalizePlaylistModes(['retired','survival_ffa','survival_ffa']).join(','),'survival_ffa');
+ assert.equal(api.normalizePlaylistModes(null).length,2,'legacy saves default to both supported modes');
+ api.setPlaylistModes(['survival_ffa','survival_teams']);
+ const cycle=[api.nextPlaylistMode(()=>0),api.nextPlaylistMode(()=>0)];
+ assert.equal(new Set(cycle).size,2,'each mode appears once per shuffle bag');
+ const next=api.nextPlaylistMode(()=>0);
+ assert.notEqual(next,cycle[1],'new bag does not immediately repeat prior mode');
+ api.setPlaylistModes(['survival_teams']);
+ assert.equal(api.nextPlaylistMode(()=>0),'survival_teams');
+ assert.equal(api.nextPlaylistMode(()=>0),'survival_teams','single selected mode repeats');
+ api.setPlaylistModes(['survival_ffa']);
+ api.newMatch('solo');
+ assert.equal(st().config.matchModeId,'survival_ffa');
+ assert.equal(st().config.teamMode,'ffa');
+ const before={seed:st().mazeSeed,matchId:st().matchId};
+ api.resetAll(true);
+ assert.notEqual(st().mazeSeed,before.seed,'NEXT MATCH guarantees a fresh seed');
+ assert.ok(st().matchId>before.matchId,'new match gets a unique incremental match ID');
+ assert.equal(st().config.matchModeId,'survival_ffa');
+ api.setPlaylistModes([]);
+ assert.equal(api.nextPlaylistMode(),null,'zero selected modes cannot silently reroll');
+ const kept=st();
+ assert.equal(api.newMatch('solo'),false,'zero modes blocks QUICK PLAY');
+ assert.equal(st(),kept,'zero mode selection leaves the current match untouched');
+ api.setPlaylistModes(['survival_ffa','survival_teams']);
+ assert.equal(/score|flag|capture/i.test(st().config.matchModeId),false,'proposed score modes never presented as live');
+}
+console.log('PASS v0.9.22 Slice A versioned playlist selection, shuffle-bag boundaries, real survival presets and fresh seeds.');
