@@ -9,6 +9,8 @@ This is the permanent source of truth for **future art and interface decisions**
 
 **Current implementation plan:** [Roadmap to Google Play v1.0](../ROADMAP_TO_GOOGLE_PLAY_V1.md). It documents the order of work, integration risks, and acceptance gates; it does not claim the proposed modes, music, cosmetics or purchases are shipping yet.
 
+**Implementation status note (2026-10-27):** Parts of the Quick Play/After Action design have been implemented and fully automated-QA-tested **only on draft PR #24**, not accepted `main`: two survival presets with local selection/rotation, fresh procedural sectors, honest solo post-match snapshots, and owner-approved camera. Scored CQC/FFA/TDM and LAN playlist replication remain unimplemented. Track actual current status in [Project Status](../PROJECT_STATUS.md) and planning gaps in the [Completeness Audit](../ROADMAP_COMPLETENESS_AUDIT_2026-10-27.md), not in design proposals alone.
+
 ## Current discussion drafts (not implemented)
 
 - [20 — Match Modes & Playlist Bible](20_MATCH_MODES_BIBLE_DRAFT.md): pilot-only close combat, FFA, team deathmatch, capture the flag, elimination, respawns, generated Forward Bays and safe Quick Play selection.
