@@ -13,6 +13,8 @@
 
 **Remaining work:** [#19 CI/release preview validation](https://github.com/PlayerEden/Ricochet-Rumble/issues/19) (normal CI and Android QA proven; new immutable publishing workflow not yet exercised); [#20 signing-key custody and package identity](https://github.com/PlayerEden/Ricochet-Rumble/issues/20); [completed #21 durable QA evidence](https://github.com/PlayerEden/Ricochet-Rumble/issues/21); [#22 physical Android/two-device LAN acceptance](https://github.com/PlayerEden/Ricochet-Rumble/issues/22). Do not conflate these with new gameplay implementation.
 
+**Active development after v0.9.21:** [draft PR #24 — v0.9.22-dev1 solo Quick Play playlists](https://github.com/PlayerEden/Ricochet-Rumble/pull/24) on `dev/sector-rebound-quick-play-v0922`. **Implemented on the draft branch, NOT in `main` or a permanent APK release:** two genuinely supported last-side-standing survival variants (`survival_ffa`, `survival_teams`); locally saved enabled-mode choice (zero/one/two), shuffled no-immediate-repeat rotation, and a voluntary NEXT MATCH that creates a fresh procedural seed and increments the local match ID. No new scored FFA/CQC/TDM, flag logic, personal progression, or multiplayer playlist replication. [Smoke and asset parity passed](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40593048651); [full Chromium, debug APK and unsigned AAB QA passed](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40593049172) on tested source `7314ad652fe7aba085d259b0bf2065f98a1c2408`. This is **automated**, not physical Android/manual LAN acceptance. Artifacts are temporary until a properly versioned preview is published.
+
 ## Start here — exact state
 
 | Item | Status |
@@ -94,6 +96,8 @@ These linked documents contain some historical "current v0.9.20" wording: this *
 - GitHub Actions costs should be respected: avoid wasteful full Android builds for documentation-only changes; artifact retention is temporary, GitHub Releases and Git history are longer-lived.
 
 ## Update log
+
+- **2026-10-27 (v0.9.22 development):** Created [draft PR #24](https://github.com/PlayerEden/Ricochet-Rumble/pull/24) from accepted `main` for solo survival-mode rotation and voluntary Next Match; automated smoke + full Chromium/Android test gates passed. Feature remains **unmerged and not Play-ready**; owner phone QA and accurate end-match statistic snapshots remain next.
 
 - **2026-10-27 (evidence archive):** Archived authentic v0.9.21 integration screenshots, seeded reports and checksums to GitHub Release assets before temporary Actions retention expiry. Closed issue #21; no APK replacement or gameplay changes.
 
