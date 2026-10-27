@@ -31,6 +31,13 @@
 - Solo next-match selection is local; LAN host decides and guest sees matching results and waits/readies.
 - Added [23_QUICK_PLAY_AFTER_ACTION_BIBLE_DRAFT.md](23_QUICK_PLAY_AFTER_ACTION_BIBLE_DRAFT.md) and linked it in Mode Bible; all remain design-only.
 
+## 2026-10-27 — Procedural battlefield identity reaffirmed
+
+- User highlighted that Sector Rebound's random maze generation can make every Quick Play match a different tactical problem, rewarding adaptable skills and some luck over route memorization.
+- Codified the core direction: **No memorized battlefield. Adapt, fight, survive.** Not an originality claim that no other games have procedural maps.
+- New [24_PROCEDURAL_ARENAS_IDENTITY_DRAFT.md](24_PROCEDURAL_ARENAS_IDENTITY_DRAFT.md) documents per-mode generator constraints, seed determinism, balanced spawns/objectives, same-map LAN authority, and test gates.
+- Cross-linked mode/after-action bibles. No code changes in this discussion branch.
+
 ## Decisions awaiting owner approval
 1. Choose the **first three style-lock portrait prototypes**: Recruit, Relay and Cold Cell (recommended).
 2. Confirm the launch target **5 free / 3 earned / 10 premium** or reduce the premium wave before release.
