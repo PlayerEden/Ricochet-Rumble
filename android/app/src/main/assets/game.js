@@ -278,29 +278,85 @@ function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=c
  }
 }
 function hasLineOfSight(x,y,tx,ty){const length=Math.hypot(tx-x,ty-y),steps=Math.ceil(length/15);for(let n=1;n<steps;n++){const p=n/steps;if(nearWall(x+(tx-x)*p,y+(ty-y)*p,4))return false}return true;}
-function botInput(i,dt){const bot=state.tanks[i],enemies=state.tanks.map((t,j)=>({t,j})).filter(({j})=>j!==i&&state.lives[j]>0&&!friendly(i,j));
- if(!enemies.length)return {moveX:0,moveY:0,fire:false,bot:true};enemies.sort((a,b)=>Math.hypot(bot.x-a.t.x,bot.y-a.t.y)-Math.hypot(bot.x-b.t.x,bot.y-b.t.y));const target=enemies[0].t;
- // A dismounted bot should try to recover a nearby empty tank, not charge a tank forever with a pistol.
- let objective=target;
- if(isPilotMatch()&&bot.onFoot){const candidate=(state.vehicles||[]).filter(v=>v.occupant===-1&&v.armor>0&&vehicleEntryClear(i,v))
+// AI priorities are readable: recover a vehicle, choose an available supply,
+// evade a close enemy when nearly destroyed, then return to a fair duel.
+// All decisions use existing visible game state: no enhanced accuracy or damage.
+function chooseBotObjective(i,target,skill='normal'){
+ const bot=state.tanks[i];
+ if(isPilotMatch()&&bot.onFoot){
+  const recovery=(state.vehicles||[]).filter(v=>v.occupant===-1&&v.armor>0&&vehicleEntryClear(i,v))
    .sort((a,b)=>Math.hypot(a.x-bot.x,a.y-bot.y)-Math.hypot(b.x-bot.x,b.y-bot.y))[0];
-  if(candidate){if(Math.hypot(candidate.x-bot.x,candidate.y-bot.y)<58&&hasLineOfSight(bot.x,bot.y,candidate.x,candidate.y))tryInteract(i);
-    if(bot.onFoot)objective=candidate;}}
- let direction=Math.atan2(objective.y-bot.y,objective.x-bot.x),brain=botBrains.get(i)||{timer:0,path:[],goal:-1};brain.timer-=dt;
- if(mazeGrid){const {cols,cell,open}=mazeGrid,cellIndex=t=>clamp(Math.floor(t.y/cell),0,mazeGrid.rows-1)*cols+clamp(Math.floor(t.x/cell),0,cols-1),start=cellIndex(bot),goal=cellIndex(objective);
- if(brain.timer<=0||brain.goal!==goal){const prev=Array(open.length).fill(-1),q=[start];prev[start]=start;for(let h=0;h<q.length&&prev[goal]===-1;h++)for(const j of open[q[h]])if(prev[j]===-1){prev[j]=q[h];q.push(j)}
- const path=[];if(prev[goal]!==-1){let n=goal;while(n!==start&&path.length<open.length){path.push(n);n=prev[n]}}brain.path=path.reverse();brain.goal=goal;brain.timer=.45+(i%4)*.09;}
- const waypoint=brain.path[0];if(waypoint!==undefined){const wx=((waypoint%cols)+.5)*cell,wy=(Math.floor(waypoint/cols)+.5)*cell;if(Math.hypot(wx-bot.x,wy-bot.y)<18){brain.path.shift()}else direction=Math.atan2(wy-bot.y,wx-bot.x);}
- }else{const aheadX=bot.x+Math.cos(direction)*72,aheadY=bot.y+Math.sin(direction)*72;if(blocked(aheadX,aheadY,27))direction+=Math.sin(visualClock*.9+i)>0?1.4:-1.4;}
+  if(recovery)return {kind:'recovery',point:recovery};
+ }
+ const pickup=state.pickups?.[0];
+ if(pickup){
+  const v=currentVehicle(bot),armor=v?.armor??0,maxArmor=vehicleDef(v).armor;
+  const repairUseful=pickup.type==='repair'&&!bot.onFoot&&armor<maxArmor;
+  const buffUseful=pickup.type!=='repair'&&!(bot.powerTimer>1.3&&bot.powerType);
+  const maxRange=skill==='casual'?205:skill==='spicy'?425:325;
+  const distance=Math.hypot(bot.x-pickup.x,bot.y-pickup.y);
+  const enemyDist=Math.hypot(bot.x-target.x,bot.y-target.y);
+  // A nearby useful repair can outweigh a duel; never chase across the whole
+  // level while under direct close-range fire.
+  if((repairUseful||buffUseful)&&distance<=maxRange&&(enemyDist>135||repairUseful&&armor<=1&&enemyDist>82)){
+   return {kind:'supply',point:pickup};
+  }
+ }
+ const armor=currentVehicle(bot)?.armor??0;
+ const threatened=Math.hypot(bot.x-target.x,bot.y-target.y);
+ if((bot.onFoot||armor===1)&&threatened<115&&hasLineOfSight(bot.x,bot.y,target.x,target.y)){
+  const nx=bot.x+(bot.x-target.x)/(threatened||1)*125;
+  const ny=bot.y+(bot.y-target.y)/(threatened||1)*125;
+  const px=clamp(nx,42,worldW-42),py=clamp(ny,42,worldH-42);
+  if(!blocked(px,py,bot.onFoot?12:22))return {kind:'evade',point:{x:px,y:py}};
+ }
+ return {kind:'engage',point:target};
+}
+function botInput(i,dt){
+ const bot=state.tanks[i],enemies=state.tanks.map((t,j)=>({t,j})).filter(({j})=>j!==i&&state.lives[j]>0&&!friendly(i,j));
+ if(!enemies.length)return {moveX:0,moveY:0,fire:false,bot:true};
+ enemies.sort((a,b)=>Math.hypot(bot.x-a.t.x,bot.y-a.t.y)-Math.hypot(bot.x-b.t.x,bot.y-b.t.y));
+ const target=enemies[0].t,skill=state.config?.botSkill||'normal';
+ let brain=botBrains.get(i)||{timer:0,path:[],goal:-1,intent:'engage'};
+ const choice=chooseBotObjective(i,target,skill);
+ let objective=choice.point;
+ if(choice.kind==='recovery'&&Math.hypot(objective.x-bot.x,objective.y-bot.y)<58&&hasLineOfSight(bot.x,bot.y,objective.x,objective.y)){
+  tryInteract(i);
+  if(!bot.onFoot){objective=target;}
+ }
+ let direction=Math.atan2(objective.y-bot.y,objective.x-bot.x);
+ brain.timer-=dt;
+ if(brain.intent!==choice.kind){brain.timer=0;brain.path=[];brain.goal=-1;}
+ brain.intent=choice.kind;
+ if(mazeGrid){
+  const {cols,cell,open}=mazeGrid;
+  const cellIndex=t=>clamp(Math.floor(t.y/cell),0,mazeGrid.rows-1)*cols+clamp(Math.floor(t.x/cell),0,cols-1);
+  const start=cellIndex(bot),goal=cellIndex(objective);
+  if(brain.timer<=0||brain.goal!==goal){
+   const prev=Array(open.length).fill(-1),q=[start];prev[start]=start;
+   for(let h=0;h<q.length&&prev[goal]===-1;h++)for(const j of open[q[h]])if(prev[j]===-1){prev[j]=q[h];q.push(j);}
+   const path=[];if(prev[goal]!==-1){let n=goal;while(n!==start&&path.length<open.length){path.push(n);n=prev[n]}}
+   brain.path=path.reverse();brain.goal=goal;brain.timer=.45+(i%4)*.09;
+  }
+  const waypoint=brain.path[0];
+  if(waypoint!==undefined){
+   const wx=((waypoint%cols)+.5)*cell,wy=(Math.floor(waypoint/cols)+.5)*cell;
+   if(Math.hypot(wx-bot.x,wy-bot.y)<18)brain.path.shift();
+   else direction=Math.atan2(wy-bot.y,wx-bot.x);
+  }
+ }else{
+  const aheadX=bot.x+Math.cos(direction)*72,aheadY=bot.y+Math.sin(direction)*72;
+  if(blocked(aheadX,aheadY,27))direction+=Math.sin(visualClock*.9+i)>0?1.4:-1.4;
+ }
  botBrains.set(i,brain);
  const delta=Math.atan2(Math.sin(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a),Math.cos(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a));
- const skill=state.config?.botSkill||'normal',pace=skill==='casual'?.61:skill==='spicy'?.98:.81;
+ const pace=skill==='casual'?.61:skill==='spicy'?.98:.81;
  const aim=skill==='casual'?.27:skill==='spicy'?.39:.33;
  const enemyDist=Math.hypot(bot.x-target.x,bot.y-target.y);
  const hasLine=enemyDist<(mazeGrid?385:750)&&hasLineOfSight(bot.x,bot.y,target.x,target.y);
- // Stop blindly ramming the player. Bots ease off the throttle for close duels.
- const chasePace=objective===target&&hasLine&&enemyDist<115?pace*.34:pace;
- return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,fire:Math.abs(delta)<aim&&hasLine,bot:true};}
+ const chasePace=choice.kind==='engage'&&hasLine&&enemyDist<115?pace*.34:pace;
+ return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,fire:Math.abs(delta)<aim&&hasLine,bot:true};
+}
 function shoot(owner){if(state.lives[owner]<=0)return false;
  const isFoot=isPilotMatch()&&state.tanks[owner].onFoot;
  const v=currentVehicle(state.tanks[owner]),def=vehicleDef(v);const cap=activeBulletCap(state.tanks[owner]);if(state.bullets.filter(b=>b.owner===owner&&b.life>0).length>=cap)return false;
