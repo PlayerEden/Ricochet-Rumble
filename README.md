@@ -1,3 +1,17 @@
+# Sector Rebound — v0.9.19 Pilot Readability & Icon Style Prototypes
+
+**Experimental branch:** \`dev/sector-rebound-pilot-silhouette-v0919\` · Android **versionCode 36**.
+
+The FIELDGRID design archive now includes three **editable vector pilot portrait prototypes** (Recruit, Relay, Cold Cell), sized for a controlled 240/64/48/32px art review, not yet approved or purchasable. The playable **on-foot pilot** has a newly structured overhead silhouette: separated boots with gait, distinguishable arms/shoulders, helmet, visor and compact sidearm. The duplicated world ENTER caption has been removed to prevent hiding the small character next to an empty tank; on-foot ID and indicator have been moved away from parked armor, with the player ring rendered behind the sprite.
+
+**Gameplay contract:** no damage, hitbox, movement speed, weapon, camera, monetization, profile or LAN protocol changes. The existing Android API 36 and unsigned AAB capability remain. New features require physical Android testing and art-style approval before merging.
+
+**Source art:** [Recruit](assets/source/pilots/pilot.st.001/pilot.st.001.svg) · [Relay](assets/source/pilots/pilot.st.002/pilot.st.002.svg) · [Cold Cell](assets/source/pilots/pilot.pr.001/pilot.pr.001.svg).
+
+**Audit:** [v0.9.19 Pilot Style Review](docs/design/reviews/2026-10-27_PILOT_STYLE_REVIEW_v0919.md), [design Bible](docs/design/README.md), [pilot catalog](game-data/cosmetics/pilot_icons.v1.json).
+
+---
+
 # Sector Rebound — v0.9.18 Google Play Foundation
 
 **Current test branch:** `dev/sector-rebound-play-foundation-v0918` · **Android versionCode:** 35
