@@ -6,8 +6,8 @@ android {
         applicationId 'com.playereden.ricochetrumble'
         minSdk 26
         targetSdk 36
-        versionCode 37
-        versionName '0.9.20-game-lobby'
+        versionCode 38
+        versionName '0.9.21-game-feel'
     }
     buildTypes {
         release { minifyEnabled false }
