@@ -1,6 +1,6 @@
 # 90 — Reusable FIELDGRID Design Bible Template
 
-> Copy this into \`docs/design/XX_SUBSYSTEM_BIBLE.md\`. Give it a numbered prefix and cross-link the archive index. Replace every bracketed field; do not publish vague generative prompts as production specifications.
+> Copy this into `docs/design/XX_SUBSYSTEM_BIBLE.md`. Give it a numbered prefix and cross-link the archive index. Replace every bracketed field; do not publish vague generative prompts as production specifications.
 
 # [Subsystem] Design Bible
 **Version:** [major.minor-draft/approved]  
@@ -50,7 +50,7 @@ One tiny, testable slice. Define the exact evidence needed before implementation
 - **RELEASED**: shipped through verified distribution channel.
 
 ### Reusable change request
-\`[Date] [Subsystem] [IDs affected] [Why] [Visual risk] [Gameplay/readability risk] [Assets/tests affected] [Rollback path] [Approval]\`.
+`[Date] [Subsystem] [IDs affected] [Why] [Visual risk] [Gameplay/readability risk] [Assets/tests affected] [Rollback path] [Approval]`.
 
 ## Future bibles suggested
 - Tank/Mech Paint & Material System
