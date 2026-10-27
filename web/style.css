@@ -422,3 +422,42 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 .power-status{position:absolute;top:max(51px,calc(env(safe-area-inset-top) + 51px));left:50%;transform:translateX(-50%);max-width:38vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;z-index:7;padding:4px 12px;border:1px solid #6bafba;border-radius:3px;background:#0b2935d9;color:#e6f6f5;font:800 clamp(9px,1.2vw,12px)/1.2 'Droid Sans Mono',monospace;letter-spacing:.5px;text-shadow:0 1px 3px #071820;pointer-events:none}
 .power-status.hidden{display:none}
 @media(max-width:760px){.power-status{top:max(46px,calc(env(safe-area-inset-top) + 46px));max-width:35vw;font-size:9px;padding:3px 6px}}
+
+
+/* v0.9.15 AFTER ACTION / Fullscreen field remains under a compact,
+   tappable tactical report. No content depends on a fixed 960px canvas. */
+.after-action{position:absolute;inset:0;z-index:8;display:grid;place-items:center;padding:max(9px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(9px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));background:#07131de2;pointer-events:auto}
+.after-action.hidden{display:none}
+.after-action .aa-panel{position:relative;width:min(580px,100%);max-height:100%;overflow-y:auto;padding:clamp(11px,2.8dvh,22px) clamp(13px,2.6vw,24px);background:linear-gradient(145deg,#102a35,#0b202b);border:1px solid #62848d;box-shadow:0 15px 42px #020a0fa8;color:#deeff1;text-align:left}
+.after-action .aa-panel:before,.after-action .aa-panel:after{content:'';position:absolute;width:14px;height:14px;border-color:#8bd7dc;pointer-events:none}
+.after-action .aa-panel:before{top:0;left:0;border-top:2px solid;border-left:2px solid}
+.after-action .aa-panel:after{right:0;bottom:0;border-right:2px solid;border-bottom:2px solid}
+.aa-rail{display:flex;justify-content:space-between;gap:8px;padding-bottom:6px;border-bottom:1px solid #41606c;font:700 clamp(9px,1.1vw,11px)/1.2 'Droid Sans Mono',monospace;letter-spacing:.4px;color:#9cbdc5}
+.after-action h2{margin:clamp(7px,1.6dvh,13px) 0 0;font:900 clamp(24px,5.5dvh,44px)/1 'sans-serif-condensed',Roboto,Arial,sans-serif;letter-spacing:.5px;color:#a4ecd1}
+.after-action.lost h2{color:#f6bb9c}
+.aa-event{margin:4px 0 clamp(9px,1.8dvh,14px);font:750 clamp(11px,1.35vw,14px)/1.35 'sans-serif-condensed',Roboto,sans-serif;color:#c5dae1}
+.aa-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-bottom:clamp(9px,2dvh,16px)}
+.aa-stats>div{display:flex;flex-direction:column;gap:2px;min-width:0;padding:clamp(7px,1.5dvh,11px) clamp(7px,1vw,12px);background:#17333eb9;border:1px solid #3b5f6d}
+.aa-stats span{font:700 clamp(8px,1.05vw,11px)/1.15 'Droid Sans Mono',monospace;color:#9bbbc3}
+.aa-stats strong{font:900 clamp(18px,3.8dvh,29px)/1.06 'sans-serif-condensed',Roboto,sans-serif;color:#e7f3f4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.aa-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.aa-actions button,.after-action .quick-rematch{position:static!important;left:auto!important;top:auto!important;transform:none!important;display:block;min-height:43px;margin:0;padding:7px 10px;border:1px solid #6a9aab;background:#1b3a46;color:#e9f6f8;border-radius:2px;box-shadow:none;font:850 clamp(12px,1.6vw,17px)/1.1 'sans-serif-condensed',Roboto,sans-serif;letter-spacing:.3px;pointer-events:auto;cursor:pointer}
+.after-action .quick-rematch{background:#64c7d8;border-color:#ade9ed;color:#0b2630}
+.after-action .quick-rematch.hidden{display:none}
+.aa-actions:has(.quick-rematch.hidden){grid-template-columns:1fr}
+.aa-actions button:focus-visible{outline:2px solid #f3dc91;outline-offset:3px}
+.aa-note{margin:clamp(6px,1.3dvh,10px) 0 0;color:#96b7c0;font:700 clamp(9px,1vw,11px)/1.2 'Droid Sans Mono',monospace;letter-spacing:.1px}
+.match-finished .game-hud,.match-finished .battlefield>.touch-zone{display:none!important}
+@media(max-height:380px){
+ .after-action .aa-panel{padding:9px 13px}
+ .after-action h2{font-size:26px;margin-top:5px}
+ .aa-event{margin-bottom:6px}
+ .aa-stats{margin-bottom:7px}
+ .aa-stats>div{padding:6px 8px}
+ .aa-actions button{min-height:39px}
+}
+@media(max-width:600px){
+ .aa-rail span:last-child{display:none}
+ .aa-stats span{font-size:8px}
+ .aa-stats strong{font-size:19px}
+}
