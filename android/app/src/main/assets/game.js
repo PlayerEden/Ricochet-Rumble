@@ -607,8 +607,9 @@ function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
  for(const side of [-1,1]){
   const y=side<0?-15:9;
   c.fillStyle='#071923';c.fillRect(-6,y,12,7);
-  c.fillStyle=paint;c.fillRect(-5,y+1,10,5);
-  c.fillStyle='#314a55';c.fillRect(4,y+1,5,5);
+  c.fillStyle='#496976';c.fillRect(-5,y+1,10,5);
+  c.fillStyle=paint;c.fillRect(-4,y+2,4,3);
+  c.fillStyle='#2b454d';c.fillRect(4,y+1,5,5);
  }
  // Central rounded helmet shell. The darker inset and forward glass give
  // an unambiguous head direction without over-rendering a face at 32px.
@@ -620,11 +621,11 @@ function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
  c.fillStyle='#e1f2ed';c.fillRect(4,-3,1,4);
  // Fixed sidearm with barrel, grip and muzzle. Short and narrow so the
  // silhouette cannot be mistaken for the hull/turret of a small tank.
- c.fillStyle='#0b1d27';c.fillRect(7,-3,13,6);
- c.fillStyle='#a6bdc2';c.fillRect(9,-2,11,3);
- c.fillStyle='#324854';c.fillRect(13,3,4,5);
- c.fillStyle='#c8e9e8';c.fillRect(19,-1.5,4,3);
- if(shooting){c.fillStyle='#ffe3a0';c.beginPath();c.arc(26,0,3.5,0,Math.PI*2);c.fill()}
+ c.fillStyle='#0b1d27';c.fillRect(8,-2.5,9,5);
+ c.fillStyle='#a6bdc2';c.fillRect(10,-1.5,8,2.5);
+ c.fillStyle='#324854';c.fillRect(11,2,3,5);
+ c.fillStyle='#c8e9e8';c.fillRect(17,-1,3,2);
+ if(shooting){c.fillStyle='#ffe3a0';c.beginPath();c.arc(22,0,3,0,Math.PI*2);c.fill()}
  c.restore();
 }
 // Unit-specific camera language: agile pilot sees a closer view, heavier units
