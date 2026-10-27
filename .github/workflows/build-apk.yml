@@ -1,4 +1,4 @@
-name: Android Test APK # Sector Rebound v0.9.14 corrected camera and quality regression audit
+name: Android Test APK # Sector Rebound v0.9.14 final camera and supply lifecycle QA
 on:
   workflow_dispatch:
   push:
