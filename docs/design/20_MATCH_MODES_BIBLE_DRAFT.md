@@ -16,6 +16,8 @@ Build a compact, polished mobile combat experience where different modes reuse t
 - Existing application mode names (solo, host, guest) are network/UI state; new gameplay modes should use an independent matchModeId, hosted and validated.
 - No full-match score/time goal, spectator camera, flag logic or team base generator exists yet.
 
+For the **fresh-per-match procedural sector contract**, mode-specific layout constraints, fairness validation and seed-based regression, see [24 — Procedural Arenas & Tactical Adaptation](24_PROCEDURAL_ARENAS_IDENTITY_DRAFT.md). Every match generates a new layout, including repeats of the same selected mode; mode rules govern what generation is allowed to produce.
+
 ## Proposed mode playlist
 
 | Mode ID | Vehicles | Allowed sizes | Respawn | Proposed first test win condition |
