@@ -1,3 +1,17 @@
+# Sector Rebound — v0.9.12 Camera & Reliability Audit
+
+**Current experimental branch:** `dev/sector-rebound-qa-v0912` · **Android versionCode:** 28
+
+The v0.9.11 FIELDGRID government-terminal menu and fullscreen game remain intact. All unit camera targets are a little closer: pilot **1.32**, tank **1.22**, mech **1.16**, fallback **1.24**, keeping eased transitions and scenic boundary coverage.
+
+**Audit fixes:** bot recovery no longer targets unusable vehicle bays occupied by other live actors; recoil/tread animation resets when entering a new vehicle or respawning; guest camera coordinates reset only when a genuinely new host map arrives. Deterministic screenshot seeds and mandatory UI screenshot checks improve test quality.
+
+**Verified October 26, 2026:** [successful smoke + visual QA + Android APK build](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40426950894). The full smoke suite, 36 before/after Chromium snapshots, full-bleed canvas checks and all three phone-landscape menus passed. The APK archive integrity was separately verified and contains the bundled offline game assets.
+
+**Not yet verified:** physical two-phone Wi-Fi gameplay, device-specific notches, real Android frame pacing, and extended hands-on playtesting. See [audit and open risks](docs/AUDIT_v0.9.12.md). Previous `dev/sector-rebound-fieldgrid-v0911` remains available for rollback.
+
+---
+
 # Sector Rebound — v0.9.11 FIELDGRID Console + Context Camera
 
 **Current experimental branch:** `dev/sector-rebound-fieldgrid-v0911` · **Android versionCode:** 27
