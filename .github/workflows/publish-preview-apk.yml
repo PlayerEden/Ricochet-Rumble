@@ -1,7 +1,7 @@
 name: Publish Sector Rebound Android Preview
 on:
   push:
-    branches: [dev/sector-rebound-pilot-silhouette-v0919]
+    branches: [dev/sector-rebound-lobby-pilot-v0920]
     paths:
       - '.github/workflows/publish-preview-apk.yml'
   workflow_dispatch:
@@ -36,9 +36,9 @@ jobs:
       - name: Publish permanent GitHub pre-release APK
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: v0.9.19-pilot-preview
+          TAG: v0.9.20-lobby-preview
           APK: android/app/build/outputs/apk/debug/app-debug.apk
-          ASSET: Sector-Rebound-v0.9.19-Pilot-Preview.apk
+          ASSET: Sector-Rebound-v0.9.20-Game-Lobby-Preview.apk
         run: |
           set -euo pipefail
           test -s "$APK"
@@ -47,6 +47,6 @@ jobs:
             gh release upload "$TAG" "$APK#$ASSET" --clobber --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$TAG" "$APK#$ASSET" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
-              --title 'Sector Rebound v0.9.19 — Pilot Visual Preview (Android)' \
-              --notes 'Installable Android debug test APK for the pilot silhouette and FIELDGRID concept-art pass. This is a pre-release, not a signed Google Play production build. Gameplay balance and LAN protocol are unchanged. Portrait icons are only design-review source files, not selectable cosmetics. Existing installations signed with a different debug key may need to be uninstalled before this APK installs; back up any local data first.'
+              --title 'Sector Rebound v0.9.20 — Mobile Game Lobby Preview (Android)' \
+              --notes 'Installable Android debug test APK for the game-first menu and simplified overhead pilot visual pass. This is a pre-release, not a signed Google Play production build. Gameplay balance and LAN protocol are unchanged. Portrait icons are only design-review source files, not selectable cosmetics. Existing installations signed with a different debug key may need to be uninstalled before this APK installs; back up any local data first.'
           fi
