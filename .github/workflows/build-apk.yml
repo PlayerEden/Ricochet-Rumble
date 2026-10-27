@@ -1,4 +1,4 @@
-name: Android Test APK # Sector Rebound v0.9.16 diagnostic navigation and repeatable balance QA
+name: Android Test APK # Sector Rebound v0.9.16 corrected actor separation and deterministic battle QA
 on:
   workflow_dispatch:
   push:
