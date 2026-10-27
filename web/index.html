@@ -4,65 +4,104 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,viewport-fit=cover,user-scalable=no">
   <meta name="theme-color" content="#07141c">
-  <title>Ricochet Rumble · v0.6.3</title>
+  <title>Sector Rebound</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="game-screen" id="game-screen">
-    <header class="game-hud">
-      <div class="game-identity"><span class="logo-mark">RR</span><div class="brand-stack"><strong>RICOCHET <em>RUMBLE</em></strong><span id="mode-label">READY TO RUMBLE</span></div></div>
+    <header class="game-hud" aria-label="Live match HUD">
+      <span id="mode-label" class="hud-mode-hidden">FIELDGRID // OPERATIONS</span>
       <div class="scorestrip" aria-live="polite">
-        <span class="blue-tag"><span class="player-pip"></span> <span id="player0-label">CYAN</span> <strong id="score0">5</strong> <span class="hud-life">♥</span></span>
-        <span id="round" class="middle">5 LIVES EACH</span>
-        <span class="pink-tag"><span class="hud-life">♥</span> <strong id="score1">5</strong> <span id="player1-label">CORAL</span> <span class="player-pip"></span></span>
+        <span class="blue-tag"><span id="player0-label">YOU</span> <strong id="score0">2</strong> <span class="hud-life">♥</span></span>
+        <span id="round" class="middle" aria-label="Vehicle armor: 3 of 3">TANK · 3/3</span>
+        <span class="pink-tag"><strong id="score1">1</strong> <span id="player1-label">ENEMIES</span></span>
       </div>
+      <span id="power-status" class="power-status hidden" aria-live="off"></span>
       <button class="hud-menu" id="menu-button" aria-label="Pause or open game menu"><span aria-hidden="true">☰</span> MENU</button>
     </header>
-    <div class="battlefield" aria-label="Battle arena and touch controls">
-      <div class="touch-zone touch-left" aria-label="Movement">
+    <div class="battlefield" aria-label="Fullscreen combat field and overlay touch controls">
+      <div class="touch-zone touch-left overlay-control" aria-label="Movement">
         <div class="joystick" id="joystick" role="group" aria-label="Move using the analog joystick; drag any direction">
-          <div class="stick-ring"></div><div class="stick-knob" id="stick-knob"><span>✦</span></div>
+          <div class="stick-ring"></div><div class="stick-knob" id="stick-knob"><span aria-hidden="true">●</span></div>
         </div>
         <span class="control-caption">MOVE</span>
       </div>
       <section class="arena-wrap" aria-label="Game field">
-        <canvas id="arena" width="960" height="600" aria-label="Top-down tank duel arena"></canvas>
+        <canvas id="arena" width="960" height="600" aria-label="Top-down pilot and vehicle arena"></canvas>
         <div id="toast" class="toast" role="status" aria-live="polite"></div>
+        <div id="field-coach" class="field-coach hidden" role="status" aria-live="polite" aria-atomic="true"></div>
+        <section id="after-action" class="after-action hidden" aria-label="After-action match report">
+          <div class="aa-panel">
+            <div class="aa-rail"><span>FIELDGRID // OPERATIONS</span><span>AFTER ACTION / 01</span></div>
+            <h2 id="aa-title">SECTOR CLEARED</h2>
+            <p id="aa-event" class="aa-event">EXERCISE COMPLETE</p>
+            <div class="aa-stats">
+              <div><span>OPERATOR KOs</span><strong id="aa-kos">0</strong></div>
+              <div><span>LIVES REMAINING</span><strong id="aa-lives">0</strong></div>
+              <div><span>FINAL STATUS</span><strong id="aa-outcome">CLEARED</strong></div>
+            </div>
+            <div class="aa-actions">
+              <button id="quick-rematch" class="quick-rematch hidden" type="button" aria-label="Start a new match in a newly generated maze">↻ NEW SECTOR</button>
+              <button id="results-menu" type="button">MAIN MENU</button>
+            </div>
+            <p id="aa-note" class="aa-note">NEW PROCEDURAL SECTOR AVAILABLE</p>
+          </div>
+        </section>
       </section>
-      <div class="touch-zone touch-right" aria-label="Fire control">
+      <div class="touch-zone touch-right overlay-control" aria-label="Fire control">
+        <button class="interact-btn hidden" id="interact-btn" aria-label="Enter or exit a nearby vehicle">ENTER</button>
         <button class="fire-btn" data-key="fire" aria-label="Hold to fire"><span class="fire-icon">◎</span><span>FIRE</span></button>
-        <span class="control-caption" id="fire-mode">HOLD TO FIRE</span><span class="shell-meter" id="shell-meter">3/3 READY</span>
+        <span class="control-caption" id="fire-mode">HOLD / FIRE</span><span class="shell-meter" id="shell-meter">3/3 READY</span>
       </div>
     </div>
     <div class="overlay" id="menu">
-      <div class="panel" id="panel" role="dialog" aria-label="Game menu">
-        <div class="menu-heading"><div class="eyebrow">PLAYEREDEN • ARCADE SERIES <button class="menu-help" data-action="help" aria-label="How to play Ricochet Rumble">? HELP</button></div><h2>RICOCHET <span>RUMBLE</span></h2><p>Ricochets, mazes, and nonstop tank battles.</p></div>
-        <div class="menu-content">
-          <div class="menu-main">
-            <label class="arena-label" for="arena-choice">SELECT ARENA<select id="arena-choice" aria-label="Select arena"><option value="0">01 / FOUNDRY</option><option value="1">02 / CROSSROADS</option><option value="2">03 / PINBALL</option><option value="3" selected>04 / LABYRINTH</option><option value="4">05 / MAZE XL</option></select></label>
-            <button class="settings-button" data-action="settings">⚙ MATCH SETTINGS · CONTROLS</button>
-            <button class="primary" data-action="solo">▶ PLAY VS BOT</button>
-            <button data-action="duel">LOCAL DUEL · KEYBOARD</button>
+      <div class="panel" id="panel" role="dialog" aria-label="Sector Rebound game menu">
+        <div class="home-screen">
+          <header class="home-topbar">
+            <div class="home-brand"><span class="home-brand-mark" aria-hidden="true">SR</span><div><span class="home-overline">FIELDGRID / COMBAT SIMULATION</span><h2>SECTOR <span>REBOUND</span></h2></div></div>
+            <div class="home-utilities"><button data-action="help" aria-label="How to play Sector Rebound">? <span>HOW TO PLAY</span></button></div>
+          </header>
+          <div class="home-content">
+            <section class="home-showcase" aria-label="Tank preview">
+              <div class="home-stage">
+                <canvas id="menu-preview" width="620" height="320" aria-label="Illustration of an in-game tank in the training arena"></canvas>
+                <div class="home-stage-title"><span class="home-stage-label" id="home-unit-type">TANK / FIELD UNIT</span><strong id="home-unit-name">ARMORED RESPONSE</strong></div>
+              </div>
+              <p class="home-showcase-caption">DRIVE. RICOCHET. SURVIVE.</p>
+            </section>
+            <section class="home-actions" aria-label="Start playing">
+              
+              <h3>ENTER THE <span>SECTOR.</span></h3>
+              <p class="home-description">Fast arena battles. Ricochet shots through new mazes every match.</p>
+              <button class="home-deploy primary" data-action="solo"><span class="home-deploy-symbol" aria-hidden="true">▶</span><strong>QUICK PLAY</strong><small>SOLO / AI</small></button>
+              <div class="home-action-grid">
+                <button data-action="nearby"><strong>PLAY TOGETHER</strong><small>LOCAL WI-FI</small></button>
+                <button data-action="settings"><strong>MATCH SETTINGS</strong><small>RULES &amp; CONTROLS</small></button>
+              </div>
+            </section>
           </div>
-          <div class="menu-join"><div class="eyebrow">TWO PHONES · SAME WI-FI</div><button data-action="host">HOST NEARBY MATCH</button><button data-action="find">FIND NEARBY MATCH</button><button data-action="manual">JOIN BY LOCAL IP</button></div>
+          <footer class="home-footer"><span>NEW MAZE. NEW FIGHT.</span><span>FIELDGRID</span></footer>
         </div>
-        <p class="note" id="menu-note">Thumbs on move + fire · Menu pauses solo play · Host chooses match rules</p>
       </div>
     </div>
-    <div class="rotate-prompt" aria-hidden="true"><div class="rotate-symbol">↻</div><strong>ROTATE TO LANDSCAPE</strong><span>Ricochet Rumble is played sideways.</span></div>
+    <div class="rotate-prompt" aria-hidden="true"><div class="rotate-symbol">↻</div><strong>ROTATE TO LANDSCAPE</strong><span>Sector Rebound is played sideways.</span></div>
   </main>
 <template id="settings-template">
-  <div class="settings-head"><div class="eyebrow">MATCH SETUP</div><h2>YOUR <span>RULES</span></h2><p>Adjust once, then jump right into a fight. Saved on this phone.</p></div>
+  <div class="settings-head"><div class="eyebrow">FIELDGRID // DEPLOYMENT</div><h2>MATCH <span>SETTINGS</span></h2><p>Choose once. Your settings stay saved.</p></div>
   <div class="settings-grid settings-page">
-    <label>ARENA<select id="arena-choice"><option value="0">FOUNDRY</option><option value="1">CROSSROADS</option><option value="2">PINBALL</option><option value="3">LABYRINTH</option><option value="4">MAZE XL</option></select></label>
-    <label>BOTS<select id="bot-count"><option value="0">0 · NO BOTS</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>
-    <label>BULLETS / TANK<select id="bullet-cap"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="5">5</option><option value="8">8</option></select></label>
-    <label>LIVES<select id="lives-choice"><option value="3">3</option><option value="5">5</option><option value="10">10</option></select></label>
-    <label>BOT SKILL<select id="bot-skill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>
-    <label>TEAMS<select id="team-choice"><option value="ffa">FREE FOR ALL</option><option value="coop">HUMANS VS BOTS</option><option value="teams">TWO TEAMS</option></select></label>
+    <label>FIELD SIZE<select id="map-size"><option value="small">QUICK · CLOSE COMBAT</option><option value="standard">STANDARD</option><option value="large">WIDE · EXPLORE</option></select></label>
+    <label>BOTS<select id="bot-count"><option value="0">0 · PRACTICE</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>
+    <label>SIDES<select id="team-choice"><option value="ffa">FREE FOR ALL</option><option value="coop">HUMANS VS BOTS</option><option value="teams">TWO TEAMS</option></select></label>
   </div>
-  <div class="comfort-grid settings-comfort"><label><input type="checkbox" id="pref-autoFire"> AUTO FIRE</label><label><input type="checkbox" id="pref-sound"> SOUND</label><label><input type="checkbox" id="pref-shake"> SCREEN SHAKE</label><label><input type="checkbox" id="pref-leftHanded"> SWAP CONTROLS</label></div>
-  <div class="settings-actions"><button data-action="settings-back">◀ BACK</button><button class="primary" data-action="settings-play">▶ PLAY NOW</button></div>
+  <details class="extra-rules"><summary>ADVANCED RULES <span>Lives / Shells / Bot skill</span></summary>
+    <div class="settings-grid settings-page">
+      <label>PILOT LIVES<select id="lives-choice"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>
+      <label>TANK SHELL LIMIT<select id="bullet-cap"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4 · STANDARD</option><option value="5">5</option><option value="8">8</option></select></label>
+      <label>BOT SKILL<select id="bot-skill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>
+    </div>
+  </details>
+  <div class="comfort-grid settings-comfort"><label><input type="checkbox" id="pref-autoFire"> AUTO FIRE</label><label><input type="checkbox" id="pref-sound"> SOUND FX</label><label><input type="checkbox" id="pref-music"> MUSIC</label><label><input type="checkbox" id="pref-shake"> SCREEN SHAKE</label><label><input type="checkbox" id="pref-leftHanded"> SWAP CONTROLS</label></div>
+  <div class="settings-actions"><button data-action="settings-back">BACK</button><button class="primary" data-action="settings-play">START MATCH</button></div>
 </template>
   <script src="game.js"></script>
 </body>

@@ -1,72 +1,44 @@
-# Sector Rebound — Development Status
+# Sector Rebound
 
-**Current game development is on a separate branch, not the default `main`.** The legacy Ricochet Rumble code and historical release notes below are retained for provenance. Do not use the v0.6.3 heading below as the current playable version.
+**Android-first ricochet combat in a new procedurally generated sector each match.** Pilot a tank or mech, survive on foot, and adapt to unfamiliar maze geometry. Set in the fictional FIELDGRID program.
 
-**Repository organization in progress:** [Draft mainline integration PR #23](https://github.com/PlayerEden/Ricochet-Rumble/pull/23) proposes a cleaned README, the current v0.9.21 gameplay source and safer workflows. It has **not been merged into `main`**.
+**Current status: v0.9.21 development preview.** The APK is a working *debug test build*, not a Google Play production release. Solo combat has automated QA; the local two-phone Wi-Fi mode remains experimental and still needs physical-device acceptance. Continuous Quick Play, mode playlists, and new score-based game modes are planned for v0.9.22+, **not currently playable**.
 
-**Start here:** [Current status, roadmap and new-chat handoff](docs/PROJECT_STATUS.md) · [Development protocol](docs/DEVELOPMENT_PROTOCOL.md) · [GitHub repository audit](docs/GITHUB_AUDIT_2026-10-27.md) · [v0.9.21 preview APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.21-polish-preview) · [latest source/draft PR #17](https://github.com/PlayerEden/Ricochet-Rumble/pull/17).
+## Start here
 
----
+- [Current status / new-chat handoff](docs/PROJECT_STATUS.md) -- first read for every development session
+- [Development protocol](docs/DEVELOPMENT_PROTOCOL.md) -- branching, PR, QA and release safeguards
+- [GitHub health audit](docs/GITHUB_AUDIT_2026-10-27.md) and [branch register](docs/BRANCH_REGISTER.md)
+- [Google Play v1.0 roadmap](docs/ROADMAP_TO_GOOGLE_PLAY_V1.md)
+- [FIELDGRID design archive](docs/design/README.md) -- designs are not necessarily implemented
 
-# Ricochet Rumble
+## Play the latest preview
 
-**v0.6.3 — Combat Feedback & Maze Performance** · Self-contained Android tank arcade with offline solo and local same-Wi-Fi multiplayer foundation.
+[Sector Rebound v0.9.21 APK release](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.21-polish-preview) -- Android debug-signed test APK. Keep existing save data backed up when switching between APKs from different signing certificates; uninstalling a previous app deletes its local data.
 
-Ricochet Rumble is a tiny, free tank-maze game. Move with the left analog stick and hold Fire at the right. Shells ricochet around maze corners, tanks have multiple lives, and fights continue across individual respawns. Play in five arenas including two much larger, seeded mazes with a following camera and minimap.
+What exists: offline solo against bots; tanks/mechs and on-foot pilot; seeded small/standard/large procedural mazes; local same-Wi-Fi host/guest infrastructure; after-action display; separate music/SFX settings; game-first lobby and real-unit previews.
 
+What is *not* shipped: internet matchmaking, ranked PvP, playlist rotation and Next Match flow, CQC/TDM score modes, profile/unlocks, payments, Google Play Games or a signed production bundle.
 
-## v0.6.3 refinement (2026-10-26)
+## Code and checks
 
-- Added **nearby-wall spatial lookup** for tank movement, shells, and bot visibility checks. Large mazes no longer scan every wall for each collision test; wall-collision parity is regression-tested across all arenas.
-- **Local-only damage feedback**: taking a hit briefly highlights the screen edges. Distant bot-on-bot hits no longer shake your camera. Guest damage is presented using synchronized hit events.
-- **Gunfire sound radar**: recent *hostile* shots within hearing range produce short-lived orange pulses on the maze minimap. Does not expose enemy positions constantly or through a permanent radar wallhack.
-- **Distance-aware sound effects** for shots, collisions and hits. Faraway tank sounds are quieter; the network guest receives the shared combat effects too.
-- **Bots ease off at point-blank range** when they have a clear shot instead of constantly ramming opponents.
-- HUD now says **HITS** instead of misleading **KO** (the recorded counter counts successful hits, not final eliminations).
-- Preserved five arenas, teams, lives, projectile limits, continuous respawns, fixed-step gameplay and the no-password test APK build. No new network servers or accounts.
+- Web game source: `web/`; embedded Android assets: `android/app/src/main/assets/`
+- Android Java wrapper: `android/`, app ID `com.playereden.ricochetrumble` (legacy technical identifier; decide before Play publishing)
+- Local quick checks (Node.js 22 or a compatible modern Node): `node tests/smoke.mjs` and `node tools/validate-cosmetic-catalog.mjs`
+- Automated PR checks: `.github/workflows/ci-smoke.yml` (cheap game/test/artifact-parity validation)
+- Manual Android QA: `.github/workflows/build-apk.yml` (builds debug APK, unsigned AAB, visual QA)
+- Manual *new-tag-only* preview publishing: `.github/workflows/publish-preview-apk.yml`
 
-See [`docs/RELEASE_v0.6.3.md`](docs/RELEASE_v0.6.3.md) for verification scope and remaining device tests.
+The repo intentionally keeps browser and Android game files duplicated for offline packaging; CI rejects mismatches. Visual comparisons use actual game scenes, not marketing mockups. The Android debug APK is **not release-signed**. Review [signing notes](docs/SIGNING.md) before handling any signing materials.
 
-## v0.6.2 refinement (2026-10-26)
+## Branching and history
 
-- Optional **Swap Controls** for left-handed/right-handed comfort; swaps Fire and joystick sides without changing tank handling, and saves locally.
-- Compact **? Help** guide available on the main menu, explaining ricochets, lives, teams and basic touch controls.
-- Shells now spawn against the *near side* of a wall when your turret is close, rather than potentially passing through a wall during the initial shot.
-- When Android backgrounds the game, an active host receives a local pause and the app attempts to send an immediate paused snapshot; guests send a neutral input. Android may disconnect a hosted game on stop, so this is not a promise of background networking.
-- Short-landscape menu alignment/controls verified using Chromium at 740×360, 915×412 and 1280×720 without webpage overflow.
-- No new game modes, monetization, backend accounts or required apps.
+The original repository name `Ricochet-Rumble` stays intact for GitHub links. `main` was on the older v0.6.3 game before the integration candidate; this proposed mainline update contains v0.9.21 runtime plus the repository handoff documentation. **Do not treat this branch as approved until [draft integration PR #23](https://github.com/PlayerEden/Ricochet-Rumble/pull/23) passes review and is merged.**
 
-## Play modes
+Original chronological development README: [preserved archive](docs/history/README_DEVELOPMENT_THROUGH_V0921.md). Historical branches, draft PRs, and preview APKs remain available for rollback.
 
-- **Solo vs bots**: start right from the main menu; set 1–4 bots, lives, shots-per-tank and Relaxed / Standard / Challenge bot AI.
-- **Two-phone nearby game**: host or discover a session on the same Wi-Fi network through the bundled Android app. Join by local IP is a fallback. **Physical two-phone acceptance testing is still pending.**
-- **Keyboard duel**: two players on one keyboard in a compact arena (WASD + Space / arrows + Enter).
-- **Match modes**: free-for-all, humans vs bots, or two teams. Friendly fire is off for teammates.
+## Release gate
 
-## v0.6 refinements
+Before considering Google Play v1.0: real phone audio/controls testing; two-phone same-Wi-Fi testing; correct match mode/end rules; controlled release key custody; final package identity; Play privacy/data safety; store assets; and a signed, tested app bundle. Planned cosmetics are strictly visual, never combat upgrades.
 
-- Fast-access mobile game menu; separate settings screen avoids burying Play under a tall form.
-- Settings and comfort preferences persist locally (arena, bots, rules, sound, screen shake and optional auto-fire). No account or remote storage.
-- Fixed-time simulation for more consistent pace at lower rendering rates; better camera smoothing and maze floor drawing/culling.
-- Readable bullet-ready indicator near the Fire button, clearer local tank indicator and minor tank/floor graphic polish.
-- Wall-aware bot shots, bot difficulty, shooting cancels respawn immunity, and ricocheted shells can hit their own shooter after a grace period.
-- Host menu pauses for both participants, clears held controls, and resumes properly; client Wi-Fi routing preferred even when cellular is on.
-
-Full findings, test scope and deferred items: [`docs/QUALITY_AUDIT_v0.6.md`](docs/QUALITY_AUDIT_v0.6.md).
-
-## Building and testing
-
-- Browser: open `web/index.html` with a local static server (or use the self-contained HTML preview supplied in the chat).
-- Game logic QA: `node tests/smoke.mjs`.
-- Android: project is in `android/`; GitHub Actions workflow `.github/workflows/build-apk.yml` builds an unsigned-for-release, **debug-signed APK** through `gradle :app:assembleDebug`. The APK contains all HTML, CSS, JavaScript and game assets, with no downloads during play.
-- App package: `com.playereden.ricochetrumble`; Android 8.0+ minimum.
-- Same-Wi-Fi multiplayer is experimental: test discovery, connectivity and controls on two real devices before calling it production-ready. Remote internet P2P, cross-network friends and push invites are not implemented.
-
-**Distribution/signing note:** GitHub debug APKs may use a different signing certificate on different runners. If Android refuses to install an updated debug build over a previous one, uninstall the old debug version. Establish a persistent **private** release-signing identity before shipping reliable in-place updates; never commit private keystores to this public repository.
-
-## Future independent games
-
-- **Pocket Racers**: short top-down racing game for two phones.
-- **Scrap Climbers**: build eccentric blocky vehicles and compete for climbing distance.
-
-The long-term goal is reusable zero-cost local multiplayer technology, while each game stays enjoyable offline. The project does not require ads, external game assets, subscriptions or server hosting for solo/LAN play.
+**Policy for this repository:** GitHub is the durable source of truth for game source, planning, decisions, QA evidence and chat handoffs. A future conversation should begin with [PROJECT_STATUS](docs/PROJECT_STATUS.md).

@@ -46,3 +46,12 @@ ChatGPT does not provide a reliable advance warning of remaining context capacit
 - **2026-10-27:** GitHub is the durable backup of plan, context, code, tests, screenshots/release evidence, and known issues; the assistant chat is for discussion and work, not the only archive.
 - **2026-10-27:** Keep a safe, reviewable `main` status hub while modern playable code remains in explicitly identified dev branches pending integration.
 - **2026-10-27:** A complete Quick Play loop is more important than a rushed store, profile, remote PvP or a sprawling unfinished mode list. Preserve the "new procedural maze every match" game identity.
+
+## Reusable Actions & release discipline (integration candidate)
+
+- Every PR targeting `main` runs inexpensive source parity, Node smoke, and catalog validation checks. No need to invoke Android Gradle for documentation-only changes.
+- Full Android build/visual QA is intentionally `workflow_dispatch` only; select the desired branch/ref in Actions. The v0.9.20 baseline remains the visual default until approved otherwise. Review source SHA and artifacts before declaring acceptance.
+- A new preview APK requires a **fresh versioned Git tag** supplied at manual dispatch. Do not reuse an existing tag or replace an existing release asset. The preview workflow refuses an existing tag and records its source SHA/checksum. Version `versionName` must agree with the tag's version core.
+- Release notes state exact validation scope and whether files are debug signed or unsigned. Do not mistake CI installation for proof on real physical phones.
+- After integration PR acceptance, consolidate historical chained draft PRs with informative closing comments (not force-delete); keep accepted milestone tags and rollbacks.
+- An encrypted signing backup is visible in this public repository. Treat custody verification as a separate security task, not an automatic deletion. Never print, decrypt, or commit release credentials in development workflows.

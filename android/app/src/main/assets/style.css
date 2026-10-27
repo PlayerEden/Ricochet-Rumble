@@ -48,3 +48,490 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit
 .help-copy{font-size:clamp(10px,1.35vw,13px);line-height:1.25;display:grid;grid-template-columns:1fr 1fr;gap:5px 13px;margin:7px 0 10px;text-align:left}
 .help-copy p{margin:0;color:#d2e8ef}.help-copy strong{color:#81ddf1}
 @media(max-width:760px){.help-copy{gap:3px 9px;font-size:10px;margin:3px 0 6px}}
+
+/* Experimental vehicle entry/exit control, intentionally absent from Classic. */
+.interact-btn{width:min(13vw,31dvh,132px);min-width:77px;min-height:30px;border:2px solid #9cf1ce;background:linear-gradient(#285f5c,#16433c);border-radius:11px;color:#eaffef;font-size:clamp(10px,1.15vw,13px);font-weight:1000;letter-spacing:.3px;touch-action:manipulation;box-shadow:0 3px 0 #102b28}
+.interact-btn.hidden{display:none}.interact-btn:active{transform:translateY(2px)}
+.panel .pilot-button{background:linear-gradient(120deg,#477063,#234a54);border-color:#9fedc5;color:#efffec}
+@media(max-height:380px){.pilot-match .touch-zone{gap:3px;padding-bottom:3px}.pilot-match .fire-btn{height:min(12vw,26dvh,96px);min-height:72px}.pilot-match .interact-btn{min-height:27px}}
+
+/* Unified arcade: keep Play primary and reduce first-screen decisions. */
+.panel .menu-main .primary{min-height:clamp(41px,10dvh,55px);font-size:clamp(14px,2vw,19px)}
+.panel .menu-join{align-self:center;justify-content:center;border-left:1px solid #355c6b;padding-left:14px}
+.panel .menu-join p{font-size:clamp(12px,1.6vw,15px);line-height:1.48;color:#d7ecf2}
+.panel .menu-join .menu-tip{color:#9bbbc7}
+.scorestrip{gap:clamp(6px,1.3vw,16px)}.scorestrip strong{font-size:clamp(18px,3.4dvh,28px)}
+@media (max-width:760px){.panel .menu-join{padding-left:8px}.panel .menu-join .menu-tip{display:none}}
+
+/* FIELDGRID: approachable defaults, advanced rules expand in place rather than another screen. */
+.extra-rules{border:1px solid #345f70;border-radius:8px;background:#0b2532;margin:4px 3px;touch-action:pan-y}
+.extra-rules summary{cursor:pointer;touch-action:manipulation;list-style-position:inside;font-size:clamp(10px,1.2vw,12px);font-weight:900;color:#cae9ef;padding:6px 8px}
+.extra-rules summary span{font-weight:500;font-size:clamp(9px,1.03vw,11px);color:#9bc5d4;margin-left:8px}
+.extra-rules[open] .settings-page{padding:3px 8px 6px}
+@media(max-height:390px){.extra-rules summary{padding:4px 7px}.extra-rules summary span{display:none}}
+
+/* v0.9.1 QA: thumb-sized, high-contrast touch controls and one-tap replay. */
+.quick-rematch{position:absolute;z-index:4;left:50%;top:64%;transform:translate(-50%,-50%);width:min(230px,62%);min-height:54px;border:2px solid #b8f9ff;border-radius:13px;background:linear-gradient(180deg,#62d8f4,#299bbb);color:#08232f;font-size:clamp(14px,2.1vw,18px);font-weight:1000;box-shadow:0 8px 25px #000b;touch-action:manipulation;letter-spacing:.4px}.quick-rematch.hidden{display:none}.quick-rematch:active{filter:brightness(1.15);transform:translate(-50%,calc(-50% + 2px))}
+.interact-btn{min-height:44px;min-width:90px;font-size:clamp(12px,1.45vw,15px);border-color:#afffd9;box-shadow:0 0 0 3px #12463d77,0 3px 0 #0b2a23}
+.panel button{min-height:40px}.panel .menu-help{min-height:39px;min-width:64px}.settings-page select{height:37px;min-height:37px}.comfort-grid label{min-height:33px}.comfort-grid input{width:23px;height:23px;flex-shrink:0}.extra-rules summary{min-height:36px;padding:9px 10px}.scorestrip .middle{font-size:clamp(10px,1.2vw,13px)}
+@media(max-height:390px){.panel button{min-height:36px}.settings-page select{min-height:33px;height:33px}.extra-rules summary{min-height:31px;padding:5px 8px}.comfort-grid label{min-height:30px}.interact-btn{min-height:40px}.control-caption{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.toast{transition:none}.fire-btn,.quick-rematch{transition:none}}
+
+/* QA touch target audit: conserve screen space, but provide real finger hit areas. */
+.toast{max-width:65%;white-space:normal;text-align:center;line-height:1.3}
+.panel button{min-height:48px}.panel .menu-help{min-height:44px}.settings-page select{min-height:44px;height:44px}.comfort-grid label{min-height:40px}.extra-rules summary{min-height:44px}.interact-btn{min-height:48px}.hud-menu{min-height:44px}
+@media(max-height:390px){.panel button{min-height:44px}.settings-page select{min-height:40px;height:40px}.extra-rules summary{min-height:38px}.comfort-grid label{min-height:34px}.interact-btn{min-height:44px}}
+
+/* v0.9.2: increase menu hit areas without enlarging the in-game HUD.
+   The settings sheet can use limited internal scrolling on unusually short screens;
+   the battlefield itself never scrolls. */
+.settings-page select{min-height:48px;height:48px;font-size:clamp(12px,1.35vw,15px)}
+.extra-rules summary{min-height:48px;display:flex;align-items:center}
+.comfort-grid label{min-height:44px}
+@media(max-height:390px){
+  .settings-page select{min-height:44px;height:44px}
+  .extra-rules summary{min-height:42px;padding:5px 8px}
+  .comfort-grid label{min-height:40px}
+  .settings-head h2{font-size:21px}
+  .settings-head p{display:none}
+}
+@media(max-width:850px){
+  .brand-stack>span{display:none}
+  .scorestrip .middle{font-weight:1000;color:#d7f2f5}
+}
+
+/* FIELDGRID VISUAL SYSTEM 0.9.3 - one UI vocabulary from menu to arena. */
+:root{--bg:#0a1722;--panel:#102330;--border:#365565;--blue:#46d2f5;--pink:#ff8874;--text:#eaf5f7;--muted:#9cb6c2;--gold:#dfc384}
+.game-screen{background:linear-gradient(180deg,#0e2430,#0a1722 58%,#09151f)}
+.game-hud{border-bottom:1px solid #3a5a68;background:#0c1e2b;box-shadow:0 2px 0 #06131d;gap:10px}
+.game-identity{gap:7px}.logo-mark{border-radius:5px;transform:none;background:#46d2f5;border-color:#6ae4f9;color:#071c27;box-shadow:0 2px 0 #126e89;font-style:italic}
+.brand-stack strong{font-weight:900;letter-spacing:.7px}.brand-stack>span{letter-spacing:1.4px;color:#7fa4b2}
+.scorestrip .middle{color:#b4cbd2;font-size:clamp(10px,1.35vw,14px)!important}
+.hud-menu{border-color:#436c7c;border-radius:7px;box-shadow:none;background:#172f3b;letter-spacing:.5px}
+.battlefield{gap:clamp(4px,.55vw,10px)}
+.arena-wrap{background:#112632;border-color:#345869;border-radius:6px;box-shadow:0 3px 0 #06121d}
+.joystick{border:2px solid #608b9d;background:radial-gradient(circle,#193240 0%,#132733 67%,#10212d 80%);box-shadow:0 0 0 4px #28445155,inset 0 0 18px #06121cb3}
+.joystick:before,.joystick:after{opacity:.2}.stick-ring{border-style:solid;opacity:.34}
+.stick-knob{color:#9eebfa;background:linear-gradient(140deg,#326476,#193b4b);border:2px solid #8bd8e8;box-shadow:0 2px 6px #04131a}
+.fire-btn{border:3px solid #ffa48f;background:radial-gradient(circle at 35% 25%,#f7ac8d 0%,#e87462 65%,#b9504a 100%);box-shadow:0 0 0 4px #8f484449,0 4px 0 #5d2e2a,inset 0 2px 5px #ffd4c677;color:#231b20}
+.fire-btn.active{box-shadow:0 0 0 3px #9c534557,inset 0 3px 10px #78372e}
+.control-caption{color:#8dacb7;letter-spacing:1.1px}.shell-meter{color:#86d8c2}
+.overlay{background:#08131ae9;backdrop-filter:blur(3px)}
+.panel{border-color:#466b79;border-radius:10px;background:linear-gradient(135deg,#18313f,#102331 75%);box-shadow:0 15px 40px #000b}
+.panel button{border-color:#436b7a;border-radius:6px;background:#1b3848;box-shadow:inset 0 1px 0 #76929c26}
+.panel button.primary{border-color:#9cedf9;color:#061c2a;background:linear-gradient(#6be4f5,#43b8d5)}
+.panel .settings-button{border-color:#527d8c;background:#183441}
+.panel .menu-join{border-left:1px solid #395a69}.panel .menu-join p{line-height:1.4}
+.eyebrow{color:#a7c0cb;letter-spacing:1.3px}.panel h2{font-weight:950;letter-spacing:.35px}.panel h2 span{color:var(--blue)}
+.extra-rules{background:#102a38;border-color:#416777;border-radius:6px}
+.settings-page select{border-color:#4b7889;background:#0c2532;border-radius:5px}
+.comfort-grid label{color:#d5e9ef}
+.toast{border:1px solid #67b9c6;border-radius:5px;background:#0d2433ee;color:#eaf8f9}
+.interact-btn{border-color:#a0dfc9;background:#21483f;color:#e8fff5;border-radius:7px;box-shadow:0 0 0 2px #183d34aa}
+.quick-rematch{border-radius:7px;box-shadow:0 5px 18px #000a}
+@media(max-width:850px){.brand-stack strong{font-size:clamp(10px,1.45vw,16px)}.scorestrip{justify-content:space-around;gap:5px}.scorestrip .middle{font-size:clamp(9px,1.12vw,12px)!important}}
+
+/* v0.9.4 visual clarity: tactile but restrained controls; no hit-area reduction. */
+.stick-knob span{font-size:clamp(13px,1.9vw,18px);line-height:1;color:#c6f7ff;opacity:.9}
+.fire-btn{box-shadow:0 0 0 3px #8f484435,0 3px 0 #5d2e2a,inset 0 2px 5px #ffd4c643}
+.control-caption{opacity:.78}
+@media(max-width:850px){.game-identity .brand-stack strong{letter-spacing:0;font-size:clamp(10px,1.7vw,13px)}}
+
+/* v0.9.6 — FIELDGRID authored UI: flat instrument surfaces, one 6px corner system.
+   Intentionally restrained: arena renderer is unchanged. */
+:root{--panel:#112633;--border:#456676;--blue:#5dd4e9;--pink:#f38b79}
+.panel{background:#102632;border-color:#416777;border-radius:7px;box-shadow:0 12px 35px #021017c9}
+.panel button{border-radius:5px;background:#1b3846;border:1px solid #496c78;box-shadow:none;letter-spacing:.1px;font-weight:850}
+.panel button.primary{background:#62c9df;border:1px solid #8fe0ef;color:#061e27;box-shadow:none}
+.panel button:focus-visible,.hud-menu:focus-visible,.fire-btn:focus-visible,.interact-btn:focus-visible{outline:2px solid #e9db99;outline-offset:2px}
+.panel button:active,.hud-menu:active{filter:brightness(1.11);transform:translateY(1px)}
+.panel .settings-button{background:#183340;border-color:#496e7a}
+.menu-join{max-width:100%}.menu-join .eyebrow{font-size:clamp(10px,1.2vw,13px);color:#a5c6cc}
+.panel .menu-join .menu-tip{color:#8faebc}
+.hud-menu{background:#162f3c;border-radius:5px;box-shadow:none}
+.logo-mark{background:#57c7dd;border-radius:5px;border:1px solid #87d8e5;box-shadow:none}
+.quick-rematch{background:#63c9dd;border-radius:5px;border:1px solid #8ee9f5;box-shadow:0 5px 14px #04141d}
+.fire-btn{background:#d97363;border:3px solid #ffb09a;box-shadow:0 0 0 3px #863b3744,0 3px 0 #5f292a;color:#27181b}
+.fire-btn.active{background:#e9917a;box-shadow:0 0 0 3px #863b3744,inset 0 2px 7px #672e2d}
+.stick-knob{background:#2b5969;border-color:#8ed9e6;box-shadow:0 2px 6px #071923}
+.interact-btn{background:#205145;border:2px solid #8dcfb7;box-shadow:0 2px 0 #082a22;border-radius:5px}
+.settings-page select{background:#0d2936;border:1px solid #5b8896;border-radius:5px}
+.extra-rules{border-radius:5px;background:#102b38}
+@media(max-height:380px){.panel{padding:8px 13px}.panel button{margin:2px 0}.menu-heading{margin-bottom:3px}}
+
+/* v0.9.7: End-of-match controls no longer imply a live tank. */
+.match-finished .touch-zone{opacity:.28;pointer-events:none;filter:saturate(.5)}
+.match-finished .quick-rematch{z-index:5;top:77%;background:#62c9df;border:2px solid #a0edf1;color:#09232d;box-shadow:0 4px 14px #020c15}
+.match-finished .quick-rematch:focus-visible{outline:2px solid #f0d88a;outline-offset:3px}
+@media(max-height:390px){.match-finished .quick-rematch{top:79%;min-height:46px}}
+
+/* 0.9.8 / FIELDGRID INTERFACE CONTRACT ----------------------------------
+   Design principles: cockpit instrument instead of a generic app dialog;
+   Roboto Condensed where installed; Android sans-serif-condensed fallback for HUD titles.
+   Entirely offline: no remote font, icon, or UI dependencies.
+   Keep the touch and arena layout stable at phone landscape sizes. */
+:root{--panel:#102532;--border:#416170;--blue:#65cee1;--pink:#e98978;--text:#e5f2f5;--muted:#91acb8}
+html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-serif}
+.panel h2,.panel button,.game-identity,.scorestrip,.hud-menu,.settings-head h2,.eyebrow,.control-caption,.settings-grid label,.toast,.quick-rematch{font-family:'Roboto Condensed','sans-serif-condensed','Arial Narrow',Roboto,Arial,sans-serif}
+.panel{background:#102530;border:1px solid #486c79;border-radius:5px;box-shadow:0 15px 32px #020d15c9}
+.panel h2{font-size:clamp(23px,4.6dvh,33px);font-weight:800;letter-spacing:.6px;line-height:1.06}
+.panel button{border:1px solid #426777;border-radius:4px;background:#1a3744;box-shadow:none;font-weight:800;letter-spacing:.4px;min-height:46px;transition:background-color .12s,border-color .12s}
+.panel button.primary{background:#65ccdf;color:#08242d;border:1px solid #9fe5ef}
+.panel button:active{background:#2c5360}
+.panel button.primary:active{background:#a4eaf1}
+.panel .menu-help{font-size:clamp(11px,1.25vw,14px);font-weight:800;padding:5px 12px;min-height:37px;max-width:85px}
+.menu-heading .eyebrow{color:#a2c2ca;display:flex;justify-content:center;gap:14px;align-items:center}
+.menu-heading h2{margin-top:5px}
+.menu-heading p{color:#8db0bb;letter-spacing:1.1px;font-size:clamp(10px,1.22vw,13px);font-weight:700}
+.menu-main{position:relative}
+.menu-main button{text-align:left;padding-left:clamp(24px,3.4vw,38px);position:relative}
+.menu-main button:before{content:'';position:absolute;left:10px;top:25%;height:50%;width:3px;background:#547f8b}
+.menu-main button.primary:before{background:#073c4a}
+.menu-join{border-left:1px solid #385564;padding-left:clamp(10px,1.6vw,19px)}
+.panel .menu-join .eyebrow{color:#b3d6dc;font-size:clamp(11px,1.5vw,14px)}
+.panel .menu-join p{font-size:clamp(12px,1.43vw,15px);line-height:1.35}
+.game-hud{background:#0d202c;border-bottom:1px solid #456170}
+.scorestrip{font-weight:800;letter-spacing:.25px}
+.scorestrip .middle{font-weight:700;letter-spacing:.7px}
+.hud-menu{background:#163442;border:1px solid #4c7580;border-radius:4px;font-weight:800}
+.control-caption{font-size:clamp(10px,1.15vw,13px);font-weight:700;letter-spacing:.7px}
+.interact-btn{min-height:48px;border-radius:4px;background:#21483e;border-color:#9ad8bc;font-family:'Roboto Condensed','sans-serif-condensed','Arial Narrow',Roboto,sans-serif;letter-spacing:.3px}
+.fire-btn{font-family:'Roboto Condensed','sans-serif-condensed','Arial Narrow',Roboto,sans-serif;font-weight:800;letter-spacing:.8px}
+.settings-head p{color:#a0bdc9}
+.settings-page label{letter-spacing:.45px;font-weight:800}
+.settings-page select{font-family:Roboto,Arial,sans-serif;font-weight:650}
+.extra-rules summary{font-family:'Roboto Condensed','sans-serif-condensed','Arial Narrow',Roboto,sans-serif;letter-spacing:.45px}
+.settings-actions button{min-height:48px}
+.pause-hint{margin:8px 0 12px!important;font-size:clamp(12px,1.4vw,15px)!important;text-align:center}
+.pause-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;max-width:520px;margin:7px auto 0}
+.pause-actions .primary{grid-column:1/-1}
+.pause-actions button{width:100%;min-height:48px;margin:0}
+.help-copy{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 10px}
+.help-copy p{margin:0!important;padding:9px 11px;background:#172f3b;border-left:2px solid #486e7b;font-size:clamp(11px,1.18vw,14px)!important;line-height:1.35!important;color:#c6dce3!important}
+.help-copy p strong{display:block;font-family:'Roboto Condensed','sans-serif-condensed','Arial Narrow',Roboto,sans-serif;color:#75d7e8;font-size:1.08em;letter-spacing:.6px;margin-bottom:3px}
+.panel:has(.help-copy){width:min(780px,96vw)}
+@media(max-height:390px){.panel{padding:7px 13px}.panel button{min-height:42px}.panel .menu-help{min-height:34px}.panel h2{font-size:22px}.panel .menu-join p{font-size:12px}.pause-hint{margin:3px 0 6px!important}.pause-actions button{min-height:44px}.help-copy p{padding:6px 9px;font-size:11px!important}.settings-actions button{min-height:44px}}
+@media(max-width:760px){.menu-join .menu-tip{display:none}.panel .menu-join p{font-size:12px}.help-copy{gap:5px}}
+@media(max-width:650px){.help-copy{grid-template-columns:1fr}.panel .menu-main button{padding-left:22px}}
+@media(prefers-reduced-motion:reduce){.panel button{transition:none}}
+/* Finger targets stay large on the shortest supported landscape screens. */
+.panel .menu-main button,.panel .pause-actions button,.panel .menu-help{min-height:44px}
+@media(min-height:391px){.panel .menu-main button,.panel .pause-actions button,.panel .menu-help{min-height:48px}}
+/* 0.9.8.1: Short-phone menu guardrails and no-wrap HELP touch target. */
+.panel .menu-help{white-space:nowrap}
+@media(max-height:390px){.panel .menu-heading .eyebrow{gap:8px}.panel .menu-heading .eyebrow span{letter-spacing:.7px}}
+
+
+/* v0.9.9 FIELDGRID / instrumentation, not menu cards.
+   Controls remain full-area touch targets. No remote fonts or UI assets. */
+.panel .menu-main button{display:flex;align-items:center;justify-content:space-between;gap:7px;text-align:left;padding-right:clamp(10px,1.7vw,18px)}
+.panel .menu-main button>span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.panel .menu-main button>small{flex:0 0 auto;color:#94b5c0;font-size:clamp(9px,1.08vw,12px);font-weight:750;letter-spacing:.5px;white-space:nowrap}
+.panel .menu-main button.primary>small{color:#164a57}
+.panel .menu-main button:not(.primary):active>small{color:#e3f8fa}
+.panel .menu-main button:focus-visible{outline-offset:3px}
+.menu-join{justify-content:center;gap:2px}
+.menu-join .brief-lead{font-family:'Roboto Condensed','sans-serif-condensed',Roboto,Arial,sans-serif;font-weight:900;font-size:clamp(15px,2.05vw,23px)!important;letter-spacing:.5px;line-height:1.1!important;color:#d9f4f8!important;margin:1px 0 3px!important}
+.panel .menu-join p:not(.brief-lead){color:#b2d0d8}
+.field-ready{display:flex;align-items:center;gap:6px;min-width:0;margin-top:clamp(4px,1.5dvh,11px);padding-top:7px;border-top:1px solid #3a5b68;color:#acd3d8;font-family:'Roboto Condensed','sans-serif-condensed',Roboto,Arial,sans-serif;font-weight:850;font-size:clamp(9px,1.16vw,12px);letter-spacing:.45px;white-space:nowrap}
+.ready-dot{width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:#88e3bd;box-shadow:0 0 0 2px #1f594c}
+.ready-tag{margin-left:auto;color:#80a4b0;font-size:.9em}
+.scorestrip .middle{display:inline-flex;align-items:center;justify-content:center;max-width:32vw;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:27px;padding:3px 9px;border:1px solid #416675;background:#142e3c;border-radius:3px;color:#c8e2e6!important;font-size:clamp(10px,1.22vw,14px)!important;font-weight:800}
+.scorestrip .middle.on-foot{border-color:#649a86;background:#173b33;color:#b2f1d3!important}
+.scorestrip .middle.damaged{border-color:#ae8068;background:#48352c;color:#f9d1ac!important}
+.scorestrip .middle.match-ended{border-color:#61818e;background:#25343d;color:#d1e8ef!important}
+.scorestrip .middle.host-paused{border-color:#ad9571;background:#3a3324;color:#efdbb2!important}
+.game-identity .logo-mark{letter-spacing:-.8px}
+.hud-menu{letter-spacing:.4px;min-width:clamp(61px,9vw,88px)}
+.interact-btn.busy{background:#3a3d3b;border-color:#a1a999;color:#f1e6cd}
+.interact-btn:focus-visible{outline-offset:3px}
+@media(max-width:850px){
+ .panel .menu-main button{padding-left:21px}
+ .panel .menu-main button>small{letter-spacing:0}
+ .game-hud{gap:5px}
+ .scorestrip{gap:clamp(3px,.7vw,8px)}
+ .scorestrip .middle{max-width:28vw;padding:3px 5px;letter-spacing:.25px}
+ .brand-stack>span{letter-spacing:.5px}
+}
+@media(max-width:760px){
+ .field-ready{font-size:9px}
+ .menu-join .brief-lead{font-size:15px!important}
+ .panel .menu-main button>small{font-size:9px}
+ .panel .menu-main button{padding-right:8px;padding-left:19px}
+ .scorestrip .middle{max-width:25vw}
+}
+@media(max-height:390px){
+ .menu-join .brief-lead{margin:0!important}
+ .field-ready{margin-top:4px;padding-top:5px}
+ .panel .menu-main button{min-height:44px}
+ .scorestrip .middle{min-height:25px}
+}
+@media(max-width:670px) and (orientation:landscape){
+ .panel .menu-main button>small{display:none}
+ .menu-join .ready-tag{display:none}
+ .game-identity .brand-stack>span{display:none}
+ .scorestrip .middle{max-width:24vw}
+}
+
+
+/* 0.9.10 — FULLSCREEN COMBAT. The game world owns every usable pixel.
+   No fixed header row, no control gutters, no viewport-aspect canvas matte.
+   Only interactive HUD/touch surfaces receive pointer input. */
+.game-screen{display:block!important;position:fixed;inset:0;width:100%;height:100dvh;padding:0;overflow:hidden;background:#101f2b}
+.game-hud{position:absolute;top:0;left:0;right:0;z-index:7;height:56px;padding:0;border:0!important;background:none!important;box-shadow:none!important;pointer-events:none}
+.hud-mode-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.game-hud .game-identity{display:none!important}
+.game-hud .hud-menu{position:absolute;top:max(9px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));width:57px;min-width:57px;height:38px;margin:0;padding:0 4px;border:1px solid #75a5b680;border-radius:8px;background:#102837db;box-shadow:0 3px 10px #03121d77;font-size:11px;color:#e2f3f6;pointer-events:auto;backdrop-filter:blur(4px)}
+.game-hud .hud-menu span{font-size:15px;margin-right:2px}
+.game-hud .scorestrip{position:absolute;top:max(9px,env(safe-area-inset-top));left:max(75px,calc(env(safe-area-inset-left) + 75px));right:max(165px,calc(env(safe-area-inset-right) + 165px));height:38px;min-width:0;display:flex;align-items:center;justify-content:center;gap:clamp(5px,1.3vw,16px);font-size:clamp(10px,1.35vw,14px);letter-spacing:0;pointer-events:none}
+.game-hud .scorestrip>span{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:4px clamp(6px,.95vw,11px);background:#0b2131ba;border:1px solid #56788491;border-radius:8px;box-shadow:0 2px 7px #020c1460;backdrop-filter:blur(3px)}
+.game-hud .scorestrip strong{font-size:clamp(15px,2.2vw,23px);margin:0 5px;line-height:1}
+.game-hud .scorestrip .middle{max-width:none;min-height:30px;flex:0 1 auto;white-space:nowrap;font-size:clamp(10px,1.25vw,13px)!important;padding:4px clamp(6px,.9vw,10px);background:#122936c9;border:1px solid #5d7e8c91;border-radius:8px}
+.battlefield{position:absolute;inset:0;display:block!important;padding:0!important;gap:0!important;margin:0;min-height:0;min-width:0;overflow:hidden;pointer-events:none}
+.arena-wrap,.battlefield.swap-controls .arena-wrap{position:absolute;inset:0;display:block!important;width:100%;height:100%;padding:0;margin:0;border:0!important;border-radius:0!important;box-shadow:none!important;background:#101f2b;pointer-events:none}
+.arena-wrap canvas{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:fill;pointer-events:none}
+.battlefield .touch-zone{position:absolute!important;z-index:5;bottom:max(12px,calc(env(safe-area-inset-bottom) + 12px));height:auto;width:clamp(110px,18vw,180px);padding:0;margin:0;display:flex!important;flex-direction:column;align-items:center;justify-content:end;gap:4px;pointer-events:none}
+.battlefield .touch-left{left:max(17px,calc(env(safe-area-inset-left) + 17px));right:auto;grid-column:auto!important;grid-row:auto!important}
+.battlefield .touch-right{right:max(17px,calc(env(safe-area-inset-right) + 17px));left:auto;grid-column:auto!important;grid-row:auto!important}
+.battlefield.swap-controls .touch-left{left:auto!important;right:max(17px,calc(env(safe-area-inset-right) + 17px))!important}
+.battlefield.swap-controls .touch-right{right:auto!important;left:max(17px,calc(env(safe-area-inset-left) + 17px))!important}
+.battlefield .joystick{width:clamp(84px,15vw,150px);height:clamp(84px,15vw,150px);min-width:0;min-height:0;border:2px solid #7cc5d4a1;background:#0d293a79;box-shadow:0 0 0 5px #102f404a,inset 0 0 12px #04172390;pointer-events:auto;backdrop-filter:blur(1px)}
+.battlefield .stick-knob{background:#2a657aab;box-shadow:0 2px 6px #0310199e}
+.battlefield .fire-btn{width:clamp(84px,14vw,144px);height:clamp(84px,14vw,144px);min-width:0;min-height:0;background:#db7765d9;border:3px solid #ffb5a5ca;box-shadow:0 0 0 5px #5e302f44,0 4px 8px #03111b90;pointer-events:auto;backdrop-filter:blur(1px)}
+.battlefield .fire-btn.active{box-shadow:0 0 0 4px #9a62534d,inset 0 4px 9px #7c342e77}
+.battlefield .interact-btn{width:clamp(112px,15.5vw,156px);height:38px;min-height:38px;max-height:38px;margin-bottom:6px;font-size:clamp(11px,1.35vw,14px);border-radius:6px;background:#235044d8;box-shadow:0 2px 8px #0719239e;pointer-events:auto}
+.battlefield .control-caption{color:#c9e0e8cf;text-shadow:0 1px 4px #07131f;font-size:clamp(10px,1.2vw,12px);letter-spacing:.4px}
+.battlefield .shell-meter{margin-top:0;color:#cae7e2;font-size:clamp(9px,1vw,11px);text-shadow:0 1px 5px #07131f}
+.arena-wrap .toast{top:max(56px,calc(env(safe-area-inset-top) + 56px));max-width:calc(100vw - 24px);white-space:normal;text-align:center}
+.arena-wrap .quick-rematch{pointer-events:auto;z-index:6;top:75%;left:50%}
+@media(max-width:760px){
+ .game-hud .hud-menu{width:51px;min-width:51px;height:35px;font-size:10px}
+ .game-hud .scorestrip{left:max(67px,calc(env(safe-area-inset-left) + 67px));right:max(125px,calc(env(safe-area-inset-right) + 125px));gap:4px}
+ .game-hud .scorestrip>span{padding:3px 5px;min-height:28px}
+ .game-hud .scorestrip strong{margin:0 3px;font-size:16px}
+ .game-hud .scorestrip .middle{min-height:28px;padding:3px 5px}
+ .battlefield .touch-zone{width:110px;bottom:max(8px,calc(env(safe-area-inset-bottom) + 8px))}
+ .battlefield .joystick,.battlefield .fire-btn{width:96px;height:96px}
+ .battlefield .interact-btn{width:112px;min-height:35px;height:35px}
+ .battlefield .touch-left{left:max(14px,calc(env(safe-area-inset-left) + 14px))}
+ .battlefield .touch-right{right:max(14px,calc(env(safe-area-inset-right) + 14px))}
+ .battlefield.swap-controls .touch-left{right:max(14px,calc(env(safe-area-inset-right) + 14px))!important}
+ .battlefield.swap-controls .touch-right{left:max(14px,calc(env(safe-area-inset-left) + 14px))!important}
+}
+@media(max-height:350px){
+ .battlefield .joystick,.battlefield .fire-btn{height:82px;width:82px}
+ .battlefield .interact-btn{height:33px;min-height:33px;margin-bottom:2px}
+ .battlefield .control-caption{display:none}
+ .game-hud .scorestrip{top:max(7px,env(safe-area-inset-top))}
+}
+
+
+/* v0.9.10b — restrained FIELDGRID optical polish.
+   Soften the overlay's weight while preserving generous input hit targets. */
+.game-hud .hud-menu{background:#102837bc;border-color:#79a8b572;box-shadow:0 2px 7px #03121d69}
+.game-hud .scorestrip>span{background:#0b2131a5;border-color:#6688947a;box-shadow:0 2px 7px #020c145a}
+.game-hud .scorestrip .middle{background:#122936af;border-color:#7197a17a}
+.battlefield .joystick{background:#0d293a65;border-color:#7cc5d48c;box-shadow:0 0 0 4px #102f403c,inset 0 0 10px #04172385}
+.battlefield .fire-btn{background:#db7765c6;border-color:#ffb5a5ba;box-shadow:0 0 0 4px #5e302f39,0 3px 7px #03111b90}
+.battlefield .interact-btn{background:#235044cf;box-shadow:0 2px 7px #0719238c}
+.battlefield .control-caption{color:#c9e0e8b9}
+@media(prefers-reduced-motion:reduce){.game-hud .hud-menu,.game-hud .scorestrip>span,.battlefield .joystick,.battlefield .fire-btn{backdrop-filter:none}}
+
+
+/* v0.9.11 / FIELDGRID COMMAND CONSOLE
+   Fictional military-training UI; not a real government insignia.
+   All type is offline: Android's built-in condensed sans + system monospace. */
+:root{--fg-terminal:#091b26;--fg-panel:#0d2531;--fg-line:#476b79;--fg-accent:#68c8d8;--fg-meta:#91aeb9}
+.overlay{background:#06121bdf;backdrop-filter:blur(5px)}
+.panel{position:relative;border:1px solid #547886;border-radius:2px;background:
+ linear-gradient(135deg,#162f3bbd 0%,#102631 48%,#0b202b 100%);
+ box-shadow:0 18px 40px #010b12d9,inset 0 1px 0 #88bac025;isolation:isolate}
+.panel:before,.panel:after{content:'';position:absolute;pointer-events:none;width:15px;height:15px;border-color:#83cbd4;opacity:.9;z-index:2}
+.panel:before{top:-1px;left:-1px;border-top:2px solid;border-left:2px solid}
+.panel:after{bottom:-1px;right:-1px;border-bottom:2px solid;border-right:2px solid}
+.panel h2,.panel button,.menu-heading,.menu-join .brief-lead,.settings-head h2{font-family:'sans-serif-condensed','Roboto Condensed','Arial Narrow',Roboto,sans-serif;font-weight:800}
+.eyebrow,.terminal-rail,.terminal-footer,.brief-channel,.field-ready,.panel .menu-main button>small,
+.panel .menu-heading p,.panel .note{font-family:'Roboto Mono','Droid Sans Mono',Consolas,monospace;letter-spacing:.55px}
+.panel button{border:1px solid #52727e;border-radius:2px;background:#152e3a;font-weight:800;box-shadow:none}
+.panel button.primary{background:linear-gradient(100deg,#245669,#1a3c4a);border:1px solid #72bacc;color:#ebf9fc;box-shadow:inset 0 0 0 1px #0d3342}
+.panel button.primary:active{background:#326777;color:white}
+.panel button:focus-visible{outline:2px solid #c7e5b7;outline-offset:2px}
+.panel:has(.menu-content){width:min(730px,96vw);padding:clamp(9px,2.2dvh,18px) clamp(12px,2.25vw,24px) clamp(9px,1.8dvh,15px)}
+.terminal-rail{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;white-space:nowrap;border-bottom:1px solid #3f626c;padding:0 0 clamp(5px,.95dvh,9px);margin-bottom:clamp(5px,1dvh,10px);font-size:clamp(9px,1.12vw,11px);font-weight:700;color:#adc9cd}
+.terminal-rail>.rail-code{color:#b9e9ec;font-size:clamp(12px,1.4vw,15px);font-weight:900;letter-spacing:1px}
+.rail-slash{color:#62b5c9;padding:0 2px}
+.terminal-rail .rail-build{color:#7fa5af;font-size:clamp(8px,1.03vw,10px)}
+.panel .menu-heading{text-align:left;margin:0 0 clamp(7px,1.7dvh,13px)}
+.panel .menu-heading .eyebrow{display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:'Roboto Mono','Droid Sans Mono',monospace;font-weight:700;font-size:clamp(9px,1.04vw,11px);color:#8cb1ba}
+.panel .menu-heading h2{font-family:'sans-serif-condensed','Roboto Condensed',Roboto,sans-serif;font-size:clamp(24px,5.1dvh,39px);line-height:1;font-weight:900;letter-spacing:.1px;margin:clamp(2px,.6dvh,5px) 0 2px}
+.panel .menu-heading h2 span{color:#6fcedb}
+.panel .menu-heading p{font-size:clamp(9px,1.2vw,11px);color:#9ebfc8;margin:4px 0 0;letter-spacing:.25px;font-weight:700}
+.menu-heading-mark{color:#7698a2}
+.panel .menu-help{width:auto;max-width:none;min-width:96px;min-height:37px;padding:5px 9px;border:1px solid #5b8794;background:#122e3b;color:#cde2e7;border-radius:2px;font-family:'Roboto Mono','Droid Sans Mono',monospace;font-size:clamp(9px,1.1vw,11px);font-weight:750}
+.panel .menu-help:before{content:'?';display:inline-grid;place-items:center;width:15px;height:15px;margin-right:6px;background:#275469;color:#cfeff2}
+.panel .menu-content{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(12px,2.2vw,24px);border-top:1px solid #314c57;padding-top:clamp(8px,1.35dvh,12px)}
+.panel .menu-main{display:flex;flex-direction:column;justify-content:center;gap:clamp(5px,1.15dvh,9px)}
+.panel .menu-main button{margin:0;min-height:clamp(43px,8dvh,53px);padding:4px clamp(7px,1.5vw,13px) 4px clamp(22px,2.8vw,31px);font-size:clamp(13px,1.65vw,17px);letter-spacing:.15px;border:1px solid #476a77;background:#142f3b;text-align:left;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,0 100%);border-radius:0}
+.panel .menu-main button:before{left:9px;top:24%;height:52%;width:2px;background:#6c9aa8}
+.panel .menu-main button.primary{font-size:clamp(15px,1.9vw,19px);border-color:#74b9c8;background:linear-gradient(90deg,#2d6373,#1a3b49 92%);color:#f0ffff}
+.panel .menu-main button.primary:before{background:#adebf0}
+.panel .menu-main button>small{font-size:clamp(8px,1.02vw,11px);font-weight:700;color:#96b4bf}
+.panel .menu-main button.primary>small{color:#b1e5e8}
+.panel .menu-main button:active{transform:none;filter:brightness(1.18)}
+.panel .menu-join{border-left:1px solid #466673;padding:clamp(2px,.7dvh,7px) 0 clamp(2px,.7dvh,7px) clamp(11px,1.65vw,18px);gap:3px}
+.brief-head{display:flex;align-items:center;justify-content:space-between;gap:6px;white-space:nowrap}
+.brief-head .eyebrow{font-size:clamp(10px,1.1vw,12px);letter-spacing:.45px;color:#b6d8da}
+.brief-channel{color:#78a5b2;font-size:clamp(8px,.9vw,10px);font-weight:700}
+.menu-join .brief-lead{font-size:clamp(17px,2.15vw,22px)!important;letter-spacing:.2px;color:#deedf0!important;line-height:1.05!important;margin:2px 0 5px!important}
+.panel .menu-join p:not(.brief-lead){font-size:clamp(11px,1.22vw,13px);line-height:1.4;color:#b4cbd2}
+.field-ready{margin-top:clamp(4px,1.2dvh,10px);border-top:1px solid #47616a;padding-top:7px;font-size:clamp(9px,1.05vw,11px);font-weight:750;letter-spacing:.2px}
+.ready-tag{color:#7899a3}
+.terminal-footer{display:flex;align-items:center;justify-content:space-between;gap:6px;border-top:1px solid #3d606d;margin-top:clamp(7px,1.4dvh,13px);padding-top:6px;color:#829daa;font-size:clamp(8px,.91vw,10px);font-weight:700}
+.terminal-footer b{font-weight:700;color:#86d7af}
+@media(max-height:390px){
+ .panel:has(.menu-content){padding:7px 11px}
+ .terminal-rail{margin-bottom:3px;padding-bottom:3px}
+ .panel .menu-heading{margin-bottom:5px}
+ .panel .menu-heading h2{font-size:clamp(20px,6.3dvh,27px)}
+ .panel .menu-heading p{font-size:9px}
+ .panel .menu-main{gap:4px}
+ .panel .menu-main button{min-height:41px}
+ .panel .menu-help{min-height:34px;padding:4px 7px}
+ .panel .menu-content{padding-top:5px}
+ .terminal-footer{margin-top:5px;padding-top:4px}
+ .field-ready{padding-top:4px;margin-top:4px}
+}
+@media(max-width:760px){
+ .terminal-rail>span:nth-child(2){display:none}
+ .panel .menu-content{gap:10px}
+ .panel .menu-main button>small{font-size:8px;letter-spacing:0}
+ .panel .menu-join{padding-left:9px}
+ .panel .menu-join p:not(.brief-lead){font-size:11px}
+ .brief-channel{display:none}
+ .menu-heading-mark{display:none}
+}
+@media(max-width:585px){
+ .panel .menu-content{grid-template-columns:1fr}
+ .panel .menu-join{display:none}
+ .terminal-footer span:first-child{display:none}
+ .terminal-footer{justify-content:flex-end}
+}
+
+
+/* v0.9.13 | Active FIELDGRID supply signal, only present while buffed. */
+.power-status{position:absolute;top:max(51px,calc(env(safe-area-inset-top) + 51px));left:50%;transform:translateX(-50%);max-width:38vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;z-index:7;padding:4px 12px;border:1px solid #6bafba;border-radius:3px;background:#0b2935d9;color:#e6f6f5;font:800 clamp(9px,1.2vw,12px)/1.2 'Droid Sans Mono',monospace;letter-spacing:.5px;text-shadow:0 1px 3px #071820;pointer-events:none}
+.power-status.hidden{display:none}
+@media(max-width:760px){.power-status{top:max(46px,calc(env(safe-area-inset-top) + 46px));max-width:35vw;font-size:9px;padding:3px 6px}}
+
+
+/* v0.9.15 AFTER ACTION / Fullscreen field remains under a compact,
+   tappable tactical report. No content depends on a fixed 960px canvas. */
+.after-action{position:absolute;inset:0;z-index:8;display:grid;place-items:center;padding:max(9px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(9px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));background:#07131de2;pointer-events:auto}
+.after-action.hidden{display:none}
+.after-action .aa-panel{position:relative;width:min(580px,100%);max-height:100%;overflow-y:auto;padding:clamp(11px,2.8dvh,22px) clamp(13px,2.6vw,24px);background:linear-gradient(145deg,#102a35,#0b202b);border:1px solid #62848d;box-shadow:0 15px 42px #020a0fa8;color:#deeff1;text-align:left}
+.after-action .aa-panel:before,.after-action .aa-panel:after{content:'';position:absolute;width:14px;height:14px;border-color:#8bd7dc;pointer-events:none}
+.after-action .aa-panel:before{top:0;left:0;border-top:2px solid;border-left:2px solid}
+.after-action .aa-panel:after{right:0;bottom:0;border-right:2px solid;border-bottom:2px solid}
+.aa-rail{display:flex;justify-content:space-between;gap:8px;padding-bottom:6px;border-bottom:1px solid #41606c;font:700 clamp(9px,1.1vw,11px)/1.2 'Droid Sans Mono',monospace;letter-spacing:.4px;color:#9cbdc5}
+.after-action h2{margin:clamp(7px,1.6dvh,13px) 0 0;font:900 clamp(24px,5.5dvh,44px)/1 'sans-serif-condensed',Roboto,Arial,sans-serif;letter-spacing:.5px;color:#a4ecd1}
+.after-action.lost h2{color:#f6bb9c}
+.aa-event{margin:4px 0 clamp(9px,1.8dvh,14px);font:750 clamp(11px,1.35vw,14px)/1.35 'sans-serif-condensed',Roboto,sans-serif;color:#c5dae1}
+.aa-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-bottom:clamp(9px,2dvh,16px)}
+.aa-stats>div{display:flex;flex-direction:column;gap:2px;min-width:0;padding:clamp(7px,1.5dvh,11px) clamp(7px,1vw,12px);background:#17333eb9;border:1px solid #3b5f6d}
+.aa-stats span{font:700 clamp(8px,1.05vw,11px)/1.15 'Droid Sans Mono',monospace;color:#9bbbc3}
+.aa-stats strong{font:900 clamp(18px,3.8dvh,29px)/1.06 'sans-serif-condensed',Roboto,sans-serif;color:#e7f3f4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.aa-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.aa-actions button,.after-action .quick-rematch{position:static!important;left:auto!important;top:auto!important;transform:none!important;display:block;min-height:43px;margin:0;padding:7px 10px;border:1px solid #6a9aab;background:#1b3a46;color:#e9f6f8;border-radius:2px;box-shadow:none;font:850 clamp(12px,1.6vw,17px)/1.1 'sans-serif-condensed',Roboto,sans-serif;letter-spacing:.3px;pointer-events:auto;cursor:pointer}
+.after-action .quick-rematch{background:#64c7d8;border-color:#ade9ed;color:#0b2630}
+.after-action .quick-rematch.hidden{display:none}
+.aa-actions:has(.quick-rematch.hidden){grid-template-columns:1fr}
+.aa-actions button:focus-visible{outline:2px solid #f3dc91;outline-offset:3px}
+.aa-note{margin:clamp(6px,1.3dvh,10px) 0 0;color:#96b7c0;font:700 clamp(9px,1vw,11px)/1.2 'Droid Sans Mono',monospace;letter-spacing:.1px}
+.match-finished .game-hud,.match-finished .battlefield>.touch-zone{display:none!important}
+@media(max-height:380px){
+ .after-action .aa-panel{padding:9px 13px}
+ .after-action h2{font-size:26px;margin-top:5px}
+ .aa-event{margin-bottom:6px}
+ .aa-stats{margin-bottom:7px}
+ .aa-stats>div{padding:6px 8px}
+ .aa-actions button{min-height:39px}
+}
+@media(max-width:600px){
+ .aa-rail span:last-child{display:none}
+ .aa-stats span{font-size:8px}
+ .aa-stats strong{font-size:19px}
+}
+
+/* v0.9.15 release polish: both active after-action choices fill their equal grid cells. */
+.after-action .quick-rematch,.after-action #results-menu{width:100%!important;max-width:none!important}
+
+
+/* v0.9.17: contextual field coach. Light and non-interactive, never a modal. */
+.field-coach{position:absolute;left:50%;top:clamp(84px,22dvh,152px);transform:translateX(-50%);z-index:5;
+ width:max-content;max-width:min(68vw,520px);padding:7px 14px;border:1px solid #76adbbad;
+ background:#102b37e6;box-shadow:0 5px 15px #03111b78;color:#d2edf1;
+ font:800 clamp(10px,1.32vw,13px)/1.35 'Droid Sans Mono',Consolas,monospace;
+ text-align:center;letter-spacing:.28px;pointer-events:none;user-select:none}
+.field-coach.hidden{display:none}
+.game-screen:has(.overlay:not(.hidden)) .field-coach,
+.game-screen.match-finished .field-coach{display:none}
+.game-hud .scorestrip .middle.damaged{border-color:#e49c7e!important;background:#4e292bd9!important;color:#ffe0d3!important}
+.shell-meter.empty{color:#ffbc9b!important;letter-spacing:.35px}
+@media(max-width:760px){.field-coach{top:clamp(70px,21dvh,98px);max-width:59vw;padding:5px 8px;font-size:10px}}
+@media(max-height:380px){.field-coach{top:72px;max-width:54vw;font-size:9px;padding:4px 7px}}
+
+
+/* v0.9.20 / Mobile game lobby. One hero unit, one primary action.
+   All selectors are scoped to .home-screen: settings, pause and LAN unaffected. */
+#menu:has(.home-screen){background:#051019f2;backdrop-filter:blur(5px);padding:clamp(7px,1.7dvh,18px) clamp(8px,2vw,24px)}
+#panel:has(.home-screen){width:min(1200px,100%);max-width:1200px;max-height:calc(100dvh - 16px);height:min(620px,calc(100dvh - 18px));padding:0;overflow:hidden;border:1px solid #365c6b;border-radius:8px;background:#0a1c26;box-shadow:0 12px 48px #000b}
+#panel:has(.home-screen):before,#panel:has(.home-screen):after{display:none}
+.home-screen{display:grid;grid-template-rows:auto minmax(0,1fr) auto;width:100%;height:100%;min-height:0;overflow:hidden;background:radial-gradient(ellipse at 34% 50%,#1a3c48 0%,#0d2631 53%,#091b26 100%);color:#e9f5f6}
+.home-topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:clamp(9px,2.1dvh,18px) clamp(13px,2vw,26px);border-bottom:1px solid #2b4b58;background:#081c26d4}
+.home-brand{display:flex;align-items:center;gap:clamp(9px,1.2vw,18px);min-width:0}
+.home-brand-mark{display:grid;place-items:center;flex:none;width:clamp(31px,5.9dvh,43px);aspect-ratio:1;background:#70c5d4;color:#08212c;border-radius:5px;font:900 clamp(15px,3dvh,25px)/1 'sans-serif-condensed',Roboto,Arial,sans-serif;letter-spacing:-2px}
+.home-overline{display:block;font:700 clamp(8px,1vw,11px)/1.2 monospace;letter-spacing:1.2px;color:#a0bbc4;white-space:nowrap}
+.home-brand h2{font:900 clamp(20px,4.8dvh,38px)/1 'sans-serif-condensed','Arial Narrow',Roboto,sans-serif;letter-spacing:.45px;margin:3px 0 0!important;white-space:nowrap}
+.home-brand h2 span{color:#73cfde}
+.home-utilities{display:flex;align-items:center;gap:clamp(8px,1.7vw,20px);flex:none}
+.home-build{font:700 clamp(8px,1vw,11px)/1.1 monospace;color:#8eafb8;white-space:nowrap}
+#panel .home-utilities button{width:auto;min-height:34px;margin:0;border:1px solid #496b7a;border-radius:4px;padding:7px 13px;color:#d4ebed;background:#193640;font:800 clamp(10px,1.3vw,13px)/1 sans-serif}
+.home-content{min-height:0;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(285px,.92fr);gap:0}
+.home-showcase{min-height:0;display:grid;grid-template-rows:minmax(0,1fr) auto;border-right:1px solid #315262}
+.home-stage{position:relative;min-height:0;overflow:hidden;background:radial-gradient(ellipse at center,#254956 0%,#163340 49%,#0c232f 100%)}
+.home-stage canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+.home-stage-title{position:absolute;bottom:clamp(8px,2dvh,18px);left:clamp(12px,2vw,24px);display:flex;flex-direction:column;align-items:flex-start;gap:2px;pointer-events:none;text-shadow:0 2px 8px #07141c}
+.home-stage-label{font:750 clamp(9px,1.13vw,12px)/1.2 monospace;letter-spacing:1.2px;color:#97bec8}
+.home-stage-title strong{font:900 clamp(19px,4dvh,34px)/1 'sans-serif-condensed',Roboto,Arial,sans-serif;letter-spacing:.4px}
+#panel .home-showcase-caption{display:flex;flex-wrap:wrap;column-gap:7px;align-items:center;min-height:34px;padding:8px clamp(12px,2vw,24px);margin:0;color:#9ed4da;background:#0a202a;font:850 clamp(9px,1.15vw,12px)/1.25 monospace}
+.home-showcase-caption span{color:#87a6b1;font-weight:600}
+.home-actions{display:flex;flex-direction:column;justify-content:center;min-height:0;padding:clamp(11px,2.5dvh,27px) clamp(15px,2.5vw,37px);gap:clamp(7px,1.7dvh,15px)}
+.home-section-label{display:flex;gap:8px;align-items:center;color:#a3c9c7;font:800 clamp(10px,1.18vw,12px)/1.1 monospace;letter-spacing:1px}
+.home-ready-dot{display:inline-block;width:7px;height:7px;flex:none;background:#75d4a8;border-radius:50%;box-shadow:0 0 9px #75d4a84d}
+#panel .home-actions h3{font:900 clamp(24px,5dvh,44px)/.98 'sans-serif-condensed','Arial Narrow',Roboto,sans-serif;margin:0;letter-spacing:.3px;color:#e9f7f8}
+.home-actions h3 span{color:#72d1de}
+#panel .home-description{font:500 clamp(11px,1.45vw,16px)/1.34 system-ui,sans-serif;color:#adc6cf;margin:0;max-width:390px}
+#panel .home-deploy{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:clamp(51px,11dvh,78px);margin:clamp(1px,1dvh,5px) 0 0;padding:8px clamp(11px,1.5vw,20px);background:linear-gradient(110deg,#7bdddf,#55c1d6);color:#071e29;border:1px solid #a8edf2;border-radius:5px;box-shadow:0 4px 0 #286778,0 12px 25px #0006;font:900 clamp(20px,3.5dvh,29px)/1 'sans-serif-condensed',Roboto,sans-serif;letter-spacing:.5px}
+.home-deploy-symbol{font-size:clamp(17px,3dvh,23px)}
+.home-deploy strong{flex:1;text-align:left}
+.home-deploy small{font:750 clamp(9px,1vw,12px)/1.1 monospace;white-space:nowrap;color:#155064}
+.home-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(5px,.8vw,10px)}
+#panel .home-action-grid button{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:3px;min-width:0;min-height:clamp(46px,9dvh,62px);margin:0;padding:8px clamp(7px,1vw,14px);border:1px solid #517783;border-radius:4px;background:#1b3945;color:#e1eff1;box-shadow:none;text-align:left}
+.home-action-grid strong{font:850 clamp(12px,1.6vw,18px)/1.1 'sans-serif-condensed',Roboto,sans-serif}
+.home-action-grid small{font:700 clamp(8px,.95vw,11px)/1.05 monospace;color:#8baeb8}
+.home-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px clamp(13px,2vw,26px);border-top:1px solid #284754;color:#91b1ba;background:#081b25;font:750 clamp(9px,1vw,11px)/1 monospace}
+.home-footer>span:first-child{display:flex;gap:8px;align-items:center;color:#9fd3be}
+@media(max-height:440px){
+  .home-topbar{padding:8px 15px}
+  .home-content{grid-template-columns:minmax(0,1.17fr) minmax(260px,.95fr)}
+  .home-actions{gap:7px;padding:7px 15px}
+  #panel .home-actions h3{font-size:clamp(22px,5.5dvh,31px)}
+  #panel .home-description{font-size:11px;line-height:1.25}
+  #panel .home-deploy{min-height:49px;padding:7px 12px;font-size:20px}
+  #panel .home-action-grid button{min-height:44px;padding:6px 8px}
+  .home-action-grid strong{font-size:12px}
+  .home-footer{padding:6px 14px}
+  #panel .home-showcase-caption{min-height:29px;padding:5px 13px}
+}
+@media(max-width:790px){.home-build{display:none}.home-brand h2{font-size:clamp(18px,4.3dvh,29px)}.home-overline{font-size:8px}}
+@media(max-width:590px) and (orientation:landscape){.home-content{grid-template-columns:1fr 1fr}.home-showcase-caption span{display:none}.home-brand-mark{display:none}.home-actions{gap:5px}}

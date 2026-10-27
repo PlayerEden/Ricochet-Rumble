@@ -1,39 +1,95 @@
-name: Android Test APK # v0.6.3 combat polish
+name: Sector Rebound - full Android and visual QA
 on:
-  workflow_dispatch:
-  push:
+  pull_request:
     branches: [main]
     paths:
       - '.github/workflows/build-apk.yml'
+      - 'web/**'
+      - 'android/**'
+      - 'tests/**'
+      - 'tools/**'
+      - 'game-data/**'
+  workflow_dispatch:
+    inputs:
+      baseline_ref:
+        description: 'Known-good branch/tag for screenshot comparison'
+        required: true
+        default: 'dev/sector-rebound-integrated-v0920'
+        type: string
+
 permissions:
   contents: read
+
 jobs:
-  build:
+  full-qa:
+    # Full Android QA is automatic only for mainline integration branches.
+    # Other PRs use lightweight CI; developers dispatch this manually as needed.
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'integration/')
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
       - name: Install required Android SDK
         run: |
           set -euo pipefail
           SDKMANAGER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
           test -n "$SDKMANAGER"
-          "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0"
-      - uses: gradle/actions/setup-gradle@v4
+          "$SDKMANAGER" --install "platforms;android-36" "build-tools;35.0.0"
+      - name: Run full headless gameplay and asset parity checks
+        run: |
+          set -euo pipefail
+          node tests/smoke.mjs
+          node tools/validate-cosmetic-catalog.mjs
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/index.html android/app/src/main/assets/index.html
+          cmp web/style.css android/app/src/main/assets/style.css
+      - name: Checkout screenshot comparison baseline
+        uses: actions/checkout@v4
         with:
-          gradle-version: '8.9'
-      - name: Run gameplay smoke tests
-        run: node tests/smoke.mjs
-      - name: Build debug APK (no secrets required)
+          ref: ${{ inputs.baseline_ref || 'dev/sector-rebound-integrated-v0920' }}
+          path: visual-baseline
+      - name: Capture actual Chromium before/after scenes
+        run: |
+          set -euo pipefail
+          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          export CHROME_BIN
+          test -n "$CHROME_BIN"
+          npm install --no-save --ignore-scripts playwright-core@1.56.1
+          node tests/visual-qa.mjs
+          node tests/pilot-art-review.mjs
+      - name: Upload visual and simulation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sector-rebound-qa-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            qa-screens/
+            qa-results/combat-simulation.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Build debug Android APK and unsigned release AAB
         working-directory: android
-        run: gradle --no-daemon :app:assembleDebug
-      - uses: actions/upload-artifact@v4
+        run: |
+          gradle --no-daemon :app:assembleDebug
+          gradle --no-daemon :app:bundleRelease
+      - name: Upload unsigned AAB - NOT Play signed
+        uses: actions/upload-artifact@v4
         with:
-          name: ricochet-rumble-0.6.3-debug-apk
+          name: unsigned-aab-NOT-FOR-PLAY-${{ github.run_id }}
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload installable debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk-${{ github.run_id }}
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14

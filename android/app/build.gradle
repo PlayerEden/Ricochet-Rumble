@@ -1,13 +1,13 @@
 plugins { id 'com.android.application' }
 android {
     namespace 'com.playereden.ricochetrumble'
-    compileSdk 35
+    compileSdk 36
     defaultConfig {
         applicationId 'com.playereden.ricochetrumble'
         minSdk 26
-        targetSdk 35
-        versionCode 9
-        versionName '0.6.3'
+        targetSdk 36
+        versionCode 38
+        versionName '0.9.21-game-feel'
     }
     buildTypes {
         release { minifyEnabled false }

@@ -1,0 +1,548 @@
+{
+  "schemaVersion": 1,
+  "catalogVersion": "1.0-draft",
+  "game": "Sector Rebound",
+  "universe": "FIELDGRID",
+  "updated": "2026-10-27",
+  "implementationStatus": "concept_only",
+  "authorizedForRuntime": false,
+  "disclosure": "Three preliminary vector portrait masters exist for style review only; no approved, runtime-selectable, purchasable or billing-linked cosmetics exist.",
+  "designBible": "docs/design/10_PILOT_ICON_BIBLE.md",
+  "roster": "docs/design/11_PILOT_ROSTER_LAUNCH.md",
+  "portraitSpecification": {
+    "masterPx": 512,
+    "aspectRatio": "1:1",
+    "exportPx": [
+      256,
+      128,
+      64
+    ],
+    "actualUiTestPx": [
+      48,
+      32
+    ],
+    "requiresExternalTextOverlay": true
+  },
+  "launchTargets": {
+    "starter": 5,
+    "earned": 3,
+    "premium": 10
+  },
+  "cosmetics": [
+    {
+      "id": "pilot.st.001",
+      "displayName": "Recruit",
+      "category": "starter",
+      "series": "Standard Issue",
+      "design": {
+        "silhouette": "basic dark-slate training helmet and square collar",
+        "primaryPalette": "steel-blue",
+        "accent": "cobalt",
+        "crop": "fixed-bust-3q-right",
+        "lighting": "upper-left-3-value",
+        "background": "fieldgrid-steel-dual-plane"
+      },
+      "acquisition": {
+        "type": "free_immediate"
+      },
+      "art": {
+        "status": "style_review",
+        "sourcePath": "assets/source/pilots/pilot.st.001/pilot.st.001.svg",
+        "approvedExportPath": null,
+        "rightsDocumentPath": null
+      },
+      "gameplayModifiers": [],
+      "selectable": false,
+      "purchasable": false,
+      "billingProductId": null
+    },
+    {
+      "id": "pilot.st.002",
+      "displayName": "Relay",
+      "category": "starter",
+      "series": "Standard Issue",
+      "design": {
+        "silhouette": "adult exposed face, curled hair silhouette and slim radio headset",
+        "primaryPalette": "graphite",
+        "accent": "warm orange",
+        "crop": "fixed-bust-3q-right",
+        "lighting": "upper-left-3-value",
+        "background": "fieldgrid-steel-dual-plane"
+      },
+      "acquisition": {
+        "type": "free_immediate"
+      },
+      "art": {
+        "status": "style_review",
+        "sourcePath": "assets/source/pilots/pilot.st.002/pilot.st.002.svg",
+        "approvedExportPath": null,
+        "rightsDocumentPath": null
+      },
+      "gameplayModifiers": [],
+      "selectable": false,
+      "purchasable": false,
+      "billingProductId": null
+    },
+    {
+      "id": "pilot.st.003",
+      "displayName": "Vector",
+      "category": "starter",
+      "series": "Standard Issue",
+      "design": {
+        "silhouette": "lean faceted visor helmet with teal center split",
+        "primaryPalette": "deep slate",
+        "accent": "teal",
+        "crop": "fixed-bust-3q-right",
+        "lighting": "upper-left-3-value",
+        "background": "fieldgrid-steel-dual-plane"
+      },
+      "acquisition": {
+        "type": "free_immediate"
+      },
+      "art": {
+        "status": "not_created",
+        "sourcePath": null,
+        "approvedExportPath": null,
+        "rightsDocumentPath": null
+      },
+      "gameplayModifiers": [],
+      "selectable": false,
+      "purchasable": false,
+      "billingProductId": null
+    },
+    {
+      "id": "pilot.st.004",
+      "displayName": "Anchor",
+      "category": "starter",
+      "series": "Standard Issue",
+      "design": {
+        "silhouette": "broad tanker shoulders, rounded padded crew cap",
+        "primaryPalette": "olive",
+        "accent": "brass",
+        "crop": "fixed-bust-3q-right",
+        "lighting": "upper-left-3-value",
+        "background": "fieldgrid-steel-dual-plane"
+      },
+      "acquisition": {
+        "type": "free_immediate"
+      },
+      "art": {
+        "status": "not_created",
+        "sourcePath": null,
+        "approvedExportPath": null,
+        "rightsDocumentPath": null
+      },
+      "gameplayModifiers": [],
+      "selectable": false,
+      "purchasable": false,
+      "billingProductId": null
+    },
+    {
+      "id": "pilot.st.005",
+      "displayName": "Signal",
+      "category": "starter",
+      "series": "Standard Issue",
+      "design": {
+        "silhouette": "short-haired visible face with rectangular hearing protection",
+        "primaryPalette": "cool gray",
+        "accent": "cyan",
+        "crop": "fixed-bust-3q-right",
+        "lighting": "upper-left-3-value",
+        "background": "fieldgrid-steel-dual-plane"
+      },
+      "acquisition": {
+        "type": "free_immediate"
+      },
+      "art": {
+        "status": "not_created",
+        "sourcePath": null,
+        "approvedExportPath": null,
+        "rightsDocumentPath": null
+      },
+      "gameplayModifiers": [],
+      "selectable": false,
+      "purchasable": false,
+      "billingProductId": null
+    },
+    {
+      "id": "pilot.er.001",
+      "displayName": "First Responder",
+      "category": "earned",
+      "series": "Support",
+      "design": {
+        "silhouette": "field-orange response collar and compact helmet visor",
+        "primaryPalette": "steel",
+        "accent": "field orange",
+        "crop": "fixed-bust-3q-right",
+        "lighting": "upper-left-3-value",
+        "background": "fieldgrid-steel-dual-plane"
+      },
+      "acquisition": {
+        "type": "earned_stat",
+        "stat": "matches_completed",
+        "threshold": 5,
+        "ruleStatus": "proposal"
+      },
+      "art": {
+        "status": "not_created",
+        "sourcePath": null,
+        "approvedExportPath": null,
+        "rightsDocumentPath": null
+      },
+      "gameplayModifiers": [],
+      "selectable": false,
+      "purchasable": false,
+      "billingProductId": null
+    },
+    {
+      "id": "pilot.er.002",
+      "displayName": "Vehicle Recovery",
+      "category": "earned",
+      "series": "Support",
+      "design": {
+        "silhouette": "utility headset and reinforced boarding rig lanyard",
+        "primaryPalette": "charcoal",
+        "accent": "sage",
+        "crop": "fixed-bust-3q-right",
+        "lighting": "upper-left-3-value",
+        "background": "fieldgrid-steel-dual-plane"
+      },
+      "acquisition": {
+        "type": "earned_stat",
+        "stat": "pilot_vehicle_recoveries",
+        "threshold": 8,
+        "ruleStatus": "proposal"
+      },
+      "art": {
+        "status": "not_created",
+        "sourcePath": null,
+        "approvedExportPath": null,
+        "rightsDocumentPath": null
+      },
+      "gameplayModifiers": [],
+      "selectable": false,
+      "purchasable": false,
+      "billingProductId": null
+    },
+    {
+      "id": "pilot.er.003",
+      "displayName": "Sector Veteran",
+      "category": "earned",
+      "series": "Service",
+      "design": {
+        "silhouette": "sealed slightly worn combat visor with clean sand armor",
+        "primaryPalette": "sand gray",
+        "accent": "ochre",
+        "crop": "fixed-bust-3q-right",
+        "lighting": "upper-left-3-value",
+        "background": "fieldgrid-steel-dual-plane"
+      },
+      "acquisition": {
+        "type": "earned_stat",
+        "stat": "solo_victories",
+        "threshold": 12,
+        "ruleStatus": "proposal"
+      },
+      "art": {
+        "status": "not_created",
+        "sourcePath": null,
+        "approvedExportPath": null,
+        "rightsDocumentPath": null
+      },
+      "gameplayModifiers": [],
+      "selectable": false,
+      "purchasable": false,
+      "billingProductId": null
+    },
+    {
+      "id": "pilot.pr.001",
+      "displayName": "Cold Cell",
+      "category": "premium",
+      "series": "Climate",
+      "design": {
+        "silhouette": "thermal hood and narrow opaque glacier visor",
+        "primaryPalette": "blue charcoal",
+        "accent": "frost blue",
+        "crop": "fixed-bust-3q-right",
+        "lighting": "upper-left-3-value",
+        "background": "fieldgrid-steel-dual-plane"
+      },
+      "acquisition": {
+        "type": "planned_direct_purchase",
+        "fulfillment": "permanent_non_consumable",
+        "skuStatus": "not_registered"
+      },
+      "art": {
+        "status": "style_review",
+        "sourcePath": "assets/source/pilots/pilot.pr.001/pilot.pr.001.svg",
+        "approvedExportPath": null,
+        "rightsDocumentPath": null
+      },
+      "gameplayModifiers": [],
+      "selectable": false,
+      "purchasable": false,
+      "billingProductId": null
+    },
+    {
+      "id": "pilot.pr.002",
+      "displayName": "Redline",
+      "category": "premium",
+      "series": "Test Range",
+      "design": {
+        "silhouette": "angular pilot test helmet and instrument cheek guard",
+        "primaryPalette": "deep slate",
+        "accent": "vermilion",
+        "crop": "fixed-bust-3q-right",
+        "lighting": "upper-left-3-value",
+        "background": "fieldgrid-steel-dual-plane"
+      },
+      "acquisition": {
+        "type": "planned_direct_purchase",
+        "fulfillment": "permanent_non_consumable",
+        "skuStatus": "not_registered"
+      },
+      "art": {
+        "status": "not_created",
+        "sourcePath": null,
+        "approvedExportPath": null,
+        "rightsDocumentPath": null
+      },
+      "gameplayModifiers": [],
+      "selectable": false,
+      "purchasable": false,
+      "billingProductId": null
+    },
+    {
+      "id": "pilot.pr.003",
+      "displayName": "Surveyor",
+      "category": "premium",
+      "series": "Recon",
+      "design": {
+        "silhouette": "credible folding rangefinder mounted on a side hinge",
+        "primaryPalette": "olive gray",
+        "accent": "dust green",
+        "crop": "fixed-bust-3q-right",
+        "lighting": "upper-left-3-value",
+        "background": "fieldgrid-steel-dual-plane"
+      },
+      "acquisition": {
+        "type": "planned_direct_purchase",
+        "fulfillment": "permanent_non_consumable",
+        "skuStatus": "not_registered"
+      },
+      "art": {
+        "status": "not_created",
+        "sourcePath": null,
+        "approvedExportPath": null,
+        "rightsDocumentPath": null
+      },
+      "gameplayModifiers": [],
+      "selectable": false,
+      "purchasable": false,
+      "billingProductId": null
+    },
+    {
+      "id": "pilot.pr.004",
+      "displayName": "Sentinel",
+      "category": "premium",
+      "series": "Armored",
+      "design": {
+        "silhouette": "square jaw-guard and tanker helm with tiny warning panel",
+        "primaryPalette": "iron",
+        "accent": "ochre",
+        "crop": "fixed-bust-3q-right",
+        "lighting": "upper-left-3-value",
+        "background": "fieldgrid-steel-dual-plane"
+      },
+      "acquisition": {
+        "type": "planned_direct_purchase",
+        "fulfillment": "permanent_non_consumable",
+        "skuStatus": "not_registered"
+      },
+      "art": {
+        "status": "not_created",
+        "sourcePath": null,
+        "approvedExportPath": null,
+        "rightsDocumentPath": null
+      },
+      "gameplayModifiers": [],
+      "selectable": false,
+      "purchasable": false,
+      "billingProductId": null
+    },
+    {
+      "id": "pilot.pr.005",
+      "displayName": "Night Relay",
+      "category": "premium",
+      "series": "Recon",
+      "design": {
+        "silhouette": "midnight soft-shell headset and a single emerald comm diode",
+        "primaryPalette": "navy black",
+        "accent": "emerald",
+        "crop": "fixed-bust-3q-right",
+        "lighting": "upper-left-3-value",
+        "background": "fieldgrid-steel-dual-plane"
+      },
+      "acquisition": {
+        "type": "planned_direct_purchase",
+        "fulfillment": "permanent_non_consumable",
+        "skuStatus": "not_registered"
+      },
+      "art": {
+        "status": "not_created",
+        "sourcePath": null,
+        "approvedExportPath": null,
+        "rightsDocumentPath": null
+      },
+      "gameplayModifiers": [],
+      "selectable": false,
+      "purchasable": false,
+      "billingProductId": null
+    },
+    {
+      "id": "pilot.pr.006",
+      "displayName": "Field Engineer",
+      "category": "premium",
+      "series": "Support",
+      "design": {
+        "silhouette": "raised work eye-shield, pragmatic utility collar",
+        "primaryPalette": "blue steel",
+        "accent": "pale silver",
+        "crop": "fixed-bust-3q-right",
+        "lighting": "upper-left-3-value",
+        "background": "fieldgrid-steel-dual-plane"
+      },
+      "acquisition": {
+        "type": "planned_direct_purchase",
+        "fulfillment": "permanent_non_consumable",
+        "skuStatus": "not_registered"
+      },
+      "art": {
+        "status": "not_created",
+        "sourcePath": null,
+        "approvedExportPath": null,
+        "rightsDocumentPath": null
+      },
+      "gameplayModifiers": [],
+      "selectable": false,
+      "purchasable": false,
+      "billingProductId": null
+    },
+    {
+      "id": "pilot.pr.007",
+      "displayName": "Containment",
+      "category": "premium",
+      "series": "HazMat",
+      "design": {
+        "silhouette": "sealed industrial safety hood and fitted amber viewport",
+        "primaryPalette": "graphite",
+        "accent": "amber",
+        "crop": "fixed-bust-3q-right",
+        "lighting": "upper-left-3-value",
+        "background": "fieldgrid-steel-dual-plane"
+      },
+      "acquisition": {
+        "type": "planned_direct_purchase",
+        "fulfillment": "permanent_non_consumable",
+        "skuStatus": "not_registered"
+      },
+      "art": {
+        "status": "not_created",
+        "sourcePath": null,
+        "approvedExportPath": null,
+        "rightsDocumentPath": null
+      },
+      "gameplayModifiers": [],
+      "selectable": false,
+      "purchasable": false,
+      "billingProductId": null
+    },
+    {
+      "id": "pilot.pr.008",
+      "displayName": "Cerulean",
+      "category": "premium",
+      "series": "Prototype",
+      "design": {
+        "silhouette": "angular trial helmet and one satin cyan optic line",
+        "primaryPalette": "indigo gray",
+        "accent": "cyan",
+        "crop": "fixed-bust-3q-right",
+        "lighting": "upper-left-3-value",
+        "background": "fieldgrid-steel-dual-plane"
+      },
+      "acquisition": {
+        "type": "planned_direct_purchase",
+        "fulfillment": "permanent_non_consumable",
+        "skuStatus": "not_registered"
+      },
+      "art": {
+        "status": "not_created",
+        "sourcePath": null,
+        "approvedExportPath": null,
+        "rightsDocumentPath": null
+      },
+      "gameplayModifiers": [],
+      "selectable": false,
+      "purchasable": false,
+      "billingProductId": null
+    },
+    {
+      "id": "pilot.pr.009",
+      "displayName": "Black Cell",
+      "category": "premium",
+      "series": "Security",
+      "design": {
+        "silhouette": "graphite covert helm with short split visor and no skull icon",
+        "primaryPalette": "charcoal",
+        "accent": "ash",
+        "crop": "fixed-bust-3q-right",
+        "lighting": "upper-left-3-value",
+        "background": "fieldgrid-steel-dual-plane"
+      },
+      "acquisition": {
+        "type": "planned_direct_purchase",
+        "fulfillment": "permanent_non_consumable",
+        "skuStatus": "not_registered"
+      },
+      "art": {
+        "status": "not_created",
+        "sourcePath": null,
+        "approvedExportPath": null,
+        "rightsDocumentPath": null
+      },
+      "gameplayModifiers": [],
+      "selectable": false,
+      "purchasable": false,
+      "billingProductId": null
+    },
+    {
+      "id": "pilot.pr.010",
+      "displayName": "Test Pilot",
+      "category": "premium",
+      "series": "Test Range",
+      "design": {
+        "silhouette": "off-white aerodynamic flight cap, clear eye shield",
+        "primaryPalette": "chalk",
+        "accent": "warm gray",
+        "crop": "fixed-bust-3q-right",
+        "lighting": "upper-left-3-value",
+        "background": "fieldgrid-steel-dual-plane"
+      },
+      "acquisition": {
+        "type": "planned_direct_purchase",
+        "fulfillment": "permanent_non_consumable",
+        "skuStatus": "not_registered"
+      },
+      "art": {
+        "status": "not_created",
+        "sourcePath": null,
+        "approvedExportPath": null,
+        "rightsDocumentPath": null
+      },
+      "gameplayModifiers": [],
+      "selectable": false,
+      "purchasable": false,
+      "billingProductId": null
+    }
+  ]
+}

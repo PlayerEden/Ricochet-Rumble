@@ -60,3 +60,6 @@
 The latest handoff remains [PROJECT_STATUS.md](PROJECT_STATUS.md); don't treat this audit as a replacement. The open issues above are the work queue. If a finding is fixed, close its issue with test evidence and update the handoff; don't erase historical audit observations to make them appear as if they never occurred.
 
 **Scope limits:** GitHub reported past test results; this audit did not execute Android on physical hardware, compile code locally, test a two-device connection, or obtain admin-only branch-protection details.
+## Integration remediation checkpoint
+
+**2026-10-27:** Integration candidate `integration/sector-rebound-mainline-v0921` incorporates handoff docs and review templates from historical `main`, adds a concise README and branch register, and proposes CI/release workflow corrections. This is **candidate work, not a merged or Play-approved release**. Track #18 and #19; maintain original audit findings for historical accuracy. Physical Android tests and signing custody remain open.
