@@ -715,7 +715,10 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  c.save();c.translate(t.x,t.y);c.rotate(t.a);
  if(t.onFoot){
    const stride=Math.sin(visualClock*15+i*1.7)*Math.min(3.5,Math.hypot(t.vx,t.vy)/65);
-   drawTopPilot(c,colors[i],t.flash>0,stride,t.recoil||0,Math.sin(visualClock*15+i*1.7)*Math.min(.45,Math.hypot(t.vx,t.vy)/400));c.strokeStyle=colors[i];c.lineWidth=2;c.beginPath();c.arc(0,0,15,0,Math.PI*2);c.stroke();
+   // Readable ground-operator selection: draw a soft, wider locator BEHIND
+   // the helmet, arms and boots. The old solid ring overprinted the human shape.
+   c.strokeStyle=colors[i];c.globalAlpha=.5;c.lineWidth=1.5;c.beginPath();c.arc(0,0,21,0,Math.PI*2);c.stroke();c.globalAlpha=1;
+   drawTopPilot(c,colors[i],t.flash>0,stride,t.recoil||0,Math.sin(visualClock*15+i*1.7)*Math.min(.45,Math.hypot(t.vx,t.vy)/400));
    c.restore();
    if(t.ejectAnim>0){c.save();c.globalAlpha=Math.min(.7,t.ejectAnim/.62);c.strokeStyle='#e5faff';c.lineWidth=2;c.beginPath();c.arc(t.x,t.y,18+(1-t.ejectAnim/.62)*22,0,Math.PI*2);c.stroke();c.restore();}
  }else{
@@ -730,7 +733,7 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  c.fillText(i<state.humanCount?'P'+(i+1):'AI'+(i-state.humanCount+1),t.x+(t.onFoot?27:0),t.y+(t.onFoot?5:-38));
  if(i===(mode==='guest'?1:0)){
   c.beginPath();
-  if(t.onFoot){c.moveTo(t.x,t.y-26);c.lineTo(t.x-6,t.y-36);c.lineTo(t.x+6,t.y-36);}
+  if(t.onFoot){c.moveTo(t.x-21,t.y);c.lineTo(t.x-33,t.y-7);c.lineTo(t.x-33,t.y+7);}
   else{c.moveTo(t.x,t.y-59);c.lineTo(t.x-8,t.y-71);c.lineTo(t.x+8,t.y-71);}
   c.closePath();c.fillStyle='#ffffff';c.fill();
  }}
