@@ -845,7 +845,9 @@ console.log('PASS v0.9.15: after-action stats, result transitions, replay/menu a
  const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
  const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
  assert.ok(html.includes('id="field-coach"')&&css.includes('.field-coach.hidden'),'optional coach has an explicit hidden state');
- assert.ok(html.includes('SYSTEM 0.9.17 / LOCAL'),'menu version should match current build');
+ assert.ok(html.includes('V0.9.20 · LOCAL'),'menu version should match current build');
+ assert.ok(html.includes('id="menu-preview"')&&html.includes('class="home-screen"'),'home menu uses the in-game tank lobby stage');
+ assert.ok(html.includes('data-action="solo"')&&html.includes('data-action="nearby"')&&html.includes('data-action="settings"')&&html.includes('data-action="help"'),'all entry actions retained');
  assert.equal(html,fs.readFileSync(new URL('../android/app/src/main/assets/index.html',import.meta.url),'utf8'),'Android and web menus must remain identical');
  assert.ok(css.includes('.scorestrip .middle.damaged'),'critical armor styling is present');
  click('solo');
