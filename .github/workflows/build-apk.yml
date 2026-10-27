@@ -1,8 +1,8 @@
-name: Android Test APK # Sector Rebound v0.9.20 verified game-first menu, reduced pilot complexity and Android QA
+name: Android Test APK # Sector Rebound v0.9.21 game feel, camera, pilot and synthesized music QA
 on:
   workflow_dispatch:
   push:
-    branches: [dev/sector-rebound-lobby-pilot-v0920]
+    branches: [dev/sector-rebound-polish-v0921]
     paths:
       - '.github/workflows/build-apk.yml'
 permissions:
@@ -31,14 +31,14 @@ jobs:
       - name: Upload combat simulation and spawn fairness report
         uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.20-pacing-qa
+          name: sector-rebound-v0.9.21-pacing-qa
           path: qa-results/combat-simulation.json
           if-no-files-found: error
           retention-days: 14
-      - name: Checkout v0.9.19 pilot visual baseline
+      - name: Checkout v0.9.20 integrated baseline
         uses: actions/checkout@v4
         with:
-          ref: dev/sector-rebound-pilot-silhouette-v0919
+          ref: dev/sector-rebound-integrated-v0920
           path: visual-baseline
       - name: Capture visual before/after QA
         run: |
@@ -56,7 +56,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.20-visual-before-after
+          name: sector-rebound-v0.9.21-visual-before-after
           path: qa-screens/
           if-no-files-found: error
           retention-days: 14
@@ -69,13 +69,13 @@ jobs:
       - name: Upload unsigned release AAB for validation only
         uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.20-unsigned-aab-NOT-FOR-PLAY
+          name: sector-rebound-v0.9.21-unsigned-aab-NOT-FOR-PLAY
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 14
       - uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.20-debug-apk
+          name: sector-rebound-v0.9.21-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
