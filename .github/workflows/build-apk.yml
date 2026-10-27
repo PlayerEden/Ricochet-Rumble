@@ -1,4 +1,4 @@
-name: Android Test APK # Sector Rebound v0.9.20 game-first lobby and minimal pilot visual QA
+name: Android Test APK # Sector Rebound v0.9.20 focused lobby UX and minimal foot pilot visual regression
 on:
   workflow_dispatch:
   push:
