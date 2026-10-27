@@ -1,0 +1,69 @@
+name: Archive v0.9.21 QA evidence to GitHub Release
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-v0921-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: archive-v0921-integration-qa
+  cancel-in-progress: false
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Obtain original successful integration QA screenshots
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh run download 40590979779 --repo "$REPO" --name sector-rebound-qa-40590979779-1 --dir evidence
+          test "$(find evidence -type f -name '*.png' | wc -l)" -ge 6
+          test -f evidence/qa-screens/layout-report.json
+          find evidence -type f | sort | head -50
+      - name: Package complete original QA evidence with provenance
+        run: |
+          set -euo pipefail
+          (
+            cd evidence
+            find . -type f -print0 | sort -z | xargs -0 sha256sum > ../v0921-qa-files-sha256.txt
+            zip -q -r ../v0921-integration-qa-40590979779.zip .
+          )
+          {
+            echo 'Sector Rebound v0.9.21 - original integration QA evidence'
+            echo 'Full successful QA: https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40590979779'
+            echo 'Tested source: 27cc06336b982a6a1569fe5b3c9a00fd641939e0'
+            echo 'Mainline merge: 4372ad95f19eb30256b216a101b16bb529df7980'
+            echo 'Source artifact: sector-rebound-qa-40590979779-1 (artifact ID 12773761847)'
+            echo 'Archive contains genuine before/after Chromium screenshots and available simulation reports.'
+            echo 'Images are from automated browser QA. This is not physical Android or two-device acceptance.'
+            echo 'Attached to an existing v0.9.21 preview page FOR ARCHIVAL ONLY; do not confuse QA SHA with its earlier published APK tag.'
+            echo
+            echo 'Archive SHA-256:'
+            sha256sum v0921-integration-qa-40590979779.zip
+            echo
+            echo 'Individual file SHA-256:'
+            cat v0921-qa-files-sha256.txt
+          } > v0921-integration-qa-MANIFEST.txt
+      - name: Attach unique archival assets without replacing any previous APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          existing="$(gh release view v0.9.21-polish-preview --repo "$REPO" --json assets --jq '.assets[].name')"
+          for asset in v0921-integration-qa-40590979779.zip v0921-integration-qa-MANIFEST.txt; do
+            if grep -Fxq "$asset" <<<"$existing"; then
+              echo "$asset already archived. Refusing to overwrite."
+              continue
+            fi
+            gh release upload v0.9.21-polish-preview "$asset" --repo "$REPO"
+          done
