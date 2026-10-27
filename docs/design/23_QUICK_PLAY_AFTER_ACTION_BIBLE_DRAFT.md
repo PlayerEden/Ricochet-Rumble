@@ -44,6 +44,8 @@ Do not show guessed fields or invented zeros for unimplemented metrics. In a Clo
 
 Never require the Pilot Dossier to exist before implementing post-match flow. If progression is added later, award earned credits/XP with a deduplicated match-completion identifier and clearly labeled offline status; avoid fake cloud sync and payment-derived combat power.
 
+**New sector every round:** NEXT MATCH always requests a fresh validated procedural maze, even when the shuffled playlist chooses the same mode as the previous battle. Do not reset/reuse the exact maze unless explicitly invoked as a debug/private seed replay. See [Procedural Arenas & Tactical Adaptation](24_PROCEDURAL_ARENAS_IDENTITY_DRAFT.md).
+
 ## Playlist algorithm (proposal)
 
 A **shuffled bag** is preferable to naive independent randomness. Each enabled mode appears once per bag cycle in random order; exhausted bags refill from currently enabled modes. If 2+ enabled, avoid immediately repeating the last mode at the boundary between bags. If exactly one selected, repeat that mode with a new maze seed. If no valid mode is enabled, disable Quick Play and point to mode selection.
