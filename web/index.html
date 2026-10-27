@@ -55,19 +55,33 @@
       </div>
     </div>
     <div class="overlay" id="menu">
-      <div class="panel" id="panel" role="dialog" aria-label="Game menu">
-        <div class="terminal-rail" aria-label="Fieldgrid control system"><span class="rail-code">FG<span class="rail-slash">/</span>01</span><span>OPERATIONS TRAINING DIVISION</span><span class="rail-build">SYSTEM 0.9.17 / LOCAL</span></div>
-        <div class="menu-heading"><div class="eyebrow"><span>FIELDGRID // SIMULATION CONTROL</span> <button class="menu-help" data-action="help" aria-label="Read the field manual">FIELD MANUAL</button></div><h2>SECTOR <span>REBOUND</span></h2><p>TACTICAL RESPONSE SIMULATION <span class="menu-heading-mark">/ ACTIVE EXERCISE</span></p></div>
-        <div class="menu-content">
-          <div class="menu-main">
-            
-            <button class="primary" data-action="solo"><span>QUICK PLAY</span><small>01 / SOLO / AI</small></button>
-            <button class="settings-button" data-action="settings"><span>MATCH SETTINGS</span><small>02 / CONFIG</small></button>
-            <button data-action="nearby"><span>PLAY TOGETHER</span><small>03 / LOCAL WI-FI</small></button>
+      <div class="panel" id="panel" role="dialog" aria-label="Sector Rebound game menu">
+        <div class="home-screen">
+          <header class="home-topbar">
+            <div class="home-brand"><span class="home-brand-mark" aria-hidden="true">SR</span><div><span class="home-overline">FIELDGRID / COMBAT SIMULATION</span><h2>SECTOR <span>REBOUND</span></h2></div></div>
+            <div class="home-utilities"><span class="home-build">V0.9.20 · LOCAL</span><button data-action="help" aria-label="How to play Sector Rebound">? <span>HOW TO PLAY</span></button></div>
+          </header>
+          <div class="home-content">
+            <section class="home-showcase" aria-label="Tank preview">
+              <div class="home-stage">
+                <canvas id="menu-preview" width="620" height="320" aria-label="Illustration of an in-game tank in the training arena"></canvas>
+                <div class="home-stage-title"><span class="home-stage-label">FIELD UNIT / 01</span><strong>ARMORED RESPONSE</strong></div>
+              </div>
+              <p class="home-showcase-caption">DRIVE. RICOCHET. SURVIVE. <span>WHEN THE ARMOR FALLS, THE PILOT FIGHTS ON.</span></p>
+            </section>
+            <section class="home-actions" aria-label="Start playing">
+              <span class="home-section-label"><span class="home-ready-dot" aria-hidden="true"></span> READY TO DEPLOY</span>
+              <h3>ENTER THE <span>SECTOR.</span></h3>
+              <p class="home-description">Fast arena battles. Ricochet shots through new mazes every match.</p>
+              <button class="home-deploy primary" data-action="solo"><span class="home-deploy-symbol" aria-hidden="true">▶</span><strong>QUICK PLAY</strong><small>SOLO / AI</small></button>
+              <div class="home-action-grid">
+                <button data-action="nearby"><strong>PLAY TOGETHER</strong><small>LOCAL WI-FI</small></button>
+                <button data-action="settings"><strong>MATCH SETTINGS</strong><small>RULES &amp; CONTROLS</small></button>
+              </div>
+            </section>
           </div>
-          <div class="menu-join"><div class="brief-head"><div class="eyebrow">FIELD BRIEF / 01</div><span class="brief-channel">SIM / LOCAL</span></div><p class="brief-lead">DEPLOY ARMORED.</p><p>If your vehicle fails, fight on foot. Secure an empty tank or mech to re-enter the field.</p><div class="field-ready"><span class="ready-dot" aria-hidden="true"></span><span>FIELDGRID READY</span><span class="ready-tag">LINK / LOCAL</span></div></div>
+          <footer class="home-footer"><span><span class="home-ready-dot" aria-hidden="true"></span> FIELDGRID READY</span><span>LOCAL SIMULATION · NO ACCOUNT REQUIRED</span></footer>
         </div>
-        <div class="terminal-footer" id="menu-note"><span>EXERCISE SIMULATION / FIELDGRID</span><span>ENVIRONMENT <b>● STANDBY</b></span></div>
       </div>
     </div>
     <div class="rotate-prompt" aria-hidden="true"><div class="rotate-symbol">↻</div><strong>ROTATE TO LANDSCAPE</strong><span>Sector Rebound is played sideways.</span></div>
