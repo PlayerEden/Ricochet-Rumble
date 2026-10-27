@@ -40,11 +40,11 @@ Every asset enters with:
 
 ### Suggested path conventions
 
-- \`assets/source/pilots/<id>/\` — editable layered source and documented references
-- \`web/assets/pilots/<id>.webp\` — optimized production icon once approved
-- \`android/app/src/main/assets/assets/pilots/<id>.webp\` — same approved export
-- \`docs/design/reviews/<date>-pilot-contact-sheet.md\` — acceptance notes
-- \`game-data/cosmetics/pilot_icons.v1.json\` — concept data only, not wired to gameplay
+- `assets/source/pilots/<id>/` — editable layered source and documented references
+- `web/assets/pilots/<id>.webp` — optimized production icon once approved
+- `android/app/src/main/assets/assets/pilots/<id>.webp` — same approved export
+- `docs/design/reviews/<date>-pilot-contact-sheet.md` — acceptance notes
+- `game-data/cosmetics/pilot_icons.v1.json` — concept data only, not wired to gameplay
 
 These paths are **future conventions**, not claims that files presently exist.
 
