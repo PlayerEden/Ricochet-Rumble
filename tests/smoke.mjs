@@ -16,7 +16,7 @@ const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},join
 const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(){return null},setItem(){}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(){return []}};
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,collectPickup,spawnPickup,teamOf,botInput,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -642,3 +642,61 @@ console.log('PASS v0.9.14 camera, supply glyphs, recovery waypoints and prior co
  assert.equal(node('power-status').classList.contains('hidden'),true,'eliminated pilot has no lingering HUD buff');
 }
 console.log('PASS v0.9.14 end-of-life powerup state audit.');
+
+// v0.9.15 — test end-screen correctness and optional synthesized audio.
+{
+ const markup=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
+ const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
+ assert.ok(markup.includes('id="after-action"')&&markup.includes('id="results-menu"'));
+ assert.ok(markup.includes('id="aa-kos"')&&markup.includes('id="aa-lives"'));
+ assert.ok(css.includes('v0.9.15 AFTER ACTION')&&css.includes('.after-action.hidden'));
+ assert.ok(!script.includes("fillText('FIELDGRID  /  AFTER ACTION'"),'old canvas-only result was removed');
+ const tones=[];
+ class MockAudioContext{
+  state='running';currentTime=4;
+  resume(){}
+  createOscillator(){
+   tones.push('voice');
+   return {type:'sine',frequency:{setValueAtTime(){},exponentialRampToValueAtTime(){}},connect(){return this},start(){},stop(){}};
+  }
+  createGain(){return {gain:{setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){}},connect(){return this}}}
+  destination={}
+ }
+ win.AudioContext=MockAudioContext;
+ win.__test.comfort.sound=false;
+ assert.equal(win.__test.audioCue('armor-hit'),false,'audio toggle must silence effects');
+ assert.equal(tones.length,0,'mute creates no audio nodes');
+ win.__test.comfort.sound=true;
+ assert.equal(win.__test.audioCue('tank-shot'),true,'weapon cue synthesized offline');
+ assert.equal(win.__test.audioCue('mech-shot'),true,'mech has its own attack timbre');
+ assert.equal(win.__test.audioCue('pilot-shot'),true);
+ assert.equal(win.__test.audioCue('ricochet'),true,'bounce audio available');
+ assert.equal(win.__test.audioCue('ricochet'),false,'bounce cue throttled');
+ assert.equal(win.__test.audioCue('victory'),true,'win receives a short synth motif');
+ assert.ok(tones.length>=8,'short polyphonic stinger generated');
+ assert.equal(win.__test.audioCue('does-not-exist'),false);
+}
+{
+ click('solo');
+ const game=st();game.winner=0;game.winnerTeam=0;game.event='CYAN WINS!';
+ game.kos[0]=2;game.lives[0]=3;
+ win.__test.refreshHUD();
+ assert.equal(node('after-action').classList.contains('hidden'),false,'results surfaced');
+ assert.equal(node('after-action').classList.contains('lost'),false);
+ assert.equal(node('aa-title').textContent,'SECTOR CLEARED');
+ assert.equal(node('aa-kos').textContent,'2','KO metric must be accurately named');
+ assert.equal(node('aa-lives').textContent,'3');
+ assert.equal(node('aa-outcome').textContent,'SUCCESS');
+ assert.equal(node('quick-rematch').classList.contains('hidden'),false);
+ game.winner=1;game.winnerTeam=1;game.event='BOT 1 WINS!';
+ win.__test.refreshHUD();
+ assert.equal(node('aa-title').textContent,'SECTOR LOST');
+ assert.equal(node('after-action').classList.contains('lost'),true,'defeat styling toggles');
+ for(const cb of handlers['quick-rematch:click'])cb();
+ assert.equal(node('after-action').classList.contains('hidden'),true,'report closes on rematch');
+ assert.equal(st().winner,-1);
+ st().winner=1;st().winnerTeam=1;win.__test.refreshHUD();
+ for(const cb of handlers['results-menu:click'])cb();
+ assert.equal(node('menu').classList.contains('hidden'),false,'results menu returns to menu');
+}
+console.log('PASS v0.9.15: after-action stats, result transitions, replay/menu and optional throttled synth cues.');
