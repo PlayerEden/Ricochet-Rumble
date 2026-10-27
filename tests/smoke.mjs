@@ -1227,3 +1227,17 @@ console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real r
  assert.ok(movingLeft.length>=12,'human sprite has separate kit/limb/shading planes');
 }
 console.log('PASS pilot prototype: visible human anatomy, sidearm, gait, canvas balance, fixed pilot camera.');
+
+
+// Prototype A field audit: human silhouette must not be occluded by the
+// previous oversized pilot locator, P1 label and selected-player triangle.
+{
+ const src=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
+ const android=fs.readFileSync(new URL('../android/app/src/main/assets/game.js',import.meta.url),'utf8');
+ assert.equal(src,android,'actual Android pilot art/indicator source mirrors web');
+ assert.ok(src.includes("t.x+(t.onFoot?42:0),t.y+(t.onFoot?-18:-38)"),'on-foot P1 label clears the head');
+ assert.ok(src.includes('c.moveTo(t.x-30,t.y);c.lineTo(t.x-40,t.y-6)'), 'pilot arrow clears the counter-moving boots');
+ assert.ok(src.includes('c.globalAlpha=.28;c.lineWidth=1.2'),'foot locator remains subtle behind anatomy');
+ assert.ok(src.includes("t.onFoot?.42:.8"),'on-foot shield retains readable cue without a massive outline');
+}
+console.log('PASS pilot prototype visibility: label, arrow, shield and locator clear the operator shape.');

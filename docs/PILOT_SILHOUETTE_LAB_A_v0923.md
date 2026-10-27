@@ -24,3 +24,6 @@ Real owner Android screenshots showed the pilot still resembles a technical turr
 
 ## Current dependency
 Draft PR #24 still awaits remaining manual Quick Play results acceptance. Prototype branch is intentionally **not a new stacked merge PR**; upon accepting #24, rebase/cherry-pick only the approved pilot art/test changes onto the integrated mainline. Until then this branch is a safe visual experiment.
+
+## True-phone screenshot audit refinement
+The first 915×412 side-by-side screenshots exposed a real visibility issue: despite the new anatomy, the legacy selection arrow, P1 label and shield ring still crowded the soldier at actual screen size. Lab A now moves the on-foot player pointer left of the boots, the callsign label farther right/up, lightens upper/lower arm surfaces and makes the on-foot ring/shield more subdued. Vehicle pointers, tank/mech shield strokes and their labels remain unchanged. These are **visual-only** adjustments; shield duration/radius, pilot collisions and gameplay effects remain the same. Re-capture screenshots and obtain owner judgment, not a claim that the drawing is fully approved.

@@ -803,11 +803,13 @@ function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
  c.fillStyle='#304e5b';
  c.beginPath();c.moveTo(-4,-11);c.lineTo(4,-13);c.lineTo(11,-8);
  c.lineTo(9,-5);c.lineTo(1,-7);c.lineTo(-3,-7);c.closePath();c.fill();
+ c.fillStyle='#8da8ad';c.fillRect(-4,-12,8,3); // arm catches upper light
  c.fillStyle='#a0b1ae';c.fillRect(7,-8,4,3); // glove
  // Lower arm bends toward an OFFSET hand-held weapon at +Y.
  c.fillStyle='#304e5b';
  c.beginPath();c.moveTo(-4,8);c.lineTo(1,12);c.lineTo(9,10);
  c.lineTo(12,6);c.lineTo(9,3);c.lineTo(4,8);c.closePath();c.fill();
+ c.fillStyle='#8da8ad';c.fillRect(-3,9,8,3); // opposite shoulder highlight
  c.fillStyle='#a0b1ae';c.fillRect(9,6,5,4); // weapon hand
  // Helmet uses a subtle faceted silhouette; square chin/neck and narrow visor.
  // No circular cockpit ring and NO centerline barrel through the face.
@@ -919,7 +921,7 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
    const stride=Math.sin(visualClock*15+i*1.7)*Math.min(3.5,Math.hypot(t.vx,t.vy)/65);
    // Readable ground-operator selection: draw a soft, wider locator BEHIND
    // the helmet, arms and boots. The old solid ring overprinted the human shape.
-   c.strokeStyle=colors[i];c.globalAlpha=.5;c.lineWidth=1.5;c.beginPath();c.arc(0,0,21,0,Math.PI*2);c.stroke();c.globalAlpha=1;
+   c.strokeStyle=colors[i];c.globalAlpha=.28;c.lineWidth=1.2;c.beginPath();c.arc(0,0,21,0,Math.PI*2);c.stroke();c.globalAlpha=1;
    drawTopPilot(c,colors[i],t.flash>0,stride,t.recoil||0,Math.sin(visualClock*15+i*1.7)*Math.min(.45,Math.hypot(t.vx,t.vy)/400));
    c.restore();
    if(t.ejectAnim>0){c.save();c.globalAlpha=Math.min(.7,t.ejectAnim/.62);c.strokeStyle='#e5faff';c.lineWidth=2;c.beginPath();c.arc(t.x,t.y,18+(1-t.ejectAnim/.62)*22,0,Math.PI*2);c.stroke();c.restore();}
@@ -928,14 +930,14 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  (currentVehicle(t)?.type==='mech'?drawTopMech(c,colors[i],false,Math.sin(visualClock*10+i*1.9)*Math.min(3.2,Math.hypot(t.vx,t.vy)/55),t.recoil||0,Math.sin(visualClock*20+i*3.8)*Math.min(.65,Math.hypot(t.vx,t.vy)/320)):drawTopTank(c,colors[i],false,t.trackLeft||0,t.trackRight||0,t.recoil||0,Math.min(1,Math.hypot(t.vx,t.vy)/240)));if(t.flash>0){c.fillStyle='#fff3a0';c.beginPath();c.arc(39,0,8+t.flash*70,0,Math.PI*2);c.fill()}c.restore();
  if(isPilotMatch()){const v=state.vehicles?.[t.vehicleId];if(v){c.fillStyle='#16313b';c.fillRect(t.x-19,t.y+29,38,5);c.fillStyle='#79eab2';c.fillRect(t.x-19,t.y+29,38*v.armor/vehicleDef(v).armor,5);}}}
  if(t.powerType&&t.powerTimer>0&&PICKUPS[t.powerType]){c.fillStyle=PICKUPS[t.powerType].color;c.font='800 10px monospace';c.textAlign='center';c.fillText(PICKUPS[t.powerType].name+' '+Math.ceil(t.powerTimer)+'s',t.x,t.y+49)}
- if(t.shield>0){c.beginPath();c.arc(t.x,t.y,32+Math.sin(t.shield*10)*2,0,Math.PI*2);c.strokeStyle=colors[i];c.globalAlpha=clamp(t.shield/1.8*.8,0,.8);c.lineWidth=3;c.stroke();c.globalAlpha=1}
+ if(t.shield>0){c.beginPath();c.arc(t.x,t.y,32+Math.sin(t.shield*10)*2,0,Math.PI*2);c.strokeStyle=colors[i];c.globalAlpha=clamp(t.shield/1.8*(t.onFoot?.42:.8),0,t.onFoot?.42:.8);c.lineWidth=t.onFoot?1.8:3;c.stroke();c.globalAlpha=1}
  c.fillStyle=colors[i];c.font='bold 13px system-ui';c.textAlign='center';
  // Ground personnel stand close to parked vehicles. Move their label
  // to the side, rather than painting it across the abandoned tank.
- c.fillText(i<state.humanCount?'P'+(i+1):'AI'+(i-state.humanCount+1),t.x+(t.onFoot?27:0),t.y+(t.onFoot?5:-38));
+ c.fillText(i<state.humanCount?'P'+(i+1):'AI'+(i-state.humanCount+1),t.x+(t.onFoot?42:0),t.y+(t.onFoot?-18:-38));
  if(i===(mode==='guest'?1:0)){
   c.beginPath();
-  if(t.onFoot){c.moveTo(t.x-21,t.y);c.lineTo(t.x-33,t.y-7);c.lineTo(t.x-33,t.y+7);}
+  if(t.onFoot){c.moveTo(t.x-30,t.y);c.lineTo(t.x-40,t.y-6);c.lineTo(t.x-40,t.y+6);}
   else{c.moveTo(t.x,t.y-59);c.lineTo(t.x-8,t.y-71);c.lineTo(t.x+8,t.y-71);}
   c.closePath();c.fillStyle='#ffffff';c.fill();
  }}
