@@ -1,4 +1,4 @@
-name: Android Test APK # Sector Rebound v0.9.19 verified overhead pilot and portrait proof QA
+name: Android Test APK # Sector Rebound v0.9.19 final on-foot pilot readability and curated icon QA
 on:
   workflow_dispatch:
   push:
