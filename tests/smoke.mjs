@@ -878,6 +878,8 @@ console.log('PASS v0.9.17 contextual guidance, true projectile availability, one
  const source=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
  assert.equal(source.includes("c.fillText('ENTER  ·  '+vehicleDef(v).name"),false,'dismounted pilot must not be covered by duplicate world enter label');
  assert.ok(source.includes('t.x+(t.onFoot?27:0)'),'on-foot ID is separated from nearby parked armor');
+ assert.ok(source.includes('c.arc(0,0,21,0,Math.PI*2)'),'on-foot locator is a subtle larger background ring');
+ assert.ok(source.includes('c.moveTo(t.x-21,t.y)'),'on-foot chevron points from the side rather than merging with the old vehicle');
  assert.equal(source,fs.readFileSync(new URL('../android/app/src/main/assets/game.js',import.meta.url),'utf8'),'Android and browser share pilot renderer');
 }
 console.log('PASS v0.9.19 on-foot readability, safe parked-vehicle labeling and Android/web parity.');
