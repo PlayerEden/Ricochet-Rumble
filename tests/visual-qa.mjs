@@ -37,6 +37,26 @@ try{
     report.push({version:name,viewport:label,screen:stage,panel,scrollNeeded:!!panel&&panel.scrollHeight>panel.clientHeight+2,canvas,fullBleed});
     await page.screenshot({path:path.join(out,label+'-'+stage+'.png'),animations:'disabled'});
    }
+   if(name==='after'){
+    const home=page.locator('.home-screen');
+    if(!await home.isVisible())throw new Error('Modern game lobby missing at '+label);
+    const deploy=await page.locator('.home-deploy').boundingBox();
+    const actions=await page.locator('.home-action-grid').boundingBox();
+    const stage=await page.locator('#menu-preview').boundingBox();
+    if(!deploy||!actions||!stage||deploy.width<150||deploy.height<43||actions.height<41||stage.height<110)
+      throw new Error('Main lobby lacks readable play target or featured unit at '+label);
+    for(const rect of [deploy,actions,stage]){
+     if(rect.x<0||rect.y<0||rect.x+rect.width>width+1||rect.y+rect.height>height+1)
+      throw new Error('Home lobby control/stage clipped at '+label);
+    }
+    const preview=await page.locator('#menu-preview').evaluate(el=>{
+     const {data}=el.getContext('2d').getImageData(0,0,el.width,el.height);
+     let dark=0,bright=0;
+     for(let i=0;i<data.length;i+=640){if(data[i]<40)dark++;if(data[i]>80)bright++;}
+     return {dark,bright};
+    });
+    if(preview.bright<4)throw new Error('Live tank render missing from home stage at '+label);
+   }
    await shot('home');
    await page.locator('#menu button[data-action="settings"]').click();
    await shot('settings');
