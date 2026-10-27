@@ -7,7 +7,7 @@
 | Branch | Purpose | Status |
 | --- | --- | --- |
 | `main` | Default branch; historical v0.6.3 runtime prior to candidate merge | Protected by review process; reconcile candidate before merge |
-| `integration/sector-rebound-mainline-v0921` | Proposed v0.9.21 source + main handoff docs + reusable CI | New integration candidate; draft PR and checks required |
+| `integration/sector-rebound-mainline-v0921` | Proposed v0.9.21 source + main handoff docs + reusable CI | [Draft PR #23](https://github.com/PlayerEden/Ricochet-Rumble/pull/23); lightweight smoke/design passed on initial head; final checks and manual Android QA still required |
 | `dev/sector-rebound-polish-v0921` | Latest working game-feel branch | Preserve, [draft PR #17](https://github.com/PlayerEden/Ricochet-Rumble/pull/17); [v0.9.21 APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.21-polish-preview) |
 | `dev/sector-rebound-integrated-v0920` | Last pre-polish consolidated checkpoint | Preserve rollback; do not alter |
 | `design/sector-rebound-match-modes-v1` | Match playlists and next-session design | Historical design draft, not shipping code |

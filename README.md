@@ -33,7 +33,7 @@ The repo intentionally keeps browser and Android game files duplicated for offli
 
 ## Branching and history
 
-The original repository name `Ricochet-Rumble` stays intact for GitHub links. `main` was on the older v0.6.3 game before the integration candidate; this proposed mainline update contains v0.9.21 runtime plus the repository handoff documentation. **Do not treat this branch as approved until its draft integration PR passes review.**
+The original repository name `Ricochet-Rumble` stays intact for GitHub links. `main` was on the older v0.6.3 game before the integration candidate; this proposed mainline update contains v0.9.21 runtime plus the repository handoff documentation. **Do not treat this branch as approved until [draft integration PR #23](https://github.com/PlayerEden/Ricochet-Rumble/pull/23) passes review and is merged.**
 
 Original chronological development README: [preserved archive](docs/history/README_DEVELOPMENT_THROUGH_V0921.md). Historical branches, draft PRs, and preview APKs remain available for rollback.
 
