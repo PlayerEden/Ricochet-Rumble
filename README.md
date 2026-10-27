@@ -2,7 +2,7 @@
 
 **Current game development is on a separate branch, not the default `main`.** The legacy Ricochet Rumble code and historical release notes below are retained for provenance. Do not use the v0.6.3 heading below as the current playable version.
 
-**Start here:** [Current status, roadmap and new-chat handoff](docs/PROJECT_STATUS.md) · [Development protocol](docs/DEVELOPMENT_PROTOCOL.md) · [v0.9.21 preview APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.21-polish-preview) · [latest source/draft PR #17](https://github.com/PlayerEden/Ricochet-Rumble/pull/17).
+**Start here:** [Current status, roadmap and new-chat handoff](docs/PROJECT_STATUS.md) · [Development protocol](docs/DEVELOPMENT_PROTOCOL.md) · [GitHub repository audit](docs/GITHUB_AUDIT_2026-10-27.md) · [v0.9.21 preview APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.21-polish-preview) · [latest source/draft PR #17](https://github.com/PlayerEden/Ricochet-Rumble/pull/17).
 
 ---
 
