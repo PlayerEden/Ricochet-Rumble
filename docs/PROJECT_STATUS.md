@@ -5,7 +5,11 @@
 **Purpose:** The first file to read when resuming development, switching chats, or handing work to another contributor.  
 **Maintenance rule:** Update this file **in the same work session** as any new milestone, major decision, release, or changed blocker. Always distinguish tested code from proposed designs.
 
-**Repository health audit (2026-10-27):** [Verified audit & priority tracker](GITHUB_AUDIT_2026-10-27.md). All 28 branches and 17 chained draft PRs remain intact. Follow [mainline integration #18](https://github.com/PlayerEden/Ricochet-Rumble/issues/18), [CI/release process #19](https://github.com/PlayerEden/Ricochet-Rumble/issues/19), [signing custody #20](https://github.com/PlayerEden/Ricochet-Rumble/issues/20), [durable QA evidence #21](https://github.com/PlayerEden/Ricochet-Rumble/issues/21), and [real-phone/LAN testing #22](https://github.com/PlayerEden/Ricochet-Rumble/issues/22). These are **open tasks**, not completed feature changes.\n\n## Start here — exact state
+**Repository health audit (2026-10-27):** [Verified audit & priority tracker](GITHUB_AUDIT_2026-10-27.md). All 28 branches and 17 chained draft PRs remain intact. Follow [mainline integration #18](https://github.com/PlayerEden/Ricochet-Rumble/issues/18), [CI/release process #19](https://github.com/PlayerEden/Ricochet-Rumble/issues/19), [signing custody #20](https://github.com/PlayerEden/Ricochet-Rumble/issues/20), [durable QA evidence #21](https://github.com/PlayerEden/Ricochet-Rumble/issues/21), and [real-phone/LAN testing #22](https://github.com/PlayerEden/Ricochet-Rumble/issues/22). These are **open tasks**, not completed feature changes.
+
+**Active cleanup candidate (2026-10-27):** [Draft integration PR #23](https://github.com/PlayerEden/Ricochet-Rumble/pull/23) combines the v0.9.21 game source, the handoff/audit docs and safe reusable workflows. The lightweight [PR smoke workflow](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40590455874) and [design catalog validation](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40590455818) passed on its original integration head. **It remains draft, unmerged, and not a Google Play release.** Branch: [`integration/sector-rebound-mainline-v0921`](https://github.com/PlayerEden/Ricochet-Rumble/tree/integration/sector-rebound-mainline-v0921). Future changes require revalidation; full Android QA and real-device acceptance are still pending.
+
+## Start here — exact state
 
 | Item | Status |
 | --- | --- |
@@ -86,6 +90,8 @@ These linked documents contain some historical "current v0.9.20" wording: this *
 - GitHub Actions costs should be respected: avoid wasteful full Android builds for documentation-only changes; artifact retention is temporary, GitHub Releases and Git history are longer-lived.
 
 ## Update log
+
+- **2026-10-27:** Opened [draft integration PR #23](https://github.com/PlayerEden/Ricochet-Rumble/pull/23). Reconciled historic main documentation and reviewed v0.9.21 runtime into one mergeable candidate. First lightweight checks passed. No merge into `main` yet.
 
 - **2026-10-27:** Verified draft PR #17, head `dev/sector-rebound-polish-v0921`, v0.9.21 release and successful run; documented pending owner/device acceptance. Established default-branch handoff and next Gate 2 plan. No v0.9.22 gameplay implemented in this documentation pass.
 
