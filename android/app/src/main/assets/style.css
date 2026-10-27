@@ -461,3 +461,6 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  .aa-stats span{font-size:8px}
  .aa-stats strong{font-size:19px}
 }
+
+/* v0.9.15 release polish: both active after-action choices fill their equal grid cells. */
+.after-action .quick-rematch,.after-action #results-menu{width:100%!important;max-width:none!important}
