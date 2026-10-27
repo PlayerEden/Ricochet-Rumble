@@ -7,6 +7,14 @@
 
 This is the permanent source of truth for **future art and interface decisions**. It is intentionally separate from release notes and gameplay implementation. The previous playable branch remains unchanged.
 
+## Current discussion drafts (not implemented)
+
+- [20 — Match Modes & Playlist Bible](20_MATCH_MODES_BIBLE_DRAFT.md): pilot-only close combat, FFA, team deathmatch, capture the flag, elimination, respawns, generated Forward Bays and safe Quick Play selection.
+- [21 — Music & Sound Identity Bible](21_MUSIC_AND_SOUND_BIBLE_DRAFT.md): original synth soundtrack or curated generated loop, offline Android playback and independent music/SFX.
+- [22 — Game Feel & UI Proposals](22_GAME_FEEL_AND_UI_DRAFT.md): remove home filler text, animated actual tank/mech preview, simplify on-foot pilot, slightly wider vehicle-aware camera.
+
+These are **design discussions** with unresolved choices, not production promises or Play Store features. Do not convert estimates into live rules without tested implementation and owner review.
+
 ## Read in this order
 
 1. [00 — Master Visual System](00_FIELDGRID_VISUAL_SYSTEM.md): identity, interface, color, typography, readability.
