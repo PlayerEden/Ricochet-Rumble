@@ -591,6 +591,7 @@ assert.ok(st().pickups.length===1&&st().pickups[0]!==ignored,'ignored supply rot
 assert.ok(st().pickupTimer>12&&st().pickupTimer<14,'new pickup has finite replacement cycle');
 console.log('PASS v0.9.13: unit ammo roles, temporary power capacities, repair, pickup lifecycle and power UI.');
 
+{
 // v0.9.14 — modest zoom-out with unit distinction and readable supply symbols.
 assert.deepEqual(['mech','tank','foot'].map(type=>{
  const actor=st().tanks[0],v=st().vehicles[actor.vehicleId];
@@ -618,3 +619,5 @@ assert.notEqual(chosen?.id,bay.id,'blocked bay does not attract pilot waypoint')
 rival.x=rivalPos[0];rival.y=rivalPos[1];
 assert.equal(win.__test.closestAvailableVehicle(0)?.id,bay.id,'clear bay becomes eligible again');
 console.log('PASS v0.9.14 camera, supply glyphs, recovery waypoints and prior combat regressions.');
+
+}
