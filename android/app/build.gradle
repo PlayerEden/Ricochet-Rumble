@@ -6,8 +6,8 @@ android {
         applicationId 'com.playereden.ricochetrumble'
         minSdk 26
         targetSdk 36
-        versionCode 36
-        versionName '0.9.19-pilot-visual-prototype'
+        versionCode 37
+        versionName '0.9.20-game-lobby'
     }
     buildTypes {
         release { minifyEnabled false }
