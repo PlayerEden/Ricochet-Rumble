@@ -1,3 +1,19 @@
+# Sector Rebound — v0.9.13 Combat Feel and Supply Pass
+
+**Current experimental branch:** `dev/sector-rebound-combat-feel-v0913` · **Android versionCode:** 30
+
+This pass focuses on tactical replayability rather than new modes or paid progression. The tank now uses **4** active shells at the standard setting (fast ricochet pressure), the mech **3** (slower, bigger, more armored) and the pilot **2** (fast and vulnerable). Projectile lifetimes are shorter so holding FIRE is less likely to stall due to distant, still-active rounds. The advanced **TANK SHELL LIMIT** remains configurable, with mech capacity scaled proportionally. The prior settings file format remains compatible.
+
+FIELDGRID supplies now include **RAPID FIRE, TURBO, BARRIER, CAPACITOR, and FIELD REPAIR** with distinctive colors, technical bracketed world markers, short effect durations, and an unobtrusive active power HUD pill. An ignored supply rotates after 13 seconds instead of preventing new pickups indefinitely. Rapid Fire trades shell range for higher sustained output. Field Repair adds one armor plate without replacing a timed buff.
+
+**Verified October 26, 2026:** [Successful gameplay tests, 36 deterministic Chromium screenshots, fullscreen/menu checks and Android APK assembly](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40429858173). Debug APK 74,569 bytes, SHA-256 `c5139784bc73c723ab79fb5642724584c3f7fb0ebee5258e4d60ef1674b0cdf9`. Browser and Android game assets match.
+
+**Not yet claimed:** proven tank-vs-mech win-rate balance, two-physical-phone LAN stability, device-specific Android responsiveness, or long-form session feel. These require actual player sessions. The prior `dev/sector-rebound-camera-v0912a` remains available for rollback.
+
+See [balance rationale and playtest checklist](docs/COMBAT_BALANCE_v0.9.13.md).
+
+---
+
 # Sector Rebound — v0.9.12a Camera Tuning Checkpoint
 
 **Active experimental branch:** `dev/sector-rebound-camera-v0912a` · **Android versionCode:** 29
