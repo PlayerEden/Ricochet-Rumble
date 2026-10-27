@@ -872,3 +872,12 @@ console.log('PASS v0.9.15: after-action stats, result transitions, replay/menu a
  assert.notEqual(node('toast').textContent,oldNotice);
 }
 console.log('PASS v0.9.17 contextual guidance, true projectile availability, one-time quiet-match radar reminder.');
+
+
+{
+ const source=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
+ assert.equal(source.includes("c.fillText('ENTER  ·  '+vehicleDef(v).name"),false,'dismounted pilot must not be covered by duplicate world enter label');
+ assert.ok(source.includes('t.x+(t.onFoot?27:0)'),'on-foot ID is separated from nearby parked armor');
+ assert.equal(source,fs.readFileSync(new URL('../android/app/src/main/assets/game.js',import.meta.url),'utf8'),'Android and browser share pilot renderer');
+}
+console.log('PASS v0.9.19 on-foot readability, safe parked-vehicle labeling and Android/web parity.');
