@@ -58,6 +58,19 @@ try{
     if(preview.bright<4)throw new Error('Live tank render missing from home stage at '+label);
    }
    await shot('home');
+   if(name==='after'&&width===915&&height===412){
+    // Real-time tank -> mech showcase, not a static design mockup.
+    await page.waitForTimeout(8100);
+    const unit=(await page.locator('#home-unit-name').textContent()||'').trim();
+    if(unit!=='MECHANIZED RESPONSE')throw new Error('Showcase did not cycle into mech: '+unit);
+    await shot('home-mech');
+    await page.emulateMedia({reducedMotion:'reduce'});
+    await page.waitForTimeout(200);
+    if((await page.locator('#home-unit-name').textContent()||'').trim()!=='ARMORED RESPONSE')
+     throw new Error('Reduced-motion preview must hold stationary tank');
+    await shot('home-reduced-motion');
+    await page.emulateMedia({reducedMotion:'no-preference'});
+   }
    await page.locator('#menu button[data-action="settings"]').click();
    await shot('settings');
    await page.locator('#menu button[data-action="settings-back"]').click();
