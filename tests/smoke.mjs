@@ -14,9 +14,12 @@ node('bot-count').value='1';node('bullet-cap').value='3';node('lives-choice').va
 let frame=null,tick=0,hostCalled=false,discoverCalled=false,packets=[];
 const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},joinGame(){},stopNetwork(){},sendPacket(p){packets.push(JSON.parse(p))}};
 const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(){return null},setItem(){}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(){return []}};
-const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math,Number,Set,JSON,String};
+let simRand=null;
+const testMath=Object.create(Math);testMath.random=()=>simRand?simRand():Math.random();
+function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5;return(z>>>0)/4294967296;};}
+const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math:testMath,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize='standard',botSkill='normal'){mode='solo';state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:'ffa'},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -700,3 +703,87 @@ console.log('PASS v0.9.14 end-of-life powerup state audit.');
  assert.equal(node('menu').classList.contains('hidden'),false,'results menu returns to menu');
 }
 console.log('PASS v0.9.15: after-action stats, result transitions, replay/menu and optional throttled synth cues.');
+
+
+// v0.9.16 AI behavior regression and reproducible combat/arena telemetry.
+// The synthetic opponent is stationary; these runs diagnose navigation and
+// performance, NOT human-vs-bot balance or player engagement.
+{
+ const match=win.__test.resetSeededMatch(615,'standard','normal');
+ const bot=match.tanks[1],human=match.tanks[0],hull=match.vehicles[bot.vehicleId];
+ match.pickups=[];
+ human.x=Math.max(80,Math.min(win.__test.world[0]-80,bot.x+390));
+ human.y=Math.max(80,Math.min(win.__test.world[1]-80,bot.y+220));
+ hull.armor=1;
+ const supply={x:bot.x+18,y:bot.y+12,type:'repair'};
+ match.pickups=[supply];
+ assert.equal(win.__test.chooseBotObjective(1,human).kind,'supply','damaged bot should notice usable nearby repair');
+ hull.armor=3;supply.type='rapid';bot.powerTimer=0;
+ assert.equal(win.__test.chooseBotObjective(1,human,'normal').kind,'supply','bot can prioritize a nearby powerup');
+ bot.powerType='guard';bot.powerTimer=5;
+ assert.notEqual(win.__test.chooseBotObjective(1,human,'normal').kind,'supply','bot should not casually replace active buff');
+ bot.powerType=null;bot.powerTimer=0;match.pickups=[];
+ bot.onFoot=true;bot.vehicleId=null;hull.occupant=-1;hull.x=bot.x+44;hull.y=bot.y;
+ assert.equal(win.__test.chooseBotObjective(1,human).kind,'recovery','dismounted bot prioritizes a vehicle');
+ hull.occupant=1;bot.onFoot=false;bot.vehicleId=hull.id;
+ match.pickups=[];hull.armor=1;
+ human.x=bot.x+65;human.y=bot.y;
+ const intent=win.__test.chooseBotObjective(1,human);
+ assert.ok(['evade','engage'].includes(intent.kind),'poorly armored bot only evades where a safe space exists');
+ assert.equal(win.__test.botInput(1,1/60).bot,true,'bot control obeys existing input contract');
+}
+{
+ const sizes=['small','standard','large'],skills=['casual','normal','spicy'];
+ const samples=[];
+ let allTravel=0,allShots=0,longestFreeze=0;
+ for(const size of sizes)for(let seed=1;seed<=6;seed++){
+  seedRandom(0x6a19+(seed*127)+sizes.indexOf(size)*521);
+  const skill=skills[(seed-1)%3];
+  const game=win.__test.resetSeededMatch(22000+seed*229+sizes.indexOf(size)*1999,size,skill);
+  const maze=win.__test.maze,{cols,cell,open}=maze;
+  const toCell=t=>Math.max(0,Math.min(maze.rows-1,Math.floor(t.y/cell)))*cols+Math.max(0,Math.min(cols-1,Math.floor(t.x/cell)));
+  const visited=new Set([toCell(game.tanks[0])]),queue=[toCell(game.tanks[0])];
+  for(let a=0;a<queue.length;a++)for(const n of open[queue[a]])if(!visited.has(n)){visited.add(n);queue.push(n);}
+  for(const [i,t] of game.tanks.entries()){
+   assert.ok(!win.__test.blocked(t.x,t.y,t.onFoot?12:21),'safe actor spawn '+size+' seed '+seed+' actor '+i);
+   assert.ok(visited.has(toCell(t)),'spawn cells must all be connected '+size+' seed '+seed);
+  }
+  const bots=game.tanks.slice(1),pos=bots.map(b=>[b.x,b.y]),idle=bots.map(()=>0);
+  let travel=0,shots=0,peakShells=0,steps=0,freeze=0,lastFx=0,choices={supply:0,recovery:0,evade:0,engage:0};
+  for(let frame=0;frame<900&&game.winner<0;frame++){
+   // Sample tactical decisions without changing the simulation.
+   if(frame%30===0)for(let i=1;i<game.tanks.length;i++)if(game.lives[i]>0){
+    const rivals=game.tanks.map((t,j)=>({t,j})).filter(o=>o.j!==i&&game.lives[o.j]>0&&win.__test.teamOf(o.j)!==win.__test.teamOf(i));
+    if(rivals.length){rivals.sort((a,b)=>Math.hypot(a.t.x-game.tanks[i].x,a.t.y-game.tanks[i].y)-Math.hypot(b.t.x-game.tanks[i].x,b.t.y-game.tanks[i].y));
+     const choice=win.__test.chooseBotObjective(i,rivals[0].t,skill).kind;choices[choice]=(choices[choice]||0)+1;}
+   }
+   tick+=1000/60;
+   win.__test.step(1/60);steps++;
+   peakShells=Math.max(peakShells,game.bullets.length);
+   for(const fx of game.fxEvents)if(fx.id>lastFx&&fx.kind==='shot')shots++;
+   lastFx=Math.max(lastFx,...game.fxEvents.map(x=>x.id),0);
+   for(let b=0;b<bots.length;b++){
+    const now=bots[b],dist=Math.hypot(now.x-pos[b][0],now.y-pos[b][1]);
+    if(game.lives[b+1]>0){travel+=dist;idle[b]=dist<.05?idle[b]+1:0;freeze=Math.max(freeze,idle[b]);}
+    pos[b]=[now.x,now.y];
+    assert.ok(Number.isFinite(now.x)&&Number.isFinite(now.y),'no nonfinite actor positions');
+   }
+   assert.ok(game.bullets.length<=game.tanks.length*(game.config.bulletCap+2),'bounded live projectiles');
+  }
+  allTravel+=travel;allShots+=shots;longestFreeze=Math.max(longestFreeze,freeze);
+  samples.push({size,seed:game.mazeSeed,skill,elapsedSeconds:+(steps/60).toFixed(2),completed:game.winner>=0,
+   winner:game.winner,kos:game.kos.slice(),botDistance:+travel.toFixed(1),shots,peakShells,
+   maxBotImmobileSeconds:+(freeze/60).toFixed(2),choices});
+ }
+ assert.equal(samples.length,18);
+ assert.ok(samples.every(x=>x.elapsedSeconds>0));
+ assert.ok(allTravel>2000,'bots must actually navigate sampled maps');
+ const summary={version:'0.9.16',method:'simulated two bots against stationary human; seeded arenas; not a human win-rate study',
+  samples:samples.length,completed:samples.filter(x=>x.completed).length,
+  timedOut:samples.filter(x=>!x.completed).length,averageBotTravel:Math.round(allTravel/samples.length),
+  totalShots:allShots,maxBotImmobileSeconds:+(longestFreeze/60).toFixed(2),sessions:samples};
+ fs.mkdirSync(new URL('../qa-results/',import.meta.url),{recursive:true});
+ fs.writeFileSync(new URL('../qa-results/combat-simulation.json',import.meta.url),JSON.stringify(summary,null,2));
+ console.log('PASS v0.9.16 AI intent, safe-connected spawns and 18 seeded combat samples: '+JSON.stringify({completed:summary.completed,timedOut:summary.timedOut,averageBotTravel:summary.averageBotTravel,maxBotImmobileSeconds:summary.maxBotImmobileSeconds}));
+ simRand=null;
+}
