@@ -1,3 +1,15 @@
+# Sector Rebound — v0.9.11 FIELDGRID Console + Context Camera
+
+**Current experimental branch:** `dev/sector-rebound-fieldgrid-v0911` · **Android versionCode:** 27
+
+The main menu has a distinct, fictional FIELDGRID tactical-simulation terminal style: condensed offline native headings, monospace system metadata, command-module buttons, angled details, and a restrained military/government-institution aesthetic. The game title remains inside the menu and is still removed from live combat. The camera now blends smoothly between on-foot pilot (1.28), tank (1.18) and mech (1.12), with a viewport-dependent minimum and perimeter scenery to avoid empty gutters.
+
+**Verified October 26, 2026:** [Successful Android + Chromium QA run](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40424926749) passed the full gameplay smoke suite, the three tested landscape layouts, Chromium screenshots (36 before/after images), the Android debug APK build and artifact uploads. No home/settings/help overflow at 740×360, 915×412 or 1280×720 in the snapshot report. The previous `dev/sector-rebound-motion-polish-v0910b` remains intact.
+
+**Outstanding release gate:** Android hardware font rendering, camera feel during entering/exiting tanks/mechs, frame pacing, touch safe-areas and two-phone Wi-Fi multiplayer. See [v0.9.11 implementation handoff](docs/FIELDGRID_CONTEXT_CAMERA_v0.9.11.md).
+
+---
+
 # Sector Rebound — v0.9.10b Camera & Motion Polish
 
 **Current experimental branch:** `dev/sector-rebound-motion-polish-v0910b` · **Android versionCode:** 26
