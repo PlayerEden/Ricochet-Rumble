@@ -67,3 +67,6 @@ The actual 915×412 captured dismount shows why art alone cannot fix readability
 - Tank/mech labels and default HUD remain unchanged.
 
 This fixes competing interface layers without hiding vehicle affordance or changing input hit targets. The new CI images include the true dismounted pilot state rather than only the tank-spawn state. Ground-view camera and hitboxes are unmodified.
+
+## Actual-size sprite comparison review
+The first 915×412 crop showed a remaining visual ambiguity: solid cyan shoulder pads and a long light-colored sidearm resembled tank treads and a turret. We reduced the colored pad area to small signals and shortened/narrowed the pistol barrel, preserving the human head, shoulders, two counter-stepping legs and exact original hitbox. Final Android-screen comparison still requires owner confirmation.
