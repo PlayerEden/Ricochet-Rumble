@@ -326,7 +326,7 @@ function step(dt){if(paused||state.winner>=0)return;
  if(state.vehicleBeacon){state.vehicleBeacon.ttl-=dt;if(state.vehicleBeacon.ttl<=0)state.vehicleBeacon=null;}
  state.vehicleDropTimer=(state.vehicleDropTimer??28)-dt;
  if(state.vehicleDropTimer<=0){deployVehicle();state.vehicleDropTimer=30+mazeRandom(deploymentSeed(state.mazeSeed,state.dropIndex+9))()*12;}
- if(state.pickupTimer<=0){spawnPickup();state.pickupTimer=state.pickups.length?15:3;}
+ if(state.pickupTimer<=0){if(state.pickups.length)state.pickups=[];spawnPickup();state.pickupTimer=state.pickups.length?13:3;}
  const inputs=state.tanks.map((t,i)=>i===0?makeControl(true):i===1&&mode==='duel'?makeControl(false):i===1&&mode==='host'?guestInput:botInput(i,dt));
  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]<=0)continue;
  t.powerTimer=Math.max(0,(t.powerTimer||0)-dt);if(t.powerTimer<=0)t.powerType=null;t.flash=Math.max(0,(t.flash||0)-dt);t.recoil=Math.max(0,(t.recoil||0)-dt*6);t.ejectAnim=Math.max(0,(t.ejectAnim||0)-dt);
