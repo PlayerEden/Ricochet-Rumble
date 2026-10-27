@@ -16,6 +16,7 @@
         <span id="round" class="middle" aria-label="Vehicle armor: 3 of 3">TANK · 3/3</span>
         <span class="pink-tag"><strong id="score1">1</strong> <span id="player1-label">ENEMIES</span></span>
       </div>
+      <span id="power-status" class="power-status hidden" aria-live="off"></span>
       <button class="hud-menu" id="menu-button" aria-label="Pause or open game menu"><span aria-hidden="true">☰</span> MENU</button>
     </header>
     <div class="battlefield" aria-label="Fullscreen combat field and overlay touch controls">
@@ -63,7 +64,7 @@
   <details class="extra-rules"><summary>ADVANCED RULES <span>Lives / Shells / Bot skill</span></summary>
     <div class="settings-grid settings-page">
       <label>PILOT LIVES<select id="lives-choice"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>
-      <label>ACTIVE SHELLS<select id="bullet-cap"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="5">5</option><option value="8">8</option></select></label>
+      <label>TANK SHELL LIMIT<select id="bullet-cap"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4 · STANDARD</option><option value="5">5</option><option value="8">8</option></select></label>
       <label>BOT SKILL<select id="bot-skill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>
     </div>
   </details>
