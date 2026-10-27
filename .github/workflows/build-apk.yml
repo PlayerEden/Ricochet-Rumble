@@ -1,4 +1,4 @@
-name: Android Test APK # Sector Rebound v0.9.15 audio effects and after-action QA
+name: Android Test APK # Sector Rebound v0.9.15 verified synthesized audio and match-flow QA
 on:
   workflow_dispatch:
   push:
