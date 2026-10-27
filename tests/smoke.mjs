@@ -303,7 +303,7 @@ console.log('PASS v0.9.8.1: entry clearance, Android asset parity and offline he
  const fs=await import('node:fs');
  const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
  const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
- for(const metadata of ['SOLO / AI','LOCAL WI-FI','FIELD BRIEF / 01','FIELDGRID READY'])
+ for(const metadata of ['SOLO / AI','LOCAL WI-FI','ARMORED RESPONSE','FIELDGRID READY'])
    assert.ok(html.includes(metadata),'missing purposeful action/context label: '+metadata);
  assert.ok(css.includes('.scorestrip .middle.on-foot')&&css.includes('.interact-btn.busy'),'semantic HUD and bay-busy states must have authored styles');
  assert.ok(css.includes('max-width:760px')&&css.includes('max-height:390px'),'responsive phone-landscape thresholds retained');
