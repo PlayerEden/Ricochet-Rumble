@@ -792,7 +792,7 @@ console.log('PASS v0.9.15: after-action stats, result transitions, replay/menu a
  assert.equal(samples.length,18);
  assert.ok(samples.every(x=>x.elapsedSeconds>0));
  assert.ok(allTravel>2000,'bots must actually navigate sampled maps');
- const summary={version:'0.9.16',method:'simulated two bots against stationary human; seeded arenas; not a human win-rate study',
+ const summary={version:'0.9.17',method:'30 seconds per session, two bots against stationary human in seeded arenas; not a human win-rate study',
   samples:samples.length,completed:samples.filter(x=>x.completed).length,
   timedOut:samples.filter(x=>!x.completed).length,averageBotTravel:Math.round(allTravel/samples.length),
   totalShots:allShots,maxBotImmobileSeconds:+(longestFreeze/60).toFixed(2),sessions:samples};
