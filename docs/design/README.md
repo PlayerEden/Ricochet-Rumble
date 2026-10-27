@@ -11,6 +11,12 @@ This is the permanent source of truth for **future art and interface decisions**
 
 **Implementation status note (2026-10-27):** Parts of the Quick Play/After Action design have been implemented and fully automated-QA-tested **only on draft PR #24**, not accepted `main`: two survival presets with local selection/rotation, fresh procedural sectors, honest solo post-match snapshots, and owner-approved camera. Scored CQC/FFA/TDM and LAN playlist replication remain unimplemented. Track actual current status in [Project Status](../PROJECT_STATUS.md) and planning gaps in the [Completeness Audit](../ROADMAP_COMPLETENESS_AUDIT_2026-10-27.md), not in design proposals alone.
 
+## Actual implementation checkpoint — 2026-10-27
+
+The documents in this archive remain **design authorities**, not evidence of features being shipped. However, parts of the older drafts have since been implemented in **unmerged draft [PR #24](https://github.com/PlayerEden/Ricochet-Rumble/pull/24)**: two real survival variants with saved Quick Play selection and NEXT MATCH rotation, a fresh-seed attempt, frozen solo result stats, and owner-approved camera targets (pilot **1.07**, tank **0.82**, mech **0.77**). [Exact full automated QA](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40601021890) passed; [APK test release](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.22-dev5-final-camera-test) is not Play-signed. The current `main` gameplay remains v0.9.21 until PR acceptance/merge.
+
+**Still drafts only:** new pilot silhouette, scored CQC/FFA/TDM, CTF/Elimination, procedural fairness validators, music tracks, cosmetic save/ownership and Google Play purchase/backend features. Earlier prose saying all of 23/24 are unimplemented is a **historical state snapshot**; read the [updated handoff](../PROJECT_STATUS.md) and [plan gap audit](../DEVELOPMENT_PLAN_COVERAGE_AUDIT_2026-10-27.md) for current distinction.
+
 ## Current discussion drafts (not implemented)
 
 - [20 — Match Modes & Playlist Bible](20_MATCH_MODES_BIBLE_DRAFT.md): pilot-only close combat, FFA, team deathmatch, capture the flag, elimination, respawns, generated Forward Bays and safe Quick Play selection.
