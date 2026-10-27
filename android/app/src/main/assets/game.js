@@ -584,59 +584,74 @@ function drawTopMech(c,paint,parked=false,stride=0,recoil=0,bob=0){
  c.restore();
 }
 // Main lobby uses the actual in-game tank renderer. No stock-art background.
-let lobbyDrawClock=0;
+// Live showroom uses actual game renderers — no disconnected asset images.
+let lobbyDrawClock=0,lobbyPreviewClock=0,lobbyLastUnit=-1;
 function drawLobbyPreview(dt){
  const preview=document.getElementById('menu-preview');
  if(!preview?.getContext||menu.classList.contains('hidden'))return;
+ const reduced=!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+ if(!reduced)lobbyPreviewClock+=Math.max(0,dt);
  lobbyDrawClock+=Math.max(0,dt);
  if(lobbyDrawClock<1/24)return;
  lobbyDrawClock=0;
+ const showMech=!reduced&&Math.floor(lobbyPreviewClock/8)%2===1;
+ const index=showMech?1:0;
+ if(index!==lobbyLastUnit){
+  const type=document.getElementById('home-unit-type'),name=document.getElementById('home-unit-name');
+  if(type)type.textContent=showMech?'MECH / FIELD UNIT':'TANK / FIELD UNIT';
+  if(name)name.textContent=showMech?'MECHANIZED RESPONSE':'ARMORED RESPONSE';
+  lobbyLastUnit=index;
+ }
  const c=preview.getContext('2d'),w=preview.width,h=preview.height;
  c.clearRect(0,0,w,h);
  c.fillStyle='#142f3d';c.fillRect(0,0,w,h);
- // The showcase resembles the arena but stays subdued behind the unit.
  c.strokeStyle='#335766';c.lineWidth=2;
  for(let x=17;x<w;x+=78){c.beginPath();c.moveTo(x,0);c.lineTo(x,h);c.stroke()}
  for(let y=22;y<h;y+=78){c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke()}
  c.fillStyle='#203f4c';c.fillRect(0,h*.72,w,17);
  c.fillStyle='#779da7';c.fillRect(0,h*.72,w,3);
- c.save();
- c.translate(w*.51,h*.40);c.rotate(-.26);
+ // Subtle conveyor-like track below the unit, not a strobing UI animation.
+ const phase=reduced?0:lobbyPreviewClock*.6;
+ c.globalAlpha=.25;c.strokeStyle='#81bec7';c.lineWidth=1;
+ c.beginPath();c.arc(w*.5,h*.43,109,0,Math.PI*2);c.stroke();
+ c.globalAlpha=1;
+ c.save();c.translate(w*.51,h*.40);
+ c.rotate(-.25+(reduced?0:Math.sin(phase)*.14));
  c.scale(2.55,2.55);
- // Existing renderer ensures preview matches the installed game unit.
- drawTopTank(c,'#6bcde0',false,0,0,0,0);
+ const amount=!reduced?lobbyPreviewClock:0;
+ if(showMech)drawTopMech(c,'#d5bb77',false,Math.sin(amount*2.3)*1.7,0,Math.sin(amount*3)*.5);
+ else drawTopTank(c,'#6bcde0',false,amount*10,amount*10,0,.38);
  c.restore();
  c.fillStyle='#73c7d6';c.globalAlpha=.4;
  c.fillRect(w*.12,h*.26,55,2);c.fillRect(w*.77,h*.66,47,2);
  c.globalAlpha=1;
 }
 function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
- // Top-down FIELDGRID foot pilot, minimalist on purpose.
- // Three readable parts at phone scale: two legs, torso/arms, round head.
- // Equipment is not a tiny armored vehicle and does not change collisions.
- const gait=clamp(stride,-3,3);
- c.save();c.translate(-recoil*.25,bob);
- // Shadow and two staggered boots. Simple 10x7 silhouettes retain gait QA.
- c.fillStyle='#071822';c.beginPath();c.arc(-5,1,11,0,Math.PI*2);c.fill();
- c.fillStyle='#182f3a';
- c.fillRect(-17+gait,-9,10,7);c.fillRect(-17-gait,3,10,7);
- c.fillStyle='#67808c';c.fillRect(-15+gait,-8,6,3);c.fillRect(-15-gait,4,6,3);
- // Soft torso silhouette under the helmet. One compact chest and color collar.
- c.fillStyle='#2c4652';c.beginPath();c.arc(-5,0,8.5,0,Math.PI*2);c.fill();
- c.fillStyle=paint;c.fillRect(-10,-5,3,10);
- // Arms are short and rounded; avoid tread-like shoulders.
- c.fillStyle='#425e6a';
- c.beginPath();c.arc(-4,-9,4,0,Math.PI*2);c.arc(-4,9,4,0,Math.PI*2);c.fill();
- c.fillStyle=paint;c.fillRect(-5,-12,2,4);c.fillRect(-5,8,2,4);
- // Head sits forward (+X), with one legible visor instead of many panels.
- c.fillStyle='#081c27';c.beginPath();c.arc(2,0,8,0,Math.PI*2);c.fill();
- c.fillStyle='#718f9b';c.beginPath();c.arc(2,0,6.3,0,Math.PI*2);c.fill();
- c.fillStyle='#2b5061';c.fillRect(4,-4,3,8);
- c.fillStyle='#98e0e8';c.fillRect(6,-3,2,6);
- // Tiny sidearm, deliberately subordinate to the head and shoulders.
- c.fillStyle='#122733';c.fillRect(9,-1.8,7,3.6);
- c.fillStyle='#b7d1d3';c.fillRect(13,-1,3,2);
- if(shooting){c.fillStyle='#f9e5a5';c.beginPath();c.arc(18,0,2.5,0,Math.PI*2);c.fill()}
+ // v0.9.21: single clear operator silhouette. Not a robot or mini-tank.
+ // Camera looks straight down. The visor and small pistol face +X.
+ const step=clamp(stride,-3,3);
+ c.save();c.translate(-recoil*.2,bob);
+ // Legs are two visible counter-stepping boots; preserve exact actor hitbox.
+ c.fillStyle='#081923';
+ c.fillRect(-23+step,-8,10,7);c.fillRect(-23-step,2,10,7);
+ c.fillStyle='#465f68';
+ c.fillRect(-21+step,-7,7,5);c.fillRect(-21-step,3,7,5);
+ // Longish jacket body with one color band; head is physically ahead of it.
+ c.fillStyle='#0b202b';c.fillRect(-17,-9,19,18);
+ c.fillStyle='#45636d';c.fillRect(-15,-7,17,14);
+ c.fillStyle=paint;c.fillRect(-15,-6,3,12);
+ // Rounded, low profile arms separate from the torso, no tank-tread slabs.
+ c.fillStyle='#304852';
+ c.beginPath();c.arc(-8,-11,4.5,0,Math.PI*2);c.arc(-8,11,4.5,0,Math.PI*2);c.fill();
+ c.fillStyle='#93adb3';c.fillRect(-6,-13,3,3);c.fillRect(-6,10,3,3);
+ // Forward helmet has a distinct forehead and tiny glass surface.
+ c.fillStyle='#091b26';c.beginPath();c.arc(5,0,8,0,Math.PI*2);c.fill();
+ c.fillStyle='#79939a';c.beginPath();c.arc(5,0,6.4,0,Math.PI*2);c.fill();
+ c.fillStyle='#2d5662';c.fillRect(8,-4,3,8);
+ c.fillStyle='#9fdee3';c.fillRect(10,-3,2,6);
+ // Tiny pistol is secondary to the head, not a second turret.
+ c.fillStyle='#162c36';c.fillRect(13,-1.3,4,3);
+ if(shooting){c.fillStyle='#ffe5ad';c.beginPath();c.arc(19,0,2.4,0,Math.PI*2);c.fill()}
  c.restore();
 }
 // Unit-specific camera language: agile pilot sees a closer view, heavier units
@@ -645,10 +660,11 @@ const CAMERA_APRON=112;
 function unitTargetZoom(t){
  // v0.9.14: a measured four-hundredths zoom-out in each unit state.
  // Keep the unit hierarchy, smoothing and screen-size minimum unchanged.
- if(!t)return 1.24;
- if(t.onFoot)return 1.32;
+ // Approximately 7% wider view, retaining distinct vehicle handling.
+ if(!t)return 1.15;
+ if(t.onFoot)return 1.22;
  const v=currentVehicle(t);
- return v?.type==='mech'?1.16:v?.type==='tank'?1.22:1.24;
+ return v?.type==='mech'?1.08:v?.type==='tank'?1.13:1.15;
 }
 function cameraZoom(t=state?.tanks?.[mode==='guest'?1:0]){
  return mazeGrid?Math.max(unitTargetZoom(t),W/(worldW+CAMERA_APRON*2),H/(worldH+CAMERA_APRON*2)):1;
