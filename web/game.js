@@ -384,12 +384,30 @@ function botInput(i,dt){
   const aheadX=bot.x+Math.cos(direction)*72,aheadY=bot.y+Math.sin(direction)*72;
   if(blocked(aheadX,aheadY,27))direction+=Math.sin(visualClock*.9+i)>0?1.4:-1.4;
  }
- if(brain.stuckFor>.95){
-  // Try the left and right shoulders on alternate stuck intervals. Unlike
-  // applying an arbitrary force, this still respects the usual collisions.
-  const side=((i+Math.floor(brain.stuckFor/.75))%2===0)?1:-1;
-  direction+=side*1.18;
-  if(brain.stuckFor<1.04){brain.timer=0;brain.path=[];brain.goal=-1;}
+ // A short committed sidestep is better than oscillating against a
+ // corridor wall. Probe four cardinal directions using the real collision
+ // geometry; never teleport, increase speed, or phase through another actor.
+ if(brain.stuckFor>.85&&!(brain.escapeFor>0)){
+  const radius=bot.onFoot?10:21;
+  const ahead=44;
+  const options=[0,Math.PI/2,Math.PI,-Math.PI/2].map(a=>{
+   const px=bot.x+Math.cos(a)*ahead,py=bot.y+Math.sin(a)*ahead;
+   const clear=!blocked(px,py,radius)&&state.tanks.every((other,j)=>{
+    if(j===i||state.lives[j]<=0)return true;
+    const threshold=(radius+(other.onFoot?12:21))**2;
+    const prior=(bot.x-other.x)**2+(bot.y-other.y)**2;
+    const next=(px-other.x)**2+(py-other.y)**2;
+    return next>=threshold||(prior<threshold&&next>prior);
+   });
+   const score=Math.hypot(objective.x-px,objective.y-py);
+   return {a,clear,score};
+  }).filter(o=>o.clear).sort((a,b)=>a.score-b.score);
+  if(options.length){brain.escapeHeading=options[0].a;brain.escapeFor=.62;}
+  brain.timer=0;brain.path=[];brain.goal=-1;brain.stuckFor=0;
+ }
+ if(brain.escapeFor>0){
+  direction=brain.escapeHeading;
+  brain.escapeFor=Math.max(0,brain.escapeFor-dt);
  }
  botBrains.set(i,brain);
  const delta=Math.atan2(Math.sin(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a),Math.cos(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a));
