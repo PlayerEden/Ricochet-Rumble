@@ -4,7 +4,7 @@ const PREF_KEY='rr-options-v06'; // Preserve existing options across this patch.
 let comfort={sound:true,shake:false,autoFire:false,leftHanded:false},fixedAccumulator=0;
 let selectedRules={botCount:2,bulletCap:3,startLives:2,teamMode:'ffa',botSkill:'normal',mapSize:'small'};
 // W/H are the camera canvas resolution. Mazes have much larger world coordinates.
-let worldW=W,worldH=H,mazeGrid=null,currentArena=-1,currentSeed=0,currentMapSize='';const camera={x:0,y:0};
+let worldW=W,worldH=H,mazeGrid=null,currentArena=-1,currentSeed=0,currentMapSize='';const camera={x:0,y:0,zoom:null};
 // Spatial buckets keep projectile and bot collision checks local, even in Maze XL.
 const WALL_BUCKET=128;let wallLookup=new Map();
 function rebuildWallLookup(){wallLookup=new Map();for(const w of wallSet){const x0=Math.floor(w.x/WALL_BUCKET),x1=Math.floor((w.x+w.w)/WALL_BUCKET),y0=Math.floor(w.y/WALL_BUCKET),y1=Math.floor((w.y+w.h)/WALL_BUCKET);for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const key=x+','+y;if(!wallLookup.has(key))wallLookup.set(key,[]);wallLookup.get(key).push(w)}}}
@@ -224,8 +224,8 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  const ended=state.winner>=0&&mode!=='idle';if(ended||state.eventTimer>0)toast.classList.remove('visible');document.getElementById('game-screen')?.classList.toggle('match-finished',ended);const replay=document.getElementById('quick-rematch');if(replay)replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));
  const label0=document.getElementById('player0-label');if(label0)label0.textContent='YOU';const label1=document.getElementById('player1-label');if(label1)label1.textContent=mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';if(mode==='solo')document.getElementById('score1').textContent=botLives;}
 function newMatch(which){if(bridgeReady())window.AndroidBridge.stopNetwork();mode=which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;savePrefs();
- const arena=selectArena();state=initialState(arena,{...selectedRules,pilotMode:true});particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();refreshHUD();document.getElementById('mode-label').textContent=which==='solo'?(state.config.botCount===0?'PRACTICE FIELD':'QUICK MATCH'):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'){exitMenu();if(which==='solo')firstMatchHint();}}
-function resetAll(){state=initialState(0,state.config);fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();if(mode!=='guest')notice('NEW FIELD GENERATED — GO!');}
+ const arena=selectArena();state=initialState(arena,{...selectedRules,pilotMode:true});camera.zoom=null;particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();refreshHUD();document.getElementById('mode-label').textContent=which==='solo'?(state.config.botCount===0?'PRACTICE FIELD':'QUICK MATCH'):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'){exitMenu();if(which==='solo')firstMatchHint();}}
+function resetAll(){state=initialState(0,state.config);camera.zoom=null;fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();if(mode!=='guest')notice('NEW FIELD GENERATED — GO!');}
 function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
 function circlesRect(x,y,r,w){const nx=clamp(x,w.x,w.x+w.w),ny=clamp(y,w.y,w.y+w.h);return (x-nx)**2+(y-ny)**2<r*r}
 function blocked(x,y,r=21){return x<r+13||x>worldW-r-13||y<r+13||y>worldH-r-13||nearWall(x,y,r)}
@@ -408,11 +408,27 @@ function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
  if(shooting){c.fillStyle='#ffe5a0';c.beginPath();c.arc(25,0,4,0,Math.PI*2);c.fill()}
  c.restore();
 }
-function cameraZoom(){return mazeGrid?Math.max(1.20,W/(worldW+160),H/(worldH+120)):1;}
+// Unit-specific camera language: agile pilot sees a closer view, heavier units
+// pull back for situational awareness. The apron keeps wide displays covered.
+const CAMERA_APRON=112;
+function unitTargetZoom(t){
+ if(!t)return 1.20;
+ if(t.onFoot)return 1.28;
+ const v=currentVehicle(t);
+ return v?.type==='mech'?1.12:v?.type==='tank'?1.18:1.20;
+}
+function cameraZoom(t=state?.tanks?.[mode==='guest'?1:0]){
+ return mazeGrid?Math.max(unitTargetZoom(t),W/(worldW+CAMERA_APRON*2),H/(worldH+CAMERA_APRON*2)):1;
+}
 function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick>0)c.translate(Math.sin(visualClock*130)*screenKick,Math.cos(visualClock*98)*screenKick*.5);// A 6.25% camera pullback. The perimeter includes a small rendered exterior
  // apron so wide Android screens never reveal blank letterbox gutters.
- const zoom=cameraZoom(),viewW=W/zoom,viewH=H/zoom,me=mode==='guest'?1:0,localTank=state.lives[me]>0?state.tanks[me]:(state.tanks.find((t,i)=>state.lives[i]>0)||state.tanks[me]||state.tanks[0]);
- const apron=mazeGrid?80:0;const desiredX=clamp((localTank?.x||W/2)-viewW/2,-apron,Math.max(-apron,worldW+apron-viewW)),desiredY=clamp((localTank?.y||H/2)-viewH/2,-apron,Math.max(-apron,worldH+apron-viewH));
+ const me=mode==='guest'?1:0,localTank=state.lives[me]>0?state.tanks[me]:(state.tanks.find((t,i)=>state.lives[i]>0)||state.tanks[me]||state.tanks[0]);
+ const zoomTarget=cameraZoom(localTank);
+ if(!Number.isFinite(camera.zoom))camera.zoom=zoomTarget;
+ const zoomFloor=mazeGrid?Math.max(W/(worldW+CAMERA_APRON*2),H/(worldH+CAMERA_APRON*2)):1;
+ camera.zoom=Math.max(zoomFloor,camera.zoom+(zoomTarget-camera.zoom)*(1-Math.exp(-Math.min(.1,Math.max(0,dt))*5.2)));
+ const zoom=camera.zoom,viewW=W/zoom,viewH=H/zoom;
+ const apron=mazeGrid?CAMERA_APRON:0;const desiredX=clamp((localTank?.x||W/2)-viewW/2,-apron,Math.max(-apron,worldW+apron-viewW)),desiredY=clamp((localTank?.y||H/2)-viewH/2,-apron,Math.max(-apron,worldH+apron-viewH));
  const follow=1-Math.exp(-Math.min(.1,dt)*13);camera.x+=(desiredX-camera.x)*follow;camera.y+=(desiredY-camera.y)*follow;if(!mazeGrid){camera.x=0;camera.y=0}
  c.scale(zoom,zoom);c.translate(-camera.x,-camera.y);
  // Paint past the playable perimeter so a small camera pullback remains
