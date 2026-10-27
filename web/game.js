@@ -432,13 +432,16 @@ function registerHit(attacker,victim){if(state.winner>=0||state.lives[victim]<=0
  const active=state.tanks.map((_,i)=>i).filter(i=>state.lives[i]>0),teams=[...new Set(active.map(i=>teamOf(i)))];
  if(teams.length<=1){state.winnerTeam=teams[0]??teamOf(attacker);state.winner=active[0]??attacker;state.event=state.config.teamMode==='coop'?(state.winnerTeam===0?'HUMANS WIN!':'BOTS WIN!'):state.config.teamMode==='teams'?(`TEAM ${state.winnerTeam===0?'BLUE':'RED'} WINS!`):(label(state.winner)+' WINS!');state.eventTimer=0;}}
  refreshHUD();return true;}
-function step(dt){if(paused||state.winner>=0)return;
- // A single nonintrusive hint if solo combat goes quiet for a long time.
- // No enemy locations, AI power, time limit, or network packets are changed.
+// Reassurance only: the minimap already shows contacts, and the reminder
+// cannot reveal enemies, change AI, or fire in multiplayer.
+function updateQuietMatchPrompt(dt){
  if(mode==='solo'&&!radarReminderShown&&state.config.botCount>0&&state.lives[0]>0&&menu.classList.contains('hidden')){
-  quietContactSeconds+=dt;
+  quietContactSeconds+=Math.max(0,dt);
   if(quietContactSeconds>=28){radarReminderShown=true;notice('CONTACT SEARCH · CHECK THE RADAR',2500);}
  }
+}
+function step(dt){if(paused||state.winner>=0)return;
+ updateQuietMatchPrompt(dt);
  if(isPilotMatch())for(const vehicle of state.vehicles){
    if(vehicle.occupant>=0){const t=state.tanks[vehicle.occupant];vehicle.x=t.x;vehicle.y=t.y;vehicle.a=t.a;}
    else if(vehicle.armor<=0){vehicle.respawn-=dt;if(vehicle.respawn<=0){const others=state.vehicles.filter(v=>v.id!==vehicle.id&&v.armor>0);
