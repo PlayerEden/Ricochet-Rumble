@@ -1,8 +1,8 @@
-name: Android Test APK # Sector Rebound v0.9.16 corrected actor separation and deterministic battle QA
+name: Android Test APK # Sector Rebound v0.9.17 match readability and 30-second pacing QA
 on:
   workflow_dispatch:
   push:
-    branches: [dev/sector-rebound-combat-intelligence-v0916]
+    branches: [dev/sector-rebound-match-flow-v0917]
     paths:
       - '.github/workflows/build-apk.yml'
 permissions:
@@ -31,14 +31,14 @@ jobs:
       - name: Upload combat simulation and spawn fairness report
         uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.16-balance-qa
+          name: sector-rebound-v0.9.17-pacing-qa
           path: qa-results/combat-simulation.json
           if-no-files-found: error
           retention-days: 14
-      - name: Checkout v0.9.15 visual baseline
+      - name: Checkout v0.9.16 visual baseline
         uses: actions/checkout@v4
         with:
-          ref: dev/sector-rebound-feedback-v0915
+          ref: dev/sector-rebound-combat-intelligence-v0916
           path: visual-baseline
       - name: Capture visual before/after QA
         run: |
@@ -52,7 +52,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.16-visual-before-after
+          name: sector-rebound-v0.9.17-visual-before-after
           path: qa-screens/
           if-no-files-found: error
           retention-days: 14
@@ -61,7 +61,7 @@ jobs:
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.16-debug-apk
+          name: sector-rebound-v0.9.17-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
