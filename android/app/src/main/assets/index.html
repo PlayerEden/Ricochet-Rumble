@@ -28,7 +28,24 @@
       </div>
       <section class="arena-wrap" aria-label="Game field">
         <canvas id="arena" width="960" height="600" aria-label="Top-down pilot and vehicle arena"></canvas>
-        <div id="toast" class="toast" role="status" aria-live="polite"></div><button id="quick-rematch" class="quick-rematch hidden" type="button" aria-label="Play another match in a newly generated maze">↻ PLAY AGAIN</button>
+        <div id="toast" class="toast" role="status" aria-live="polite"></div>
+        <section id="after-action" class="after-action hidden" aria-label="After-action match report">
+          <div class="aa-panel">
+            <div class="aa-rail"><span>FIELDGRID // OPERATIONS</span><span>AFTER ACTION / 01</span></div>
+            <h2 id="aa-title">SECTOR CLEARED</h2>
+            <p id="aa-event" class="aa-event">EXERCISE COMPLETE</p>
+            <div class="aa-stats">
+              <div><span>OPERATOR KOs</span><strong id="aa-kos">0</strong></div>
+              <div><span>LIVES REMAINING</span><strong id="aa-lives">0</strong></div>
+              <div><span>FINAL STATUS</span><strong id="aa-outcome">CLEARED</strong></div>
+            </div>
+            <div class="aa-actions">
+              <button id="quick-rematch" class="quick-rematch hidden" type="button" aria-label="Start a new match in a newly generated maze">↻ NEW SECTOR</button>
+              <button id="results-menu" type="button">MAIN MENU</button>
+            </div>
+            <p id="aa-note" class="aa-note">NEW PROCEDURAL SECTOR AVAILABLE</p>
+          </div>
+        </section>
       </section>
       <div class="touch-zone touch-right overlay-control" aria-label="Fire control">
         <button class="interact-btn hidden" id="interact-btn" aria-label="Enter or exit a nearby vehicle">ENTER</button>
