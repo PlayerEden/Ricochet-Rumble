@@ -1009,5 +1009,19 @@ console.log('PASS v0.9.22 Slice A versioned playlist selection, shuffle-bag boun
  assert.equal(next.deaths[0],1);
  assert.equal(next.respawns[0],1);
  assert.equal(next.winner,-1,'losing one life does not end match');
+ api.newMatch('solo');
+ const loss=st();assert.equal(loss.finalResult,null,'starting another match cannot inherit prior result');
+ loss.tanks[0].onFoot=true;loss.tanks[0].shield=0;loss.lives[0]=1;
+ assert.equal(api.registerHit(1,0),true,'last pilot life lost');
+ assert.equal(loss.winner>=0,true);
+ assert.equal(loss.finalResult.outcome,'defeat','defeat snapshot uses real surviving opponent');
+ assert.equal(loss.finalResult.deaths,1);
+ assert.equal(loss.finalResult.operatorKOs,0);
+ assert.equal(loss.finalResult.livesRemaining,0);
+ assert.equal(node('aa-outcome').textContent,'DEFEAT');
+ assert.equal(node('aa-deaths').textContent,'1');
+ const ended=loss.finalResult;
+ api.refreshHUD();api.refreshHUD();
+ assert.equal(loss.finalResult,ended,'repeated results refresh keeps one immutable object');
 }
-console.log('PASS v0.9.22-dev2 frozen final results, pilot deaths/respawns and active match clock.');
+console.log('PASS v0.9.22-dev2 frozen final results, win/loss, pilot deaths/respawns and active match clock.');
