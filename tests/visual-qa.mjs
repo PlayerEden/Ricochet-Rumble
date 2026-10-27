@@ -60,6 +60,16 @@ try{
    await page.waitForTimeout(520);
    await shot('moving-tank');
    await page.keyboard.up('d');
+   // Real on-foot character view, using actual game enter/exit controls.
+   await page.locator('#interact-btn').click();
+   await page.waitForTimeout(100);
+   if(name==='after'&&(await page.locator('#interact-btn').textContent()||'').includes('EXIT'))
+     throw new Error('Pilot did not dismount at '+label);
+   await shot('on-foot-idle');
+   await page.keyboard.down('w');
+   await page.waitForTimeout(280);
+   await shot('on-foot-walking');
+   await page.keyboard.up('w');
    await page.locator('#menu-button').click();
    await shot('pause');
    if(name==='after'){
