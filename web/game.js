@@ -266,7 +266,18 @@ function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=c
  const speed=(t.onFoot?(inp.bot?194:268):(inp.bot?178:222)*vehicleDef(currentVehicle(t)).speed)*(t.powerType==='turbo'&&t.powerTimer>0?1.48:1),blend=Math.min(1,dt*(mag?9:13));t.vx+=(mx*speed-t.vx)*blend;t.vy+=(my*speed-t.vy)*blend;
  if(mag){const target=Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a));t.a+=clamp(diff,-dt*12,dt*12)}
  const nx=t.x+t.vx*dt,ny=t.y+t.vy*dt;
- const radius=t.onFoot?10:21;const collides=(x,y)=>blocked(x,y,radius)||state.tanks.some((other,j)=>i!==j&&state.lives[j]>0&&(other.x-x)**2+(other.y-y)**2<(radius+(other.onFoot?12:21))**2);
+ const radius=t.onFoot?10:21;
+ const collides=(x,y)=>blocked(x,y,radius)||state.tanks.some((other,j)=>{
+  if(i===j||state.lives[j]<=0)return false;
+  const limit=(radius+(other.onFoot?12:21))**2;
+  const nextDist=(other.x-x)**2+(other.y-y)**2;
+  if(nextDist>=limit)return false;
+  const priorDist=(other.x-t.x)**2+(other.y-t.y)**2;
+  // Existing overlap may occur after spawns/ejections or network corrections.
+  // Let an actor move strictly AWAY from an overlap, never farther into it.
+  // Without this exception both actors can stay collision-locked indefinitely.
+  return !(priorDist<limit&&nextDist>priorDist+0.0001);
+ });
  if(!collides(nx,t.y))t.x=nx;else t.vx=0;
  if(!collides(t.x,ny))t.y=ny;else t.vy=0;
  // Differential track travel: turning rotates the two tread belts at different
