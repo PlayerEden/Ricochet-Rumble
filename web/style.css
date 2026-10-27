@@ -416,3 +416,9 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  .terminal-footer span:first-child{display:none}
  .terminal-footer{justify-content:flex-end}
 }
+
+
+/* v0.9.13 | Active FIELDGRID supply signal, only present while buffed. */
+.power-status{position:absolute;top:max(51px,calc(env(safe-area-inset-top) + 51px));left:50%;transform:translateX(-50%);max-width:38vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;z-index:7;padding:4px 12px;border:1px solid #6bafba;border-radius:3px;background:#0b2935d9;color:#e6f6f5;font:800 clamp(9px,1.2vw,12px)/1.2 'Droid Sans Mono',monospace;letter-spacing:.5px;text-shadow:0 1px 3px #071820;pointer-events:none}
+.power-status.hidden{display:none}
+@media(max-width:760px){.power-status{top:max(46px,calc(env(safe-area-inset-top) + 46px));max-width:35vw;font-size:9px;padding:3px 6px}}
