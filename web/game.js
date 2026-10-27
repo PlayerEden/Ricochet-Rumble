@@ -416,12 +416,12 @@ function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
 // pull back for situational awareness. The apron keeps wide displays covered.
 const CAMERA_APRON=112;
 function unitTargetZoom(t){
- // Small ~3–4% closer field of view for every state, preserving their
- // relative hierarchy and the smooth enter/exit transitions.
- if(!t)return 1.24;
- if(t.onFoot)return 1.32;
+ // v0.9.12a: another subtle zoom-in, keeping relative unit awareness
+ // and the same camera easing, safe-area handling, and world overscan.
+ if(!t)return 1.28;
+ if(t.onFoot)return 1.36;
  const v=currentVehicle(t);
- return v?.type==='mech'?1.16:v?.type==='tank'?1.22:1.24;
+ return v?.type==='mech'?1.20:v?.type==='tank'?1.26:1.28;
 }
 function cameraZoom(t=state?.tanks?.[mode==='guest'?1:0]){
  return mazeGrid?Math.max(unitTargetZoom(t),W/(worldW+CAMERA_APRON*2),H/(worldH+CAMERA_APRON*2)):1;
