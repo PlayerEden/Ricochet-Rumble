@@ -1,8 +1,8 @@
-name: Android Test APK # Sector Rebound v0.9.11 terminal and contextual camera QA
+name: Android Test APK # Sector Rebound v0.9.12 closer camera and reliability audit
 on:
   workflow_dispatch:
   push:
-    branches: [dev/sector-rebound-fieldgrid-v0911]
+    branches: [dev/sector-rebound-qa-v0912]
     paths:
       - '.github/workflows/build-apk.yml'
 permissions:
@@ -28,10 +28,10 @@ jobs:
           gradle-version: '8.9'
       - name: Run gameplay smoke tests
         run: node tests/smoke.mjs
-      - name: Checkout v0.9.10b visual baseline
+      - name: Checkout v0.9.11 visual baseline
         uses: actions/checkout@v4
         with:
-          ref: dev/sector-rebound-motion-polish-v0910b
+          ref: dev/sector-rebound-fieldgrid-v0911
           path: visual-baseline
       - name: Capture visual before/after QA
         continue-on-error: true
@@ -46,7 +46,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.11-visual-before-after
+          name: sector-rebound-v0.9.12-visual-before-after
           path: qa-screens/
           if-no-files-found: warn
           retention-days: 14
@@ -55,7 +55,7 @@ jobs:
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.11-debug-apk
+          name: sector-rebound-v0.9.12-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
