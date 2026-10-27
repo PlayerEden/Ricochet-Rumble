@@ -1,7 +1,8 @@
 # Sector Rebound — Roadmap to Google Play v1.0
 
 **Planning checkpoint:** 2026-10-27  
-**Status:** Ordered development plan for review, **not a record of implemented features**.  
+**Status:** Ordered development plan for review, **not a record of implemented features**.
+**Completeness / missing gates:** [Prioritized roadmap audit and launch decisions (2026-10-27)](ROADMAP_COMPLETENESS_AUDIT_2026-10-27.md) — tracks first-run onboarding, testable fairness/bot targets, durable saves, Play/signing/license and exact v1 scope, without inflating the active feature list.  
 **Current playable reference:** [v0.9.21 game-feel preview](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.21-polish-preview) (automated QA passed; owner phone acceptance outstanding).  
 **Design references:** [Mode Bible](design/20_MATCH_MODES_BIBLE_DRAFT.md), [After-Action Bible](design/23_QUICK_PLAY_AFTER_ACTION_BIBLE_DRAFT.md), [Procedural Arena Identity](design/24_PROCEDURAL_ARENAS_IDENTITY_DRAFT.md), [Music Bible](design/21_MUSIC_AND_SOUND_BIBLE_DRAFT.md), [Pilot Icon Bible](design/10_PILOT_ICON_BIBLE.md), [Play foundation](PLAY_LAUNCH_v0.9.18.md).
 
