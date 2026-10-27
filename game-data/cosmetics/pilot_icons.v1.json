@@ -6,7 +6,7 @@
   "updated": "2026-10-27",
   "implementationStatus": "concept_only",
   "authorizedForRuntime": false,
-  "disclosure": "No art files, Play Billing SKUs, unlock entitlements or purchasable items are implemented by this catalog.",
+  "disclosure": "Three preliminary vector portrait masters exist for style review only; no approved, runtime-selectable, purchasable or billing-linked cosmetics exist.",
   "designBible": "docs/design/10_PILOT_ICON_BIBLE.md",
   "roster": "docs/design/11_PILOT_ROSTER_LAUNCH.md",
   "portraitSpecification": {
@@ -46,8 +46,8 @@
         "type": "free_immediate"
       },
       "art": {
-        "status": "not_created",
-        "sourcePath": null,
+        "status": "style_review",
+        "sourcePath": "assets/source/pilots/pilot.st.001/pilot.st.001.svg",
         "approvedExportPath": null,
         "rightsDocumentPath": null
       },
@@ -73,8 +73,8 @@
         "type": "free_immediate"
       },
       "art": {
-        "status": "not_created",
-        "sourcePath": null,
+        "status": "style_review",
+        "sourcePath": "assets/source/pilots/pilot.st.002/pilot.st.002.svg",
         "approvedExportPath": null,
         "rightsDocumentPath": null
       },
@@ -273,8 +273,8 @@
         "skuStatus": "not_registered"
       },
       "art": {
-        "status": "not_created",
-        "sourcePath": null,
+        "status": "style_review",
+        "sourcePath": "assets/source/pilots/pilot.pr.001/pilot.pr.001.svg",
         "approvedExportPath": null,
         "rightsDocumentPath": null
       },
