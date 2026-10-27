@@ -19,7 +19,7 @@ const testMath=Object.create(Math);testMath.random=()=>simRand?simRand():Math.ra
 function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5;return(z>>>0)/4294967296;};}
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math:testMath,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -750,7 +750,7 @@ console.log('PASS v0.9.15: after-action stats, result transitions, replay/menu a
   }
   const bots=game.tanks.slice(1),pos=bots.map(b=>[b.x,b.y]),idle=bots.map(()=>0);
   let travel=0,shots=0,peakShells=0,steps=0,freeze=0,lastFx=0,longestStall=null,choices={supply:0,recovery:0,evade:0,engage:0};
-  for(let frame=0;frame<900&&game.winner<0;frame++){
+  for(let frame=0;frame<1800&&game.winner<0;frame++){
    // Sample tactical decisions without changing the simulation.
    if(frame%30===0)for(let i=1;i<game.tanks.length;i++)if(game.lives[i]>0){
     const rivals=game.tanks.map((t,j)=>({t,j})).filter(o=>o.j!==i&&game.lives[o.j]>0&&win.__test.teamOf(o.j)!==win.__test.teamOf(i));
@@ -825,3 +825,34 @@ console.log('PASS v0.9.15: after-action stats, result transitions, replay/menu a
  assert.ok(moving.x<=spot[0]+.00001,'collision still prevents greater penetration');
  console.log('PASS v0.9.16: separate pre-overlapped actors without introducing new actor clipping.');
 }
+
+// v0.9.17: First-match assistance and honest shell/reload status.
+{
+ const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
+ const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
+ assert.ok(html.includes('id="field-coach"')&&css.includes('.field-coach.hidden'),'optional coach has an explicit hidden state');
+ assert.ok(css.includes('.scorestrip .middle.damaged'),'critical armor styling is present');
+ click('solo');
+ const coach=node('field-coach');
+ assert.equal(coach.classList.contains('hidden'),false,'initial controls explained without blocking play');
+ assert.ok(coach.textContent.includes('HOLD FIRE'));
+ win.__test.coachTip('PILOT TEST',.05);
+ assert.equal(coach.textContent,'PILOT TEST');
+ runFrames(6);
+ assert.equal(coach.classList.contains('hidden'),true,'contextual hint expires');
+ const subject=st().tanks[0];
+ subject.shield=100;
+ st().bullets.length=0;
+ const cap=win.__test.activeBulletCap(subject);
+ for(let i=0;i<cap;i++)assert.equal(win.__test.shoot(0),true);
+ assert.ok(node('shell-meter').textContent.includes('IN FLIGHT'),'full projectile cap is not mislabeled as ammunition');
+ st().bullets.length=0;win.__test.refreshHUD();
+ assert.ok(node('shell-meter').textContent.includes('READY'),'shells are available after expiration');
+ const oldNotice=node('toast').textContent;
+ win.__test.updateQuietMatchPrompt(28.5);
+ assert.ok(node('toast').textContent.includes('RADAR'),'inactive combat suggests existing radar');
+ win.__test.updateQuietMatchPrompt(50);
+ assert.ok(node('toast').textContent.includes('RADAR'),'quiet prompt is one-time');
+ assert.notEqual(node('toast').textContent,oldNotice);
+}
+console.log('PASS v0.9.17 contextual guidance, true projectile availability, one-time quiet-match radar reminder.');
