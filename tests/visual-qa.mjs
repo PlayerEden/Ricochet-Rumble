@@ -32,6 +32,8 @@ try{
     const canvas=await page.locator('#arena').boundingBox();
     const fullBleed=!!canvas&&Math.abs(canvas.x)<2&&Math.abs(canvas.y)<2&&Math.abs(canvas.width-width)<2&&Math.abs(canvas.height-height)<2;
     if(name==='after'&&['arena','moving-tank'].includes(stage)&&!fullBleed)throw new Error('Fullscreen arena regression at '+label+' / '+stage);
+    if(name==='after'&&['home','settings'].includes(stage)&&panel&&panel.scrollHeight>panel.clientHeight+2)
+      throw new Error('Unexpected primary-menu scrolling at '+label+' / '+stage);
     report.push({version:name,viewport:label,screen:stage,panel,scrollNeeded:!!panel&&panel.scrollHeight>panel.clientHeight+2,canvas,fullBleed});
     await page.screenshot({path:path.join(out,label+'-'+stage+'.png'),animations:'disabled'});
    }
