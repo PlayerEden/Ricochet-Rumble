@@ -20,3 +20,9 @@
 - Update shared browser and Android `game.js` byte-identically. Inherited camera regressions must use the updated targets and apron geometry, not just be bypassed.
 - QA: node smoke suite, visual screenshots 740×360 / 915×412 / 1280×720 and debug APK compilation. **Real physical Android feel/visibility must be reported by owner** before merging PR #24.
 - Keep known-good v0.9.21 `main` / preserved v0.9.22-dev2 APK release; branch PR #24 remains draft.
+
+## Art research checkpoint
+- [Nuclear Throne](https://nuclearthrone.com/) shows why tiny characters need a bold head/torso/weapon silhouette despite visually busy combat.
+- [Enter the Gungeon](https://www.enterthegungeon.com/) provides a useful reference for directional stance and leg/weapon separation in overhead arcade play.
+- [Door Kickers 2](https://inthekillhouse.com/doorkickers2/) illustrates readable operator orientation from a much more tactical scale; use the principle, not its game assets.
+- Tracked dedicated **original art** pass in [issue #26](https://github.com/PlayerEden/Ricochet-Rumble/issues/26). Never copy reference sprite assets or tune UI and pilot geometry blindly. That pass requires actual game screenshots on the new zoom and owner review.
