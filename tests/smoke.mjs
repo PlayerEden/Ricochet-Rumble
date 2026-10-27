@@ -377,7 +377,7 @@ console.log('PASS v0.9.10 fullscreen canvas, overlay HUD, independently moving t
 win.innerWidth=1536;win.innerHeight=672;win.devicePixelRatio=1;
 assert.equal(win.__test.resizeArenaCanvas(),true);
 const [fieldWidth,fieldHeight]=win.__test.world;
-const expectedZoom=Math.max(1.20,1536/(fieldWidth+224),672/(fieldHeight+224));
+const expectedZoom=Math.max(1.24,1536/(fieldWidth+224),672/(fieldHeight+224));
 assert.ok(Math.abs(win.__test.cameraZoom(null)-expectedZoom)<1e-9,'zoom accounts for playable perimeter without black side gutters');
 assert.ok(win.__test.cameraZoom()<Math.max(1.28,1536/fieldWidth,672/fieldHeight),'new widescreen camera genuinely shows more world');
 const motions=[];
@@ -426,25 +426,64 @@ veh.type='tank';
 win.innerWidth=1536;win.innerHeight=672;win.devicePixelRatio=1;
 win.__test.resizeArenaCanvas();
 const minZoom=Math.max(1536/(win.__test.world[0]+224),672/(win.__test.world[1]+224));
-assert.ok(Math.abs(win.__test.unitTargetZoom(local)-1.18)<1e-9);
-assert.ok(Math.abs(win.__test.cameraZoom(local)-Math.max(1.18,minZoom))<1e-9);
+assert.ok(Math.abs(win.__test.unitTargetZoom(local)-1.22)<1e-9);
+assert.ok(Math.abs(win.__test.cameraZoom(local)-Math.max(1.22,minZoom))<1e-9);
 win.__test.render(1/60);
 const zTank=win.__test.camera.zoom;
-assert.ok(Math.abs(zTank-Math.max(1.18,minZoom))<1e-7);
+assert.ok(Math.abs(zTank-Math.max(1.22,minZoom))<1e-7);
 local.onFoot=true;local.vehicleId=null;
-assert.equal(win.__test.unitTargetZoom(local),1.28);
+assert.equal(win.__test.unitTargetZoom(local),1.32);
 win.__test.render(1/60);
-assert.ok(win.__test.camera.zoom>zTank&&win.__test.camera.zoom<1.28,'zoom must ease in rather than snap to foot');
+assert.ok(win.__test.camera.zoom>zTank&&win.__test.camera.zoom<1.32,'zoom must ease in rather than snap to foot');
 for(let i=0;i<80;i++)win.__test.render(1/60);
-assert.ok(Math.abs(win.__test.camera.zoom-1.28)<.003,'foot zoom should converge');
+assert.ok(Math.abs(win.__test.camera.zoom-1.32)<.003,'foot zoom should converge');
 local.onFoot=false;local.vehicleId=veh.id;veh.occupant=0;veh.type='mech';
-assert.equal(win.__test.unitTargetZoom(local),1.12);
+assert.equal(win.__test.unitTargetZoom(local),1.16);
 const zFoot=win.__test.camera.zoom;
 win.__test.render(1/60);
-assert.ok(win.__test.camera.zoom<zFoot&&win.__test.camera.zoom>Math.max(1.12,minZoom),'mech transition eases outward');
+assert.ok(win.__test.camera.zoom<zFoot&&win.__test.camera.zoom>Math.max(1.16,minZoom),'mech transition eases outward');
 for(let i=0;i<85;i++)win.__test.render(1/60);
-assert.ok(Math.abs(win.__test.camera.zoom-Math.max(1.12,minZoom))<.003,'mech target converges');
+assert.ok(Math.abs(win.__test.camera.zoom-Math.max(1.16,minZoom))<.003,'mech target converges');
 veh.type='tank';
 for(let i=0;i<85;i++)win.__test.render(1/60);
-assert.ok(Math.abs(win.__test.camera.zoom-Math.max(1.18,minZoom))<.003,'tank transition converges');
+assert.ok(Math.abs(win.__test.camera.zoom-Math.max(1.22,minZoom))<.003,'tank transition converges');
 console.log('PASS v0.9.11 console design, camera targets, smooth transitions and viewport floor.');
+
+// v0.9.12 reliability and camera audit: close each unit's view modestly,
+// maintain monotonic FOV order, and avoid stale vehicle animation after recovery.
+{
+ const fs=await import('node:fs');
+ const game=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
+ assert.ok(game.includes('v.occupant===-1&&v.armor>0&&vehicleEntryClear(i,v)'), 'bot recovery should skip a blocked bay');
+ const sameFile=fs.readFileSync(new URL('../android/app/src/main/assets/game.js',import.meta.url),'utf8');
+ assert.equal(game,sameFile,'Android and web game logic should match');
+}
+click('solo');
+const unit=st().tanks[0],model=st().vehicles[unit.vehicleId];
+const cameraOrder=[];
+for(const typ of ['mech','tank']){
+ model.type=typ;
+ cameraOrder.push(win.__test.unitTargetZoom(unit));
+}
+unit.onFoot=true;
+cameraOrder.push(win.__test.unitTargetZoom(unit));
+assert.deepEqual(cameraOrder,[1.16,1.22,1.32],'mech/tank/foot view hierarchy');
+unit.onFoot=false;model.type='tank';
+unit.recoil=.72;unit.trackLeft=83;unit.trackRight=119;
+const freeBay=st().vehicles.find(v=>v.occupant===-1&&v.armor>0);
+assert.ok(freeBay,'test has a nearby unused bay');
+assert.equal(win.__test.tryInteract(0),true,'dismount in safe field');
+unit.x=freeBay.x;unit.y=freeBay.y;
+assert.equal(win.__test.tryInteract(0),true,'board recovery vehicle');
+assert.equal(unit.recoil,0,'old tank recoil does not carry to fresh hull');
+assert.equal(unit.trackLeft,0);assert.equal(unit.trackRight,0);
+assert.equal(win.__test.cameraZoom(unit),Math.max(win.__test.unitTargetZoom(unit),1536/(win.__test.world[0]+224),672/(win.__test.world[1]+224)));
+for(const [w,h] of [[740,360],[915,412],[1280,720],[1536,672]]){
+ win.innerWidth=w;win.innerHeight=h;win.devicePixelRatio=1;
+ assert.equal(win.__test.resizeArenaCanvas(),true);
+ const expected=Math.max(win.__test.unitTargetZoom(unit),w/(win.__test.world[0]+224),h/(win.__test.world[1]+224));
+ assert.ok(Math.abs(win.__test.cameraZoom(unit)-expected)<1e-9);
+ win.__test.render(1/60);
+ assert.ok(Number.isFinite(win.__test.camera.zoom)&&Number.isFinite(win.__test.camera.x)&&Number.isFinite(win.__test.camera.y),'camera must stay finite across viewport sizes');
+}
+console.log('PASS v0.9.12: closer camera, bay clearance, animation resets and viewport-safe rendering.');
