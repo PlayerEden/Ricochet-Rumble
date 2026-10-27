@@ -40,3 +40,9 @@ The guest receives host state snapshots and calls `setArena` to catch new maze s
 - Rollback: `dev/sector-rebound-fieldgrid-v0911`
 - Android `versionCode`: 28.
 - Keep draft PR until real-phone feedback.
+
+## Verified CI / artifact checkpoint
+- [GitHub Actions run 40426950894](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40426950894): **SUCCESS**. Node gameplay suite, mandatory deterministic Chromium screenshots, full-bleed arena checks, menu-scroll checks, APK build and uploads passed.
+- Screenshot archive `sector-rebound-v0.9.12-visual-before-after`: 36 shots (18 before + 18 after), no reported panel scrolling, and every new arena canvas filled its viewport.
+- APK archive `sector-rebound-v0.9.12-debug-apk`: ZIP integrity and Android APK internal ZIP integrity checked locally, build size 73,537 bytes, SHA-256 `a9de09c42b3294a995b5b590b8b6e2890074770d3fc902f8dbdfaaf789d3f3d9`.
+- Browser emulation is not a replacement for actual Android device QA or real LAN reconnect tests.
