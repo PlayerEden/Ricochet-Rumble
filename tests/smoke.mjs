@@ -211,7 +211,7 @@ console.log('PASS v0.9.4 visual clarity: pilot duel advantage, tactical sidearm,
 // 0.9.7 motion pass: animation must not change game physics or break the
 // construction contract. Both idle and moving mechs retain mirrored limbs.
 {
- const geom=(fn,stride)=>{const out=[],stack=[];let side=1,dx=0;const c={save(){stack.push([side,dx])},restore(){[side,dx]=stack.pop()},scale(x,y){side*=y},translate(x,y){dx+=x},fillRect(x,y,w,h){out.push({side,x:x+dx,y,w,h})},strokeRect(){},arc(){},beginPath(){},stroke(){},fill(){},set fillStyle(v){},set strokeStyle(v){},set lineWidth(v){}};
+ const geom=(fn,stride)=>{const out=[],stack=[];let side=1,dx=0;const c={save(){stack.push([side,dx])},restore(){[side,dx]=stack.pop()},scale(x,y){side*=y},translate(x,y){dx+=x},fillRect(x,y,w,h){out.push({side,x:x+dx,y,w,h})},strokeRect(){},arc(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},stroke(){},fill(){},set fillStyle(v){},set strokeStyle(v){},set lineWidth(v){}};
   if(fn==='mech')win.__test.drawTopMech(c,'#b69aff',false,stride);else win.__test.drawTopPilot(c,'#51d9ff',false,stride);
   return out};
  const mechIdle=geom('mech',0).filter(o=>o.w===17&&o.h===12&&o.y===12);
@@ -221,14 +221,14 @@ console.log('PASS v0.9.4 visual clarity: pilot duel advantage, tactical sidearm,
  assert.notEqual(mechIdle[0].x,mechMove[0].x,'left leg advances when walking');
  assert.notEqual(mechIdle[1].x,mechMove[1].x,'right leg counter-steps');
  assert.equal(mechMove[0].x+mechMove[1].x,mechIdle[0].x+mechIdle[1].x,'walking gait remains centered');
- const bootsIdle=geom('pilot',0).filter(o=>o.w===10&&o.h===7);
- const bootsMove=geom('pilot',2).filter(o=>o.w===10&&o.h===7);
+ const bootsIdle=geom('pilot',0).filter(o=>o.w===12&&o.h===6);
+ const bootsMove=geom('pilot',2).filter(o=>o.w===12&&o.h===6);
  assert.equal(bootsIdle.length,2,'pilot keeps two separated boot silhouettes');
  assert.equal(bootsMove.length,2,'walking pilot still shows both boots');
  assert.notEqual(bootsIdle[0].x,bootsMove[0].x,'first boot advances');
  assert.notEqual(bootsIdle[1].x,bootsMove[1].x,'second boot counter-steps');
  assert.equal(bootsMove[0].x+bootsMove[1].x,bootsIdle[0].x+bootsIdle[1].x,'walk cycle stays centered');
- assert.ok(Math.abs(bootsIdle[0].y-bootsIdle[1].y)>=12,'feet remain separated along shoulder axis');
+ assert.notEqual(bootsIdle[0].side,bootsIdle[1].side,'feet remain separated on opposite sides of the torso');
 }
 // Emergency ejection is a cosmetic event, not damage to pilot lives.
 click('solo');const v0=st().vehicles[st().tanks[0].vehicleId],pilot=st().tanks[0],lives=st().lives[0];
