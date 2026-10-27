@@ -1,4 +1,4 @@
-name: Android Test APK # Sector Rebound v0.9.17 match readability and 30-second pacing QA
+name: Android Test APK # Sector Rebound v0.9.17 corridor escape and contextual readability QA
 on:
   workflow_dispatch:
   push:
