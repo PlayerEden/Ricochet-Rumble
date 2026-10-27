@@ -1,0 +1,69 @@
+name: Publish exact v0.9.22-dev3 camera APK + visual QA (one-time)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-v0922-dev3-camera.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: publish-v0922-dev3-camera-test
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Download exact successful dev3 Android and screenshot QA artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh run view 40598086030 --repo "$REPO" --json conclusion,headSha --jq '"QA: " + .conclusion + " " + .headSha' | tee qa-provenance.txt
+          grep -Fxq 'QA: success 6f5fd183def8596eca6bce42b4997aa5f08eace3' qa-provenance.txt
+          gh run download 40598086030 --repo "$REPO" --name debug-apk-40598086030 --dir apk-source
+          gh run download 40598086030 --repo "$REPO" --name sector-rebound-qa-40598086030-1 --dir qa-source
+          APK="$(find apk-source -type f -name 'app-debug.apk' | head -n 1)"
+          test -n "$APK" && test -s "$APK"
+          test "$(find qa-source -type f -name '*.png' | wc -l)" -ge 6
+          cp "$APK" sector-rebound-v0.9.22-dev3-zoom-qa-debug.apk
+          (cd qa-source && zip -q -r ../sector-rebound-v0.9.22-dev3-camera-visual-qa.zip .)
+          sha256sum sector-rebound-v0.9.22-dev3-zoom-qa-debug.apk sector-rebound-v0.9.22-dev3-camera-visual-qa.zip > v0922-dev3-assets-sha256.txt
+      - name: Release exact test artifacts without changing prior releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TAG=v0.9.22-dev3-camera-test
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            echo "Refusing to overwrite existing test tag."
+            exit 1
+          fi
+          cat > release-notes.md <<'EOF'
+          ## Sector Rebound v0.9.22-dev3 - Camera QA Playtest (DEBUG)
+          
+          **Exact APK from successful full Android and Chromium QA run [40598086030](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40598086030), NOT a rebuild.**
+          Verified source commit: `6f5fd183def8596eca6bce42b4997aa5f08eace3`, draft [PR #24](https://github.com/PlayerEden/Ricochet-Rumble/pull/24). No game source changes between full QA and this release.
+          
+          ### Changes over dev2
+          - On-foot / tank / mech game camera zoom targets reduced (wider visible sector): 1.22 → 1.07, 1.13 → 0.98, 1.08 → 0.94.
+          - Rendered camera apron expanded 112 → 260 world units and the exterior-tile rendering expanded to prevent wide-screen blank edges.
+          - Physics, collision sizes, touch overlay dimensions, pilot art, audio and LAN code untouched. All v0.9.22-dev2 playlist and verified After Action stats remain.
+          
+          ### Manual acceptance
+          [Detailed playtest list](https://github.com/PlayerEden/Ricochet-Rumble/blob/main/docs/PLAYTEST_v0922_DEV3_CAMERA.md): compare dev2 and dev3 visuals, inspect pilot/tank/mech zoom and transitions, all four maze edges/corners for missing floor tiles, player/enemy clarity, joystick/fire button positions and match results. User explicitly deferred 2-phone Wi-Fi testing and audio.
+          
+          ### Debug APK safety
+          - This is NOT a Play-signed APK. The *internal* Gradle versionName is still `0.9.21-game-feel`, versionCode 38, despite dev3 source; this mismatch is a tracked future packaging concern.
+          - GitHub runners can use different debug signing certificates. Android may reject updating an existing installed build. **Uninstalling wipes local data/settings**; backup anything important before deciding to uninstall or use a second device instead. Signing needs durable design before public v1.
+          - Play Store unsigned AAB is NOT supplied for installation. Release contains actual test APK, actual visual QA screenshots ZIP, and SHA-256 checksums. Keep previous [dev2](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.22-dev2-test) and [v0.9.21](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.21-polish-preview) untouched.
+          
+          New pilot art and combat juice are in [#26](https://github.com/PlayerEden/Ricochet-Rumble/issues/26) and [#27](https://github.com/PlayerEden/Ricochet-Rumble/issues/27), **not** implemented here. Owner phone acceptance pending.
+          EOF
+          gh release create "$TAG" sector-rebound-v0.9.22-dev3-zoom-qa-debug.apk sector-rebound-v0.9.22-dev3-camera-visual-qa.zip v0922-dev3-assets-sha256.txt --repo "$REPO" --target 6f5fd183def8596eca6bce42b4997aa5f08eace3 --title 'Sector Rebound v0.9.22-dev3 - Wider camera Android playtest' --notes-file release-notes.md --prerelease
