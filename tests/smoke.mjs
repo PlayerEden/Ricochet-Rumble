@@ -1090,6 +1090,9 @@ console.log('PASS v0.9.22-dev3 tactical pullback, wide-screen floor and class hi
   for(const type of ['tank','mech','pilot']){
    actor.onFoot=type==='pilot';
    if(!actor.onFoot){actor.vehicleId=vehicle.id;vehicle.type=type;}
+   const wanted=type==='pilot'?1.07:type==='tank'?.87:.82;
+   const deviceFloor=Math.max(screenW/(w+760),screenH/(h+760));
+   assert.ok(Math.abs(api.cameraZoom(actor)-Math.max(wanted,deviceFloor))<1e-9,'every unit reaches its correct viewport-limited zoom target');
    api.render(1/60);
    assert.ok(Number.isFinite(api.camera.x)&&Number.isFinite(api.camera.y)&&Number.isFinite(api.camera.zoom),'camera stays finite after class/viewport switch');
    assert.ok(api.camera.zoom>0,'nonzero rendering scale');
