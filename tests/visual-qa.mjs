@@ -54,6 +54,31 @@ try{
    await page.keyboard.up('d');
    await page.locator('#menu-button').click();
    await shot('pause');
+   if(name==='after'){
+    // Layout fixture uses the *actual shipped* results HTML/CSS. Game-state
+    // transitions and button behavior are tested separately in smoke.mjs.
+    await page.locator('#menu button[data-action="resume"]').click();
+    await page.evaluate(()=>{
+     const $=id=>document.getElementById(id);
+     $('game-screen').classList.add('match-finished');
+     $('after-action').classList.remove('hidden');
+     $('aa-title').textContent='SECTOR CLEARED';
+     $('aa-event').textContent='CYAN WINS!';
+     $('aa-kos').textContent='3';
+     $('aa-lives').textContent='2';
+     $('aa-outcome').textContent='SUCCESS';
+     $('aa-note').textContent='NEW PROCEDURAL SECTOR READY';
+     $('quick-rematch').classList.remove('hidden');
+    });
+    const rect=await page.locator('.aa-panel').boundingBox();
+    const replay=await page.locator('#quick-rematch').boundingBox();
+    const main=await page.locator('#results-menu').boundingBox();
+    if(!rect||!replay||!main||rect.y<0||rect.y+rect.height>height+1||rect.x<0||rect.x+rect.width>width+1)
+      throw new Error('After-action panel is clipped at '+label);
+    if(replay.width<75||main.width<75||replay.height<37||main.height<37)
+      throw new Error('After-action controls too small at '+label);
+    await shot('after-action-layout-fixture');
+   }
    await page.close();
   }
  }
