@@ -46,7 +46,7 @@ These are estimates, not final pricing or launch commitments. Release fewer appr
 
 ## Future technical interface (proposal)
 
-Each cosmetic has durable \`id\`, \`slot\`, \`sourcePalette\` / \`renderParams\`, \`acquisition\` and \`assetVersion\`. A Pilot Dossier stores equipped slot IDs. An entitlement system independently validates ownership before allowing equip. On unknown or revoked ID: display **default free visual**, without deleting the historical profile record.
+Each cosmetic has durable `id`, `slot`, `sourcePalette` / `renderParams`, `acquisition` and `assetVersion`. A Pilot Dossier stores equipped slot IDs. An entitlement system independently validates ownership before allowing equip. On unknown or revoked ID: display **default free visual**, without deleting the historical profile record.
 
 Network transport (when later designed) should pass compact approved IDs or a validated fixed palette ID, not untrusted hex colors, image URLs, shaders or user-authored payloads. Avoid allowing a player to load a skin from arbitrary internet URLs.
 
