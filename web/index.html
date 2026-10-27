@@ -59,18 +59,18 @@
         <div class="home-screen">
           <header class="home-topbar">
             <div class="home-brand"><span class="home-brand-mark" aria-hidden="true">SR</span><div><span class="home-overline">FIELDGRID / COMBAT SIMULATION</span><h2>SECTOR <span>REBOUND</span></h2></div></div>
-            <div class="home-utilities"><span class="home-build">V0.9.20 · LOCAL</span><button data-action="help" aria-label="How to play Sector Rebound">? <span>HOW TO PLAY</span></button></div>
+            <div class="home-utilities"><button data-action="help" aria-label="How to play Sector Rebound">? <span>HOW TO PLAY</span></button></div>
           </header>
           <div class="home-content">
             <section class="home-showcase" aria-label="Tank preview">
               <div class="home-stage">
                 <canvas id="menu-preview" width="620" height="320" aria-label="Illustration of an in-game tank in the training arena"></canvas>
-                <div class="home-stage-title"><span class="home-stage-label">FIELD UNIT / 01</span><strong>ARMORED RESPONSE</strong></div>
+                <div class="home-stage-title"><span class="home-stage-label" id="home-unit-type">TANK / FIELD UNIT</span><strong id="home-unit-name">ARMORED RESPONSE</strong></div>
               </div>
-              <p class="home-showcase-caption">DRIVE. RICOCHET. SURVIVE. <span>WHEN THE ARMOR FALLS, THE PILOT FIGHTS ON.</span></p>
+              <p class="home-showcase-caption">DRIVE. RICOCHET. SURVIVE.</p>
             </section>
             <section class="home-actions" aria-label="Start playing">
-              <span class="home-section-label"><span class="home-ready-dot" aria-hidden="true"></span> READY TO DEPLOY</span>
+              
               <h3>ENTER THE <span>SECTOR.</span></h3>
               <p class="home-description">Fast arena battles. Ricochet shots through new mazes every match.</p>
               <button class="home-deploy primary" data-action="solo"><span class="home-deploy-symbol" aria-hidden="true">▶</span><strong>QUICK PLAY</strong><small>SOLO / AI</small></button>
@@ -80,7 +80,7 @@
               </div>
             </section>
           </div>
-          <footer class="home-footer"><span><span class="home-ready-dot" aria-hidden="true"></span> FIELDGRID READY</span><span>LOCAL SIMULATION · NO ACCOUNT REQUIRED</span></footer>
+          <footer class="home-footer"><span>NEW MAZE. NEW FIGHT.</span><span>FIELDGRID</span></footer>
         </div>
       </div>
     </div>
@@ -100,7 +100,7 @@
       <label>BOT SKILL<select id="bot-skill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>
     </div>
   </details>
-  <div class="comfort-grid settings-comfort"><label><input type="checkbox" id="pref-autoFire"> AUTO FIRE</label><label><input type="checkbox" id="pref-sound"> SOUND</label><label><input type="checkbox" id="pref-shake"> SCREEN SHAKE</label><label><input type="checkbox" id="pref-leftHanded"> SWAP CONTROLS</label></div>
+  <div class="comfort-grid settings-comfort"><label><input type="checkbox" id="pref-autoFire"> AUTO FIRE</label><label><input type="checkbox" id="pref-sound"> SOUND FX</label><label><input type="checkbox" id="pref-music"> MUSIC</label><label><input type="checkbox" id="pref-shake"> SCREEN SHAKE</label><label><input type="checkbox" id="pref-leftHanded"> SWAP CONTROLS</label></div>
   <div class="settings-actions"><button data-action="settings-back">BACK</button><button class="primary" data-action="settings-play">START MATCH</button></div>
 </template>
   <script src="game.js"></script>
