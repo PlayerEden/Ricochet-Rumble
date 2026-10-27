@@ -34,3 +34,9 @@ The rendering camera blends by the *local controlled actor*, including guest mul
 ## Rollback and branch
 Experimental branch: `dev/sector-rebound-fieldgrid-v0911`.
 Prior verified rollback: `dev/sector-rebound-motion-polish-v0910b`.
+
+## Build verification (October 26, 2026)
+- GitHub Actions: https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40424926749 — **success** across gameplay smoke tests, 36 real Chromium screenshots, debug Android APK compilation and both uploads.
+- Artifacts (14-day retention): `sector-rebound-v0.9.11-visual-before-after` and `sector-rebound-v0.9.11-debug-apk`.
+- Browser screenshots: 740×360, 915×412 and 1280×720, each with home, settings, help, arena, moving tank and pause before/after. Screenshot report found no menu scrolling and the arena canvas remained fullscreen.
+- Actual Android two-player Wi-Fi playtesting, device cutout behavior and touch feel are not yet validated.
