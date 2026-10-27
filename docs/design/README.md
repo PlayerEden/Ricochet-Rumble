@@ -34,6 +34,10 @@ Machine-readable **concept catalog**: [../../game-data/cosmetics/pilot_icons.v1.
 
 - [23 — Quick Play Session & After-Action Bible](23_QUICK_PLAY_AFTER_ACTION_BIBLE_DRAFT.md): after each completed match show mode-specific statistics, then **NEXT MATCH** from the player's selected playlist or **MAIN MENU**. Includes no-repeat shuffle, session stats and host/guest rules. **Proposal only, not implemented.**
 
+### Procedural arena identity
+
+- [24 — Procedural Arenas & Tactical Adaptation](24_PROCEDURAL_ARENAS_IDENTITY_DRAFT.md): no memorized battlefield; each new match generates a fresh mode-valid maze, but spawn fairness, connected routes and safe objectives must be tested. **Proposed design direction, not a new gameplay feature.**
+
 ## Authority / conflict rules
 
 - **Production shipping behavior:** running game source and passed tests win.
