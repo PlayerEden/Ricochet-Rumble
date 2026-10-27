@@ -1,3 +1,17 @@
+# Sector Rebound — v0.9.15 Combat Feedback & After-Action
+
+**Current experimental branch:** `dev/sector-rebound-feedback-v0915` · **Android versionCode:** 32
+
+The v0.9.14 FIELDGRID fullscreen combat and vehicle/power-up balance are retained. This pass makes weapon and collision feedback feel more distinct without changing hit boxes, damage, firing caps or LAN protocol. Short, fully offline synthesized WebAudio cues distinguish tank, mech and pilot shots, ricochets, bumper strikes, armor impacts, ejection, barrier, pickups, victory and defeat. Bounce events are throttled, output falls off with distance, and the existing sound preference remains authoritative.
+
+The former canvas-only match result is now a responsive, real-touch **FIELDGRID after-action report** with an accurate operator KO counter, surviving lives, win/loss state, **NEW SECTOR** and **MAIN MENU**. Guests receive a host-waiting message instead of an unavailable rematch button. Impact/ejection rings gain restrained directional spark details. No mandatory music download, login or new gameplay feature is introduced.
+
+**Verified October 26, 2026 (local):** [successful v0.9.15 GitHub Actions smoke + visual QA + APK build](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40435093385). All regression tests passed; 39 Chromium images include 36 ordinary before/after captures plus three new after-action layout fixtures. Phone-landscape report fits at 740×360, 915×412 and 1280×720. The Android APK and artifact ZIP independently passed ZIP CRC checks (APK 77,241 bytes, SHA-256 `24a4845db913c62e8682b5ccc0590edb42f57f11268599c991fcc917dd0db884`).
+
+**Outstanding acceptance:** actual Android sound mix and physical device cutouts/touch feel, several complete gameplay sessions, and real two-phone LAN host/guest testing. The [v0.9.15 handoff](docs/COMBAT_FEEDBACK_v0.9.15.md) records test scope and caveats. Earlier `dev/sector-rebound-camera-qa-v0914` is preserved for rollback.
+
+---
+
 # Sector Rebound — v0.9.14 Camera & Quality Audit
 
 **Current test branch:** `dev/sector-rebound-camera-qa-v0914` · **Android versionCode:** 31
