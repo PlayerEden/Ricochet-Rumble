@@ -1,4 +1,4 @@
-name: Android Test APK # Sector Rebound v0.9.19 final on-foot pilot readability and curated icon QA
+name: Android Test APK # Sector Rebound v0.9.19 final player-marker and foot silhouette QA
 on:
   workflow_dispatch:
   push:
