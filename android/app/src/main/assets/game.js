@@ -16,7 +16,7 @@ const MAP_SIZES={small:{cols:9,rows:6,cell:132},standard:{cols:13,rows:9,cell:13
 const ARENAS=[{name:'FIELDGRID',maze:MAP_SIZES.standard}];
 const VEHICLE_TYPES={tank:{name:'TANK',armor:3,speed:1,fireCooldown:.36,projectileSpeed:415,bulletCap:4},mech:{name:'MECH',armor:4,speed:.76,fireCooldown:.62,projectileSpeed:355,bulletCap:3}};
 const MAX_VEHICLES=10;
-const PICKUPS={rapid:{label:'R',name:'RAPID FIRE',color:'#ffd46d',duration:7},turbo:{label:'»',name:'TURBO',color:'#76efaf',duration:6},guard:{label:'+',name:'BARRIER',color:'#b59aff',duration:4},overcharge:{label:'+',name:'CAPACITOR',color:'#7bdbff',duration:6},repair:{label:'+',name:'FIELD REPAIR',color:'#f6ba8b',duration:0}};
+const PICKUPS={rapid:{label:'R',name:'RAPID FIRE',color:'#ffd46d',duration:7},turbo:{label:'»',name:'TURBO',color:'#76efaf',duration:6},guard:{label:'B',name:'BARRIER',color:'#b59aff',duration:4},overcharge:{label:'C',name:'CAPACITOR',color:'#7bdbff',duration:6},repair:{label:'H',name:'FIELD REPAIR',color:'#f6ba8b',duration:0}};
 const pickupSpots=[[480,300],[195,300],[765,300],[372,300],[587,300],[390,90],[570,510],[395,520],[560,90]];
 const canvas=document.getElementById('arena'),ctx=canvas.getContext('2d');
 // Viewport owns the arena resolution, not a fixed 960:600 content window.
@@ -139,7 +139,7 @@ function isPilotMatch(){return state?.config?.pilotMode===true;}
 function closestAvailableVehicle(i){
  if(!isPilotMatch()||!state?.tanks[i]||state.lives[i]<=0)return null;
  const pilot=state.tanks[i];let best=null,distance=Infinity;
- for(const v of state.vehicles||[]){if(v.armor<=0||v.occupant!==-1)continue;
+ for(const v of state.vehicles||[]){if(v.armor<=0||v.occupant!==-1||!vehicleEntryClear(i,v))continue;
   const d=Math.hypot(v.x-pilot.x,v.y-pilot.y);
   if(d<distance){best=v;distance=d;}}
  return best;
@@ -427,12 +427,12 @@ function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
 // pull back for situational awareness. The apron keeps wide displays covered.
 const CAMERA_APRON=112;
 function unitTargetZoom(t){
- // v0.9.12a: another subtle zoom-in, keeping relative unit awareness
- // and the same camera easing, safe-area handling, and world overscan.
- if(!t)return 1.28;
- if(t.onFoot)return 1.36;
+ // v0.9.14: a measured four-hundredths zoom-out in each unit state.
+ // Keep the unit hierarchy, smoothing and screen-size minimum unchanged.
+ if(!t)return 1.24;
+ if(t.onFoot)return 1.32;
  const v=currentVehicle(t);
- return v?.type==='mech'?1.20:v?.type==='tank'?1.26:1.28;
+ return v?.type==='mech'?1.16:v?.type==='tank'?1.22:1.24;
 }
 function cameraZoom(t=state?.tanks?.[mode==='guest'?1:0]){
  return mazeGrid?Math.max(unitTargetZoom(t),W/(worldW+CAMERA_APRON*2),H/(worldH+CAMERA_APRON*2)):1;
