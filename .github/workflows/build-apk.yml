@@ -1,8 +1,8 @@
-name: Android Test APK # Sector Rebound v0.9.12a restrained zoom follow-up
+name: Android Test APK # Sector Rebound v0.9.13 combat feel / powerups experiment
 on:
   workflow_dispatch:
   push:
-    branches: [dev/sector-rebound-camera-v0912a]
+    branches: [dev/sector-rebound-combat-feel-v0913]
     paths:
       - '.github/workflows/build-apk.yml'
 permissions:
@@ -28,10 +28,10 @@ jobs:
           gradle-version: '8.9'
       - name: Run gameplay smoke tests
         run: node tests/smoke.mjs
-      - name: Checkout v0.9.12 visual baseline
+      - name: Checkout v0.9.12a visual baseline
         uses: actions/checkout@v4
         with:
-          ref: dev/sector-rebound-qa-v0912
+          ref: dev/sector-rebound-camera-v0912a
           path: visual-baseline
       - name: Capture visual before/after QA
         run: |
@@ -45,7 +45,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.12a-visual-before-after
+          name: sector-rebound-v0.9.13-visual-before-after
           path: qa-screens/
           if-no-files-found: error
           retention-days: 14
@@ -54,7 +54,7 @@ jobs:
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.12a-debug-apk
+          name: sector-rebound-v0.9.13-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
