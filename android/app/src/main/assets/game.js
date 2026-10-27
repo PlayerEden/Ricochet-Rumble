@@ -155,7 +155,7 @@ function pilotExitSite(i,vehicleId){const t=state.tanks[i];
 }
 function tryInteract(i=0){if(!isPilotMatch()||paused||state.winner>=0||state.lives[i]<=0)return false;const t=state.tanks[i];
  if(t.onFoot){const v=nearestEmptyVehicle(i);if(!v){if(i===0){const bay=(state.vehicles||[]).some(q=>q.occupant===-1&&q.armor>0&&Math.hypot(q.x-t.x,q.y-t.y)<58&&hasLineOfSight(t.x,t.y,q.x,q.y)&&!vehicleEntryClear(i,q));notice(bay?'Vehicle bay occupied · clear the area':'Find a parked tank and move closer');}return false}
-  v.occupant=i;t.vehicleId=v.id;t.onFoot=false;Object.assign(t,{x:v.x,y:v.y,a:v.a,vx:0,vy:0});state.event=vehicleDef(v).name+' ONLINE · '+v.armor+' ARMOR';state.eventTimer=.9;emitFx('pickup',v.x,v.y,colors[i],i);}
+  v.occupant=i;t.vehicleId=v.id;t.onFoot=false;Object.assign(t,{x:v.x,y:v.y,a:v.a,vx:0,vy:0,recoil:0,trackLeft:0,trackRight:0});state.event=vehicleDef(v).name+' ONLINE · '+v.armor+' ARMOR';state.eventTimer=.9;emitFx('pickup',v.x,v.y,colors[i],i);}
  else{const v=state.vehicles?.[t.vehicleId];if(!v)return false;
   const spot=pilotExitSite(i,v.id);
   if(!spot){if(i===0)notice('Need space beside the tank to exit');return false}
@@ -250,7 +250,7 @@ function botInput(i,dt){const bot=state.tanks[i],enemies=state.tanks.map((t,j)=>
  if(!enemies.length)return {moveX:0,moveY:0,fire:false,bot:true};enemies.sort((a,b)=>Math.hypot(bot.x-a.t.x,bot.y-a.t.y)-Math.hypot(bot.x-b.t.x,bot.y-b.t.y));const target=enemies[0].t;
  // A dismounted bot should try to recover a nearby empty tank, not charge a tank forever with a pistol.
  let objective=target;
- if(isPilotMatch()&&bot.onFoot){const candidate=(state.vehicles||[]).filter(v=>v.occupant===-1&&v.armor>0)
+ if(isPilotMatch()&&bot.onFoot){const candidate=(state.vehicles||[]).filter(v=>v.occupant===-1&&v.armor>0&&vehicleEntryClear(i,v))
    .sort((a,b)=>Math.hypot(a.x-bot.x,a.y-bot.y)-Math.hypot(b.x-bot.x,b.y-bot.y))[0];
   if(candidate){if(Math.hypot(candidate.x-bot.x,candidate.y-bot.y)<58&&hasLineOfSight(bot.x,bot.y,candidate.x,candidate.y))tryInteract(i);
     if(bot.onFoot)objective=candidate;}}
@@ -284,7 +284,7 @@ function respawn(victim){const enemies=state.tanks.filter((_,i)=>i!==victim&&sta
  else spots.push(...[[130,300],[830,300],[130,100],[830,500],[480,96],[480,500],[130,480],[830,120],[340,70],[620,525]]);
  const pool=spots.filter(([x,y])=>!blocked(x,y,isPilotMatch()?11:25)&&(isPilotMatch()||!parkedVehicleAt(x,y,25))&&state.tanks.every((other,j)=>j===victim||state.lives[j]===0||Math.hypot(x-other.x,y-other.y)>65));
  pool.sort((a,b)=>Math.min(...enemies.map(t=>Math.hypot(b[0]-t.x,b[1]-t.y)),10000)-Math.min(...enemies.map(t=>Math.hypot(a[0]-t.x,a[1]-t.y)),10000));
- const [x,y]=pool[0]||startingPosition(victim),t=state.tanks[victim];Object.assign(t,{x,y,a:0,vx:0,vy:0,shield:1.8,powerType:null,powerTimer:0,flash:0,onFoot:isPilotMatch()?true:false,vehicleId:null});
+ const [x,y]=pool[0]||startingPosition(victim),t=state.tanks[victim];Object.assign(t,{x,y,a:0,vx:0,vy:0,shield:1.8,powerType:null,powerTimer:0,flash:0,recoil:0,trackLeft:0,trackRight:0,ejectAnim:0,onFoot:isPilotMatch()?true:false,vehicleId:null});
  state.bullets=state.bullets.filter(b=>Math.hypot(b.x-x,b.y-y)>50);}
 function registerHit(attacker,victim){if(state.winner>=0||state.lives[victim]<=0||state.tanks[victim].shield>0||(attacker!==victim&&friendly(attacker,victim)))return false;
  const target=state.tanks[victim];if(target.powerType==='guard'&&target.powerTimer>0){target.powerType=null;target.powerTimer=0;emitFx('pickup',target.x,target.y,'#b59aff');state.event='BARRIER BLOCKED THE HIT!';state.eventTimer=.8;return false;}
@@ -412,10 +412,12 @@ function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
 // pull back for situational awareness. The apron keeps wide displays covered.
 const CAMERA_APRON=112;
 function unitTargetZoom(t){
- if(!t)return 1.20;
- if(t.onFoot)return 1.28;
+ // Small ~3–4% closer field of view for every state, preserving their
+ // relative hierarchy and the smooth enter/exit transitions.
+ if(!t)return 1.24;
+ if(t.onFoot)return 1.32;
  const v=currentVehicle(t);
- return v?.type==='mech'?1.12:v?.type==='tank'?1.18:1.20;
+ return v?.type==='mech'?1.16:v?.type==='tank'?1.22:1.24;
 }
 function cameraZoom(t=state?.tanks?.[mode==='guest'?1:0]){
  return mazeGrid?Math.max(unitTargetZoom(t),W/(worldW+CAMERA_APRON*2),H/(worldH+CAMERA_APRON*2)):1;
