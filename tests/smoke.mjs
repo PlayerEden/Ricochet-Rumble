@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 const handlers={},nodes=new Map();
+// Simulate Android WebView local preferences and controls when exercising settings.
+const savedStorage=new Map();let acceptancePlaylistInputs=null,acceptancePlayButtons=null;
 function node(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',value:'',dataset:{},style:{},
   classList:(()=>{const flags=new Set();return {add(k){flags.add(k)},remove(k){flags.delete(k)},contains(k){return flags.has(k)},toggle(k,v){const active=v===undefined?!flags.has(k):!!v;if(active)flags.add(k);else flags.delete(k);return active}}})(),setPointerCapture(){},releasePointerCapture(){},
   getBoundingClientRect(){return {left:0,top:0,width:148,height:148}},
@@ -13,13 +15,13 @@ node('bot-skill').value='normal';
 node('bot-count').value='1';node('bullet-cap').value='3';node('lives-choice').value='5';node('team-choice').value='ffa';node('map-size').value='standard';
 let frame=null,tick=0,hostCalled=false,discoverCalled=false,packets=[];
 const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},joinGame(){},stopNetwork(){},sendPacket(p){packets.push(JSON.parse(p))}};
-const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(){return null},setItem(){}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(){return []}};
+const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(key){return savedStorage.get(key)??null},setItem(key,value){savedStorage.set(key,String(value))}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(sel){if(sel==='input[data-playlist-mode]')return acceptancePlaylistInputs||[];if(sel==='[data-action="solo"],[data-action="settings-play"]')return acceptancePlayButtons||[];return []}};
 let simRand=null;
 const testMath=Object.create(Math);testMath.random=()=>simRand?simRand():Math.random();
 function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5;return(z>>>0)/4294967296;};}
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math:testMath,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,soloOptionsFor,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -1113,3 +1115,82 @@ console.log('PASS v0.9.22-dev5 vehicle-wide camera, unchanged pilot and widescre
  assert.ok(src.includes("v?.type==='mech'?.77:v?.type==='tank'?.82"),'mech/tank zooms changed together');
 }
 console.log('PASS v0.9.22-dev5 small vehicle-only pullback, pilot preserved and assets mirrored.');
+
+// v0.9.22 closeout acceptance: simulate actual settings changes, persisted local
+// preferences, a fresh app context, and repeated real terminal pilot KOs + rematch UI.
+// Full Android hardware acceptance remains separate.
+{
+ const api=win.__test;
+ const ffa={dataset:{playlistMode:'survival_ffa'},checked:true};
+ const teams={dataset:{playlistMode:'survival_teams'},checked:true};
+ acceptancePlaylistInputs=[ffa,teams];
+ acceptancePlayButtons=[node('solo-button'),node('settings-play-button')];
+ // No selection: disabled UI and real newMatch guard both prevent Quick Play.
+ ffa.checked=false;teams.checked=false;
+ for(const fn of handlers['panel:change'])fn({target:ffa});
+ assert.deepEqual(Array.from(api.selectedPlaylistIds),[],'all unchecked modes persist as empty list');
+ assert.equal(acceptancePlayButtons[0].disabled,true);
+ assert.equal(acceptancePlayButtons[1].disabled,true);
+ const blocked=st();
+ assert.equal(api.newMatch('solo'),false,'programmatic start must also reject empty playlist');
+ assert.equal(st(),blocked);
+ assert.deepEqual(JSON.parse(savedStorage.get('rr-options-v06')).playlist,{version:1,enabled:[]});
+
+ // Single selected mode survives an app preference re-load, then always repeats.
+ ffa.checked=true;
+ for(const fn of handlers['panel:change'])fn({target:ffa});
+ assert.deepEqual(Array.from(api.selectedPlaylistIds),['survival_ffa']);
+ assert.equal(acceptancePlayButtons[0].disabled,false);
+ const saved=JSON.parse(savedStorage.get('rr-options-v06'));
+ assert.deepEqual(saved.playlist,{version:1,enabled:['survival_ffa']});
+ acceptancePlaylistInputs=null;acceptancePlayButtons=null; // new page, settings closed
+ api.setPlaylistModes([]);api.loadPrefs();
+ assert.deepEqual(Array.from(api.selectedPlaylistIds),['survival_ffa'],'persisted mode selection restored');
+ node('bot-count').value='1';node('lives-choice').value='2';
+ api.newMatch('solo');
+ let lastSeed=st().mazeSeed,lastMatch=st().matchId;
+ const played=[];
+ for(let n=0;n<3;n++){
+  const old=st();
+  assert.equal(old.config.matchModeId,'survival_ffa','one selected preset repeats');
+  old.tanks[1].onFoot=true;old.tanks[1].shield=0;old.lives[1]=1;
+  assert.equal(api.registerHit(0,1),true);
+  assert.equal(old.finalResult.outcome,'victory');
+  assert.equal(old.finalResult.operatorKOs,1);
+  assert.equal(node('aa-kos').textContent,'1','rendered KO is from real endgame');
+  assert.equal(node('aa-deaths').textContent,'0');
+  assert.equal(node('aa-lives').textContent,'2');
+  played.push({seed:old.mazeSeed,id:old.matchId,final:old.finalResult});
+  for(const fn of handlers['quick-rematch:click'])fn();
+  assert.equal(st().winner,-1,'NEXT MATCH really starts new combat');
+  assert.equal(st().finalResult,null,'NEXT MATCH cannot inherit final statistics');
+  assert.equal(st().elapsedSeconds,0,'NEXT MATCH starts a new timer');
+  assert.notEqual(st().mazeSeed,lastSeed,'every rematch gets fresh seed');
+  assert.ok(st().matchId>lastMatch,'match identity monotonically increases');
+  lastSeed=st().mazeSeed;lastMatch=st().matchId;
+ }
+ assert.equal(played.length,3);
+
+ // Re-enable both saved modes, then real UI NEXT MATCH must alternate when 2
+ // options are enabled (the implementation's shuffle bag avoids repeats).
+ acceptancePlaylistInputs=[ffa,teams];acceptancePlayButtons=[node('solo-button'),node('settings-play-button')];
+ ffa.checked=true;teams.checked=true;
+ for(const fn of handlers['panel:change'])fn({target:teams});
+ assert.deepEqual(Array.from(api.selectedPlaylistIds),['survival_ffa','survival_teams']);
+ assert.deepEqual(JSON.parse(savedStorage.get('rr-options-v06')).playlist.enabled,['survival_ffa','survival_teams']);
+ acceptancePlaylistInputs=null;acceptancePlayButtons=null;
+ api.newMatch('solo');
+ const sequence=[];
+ for(let n=0;n<4;n++){
+  const game=st();sequence.push(game.config.matchModeId);
+  game.tanks[1].onFoot=true;game.tanks[1].shield=0;game.lives[1]=1;
+  assert.equal(api.registerHit(0,1),true);
+  assert.equal(game.finalResult.matchId,game.matchId);
+  for(const fn of handlers['quick-rematch:click'])fn();
+ }
+ for(let n=1;n<sequence.length;n++)assert.notEqual(sequence[n],sequence[n-1],'two-mode playlist should not repeat consecutively');
+ assert.equal(new Set(sequence).size,2,'both actual survival modes played');
+ api.setPlaylistModes([]);api.loadPrefs();
+ assert.deepEqual(Array.from(api.selectedPlaylistIds),['survival_ffa','survival_teams'],'two-mode selection survives reload');
+}
+console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real rematches, fresh seeds and true frozen After Action.');
