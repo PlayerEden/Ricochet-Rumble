@@ -1,4 +1,4 @@
-name: Android Test APK # Sector Rebound v0.9.16 verified seeded intelligence and arena fairness QA
+name: Android Test APK # Sector Rebound v0.9.16 AI obstacle recovery and repeatable balance QA
 on:
   workflow_dispatch:
   push:
