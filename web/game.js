@@ -2,7 +2,7 @@
 let W=960,H=600;const START_LIVES=5,STEP=1/60;
 const PREF_KEY='rr-options-v06'; // Preserve existing options across this patch.
 let comfort={sound:true,shake:false,autoFire:false,leftHanded:false},fixedAccumulator=0;
-let selectedRules={botCount:2,bulletCap:3,startLives:2,teamMode:'ffa',botSkill:'normal',mapSize:'small'};
+let selectedRules={botCount:2,bulletCap:4,startLives:2,teamMode:'ffa',botSkill:'normal',mapSize:'small'};
 // W/H are the camera canvas resolution. Mazes have much larger world coordinates.
 let worldW=W,worldH=H,mazeGrid=null,currentArena=-1,currentSeed=0,currentMapSize='';const camera={x:0,y:0,zoom:null};
 // Spatial buckets keep projectile and bot collision checks local, even in Maze XL.
@@ -14,9 +14,9 @@ const gameNames=['CYAN','CORAL','GOLD','VIOLET','MINT','PINK'];
 // No map picker: every match is a newly generated connected battlefield.
 const MAP_SIZES={small:{cols:9,rows:6,cell:132},standard:{cols:13,rows:9,cell:132},large:{cols:18,rows:12,cell:132}};
 const ARENAS=[{name:'FIELDGRID',maze:MAP_SIZES.standard}];
-const VEHICLE_TYPES={tank:{name:'TANK',armor:3,speed:1,fireCooldown:.41,projectileSpeed:405,bulletCap:3},mech:{name:'MECH',armor:4,speed:.76,fireCooldown:.7,projectileSpeed:350,bulletCap:2}};
+const VEHICLE_TYPES={tank:{name:'TANK',armor:3,speed:1,fireCooldown:.36,projectileSpeed:415,bulletCap:4},mech:{name:'MECH',armor:4,speed:.76,fireCooldown:.62,projectileSpeed:355,bulletCap:3}};
 const MAX_VEHICLES=10;
-const PICKUPS={rapid:{label:'R',name:'RAPID FIRE',color:'#ffd46d'},turbo:{label:'»',name:'TURBO',color:'#76efaf'},guard:{label:'+',name:'BARRIER',color:'#b59aff'}};
+const PICKUPS={rapid:{label:'R',name:'RAPID FIRE',color:'#ffd46d',duration:7},turbo:{label:'»',name:'TURBO',color:'#76efaf',duration:6},guard:{label:'+',name:'BARRIER',color:'#b59aff',duration:4},overcharge:{label:'+',name:'CAPACITOR',color:'#7bdbff',duration:6},repair:{label:'+',name:'FIELD REPAIR',color:'#f6ba8b',duration:0}};
 const pickupSpots=[[480,300],[195,300],[765,300],[372,300],[587,300],[390,90],[570,510],[395,520],[560,90]];
 const canvas=document.getElementById('arena'),ctx=canvas.getContext('2d');
 // Viewport owns the arena resolution, not a fixed 960:600 content window.
@@ -45,7 +45,7 @@ const fireCooldown=Array(6).fill(0);
 function value(id,fallback,min,max){const raw=document.getElementById(id)?.value;const n=Number(raw);return raw!==''&&raw!=null&&Number.isInteger(n)&&n>=min&&n<=max?n:fallback;}
 function readSettings(){const prev=selectedRules;return {mapSize:MAP_SIZES[document.getElementById('map-size')?.value]?document.getElementById('map-size').value:prev.mapSize,botCount:value('bot-count',prev.botCount,0,4),bulletCap:value('bullet-cap',prev.bulletCap,1,8),startLives:value('lives-choice',prev.startLives,1,10),teamMode:['ffa','coop','teams'].includes(document.getElementById('team-choice')?.value)?document.getElementById('team-choice').value:prev.teamMode,botSkill:['casual','normal','spicy'].includes(document.getElementById('bot-skill')?.value)?document.getElementById('bot-skill').value:prev.botSkill};}
 function savePrefs(){selectedRules=readSettings();try{window.localStorage?.setItem(PREF_KEY,JSON.stringify({settings:selectedRules,comfort}));}catch(_){}}
-function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){const st=p.settings||{};selectedRules={mapSize:MAP_SIZES[st.mapSize]?st.mapSize:'small',botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:2,bulletCap:[1,2,3,5,8].includes(st.bulletCap)?st.bulletCap:3,startLives:[2,3,5].includes(st.startLives)?st.startLives:2,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key]}}catch(_){}applyPrefsToUI()}
+function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){const st=p.settings||{};selectedRules={mapSize:MAP_SIZES[st.mapSize]?st.mapSize:'small',botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:2,bulletCap:[1,2,3,4,5,8].includes(st.bulletCap)?st.bulletCap:4,startLives:[2,3,5].includes(st.startLives)?st.startLives:2,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key]}}catch(_){}applyPrefsToUI()}
 function applyPrefsToUI(){const picks={mapSize:selectedRules.mapSize,botCount:selectedRules.botCount,bulletCap:selectedRules.bulletCap,startLives:selectedRules.startLives,teamMode:selectedRules.teamMode,botSkill:selectedRules.botSkill};const ids={mapSize:'map-size',botCount:'bot-count',bulletCap:'bullet-cap',startLives:'lives-choice',teamMode:'team-choice',botSkill:'bot-skill'};for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(el&&el.options&&[...el.options].some(o=>o.value===String(picks[key])))el.value=String(picks[key])}for(const key of Object.keys(comfort)){const el=document.getElementById('pref-'+key);if(el)el.checked=comfort[key]}const el=document.getElementById('fire-mode');if(el)el.textContent=comfort.autoFire?'AUTO ON':'HOLD TO FIRE';document.querySelector('.battlefield')?.classList.toggle('swap-controls',comfort.leftHanded);}
 function releaseControls(){touch.clear();pressed.clear();clearStick();for(const el of document.querySelectorAll('[data-key]'))el.classList.remove('active')}
 
@@ -78,6 +78,10 @@ function freshTank(i){const [x,y]=startingPosition(i);return {x,y,a:i%2?Math.PI:
 const TANK_ARMOR=3,EJECTION_SHIELD=1.35;
 function vehicleDef(v){return VEHICLE_TYPES[v?.type]||VEHICLE_TYPES.tank;}
 function currentVehicle(t){return t&&!t.onFoot?state?.vehicles?.[t.vehicleId]:null;}
+// The cap is for shells simultaneously airborne, NOT an ammo clip.
+// A short lifetime keeps holding FIRE responsive even on open maps.
+function activeBulletCap(t){if(!t)return 2;const base=t.onFoot?2:currentVehicle(t)?.type==='mech'?Math.max(1,Math.ceil((state.config?.bulletCap||4)*.75)):(state.config?.bulletCap||4);return base+(t.powerTimer>0&&t.powerType==='rapid'?1:0)+(t.powerTimer>0&&t.powerType==='overcharge'?2:0);}
+function fireInterval(t){const base=t.onFoot?.43:vehicleDef(currentVehicle(t)).fireCooldown;return t.powerTimer>0&&t.powerType==='rapid'?base*.66:base;}
 function deploymentSeed(seed,index){return ((seed>>>0)^(Math.imul(index+1,0x9e3779b1)>>>0))>>>0;}
 function deployVehicle(forceType=null){if(!isPilotMatch()||state.winner>=0)return false;
  const available=state.vehicles.filter(v=>v.armor>0).length;
@@ -189,8 +193,12 @@ function spawnParticles(kind,x,y,color){const count=kind==='hit'?24:kind==='ejec
 function spawnPickup(){if(state.pickups.length||state.winner>=0)return;
  const spots=mazeGrid?Array.from({length:mazeGrid.cols*mazeGrid.rows},(_,i)=>[((i%mazeGrid.cols)+.5)*mazeGrid.cell,(Math.floor(i/mazeGrid.cols)+.5)*mazeGrid.cell]):pickupSpots;
  const candidates=spots.filter(([x,y])=>!blocked(x,y,32)&&state.tanks.every((t,i)=>state.lives[i]===0||Math.hypot(t.x-x,t.y-y)>83));if(!candidates.length)return;
- const [x,y]=candidates[Math.floor(Math.random()*candidates.length)],types=Object.keys(PICKUPS),type=types[Math.floor(Math.random()*types.length)];state.pickups=[{x,y,type}];}
-function collectPickup(t,i,p){t.powerType=p.type;t.powerTimer=p.type==='guard'?4.0:7.0;state.event=label(i)+' GOT '+PICKUPS[p.type].name;state.eventTimer=1;emitFx('pickup',p.x,p.y,PICKUPS[p.type].color);state.pickups=[];state.pickupTimer=8+Math.random()*4;refreshHUD();}
+ const [x,y]=candidates[Math.floor(Math.random()*candidates.length)],types=Object.keys(PICKUPS).filter(type=>type!=='repair'||state.tanks.some((t,i)=>state.lives[i]>0&&!t.onFoot&&currentVehicle(t)?.armor<vehicleDef(currentVehicle(t)).armor));const type=types[Math.floor(Math.random()*types.length)];state.pickups=[{x,y,type}];}
+function collectPickup(t,i,p){const def=PICKUPS[p.type];if(!def)return false;
+ if(p.type==='repair'){const v=currentVehicle(t);if(!v||v.armor>=vehicleDef(v).armor)return false;v.armor=Math.min(vehicleDef(v).armor,v.armor+1);}
+ else{t.powerType=p.type;t.powerTimer=def.duration;}
+ state.event=label(i)+' GOT '+def.name;state.eventTimer=1;
+ emitFx('pickup',p.x,p.y,def.color);state.pickups=state.pickups.filter(item=>item!==p);state.pickupTimer=9+Math.random()*4;refreshHUD();return true;}
 
 function notice(t,duration=2400){toast.textContent=t;toast.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('visible'),duration)}
 function firstMatchHint(){try{if(window.localStorage?.getItem('rr-coach-v091'))return;window.localStorage?.setItem('rr-coach-v091','1')}catch(_){}notice('MOVE · FIRE · ENTER VEHICLES',3300)}
@@ -224,7 +232,8 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
   if(typeof interact.setAttribute==='function')interact.setAttribute('aria-label',bayBusy?'Vehicle bay occupied. Move clear to enter a vehicle':foot?'Enter nearby '+vehicleDef(near).name:'Exit '+vehicleDef(localVehicle).name);
  }
  document.getElementById('game-screen')?.classList.toggle('pilot-match',isPilotMatch());
- const shellMeter=document.getElementById('shell-meter');if(shellMeter){const cap=state.tanks[me]?.onFoot?2:(currentVehicle(state.tanks[me])?.type==='mech'?2:(state.config?.bulletCap||3));shellMeter.textContent=`${Math.max(0,cap-active)}/${cap} READY`;shellMeter.classList.toggle('empty',active>=cap)}
+ const shellMeter=document.getElementById('shell-meter');if(shellMeter){const cap=activeBulletCap(state.tanks[me]);shellMeter.textContent=`${Math.max(0,cap-active)}/${cap} READY`;shellMeter.classList.toggle('empty',active>=cap)}
+ const power=document.getElementById('power-status');if(power){const def=PICKUPS[localPilot?.powerType];const activePower=!!def&&localPilot.powerTimer>0;power.classList.toggle('hidden',!activePower);power.textContent=activePower?def.name+' · '+Math.ceil(localPilot.powerTimer)+'s':'';if(activePower)power.style.borderColor=def.color;}
  const ended=state.winner>=0&&mode!=='idle';if(ended||state.eventTimer>0)toast.classList.remove('visible');document.getElementById('game-screen')?.classList.toggle('match-finished',ended);const replay=document.getElementById('quick-rematch');if(replay)replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));
  const label0=document.getElementById('player0-label');if(label0)label0.textContent='YOU';const label1=document.getElementById('player1-label');if(label1)label1.textContent=mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';if(mode==='solo')document.getElementById('score1').textContent=botLives;}
 function newMatch(which){if(bridgeReady())window.AndroidBridge.stopNetwork();mode=which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;savePrefs();
@@ -275,14 +284,14 @@ function botInput(i,dt){const bot=state.tanks[i],enemies=state.tanks.map((t,j)=>
  return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,fire:Math.abs(delta)<aim&&hasLine,bot:true};}
 function shoot(owner){if(state.lives[owner]<=0)return false;
  const isFoot=isPilotMatch()&&state.tanks[owner].onFoot;
- const v=currentVehicle(state.tanks[owner]),def=vehicleDef(v);const cap=isFoot?2:(v?.type==='mech'?def.bulletCap:(state.config?.bulletCap||3));if(state.bullets.filter(b=>b.owner===owner&&b.life>0).length>=cap)return false;
+ const v=currentVehicle(state.tanks[owner]),def=vehicleDef(v);const cap=activeBulletCap(state.tanks[owner]);if(state.bullets.filter(b=>b.owner===owner&&b.life>0).length>=cap)return false;
  const t=state.tanks[owner],dx=Math.cos(t.a),dy=Math.sin(t.a);
  // Trace the barrel from the tank toward the muzzle. A tank beside a wall
  // must not launch its shell on the opposite side of that wall.
  let x=t.x+dx*(isFoot?7:12),y=t.y+dy*(isFoot?7:12);
  for(let distance=isFoot?9:14;distance<=(isFoot?17:34);distance+=2){const bx=t.x+dx*distance,by=t.y+dy*distance;if(blocked(bx,by,isFoot?3:5))break;x=bx;y=by;}
  t.shield=0; // Shooting cancels spawn/ejection immunity.
- const speed=isFoot?475:def.projectileSpeed;state.bullets.push({x,y,vx:dx*speed,vy:dy*speed,owner,life:isFoot?.9:3.8,bounces:0,age:0,kind:isFoot?'sidearm':v?.type==='mech'?'mech':'shell'});t.flash=.11;t.recoil=isFoot?.28:v?.type==='mech'?.56:.72;emitFx('shot',x,y,colors[owner],owner);sound(410+owner*80,.065,x,y);refreshHUD();return true;}
+ const speed=isFoot?475:def.projectileSpeed;state.bullets.push({x,y,vx:dx*speed,vy:dy*speed,owner,life:isFoot?.82:v?.type==='mech'?2.05:2.55,bounces:0,age:0,kind:isFoot?'sidearm':v?.type==='mech'?'mech':'shell'});t.flash=.11;t.recoil=isFoot?.28:v?.type==='mech'?.56:.72;emitFx('shot',x,y,colors[owner],owner);sound(410+owner*80,.065,x,y);refreshHUD();return true;}
 function respawn(victim){const enemies=state.tanks.filter((_,i)=>i!==victim&&state.lives[i]>0&&!friendly(victim,i));const spots=[];
  if(mazeGrid){for(let r=0;r<mazeGrid.rows;r++)for(let c=0;c<mazeGrid.cols;c++)spots.push([(c+.5)*mazeGrid.cell,(r+.5)*mazeGrid.cell]);}
  else spots.push(...[[130,300],[830,300],[130,100],[830,500],[480,96],[480,500],[130,480],[830,120],[340,70],[620,525]]);
@@ -322,8 +331,8 @@ function step(dt){if(paused||state.winner>=0)return;
  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]<=0)continue;
  t.powerTimer=Math.max(0,(t.powerTimer||0)-dt);if(t.powerTimer<=0)t.powerType=null;t.flash=Math.max(0,(t.flash||0)-dt);t.recoil=Math.max(0,(t.recoil||0)-dt*6);t.ejectAnim=Math.max(0,(t.ejectAnim||0)-dt);
  t.shield=Math.max(0,t.shield-dt);tankMove(t,inputs[i],dt,i);
- for(const p of state.pickups){if(!t.onFoot&&Math.hypot(t.x-p.x,t.y-p.y)<35){collectPickup(t,i,p);break}}
- fireCooldown[i]=Math.max(0,(fireCooldown[i]||0)-dt);if(inputs[i]?.fire&&fireCooldown[i]<=0&&shoot(i))fireCooldown[i]=t.onFoot?.48:(t.powerType==='rapid'?.13:vehicleDef(currentVehicle(t)).fireCooldown);}
+ for(const p of state.pickups){if(Math.hypot(t.x-p.x,t.y-p.y)<(t.onFoot?23:35)&&collectPickup(t,i,p))break}
+ fireCooldown[i]=Math.max(0,(fireCooldown[i]||0)-dt);if(inputs[i]?.fire&&fireCooldown[i]<=0&&shoot(i))fireCooldown[i]=fireInterval(t);}
  for(const b of state.bullets){b.age+=dt;b.life-=dt;const substeps=Math.max(1,Math.ceil(Math.max(Math.abs(b.vx),Math.abs(b.vy))*dt/5)),subDt=dt/substeps;
  for(let j=0;j<substeps&&b.life>0&&state.winner<0;j++){const nx=b.x+b.vx*subDt,ny=b.y+b.vy*subDt;
  if(blocked(nx,b.y,b.kind==='sidearm'?3:5)){if(b.kind==='sidearm'){b.life=0;break}b.vx=-b.vx;b.bounces++;emitFx('bounce',b.x,b.y,colors[b.owner]);sound(700,.018,b.x,b.y)}else b.x=nx;
