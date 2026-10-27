@@ -1,3 +1,15 @@
+# Sector Rebound — v0.9.21 Game Feel Preview
+
+**Latest preview branch:** `dev/sector-rebound-polish-v0921` · **Android versionCode 38** · **Baseline:** `dev/sector-rebound-integrated-v0920` (untouched)
+
+**Installable Android test:** [v0.9.21 GitHub Releases](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.21-polish-preview) · [Direct APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/download/v0.9.21-polish-preview/app-debug.apk). This is a **debug preview**, not a Play-signed app. Back up local save data before uninstalling any APK with a conflicting debug key.
+
+This slice removes filler menu wording, quietly cycles the **real tank/mech renderers**, simplifies the on-foot human sprite, pulls back the per-unit camera by around 7%, and introduces a small **original offline WebAudio soundtrack experiment** with separate MUSIC and SOUND FX toggles. All prior combat modes, LAN packet format, projectile balance and planned monetization remain unchanged. Human review is still required for pilot readability and Android music comfort.
+
+**Source of truth:** [Integrated v0.9.20 checkpoint](docs/INTEGRATION_CHECKPOINT_v0920.md) · [v0.9.21 visual/audio QA](docs/design/reviews/2026-10-27_V0921_GAME_FEEL_QA.md) · [Google Play v1.0 roadmap](docs/ROADMAP_TO_GOOGLE_PLAY_V1.md) · [Complete FIELDGRID design archive](docs/design/README.md). The repository default `main` has not been updated by this preview; historic draft PRs remain reviewable.
+
+---
+
 # Sector Rebound — v0.9.19 Pilot Readability & Icon Style Prototypes
 
 **Reliable Android test download:** [Sector Rebound v0.9.19 Pilot Preview on GitHub Releases](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.19-pilot-preview) — [direct APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/download/v0.9.19-pilot-preview/app-debug.apk). GitHub Releases is the stable public distribution location; ChatGPT Library links and short-lived Actions artifacts are not the primary download route. This is a **debug preview**, not a Google Play-signed release. If Android reports a signature conflict, back up local data before removing an older build.
