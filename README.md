@@ -1,3 +1,19 @@
+# Sector Rebound — v0.9.18 Google Play Foundation
+
+**Current test branch:** `dev/sector-rebound-play-foundation-v0918` · **Android versionCode:** 35
+
+Google Play preparation is now part of development. Android compile/target have been upgraded to **API 36** using **AGP 8.13.2** and **Gradle 8.13**. The CI builds both a debug APK for normal sideload testing and an **unsigned release AAB for packaging verification only**. No Play Console account, production release signing key or app submission exists as part of this branch.
+
+**Verified 2026-10-27:** [GitHub Actions build 40531944689](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40531944689) passed gameplay smoke testing, Chromium visual comparisons, Android APK compilation, unsigned release bundle generation and artifact uploads.
+
+**Important decisions before uploading to Google Play:** choose Personal vs verified Organization account according to actual legal ownership; decide final immutable Android package identity (`com.playereden.ricochetrumble` is from the earlier title); decide whether the game launches paid or free; implement secret-managed release signing; publish accurate privacy policy and Data safety disclosures. Organization registration does **not** excuse quality testing, although the new-personal-account 12-tester/14-day rule is specifically for qualifying personal accounts.
+
+**Next planned feature:** an offline-first, versioned FIELDGRID Pilot Dossier/profile with service history, stats, cosmetic rank and safe migration, then optional Google Play Games achievements/leaderboards later. No forced Google sign-in or fictional cloud sync.
+
+See [v0.9.18 Play launch checklist](docs/PLAY_LAUNCH_v0.9.18.md). The earlier `dev/sector-rebound-match-flow-v0917` remains intact for rollback.
+
+---
+
 # Sector Rebound — v0.9.17 Match Flow, Readability & First-Play
 
 **Active test branch:** `dev/sector-rebound-match-flow-v0917` · **Android versionCode:** 34
