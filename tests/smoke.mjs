@@ -749,7 +749,7 @@ console.log('PASS v0.9.15: after-action stats, result transitions, replay/menu a
    assert.ok(visited.has(toCell(t)),'spawn cells must all be connected '+size+' seed '+seed);
   }
   const bots=game.tanks.slice(1),pos=bots.map(b=>[b.x,b.y]),idle=bots.map(()=>0);
-  let travel=0,shots=0,peakShells=0,steps=0,freeze=0,lastFx=0,longestStall=null,choices={supply:0,recovery:0,evade:0,engage:0};
+  let travel=0,shots=0,peakShells=0,steps=0,freeze=0,closeDuelFrames=0,lastFx=0,longestStall=null,choices={supply:0,recovery:0,evade:0,engage:0};
   for(let frame=0;frame<1800&&game.winner<0;frame++){
    // Sample tactical decisions without changing the simulation.
    if(frame%30===0)for(let i=1;i<game.tanks.length;i++)if(game.lives[i]>0){
@@ -765,17 +765,26 @@ console.log('PASS v0.9.15: after-action stats, result transitions, replay/menu a
    for(let b=0;b<bots.length;b++){
     const now=bots[b],dist=Math.hypot(now.x-pos[b][0],now.y-pos[b][1]);
     if(game.lives[b+1]>0){
-     travel+=dist;idle[b]=dist<.05?idle[b]+1:0;
+     travel+=dist;
+     // Near-contact pressure is not a navigation stall: bots deliberately
+     // reduce their approach speed while dueling at close range.
+     const threats=game.tanks.map((t,j)=>({t,j})).filter(o=>o.j!==b+1&&game.lives[o.j]>0&&win.__test.teamOf(o.j)!==win.__test.teamOf(b+1));
+     threats.sort((a,b)=>Math.hypot(now.x-a.t.x,now.y-a.t.y)-Math.hypot(now.x-b.t.x,now.y-b.t.y));
+     const nearest=threats[0]?.t;
+     const nearestDistance=nearest?Math.hypot(now.x-nearest.x,now.y-nearest.y):Infinity;
+     const engaged=nearestDistance<115&&win.__test.hasLineOfSight(now.x,now.y,nearest.x,nearest.y);
+     if(dist<.05&&engaged)closeDuelFrames++;
+     idle[b]=dist<.05&&!engaged?idle[b]+1:0;
      if(idle[b]>freeze){
       freeze=idle[b];
       if(freeze>=60&&freeze%30===0){
-       const enemy=game.tanks[0];
-       const kind=win.__test.chooseBotObjective(b+1,enemy,skill);
+       const objective=win.__test.chooseBotObjective(b+1,nearest??game.tanks[0],skill);
        const radius=now.onFoot?12:22;
        const openDirections=[0,Math.PI/2,Math.PI,Math.PI*1.5].map(a=>!win.__test.blocked(now.x+Math.cos(a)*42,now.y+Math.sin(a)*42,radius));
        longestStall={botIndex:b+1,seconds:+(freeze/60).toFixed(2),frame,x:+now.x.toFixed(1),y:+now.y.toFixed(1),foot:now.onFoot,
-        objective:kind.kind,distance:+Math.hypot(kind.point.x-now.x,kind.point.y-now.y).toFixed(1),
-        alive:game.lives[b+1],openDirections,opponents:game.tanks.map((t,i)=>({i,x:+t.x.toFixed(1),y:+t.y.toFixed(1),life:game.lives[i]}))};
+        objective:objective.kind,distance:+Math.hypot(objective.point.x-now.x,objective.point.y-now.y).toFixed(1),
+        closestEnemyDistance:+nearestDistance.toFixed(1),alive:game.lives[b+1],openDirections,
+        opponents:game.tanks.map((t,i)=>({i,x:+t.x.toFixed(1),y:+t.y.toFixed(1),life:game.lives[i]}))};
       }
      }
     }
@@ -787,7 +796,7 @@ console.log('PASS v0.9.15: after-action stats, result transitions, replay/menu a
   allTravel+=travel;allShots+=shots;longestFreeze=Math.max(longestFreeze,freeze);
   samples.push({size,seed:game.mazeSeed,skill,elapsedSeconds:+(steps/60).toFixed(2),completed:game.winner>=0,
    winner:game.winner,kos:game.kos.slice(),botDistance:+travel.toFixed(1),shots,peakShells,
-   maxBotImmobileSeconds:+(freeze/60).toFixed(2),longestStall,choices});
+   maxBotImmobileSeconds:+(freeze/60).toFixed(2),closeDuelSeconds:+(closeDuelFrames/60).toFixed(2),longestStall,choices});
  }
  assert.equal(samples.length,18);
  assert.ok(samples.every(x=>x.elapsedSeconds>0));
