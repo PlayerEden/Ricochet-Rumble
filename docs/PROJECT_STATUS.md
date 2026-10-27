@@ -5,7 +5,7 @@
 **Purpose:** The first file to read when resuming development, switching chats, or handing work to another contributor.  
 **Maintenance rule:** Update this file **in the same work session** as any new milestone, major decision, release, or changed blocker. Always distinguish tested code from proposed designs.
 
-## Start here — exact state
+**Repository health audit (2026-10-27):** [Verified audit & priority tracker](GITHUB_AUDIT_2026-10-27.md). All 28 branches and 17 chained draft PRs remain intact. Follow [mainline integration #18](https://github.com/PlayerEden/Ricochet-Rumble/issues/18), [CI/release process #19](https://github.com/PlayerEden/Ricochet-Rumble/issues/19), [signing custody #20](https://github.com/PlayerEden/Ricochet-Rumble/issues/20), [durable QA evidence #21](https://github.com/PlayerEden/Ricochet-Rumble/issues/21), and [real-phone/LAN testing #22](https://github.com/PlayerEden/Ricochet-Rumble/issues/22). These are **open tasks**, not completed feature changes.\n\n## Start here — exact state
 
 | Item | Status |
 | --- | --- |
