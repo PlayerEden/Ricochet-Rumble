@@ -16,6 +16,12 @@ try{
   if(!fs.existsSync(path.join(rootDir,'web/index.html')))continue;
   for(const [width,height] of sizes){
    const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:1});
+   // Identical procedural seeds for the old and new builds. Screenshot
+   // comparisons must compare UI/camera, not two randomly different mazes.
+   await page.addInitScript(()=>{
+    let seed=0x5eed1937;
+    Math.random=()=>{seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;return(seed>>>0)/4294967296;};
+   });
    const label=width+'x'+height;
    const out=path.join(root,'qa-screens',name);
    fs.mkdirSync(out,{recursive:true});
@@ -25,7 +31,7 @@ try{
     const panel=await page.locator('#panel').evaluate(el=>({scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,rect:(()=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height}})()})).catch(()=>null);
     const canvas=await page.locator('#arena').boundingBox();
     const fullBleed=!!canvas&&Math.abs(canvas.x)<2&&Math.abs(canvas.y)<2&&Math.abs(canvas.width-width)<2&&Math.abs(canvas.height-height)<2;
-    if(name==='after'&&stage==='arena'&&!fullBleed)throw new Error('Fullscreen arena regression at '+label);
+    if(name==='after'&&['arena','moving-tank'].includes(stage)&&!fullBleed)throw new Error('Fullscreen arena regression at '+label+' / '+stage);
     report.push({version:name,viewport:label,screen:stage,panel,scrollNeeded:!!panel&&panel.scrollHeight>panel.clientHeight+2,canvas,fullBleed});
     await page.screenshot({path:path.join(out,label+'-'+stage+'.png'),animations:'disabled'});
    }
