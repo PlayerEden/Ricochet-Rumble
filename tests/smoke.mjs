@@ -673,7 +673,7 @@ console.log('PASS v0.9.14 end-of-life powerup state audit.');
  assert.equal(win.__test.audioCue('ricochet'),true,'bounce audio available');
  assert.equal(win.__test.audioCue('ricochet'),false,'bounce cue throttled');
  assert.equal(win.__test.audioCue('victory'),true,'win receives a short synth motif');
- assert.ok(tones.length>=8,'short polyphonic stinger generated');
+ assert.ok(tones.length>=7,'victory cue adds two extra voices to the short stinger');
  assert.equal(win.__test.audioCue('does-not-exist'),false);
 }
 {
