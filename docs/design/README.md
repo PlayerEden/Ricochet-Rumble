@@ -18,6 +18,10 @@ This is the permanent source of truth for **future art and interface decisions**
 
 Machine-readable **concept catalog**: [../../game-data/cosmetics/pilot_icons.v1.json](../../game-data/cosmetics/pilot_icons.v1.json).
 
+### Latest UI & character review
+
+- [Game Lobby & Minimal Pilot — v0.9.20 review](reviews/2026-10-27_GAME_LOBBY_PILOT_v0920.md): applies the visual system to the real mobile home screen and the small on-foot character. Builds directly on in-game assets, prioritizes primary-play hierarchy and simple silhouettes.
+
 ## Authority / conflict rules
 
 - **Production shipping behavior:** running game source and passed tests win.
