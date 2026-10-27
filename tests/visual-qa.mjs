@@ -73,6 +73,19 @@ try{
    }
    await page.locator('#menu button[data-action="settings"]').click();
    await shot('settings');
+   if(name==='after'){
+    const options=page.locator('details.extra-rules');
+    await options.locator('summary').click();
+    const first=page.locator('input[data-playlist-mode="survival_ffa"]');
+    const second=page.locator('input[data-playlist-mode="survival_teams"]');
+    if(!await first.isVisible()||!await second.isVisible())throw new Error('Quick Play mode checkboxes missing at '+label);
+    await first.uncheck();await second.uncheck();
+    if(!await page.locator('#menu button[data-action="settings-play"]').isDisabled())throw new Error('Zero selected modes must disable Quick Play at '+label);
+    await first.check();await second.check();
+    if(await page.locator('#menu button[data-action="settings-play"]').isDisabled())throw new Error('Valid playlist must reenable Quick Play at '+label);
+    await shot('settings-playlist-expanded');
+    await options.locator('summary').click();
+   }
    await page.locator('#menu button[data-action="settings-back"]').click();
    await page.locator('#menu button[data-action="help"]').click();
    await shot('help');
