@@ -584,16 +584,47 @@ function drawTopMech(c,paint,parked=false,stride=0,recoil=0,bob=0){
  c.restore();
 }
 function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
- // True overhead pilot: two boots, shoulder pads, helmet visor and sidearm pointing +X.
- // Lightweight gait response is intentionally smaller than the mech or tank.
- c.save();c.translate(-.8*recoil,bob);c.lineWidth=2;c.strokeStyle='#071720';
- c.fillStyle='#142b39';c.fillRect(-14+stride,-12,10,8);c.fillRect(-14-stride,4,10,8);
- c.fillStyle=paint;c.fillRect(-10,-11,16,22);c.strokeRect(-10,-11,16,22);
- c.fillStyle='#243b47';c.fillRect(-6,-7,13,14);
- c.fillStyle=paint;c.beginPath();c.arc(-1,0,8,0,Math.PI*2);c.fill();c.stroke();
- c.fillStyle='#c7eff2';c.fillRect(1,-4,5,8);
- c.fillStyle='#152939';c.fillRect(7,-4,13,8);c.fillStyle='#b8ced4';c.fillRect(16,-3,5,6);
- if(shooting){c.fillStyle='#ffe5a0';c.beginPath();c.arc(25,0,4,0,Math.PI*2);c.fill()}
+ // FIELDGRID foot operator: true overhead, facing +X before actor rotation.
+ // Readability hierarchy: separate boots -> compact torso -> paired shoulders
+ // -> large helmet/visor -> restrained sidearm. Same collision/hitbox as before.
+ // Distinct silhouettes matter more than a miniature humanoid face.
+ c.save();c.translate(-.35*recoil,bob);
+ c.strokeStyle='#071720';c.lineWidth=1.5;
+ const gait=clamp(stride,-3,3);
+ // Two boots have independent forward/back phases. The dark gap reads as legs.
+ c.fillStyle='#091923';
+ c.fillRect(-19+gait,-10,10,7);c.fillRect(-19-gait,3,10,7);
+ c.fillStyle='#345263';
+ c.fillRect(-18+gait,-9,8,5);c.fillRect(-18-gait,4,8,5);
+ c.fillStyle='#81989d';c.fillRect(-11+gait,-9,2,5);c.fillRect(-11-gait,4,2,5);
+ // Compact rear utility pack and clearly edged torso; no oversized chest box.
+ c.fillStyle='#071923';c.fillRect(-13,-9,17,18);
+ c.fillStyle='#2c4451';c.fillRect(-12,-8,15,16);
+ c.fillStyle='#49616d';c.fillRect(-10,-5,10,10);
+ c.fillStyle=paint;c.fillRect(-11,-8,3,16);
+ c.fillStyle='#142b39';c.fillRect(-2,-5,7,10);
+ // Separated shoulder pads and forearms make it read as a human, not tracks.
+ for(const side of [-1,1]){
+  const y=side<0?-15:9;
+  c.fillStyle='#071923';c.fillRect(-6,y,12,7);
+  c.fillStyle=paint;c.fillRect(-5,y+1,10,5);
+  c.fillStyle='#314a55';c.fillRect(4,y+1,5,5);
+ }
+ // Central rounded helmet shell. The darker inset and forward glass give
+ // an unambiguous head direction without over-rendering a face at 32px.
+ c.fillStyle='#071923';c.beginPath();c.arc(-2,0,9,0,Math.PI*2);c.fill();
+ c.fillStyle='#708b98';c.beginPath();c.arc(-2,0,7.2,0,Math.PI*2);c.fill();
+ c.fillStyle='#2d4c5b';c.fillRect(-7,-5,4,10);
+ c.fillStyle='#0c2632';c.fillRect(0,-6,5,12);
+ c.fillStyle='#91d5df';c.fillRect(1,-4,4,8);
+ c.fillStyle='#e1f2ed';c.fillRect(4,-3,1,4);
+ // Fixed sidearm with barrel, grip and muzzle. Short and narrow so the
+ // silhouette cannot be mistaken for the hull/turret of a small tank.
+ c.fillStyle='#0b1d27';c.fillRect(7,-3,13,6);
+ c.fillStyle='#a6bdc2';c.fillRect(9,-2,11,3);
+ c.fillStyle='#324854';c.fillRect(13,3,4,5);
+ c.fillStyle='#c8e9e8';c.fillRect(19,-1.5,4,3);
+ if(shooting){c.fillStyle='#ffe3a0';c.beginPath();c.arc(26,0,3.5,0,Math.PI*2);c.fill()}
  c.restore();
 }
 // Unit-specific camera language: agile pilot sees a closer view, heavier units
