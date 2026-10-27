@@ -1,8 +1,8 @@
-name: Android Test APK # Sector Rebound v0.9.14 final camera and supply lifecycle QA
+name: Android Test APK # Sector Rebound v0.9.15 audio effects and after-action QA
 on:
   workflow_dispatch:
   push:
-    branches: [dev/sector-rebound-camera-qa-v0914]
+    branches: [dev/sector-rebound-feedback-v0915]
     paths:
       - '.github/workflows/build-apk.yml'
 permissions:
@@ -28,10 +28,10 @@ jobs:
           gradle-version: '8.9'
       - name: Run gameplay smoke tests
         run: node tests/smoke.mjs
-      - name: Checkout v0.9.13 visual baseline
+      - name: Checkout v0.9.14 visual baseline
         uses: actions/checkout@v4
         with:
-          ref: dev/sector-rebound-combat-feel-v0913
+          ref: dev/sector-rebound-camera-qa-v0914
           path: visual-baseline
       - name: Capture visual before/after QA
         run: |
@@ -45,7 +45,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.14-visual-before-after
+          name: sector-rebound-v0.9.15-visual-before-after
           path: qa-screens/
           if-no-files-found: error
           retention-days: 14
@@ -54,7 +54,7 @@ jobs:
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.14-debug-apk
+          name: sector-rebound-v0.9.15-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
