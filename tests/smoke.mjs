@@ -392,7 +392,7 @@ const expectedZoom=Math.max(1.00,1536/(fieldWidth+840),672/(fieldHeight+840));
 assert.ok(Math.abs(win.__test.cameraZoom(null)-expectedZoom)<1e-9,'zoom accounts for playable perimeter without black side gutters');
 assert.ok(win.__test.cameraZoom()<Math.max(1.28,1536/fieldWidth,672/fieldHeight),'new widescreen camera genuinely shows more world');
 const motions=[];
-const motionPaint={save(){},restore(){},translate(x,y){motions.push([x,y])},scale(){},fillRect(){},strokeRect(){},arc(){},beginPath(){},stroke(){},fill(){},set lineWidth(v){},set lineJoin(v){},set strokeStyle(v){},set fillStyle(v){}};
+const motionPaint={save(){},restore(){},translate(x,y){motions.push([x,y])},scale(){},fillRect(){},strokeRect(){},arc(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},stroke(){},fill(){},set lineWidth(v){},set lineJoin(v){},set strokeStyle(v){},set fillStyle(v){}};
 win.__test.drawTopMech(motionPaint,'#aaaaff',false,0,0,0);
 assert.ok(Math.abs(motions[0][0])<0.000001&&Math.abs(motions[0][1])<0.000001);
 motions.length=0;win.__test.drawTopMech(motionPaint,'#aaaaff',false,2,.56,.55);
