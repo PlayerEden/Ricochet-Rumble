@@ -76,6 +76,7 @@ try{
     await page.addStyleTag({content:[
      '#after-action.hidden{display:grid!important}',
      '#after-action .quick-rematch.hidden{display:block!important}',
+     '.aa-actions:has(.quick-rematch.hidden){grid-template-columns:1fr 1fr!important}',
      '#game-screen .game-hud,#game-screen .battlefield>.touch-zone{display:none!important}'
     ].join('\n')});
     const rect=await page.locator('.aa-panel').boundingBox();
