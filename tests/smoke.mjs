@@ -956,6 +956,10 @@ console.log('PASS v0.9.22 Slice A versioned playlist selection, shuffle-bag boun
  assert.equal(s.elapsedSeconds,0);
  api.step(1/60);assert.ok(s.elapsedSeconds>0,'active simulation advances match time');
  const elapsed=s.elapsedSeconds;
+ for(const fn of handlers['menu-button:click']||[])fn();
+ api.step(0.75);
+ assert.equal(s.elapsedSeconds,elapsed,'pause does not advance simulation match time');
+ click('resume');
  // Pause and finalization must not advance the clock; only active simulation ticks count.
  s.tanks[0].onFoot=true;s.tanks[0].shield=0;s.lives[0]=2;
  s.kos[0]=0;
@@ -994,6 +998,11 @@ console.log('PASS v0.9.22 Slice A versioned playlist selection, shuffle-bag boun
  assert.equal(old.operatorKOs,1,'previous snapshot remains unchanged');
  // Respawn is counted once per actual nonterminal death, and ejection is not a death.
  const next=st();next.tanks[0].shield=0;next.lives[0]=2;
+ const beforeArmor=next.vehicles[next.tanks[0].vehicleId].armor;
+ assert.equal(api.registerHit(1,0),true,'vehicle armor hit accepted');
+ assert.equal(next.vehicles[next.tanks[0].vehicleId].armor,beforeArmor-1);
+ assert.equal(next.deaths[0],0,'armor hit cannot be a pilot death');
+ assert.equal(next.kos[1],0,'armor hit cannot be an operator KO');
  api.ejectPilot(0);assert.equal(next.deaths[0],0,'vehicle ejection is not a pilot death');
  next.tanks[0].shield=0;
  assert.equal(api.registerHit(1,0),true);
