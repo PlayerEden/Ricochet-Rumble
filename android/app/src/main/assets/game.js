@@ -583,49 +583,60 @@ function drawTopMech(c,paint,parked=false,stride=0,recoil=0,bob=0){
  if(parked){c.strokeStyle='#cfb4fd';c.lineWidth=2;c.strokeRect(-29,-38,67,76)}
  c.restore();
 }
+// Main lobby uses the actual in-game tank renderer. No stock-art background.
+let lobbyDrawClock=0;
+function drawLobbyPreview(dt){
+ const preview=document.getElementById('menu-preview');
+ if(!preview?.getContext||menu.classList.contains('hidden'))return;
+ lobbyDrawClock+=Math.max(0,dt);
+ if(lobbyDrawClock<1/24)return;
+ lobbyDrawClock=0;
+ const c=preview.getContext('2d'),w=preview.width,h=preview.height;
+ c.clearRect(0,0,w,h);
+ c.fillStyle='#142f3d';c.fillRect(0,0,w,h);
+ // The showcase resembles the arena but stays subdued behind the unit.
+ c.strokeStyle='#335766';c.lineWidth=2;
+ for(let x=17;x<w;x+=78){c.beginPath();c.moveTo(x,0);c.lineTo(x,h);c.stroke()}
+ for(let y=22;y<h;y+=78){c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke()}
+ c.fillStyle='#203f4c';c.fillRect(0,h*.72,w,17);
+ c.fillStyle='#779da7';c.fillRect(0,h*.72,w,3);
+ c.save();
+ c.translate(w*.51,h*.40);c.rotate(-.26);
+ c.scale(2.55,2.55);
+ // Existing renderer ensures preview matches the installed game unit.
+ drawTopTank(c,'#6bcde0',false,0,0,0,0);
+ c.restore();
+ c.fillStyle='#73c7d6';c.globalAlpha=.4;
+ c.fillRect(w*.12,h*.26,55,2);c.fillRect(w*.77,h*.66,47,2);
+ c.globalAlpha=1;
+}
 function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
- // FIELDGRID foot operator: true overhead, facing +X before actor rotation.
- // Readability hierarchy: separate boots -> compact torso -> paired shoulders
- // -> large helmet/visor -> restrained sidearm. Same collision/hitbox as before.
- // Distinct silhouettes matter more than a miniature humanoid face.
- c.save();c.translate(-.35*recoil,bob);
- c.strokeStyle='#071720';c.lineWidth=1.5;
+ // Top-down FIELDGRID foot pilot, minimalist on purpose.
+ // Three readable parts at phone scale: two legs, torso/arms, round head.
+ // Equipment is not a tiny armored vehicle and does not change collisions.
  const gait=clamp(stride,-3,3);
- // Two boots have independent forward/back phases. The dark gap reads as legs.
- c.fillStyle='#091923';
- c.fillRect(-19+gait,-10,10,7);c.fillRect(-19-gait,3,10,7);
- c.fillStyle='#345263';
- c.fillRect(-18+gait,-9,8,5);c.fillRect(-18-gait,4,8,5);
- c.fillStyle='#81989d';c.fillRect(-11+gait,-9,2,5);c.fillRect(-11-gait,4,2,5);
- // Compact rear utility pack and clearly edged torso; no oversized chest box.
- c.fillStyle='#071923';c.fillRect(-13,-9,17,18);
- c.fillStyle='#2c4451';c.fillRect(-12,-8,15,16);
- c.fillStyle='#49616d';c.fillRect(-10,-5,10,10);
- c.fillStyle=paint;c.fillRect(-11,-8,3,16);
- c.fillStyle='#142b39';c.fillRect(-2,-5,7,10);
- // Separated shoulder pads and forearms make it read as a human, not tracks.
- for(const side of [-1,1]){
-  const y=side<0?-15:9;
-  c.fillStyle='#071923';c.fillRect(-6,y,12,7);
-  c.fillStyle='#496976';c.fillRect(-5,y+1,10,5);
-  c.fillStyle=paint;c.fillRect(-4,y+2,4,3);
-  c.fillStyle='#2b454d';c.fillRect(4,y+1,5,5);
- }
- // Central rounded helmet shell. The darker inset and forward glass give
- // an unambiguous head direction without over-rendering a face at 32px.
- c.fillStyle='#071923';c.beginPath();c.arc(-2,0,9,0,Math.PI*2);c.fill();
- c.fillStyle='#708b98';c.beginPath();c.arc(-2,0,7.2,0,Math.PI*2);c.fill();
- c.fillStyle='#2d4c5b';c.fillRect(-7,-5,4,10);
- c.fillStyle='#0c2632';c.fillRect(0,-6,5,12);
- c.fillStyle='#91d5df';c.fillRect(1,-4,4,8);
- c.fillStyle='#e1f2ed';c.fillRect(4,-3,1,4);
- // Fixed sidearm with barrel, grip and muzzle. Short and narrow so the
- // silhouette cannot be mistaken for the hull/turret of a small tank.
- c.fillStyle='#0b1d27';c.fillRect(8,-2.5,9,5);
- c.fillStyle='#a6bdc2';c.fillRect(10,-1.5,8,2.5);
- c.fillStyle='#324854';c.fillRect(11,2,3,5);
- c.fillStyle='#c8e9e8';c.fillRect(17,-1,3,2);
- if(shooting){c.fillStyle='#ffe3a0';c.beginPath();c.arc(22,0,3,0,Math.PI*2);c.fill()}
+ c.save();c.translate(-recoil*.25,bob);
+ // Shadow and two staggered boots. Simple 10x7 silhouettes retain gait QA.
+ c.fillStyle='#071822';c.beginPath();c.arc(-5,1,11,0,Math.PI*2);c.fill();
+ c.fillStyle='#182f3a';
+ c.fillRect(-17+gait,-9,10,7);c.fillRect(-17-gait,3,10,7);
+ c.fillStyle='#67808c';c.fillRect(-15+gait,-8,6,3);c.fillRect(-15-gait,4,6,3);
+ // Soft torso silhouette under the helmet. One compact chest and color collar.
+ c.fillStyle='#2c4652';c.beginPath();c.arc(-5,0,8.5,0,Math.PI*2);c.fill();
+ c.fillStyle=paint;c.fillRect(-10,-5,3,10);
+ // Arms are short and rounded; avoid tread-like shoulders.
+ c.fillStyle='#425e6a';
+ c.beginPath();c.arc(-4,-9,4,0,Math.PI*2);c.arc(-4,9,4,0,Math.PI*2);c.fill();
+ c.fillStyle=paint;c.fillRect(-5,-12,2,4);c.fillRect(-5,8,2,4);
+ // Head sits forward (+X), with one legible visor instead of many panels.
+ c.fillStyle='#081c27';c.beginPath();c.arc(2,0,8,0,Math.PI*2);c.fill();
+ c.fillStyle='#718f9b';c.beginPath();c.arc(2,0,6.3,0,Math.PI*2);c.fill();
+ c.fillStyle='#2b5061';c.fillRect(4,-4,3,8);
+ c.fillStyle='#98e0e8';c.fillRect(6,-3,2,6);
+ // Tiny sidearm, deliberately subordinate to the head and shoulders.
+ c.fillStyle='#122733';c.fillRect(9,-1.8,7,3.6);
+ c.fillStyle='#b7d1d3';c.fillRect(13,-1,3,2);
+ if(shooting){c.fillStyle='#f9e5a5';c.beginPath();c.arc(18,0,2.5,0,Math.PI*2);c.fill()}
  c.restore();
 }
 // Unit-specific camera language: agile pilot sees a closer view, heavier units
@@ -822,7 +833,7 @@ function loop(now){const dt=clamp((now-lastTime)/1000,0,.085);lastTime=now;
  updateVisuals(dt);hudTimer+=dt;if(hudTimer>.15){hudTimer=0;refreshHUD();}
  if(mode==='host'&&connected){snapshotTimer+=dt;if(snapshotTimer>.09){snapshotTimer=0;nativePacket({type:'state',state:serializeState()})}}
  if(mode==='guest'&&connected){sendTimer+=dt;if(sendTimer>.05){sendTimer=0;nativePacket({type:'input',input:menu.classList.contains('hidden')&&!document.hidden?makeControl(true):{moveX:0,moveY:0,fire:false}})}}
- render(dt);requestAnimationFrame(loop)}
+ render(dt);drawLobbyPreview(dt);requestAnimationFrame(loop)}
 function bridgeReady(){return !!window.AndroidBridge}
 function host(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('host');setPanel('<div class="eyebrow">NEARBY PLAY</div><h2>HOSTING MATCH</h2><p id="host-status">Starting local game...</p><div class="host-address" id="host-address"></div><button data-action="close">CANCEL</button>');window.AndroidBridge.hostGame()}
 function find(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('guest');setPanel('<div class="eyebrow">NEARBY PLAY</div><h2>FIND A MATCH</h2><p id="find-status">Looking for games on the same Wi-Fi...</p><div id="rooms"></div><button data-action="manual">JOIN BY LOCAL IP</button><button data-action="close">BACK</button>');window.AndroidBridge.findGames()}
