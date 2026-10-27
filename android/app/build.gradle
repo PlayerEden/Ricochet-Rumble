@@ -6,8 +6,8 @@ android {
         applicationId 'com.playereden.ricochetrumble'
         minSdk 26
         targetSdk 35
-        versionCode 32
-        versionName '0.9.15-combat-feedback'
+        versionCode 33
+        versionName '0.9.16-combat-intelligence'
     }
     buildTypes {
         release { minifyEnabled false }
