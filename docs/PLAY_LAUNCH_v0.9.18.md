@@ -52,3 +52,12 @@ Pilot badge/rank icon and cosmetic tank/mech accents, several unlock milestones,
 - No forced online login, ads, subscriptions or microtransactions in the foundation build.
 - No fabricated cloud profile, multiplayer match results or ownership records.
 - Preserve v0.9.17 as rollback and only merge after the owner tests an Android APK.
+
+
+## FIELDGRID art and cosmetic design archive (2026-10-27)
+
+The source of truth for visual identity, cosmetic production and eventual Pilot Dossier roster is now [design/README.md](design/README.md). Its [pilot roster](design/11_PILOT_ROSTER_LAUNCH.md) and [concept-only JSON catalog](../game-data/cosmetics/pilot_icons.v1.json) define 5 starter, 3 earned and 10 proposed direct-purchase pilot icons.
+
+Follow [master visual rules](design/00_FIELDGRID_VISUAL_SYSTEM.md), [portrait production bible](design/10_PILOT_ICON_BIBLE.md) and [vehicle/trail/projectile cosmetics specifications](design/12_COSMETIC_EXTENSION_BIBLE.md) before drawing or selling assets.
+
+**No art, product SKU, local Pilot Dossier, billing entitlement or cosmetics store is implemented by the design branch.** The approved style prototype and persistent profile must be built and tested before any item can be considered shipping.
