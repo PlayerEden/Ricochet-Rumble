@@ -1,3 +1,15 @@
+# Sector Rebound — v0.9.12a Camera Tuning Checkpoint
+
+**Active experimental branch:** `dev/sector-rebound-camera-v0912a` · **Android versionCode:** 29
+
+This small follow-up increases zoom uniformly by +0.04: on-foot **1.36**, tank **1.26**, mech **1.20**, fallback **1.28**. Unit transitions, HUD, bot/combat balance, game feel, and LAN protocol are unchanged. No new features were added.
+
+**Verified October 26, 2026:** [successful Android and visual QA workflow](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40427902296). All existing smoke tests (including unit-specific zoom, vehicle entry, LAN/arena changes and Android/web parity), deterministic landscape screenshots, full-bleed camera checks and Android debug APK compilation passed. ZIP/APK integrity independently verified (APK 73,505 bytes; SHA-256 `b51fddc754fcc046327cead6b10cb8cb924f5a92edfa4446ce7c0ba32535449a`).
+
+**Outstanding gate:** the player has not yet run a two-physical-phone Wi-Fi playtest, and device-specific touch/cutout or extended stability tests remain outstanding. See [v0.9.12a phone test guide](docs/CAMERA_AND_PHONE_QA_v0.9.12a.md). Parent `dev/sector-rebound-qa-v0912` is preserved for rollback.
+
+---
+
 # Sector Rebound — v0.9.12 Camera & Reliability Audit
 
 **Current experimental branch:** `dev/sector-rebound-qa-v0912` · **Android versionCode:** 28
