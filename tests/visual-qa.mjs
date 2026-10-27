@@ -116,6 +116,21 @@ try{
    await page.waitForTimeout(280);
    await shot('on-foot-walking');
    await page.keyboard.up('w');
+   if(name==='after'){
+     // Actual renderer + real controls: four directional poses and pistol flash.
+     await page.keyboard.down('a');
+     await page.waitForTimeout(150);
+     await shot('pilot-aim-west');
+     await page.keyboard.up('a');
+     await page.keyboard.down('d');
+     await page.waitForTimeout(155);
+     await shot('pilot-aim-east');
+     await page.keyboard.up('d');
+     await page.locator('#fire-btn').dispatchEvent('pointerdown',{pointerId:1}).catch(()=>{});
+     await page.waitForTimeout(40);
+     await shot('pilot-fire');
+     await page.locator('#fire-btn').dispatchEvent('pointerup',{pointerId:1}).catch(()=>{});
+   }
    await page.locator('#menu-button').click();
    await shot('pause');
    if(name==='after'){

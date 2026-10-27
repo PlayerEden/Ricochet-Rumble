@@ -1194,3 +1194,36 @@ console.log('PASS v0.9.22-dev5 small vehicle-only pullback, pilot preserved and 
  assert.deepEqual(Array.from(api.selectedPlaylistIds),['survival_ffa','survival_teams'],'two-mode selection survives reload');
 }
 console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real rematches, fresh seeds and true frozen After Action.');
+
+
+// v0.9.23 pilot study: validate original human silhouette draw calls, directional
+// weapon, mirrored walking and zero mutation of existing gameplay camera/hitbox.
+{
+ const api=win.__test;
+ const calls=[];
+ const artist=new Proxy({
+  save(){calls.push(['save'])},restore(){calls.push(['restore'])},
+  translate(...v){calls.push(['translate',...v])},scale(...v){calls.push(['scale',...v])},
+  beginPath(){},closePath(){},moveTo(...v){calls.push(['moveTo',...v])},
+  lineTo(...v){calls.push(['lineTo',...v])},fill(){},stroke(){},
+  fillRect(...v){calls.push(['rect',...v])},
+  arc(...v){calls.push(['arc',...v])}
+ },{get(t,k){return t[k]},set(t,k,v){t[k]=v;return true}});
+ api.drawTopPilot(artist,'#46d2f5',false,-3,0,0);
+ const movingLeft=calls.filter(x=>x[0]==='rect').map(x=>x.join(','));
+ const bootR=calls.filter(x=>x[0]==='rect'&&x[2]===5&&x[3]===12);
+ assert.equal(bootR.length,2,'two distinct articulated boots, not one tread');
+ assert.ok(calls.filter(x=>x[0]==='scale').some(x=>x[2]===-1),'mirrored leg movement');
+ assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===13&&x[2]===7&&x[3]===11),'pistol is offset from the helmet');
+ assert.equal(calls.filter(x=>x[0]==='arc').length,0,'no circular turret/cockpit in idle silhouette');
+ const total= calls.length;
+ api.drawTopPilot(artist,'#fc856e',true,3,.2,0);
+ assert.ok(calls.length>total,'alternate gait and firing pose render');
+ assert.ok(calls.some(x=>x[0]==='arc'&&x[1]===26&&x[2]===9),'sidearm flash follows barrel, not nose');
+ assert.equal(calls.filter(x=>x[0]==='save').length,calls.filter(x=>x[0]==='restore').length,'canvas state balanced across poses');
+ assert.ok(calls.every(x=>x.slice(1).every(n=>typeof n!=='number'||Number.isFinite(n))),'valid geometry numbers');
+ assert.equal(api.unitTargetZoom({onFoot:true}),1.07,'pilot camera locked');
+ assert.equal(api.unitTargetZoom({onFoot:false,vehicleId:null}),1.00,'fallback camera unchanged');
+ assert.ok(movingLeft.length>=12,'human sprite has separate kit/limb/shading planes');
+}
+console.log('PASS pilot prototype: visible human anatomy, sidearm, gait, canvas balance, fixed pilot camera.');

@@ -773,31 +773,61 @@ function drawLobbyPreview(dt){
  c.globalAlpha=1;
 }
 function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
- // v0.9.21: single clear operator silhouette. Not a robot or mini-tank.
- // Camera looks straight down. The visor and small pistol face +X.
+ // v0.9.23 experimental FIELDGRID ground operator, NOT an icon or premium skin.
+ // Forward is local +X, the aiming pistol is held by the lower (+Y) hand.
+ // Human-readable anatomy: two staggered boots, shoulder/arms, narrow vest,
+ // separate helmet/visor and an OFFSET sidearm instead of a centerline turret.
  const step=clamp(stride,-3,3);
- c.save();c.translate(-recoil*.2,bob);
- // Legs are two visible counter-stepping boots; preserve exact actor hitbox.
- c.fillStyle='#081923';
- c.fillRect(-23+step,-9,10,7);c.fillRect(-23-step,3,10,7);
- c.fillStyle='#465f68';
- c.fillRect(-21+step,-8,7,5);c.fillRect(-21-step,4,7,5);
- // Longish jacket body with one color band; head is physically ahead of it.
- c.fillStyle='#0b202b';c.fillRect(-17,-9,19,18);
- c.fillStyle='#45636d';c.fillRect(-15,-7,17,14);
- c.fillStyle=paint;c.fillRect(-15,-6,3,12);
- // Rounded, low profile arms separate from the torso, no tank-tread slabs.
- c.fillStyle='#304852';
- c.beginPath();c.arc(-8,-11,4.5,0,Math.PI*2);c.arc(-8,11,4.5,0,Math.PI*2);c.fill();
- c.fillStyle='#93adb3';c.fillRect(-6,-13,3,3);c.fillRect(-6,10,3,3);
- // Forward helmet has a distinct forehead and tiny glass surface.
- c.fillStyle='#091b26';c.beginPath();c.arc(5,0,8,0,Math.PI*2);c.fill();
- c.fillStyle='#79939a';c.beginPath();c.arc(5,0,6.4,0,Math.PI*2);c.fill();
- c.fillStyle='#2d5662';c.fillRect(8,-4,3,8);
- c.fillStyle='#9fdee3';c.fillRect(10,-3,2,6);
- // Tiny pistol is secondary to the head, not a second turret.
- c.fillStyle='#162c36';c.fillRect(13,-1.3,4,3);
- if(shooting){c.fillStyle='#ffe5ad';c.beginPath();c.arc(19,0,2.4,0,Math.PI*2);c.fill()}
+ c.save();c.translate(-recoil*.2,bob);c.lineJoin='round';
+ // Explicit two-foot gait. Keep original gameplay hitboxes completely untouched.
+ for(const side of [-1,1]){
+   c.save();c.scale(1,side);
+   const footOffset=side*step;
+   c.fillStyle='#091923';c.fillRect(-23+footOffset,5,12,6);
+   c.fillStyle='#506c78';c.fillRect(-21+footOffset,6,8,3);
+   c.fillStyle='#172c36';c.fillRect(-12+footOffset*.28,5,8,5);
+   c.restore();
+ }
+ // Narrow shoulders with an actual neck/hip, not a rectangular tank hull.
+ c.fillStyle='#071923';
+ c.beginPath();c.moveTo(-15,-7);c.lineTo(-8,-11);c.lineTo(1,-12);
+ c.lineTo(7,-8);c.lineTo(7,8);c.lineTo(1,12);c.lineTo(-8,11);
+ c.lineTo(-15,7);c.closePath();c.fill();
+ c.fillStyle='#334d59';c.fillRect(-12,-7,18,14);
+ c.fillStyle='#5c7983';c.fillRect(-10,-5,14,10);
+ // Kit is a readable single-colored patch, not noisy fake micro-labels.
+ c.fillStyle=paint;c.fillRect(-10,-6,5,12);
+ c.fillStyle='#1c3540';c.fillRect(-2,-4,5,8);
+ c.fillStyle='#a1b7b5';c.fillRect(-1,-3,3,6);
+ // Upper support arm leaves a dark gap between shoulder and head.
+ c.fillStyle='#304e5b';
+ c.beginPath();c.moveTo(-4,-11);c.lineTo(4,-13);c.lineTo(11,-8);
+ c.lineTo(9,-5);c.lineTo(1,-7);c.lineTo(-3,-7);c.closePath();c.fill();
+ c.fillStyle='#a0b1ae';c.fillRect(7,-8,4,3); // glove
+ // Lower arm bends toward an OFFSET hand-held weapon at +Y.
+ c.fillStyle='#304e5b';
+ c.beginPath();c.moveTo(-4,8);c.lineTo(1,12);c.lineTo(9,10);
+ c.lineTo(12,6);c.lineTo(9,3);c.lineTo(4,8);c.closePath();c.fill();
+ c.fillStyle='#a0b1ae';c.fillRect(9,6,5,4); // weapon hand
+ // Helmet uses a subtle faceted silhouette; square chin/neck and narrow visor.
+ // No circular cockpit ring and NO centerline barrel through the face.
+ c.fillStyle='#091c27';
+ c.beginPath();c.moveTo(3,-6);c.lineTo(7,-9);c.lineTo(13,-8);
+ c.lineTo(17,-5);c.lineTo(17,5);c.lineTo(13,8);
+ c.lineTo(7,9);c.lineTo(3,6);c.closePath();c.fill();
+ c.fillStyle='#748c92';
+ c.beginPath();c.moveTo(5,-5);c.lineTo(9,-7);c.lineTo(13,-6);
+ c.lineTo(15,-4);c.lineTo(15,4);c.lineTo(13,6);
+ c.lineTo(9,7);c.lineTo(5,5);c.closePath();c.fill();
+ c.fillStyle='#315662';c.fillRect(12,-4,3,8);
+ c.fillStyle='#c4ebdf';c.fillRect(15,-3,2,6);
+ // Compact sidearm in the lower hand, aimed +X but visibly offset from helmet.
+ c.fillStyle='#0b222e';c.fillRect(13,7,11,4);
+ c.fillStyle='#7199a1';c.fillRect(14,7,8,2);
+ c.fillStyle='#112c36';c.fillRect(14,10,4,4);
+ if(shooting){
+   c.fillStyle='#ffdb9f';c.beginPath();c.arc(26,9,2.2,0,Math.PI*2);c.fill();
+ }
  c.restore();
 }
 // v0.9.22-dev5: final small vehicle-only pullback after owner phone feedback.
