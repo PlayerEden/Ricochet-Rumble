@@ -950,8 +950,9 @@ console.log('PASS v0.9.22 Slice A versioned playlist selection, shuffle-bag boun
 {
  const api=win.__test;
  api.setPlaylistModes(['survival_ffa']);
+ node('bot-count').value='1';
  api.newMatch('solo');
- const s=st();s.tanks[0].shield=0;
+ const s=st();assert.equal(s.tanks.length,2,'single bot provides deterministic solo result');s.tanks[0].shield=0;
  assert.equal(s.elapsedSeconds,0);
  api.step(1/60);assert.ok(s.elapsedSeconds>0,'active simulation advances match time');
  const elapsed=s.elapsedSeconds;
