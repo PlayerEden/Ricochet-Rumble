@@ -1,5 +1,14 @@
-name: Sector Rebound - manual full Android and visual QA
+name: Sector Rebound - full Android and visual QA
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-apk.yml'
+      - 'web/**'
+      - 'android/**'
+      - 'tests/**'
+      - 'tools/**'
+      - 'game-data/**'
   workflow_dispatch:
     inputs:
       baseline_ref:
@@ -13,6 +22,9 @@ permissions:
 
 jobs:
   full-qa:
+    # Full Android QA is automatic only for mainline integration branches.
+    # Other PRs use lightweight CI; developers dispatch this manually as needed.
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'integration/')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -41,7 +53,7 @@ jobs:
       - name: Checkout screenshot comparison baseline
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.baseline_ref }}
+          ref: ${{ inputs.baseline_ref || 'dev/sector-rebound-integrated-v0920' }}
           path: visual-baseline
       - name: Capture actual Chromium before/after scenes
         run: |
