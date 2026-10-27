@@ -801,3 +801,27 @@ console.log('PASS v0.9.15: after-action stats, result transitions, replay/menu a
  console.log('PASS v0.9.16 AI intent, safe-connected spawns and 18 seeded combat samples: '+JSON.stringify({completed:summary.completed,timedOut:summary.timedOut,averageBotTravel:summary.averageBotTravel,maxBotImmobileSeconds:summary.maxBotImmobileSeconds}));
  simRand=null;
 }
+
+
+// v0.9.16 overlap regression: after an ejection or correction, an actor
+// must be allowed to walk/drive OUT of existing overlap, not into a new one.
+{
+ const game=win.__test.resetSeededMatch(44012,'standard','normal'),grid=win.__test.maze;
+ let spot=null;
+ for(let k=0;k<grid.open.length;k++){
+  const x=((k%grid.cols)+.5)*grid.cell,y=(Math.floor(k/grid.cols)+.5)*grid.cell;
+  if(!win.__test.blocked(x,y,22)&&Math.hypot(x-game.tanks[0].x,y-game.tanks[0].y)>180){spot=[x,y];break;}
+ }
+ assert.ok(spot,'safe cell exists for overlap regression');
+ const moving=game.tanks[1],other=game.tanks[2];
+ Object.assign(moving,{x:spot[0],y:spot[1],vx:0,vy:0,a:0});
+ Object.assign(other,{x:spot[0]+26,y:spot[1],vx:0,vy:0,a:0});
+ const before=moving.x;
+ win.__test.tankMove(moving,{moveX:-1,moveY:0},1/60,1);
+ assert.ok(moving.x<before,'tank must move away even while previously overlapped');
+ // Moving toward an overlapping rival remains blocked.
+ Object.assign(moving,{x:spot[0],y:spot[1],vx:0,vy:0,a:0});
+ win.__test.tankMove(moving,{moveX:1,moveY:0},1/60,1);
+ assert.ok(moving.x<=spot[0]+.00001,'collision still prevents greater penetration');
+ console.log('PASS v0.9.16: separate pre-overlapped actors without introducing new actor clipping.');
+}
