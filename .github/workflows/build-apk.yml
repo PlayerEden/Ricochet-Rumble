@@ -1,4 +1,4 @@
-name: Android Test APK # Sector Rebound v0.9.12 closer camera and reliability audit
+name: Android Test APK # Sector Rebound v0.9.12 verified reliability audit
 on:
   workflow_dispatch:
   push:
@@ -34,12 +34,11 @@ jobs:
           ref: dev/sector-rebound-fieldgrid-v0911
           path: visual-baseline
       - name: Capture visual before/after QA
-        continue-on-error: true
         run: |
           set -e
           CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
           export CHROME_BIN
-          if [ -z "$CHROME_BIN" ]; then echo "Chrome not installed; visual snapshots unavailable"; exit 0; fi
+          if [ -z "$CHROME_BIN" ]; then echo "Chrome is required for visual QA" >&2; exit 1; fi
           npm install --no-save --ignore-scripts playwright-core@1.56.1
           node tests/visual-qa.mjs
       - name: Upload visual QA screenshots
@@ -48,7 +47,7 @@ jobs:
         with:
           name: sector-rebound-v0.9.12-visual-before-after
           path: qa-screens/
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
       - name: Build debug APK (no secrets required)
         working-directory: android
