@@ -2,11 +2,12 @@
 
 **Android-first ricochet combat in a new procedurally generated sector each match.** Pilot a tank or mech, survive on foot, and adapt to unfamiliar maze geometry. Set in the fictional FIELDGRID program.
 
-**Current status: v0.9.21 development preview.** The APK is a working *debug test build*, not a Google Play production release. Solo combat has automated QA; the local two-phone Wi-Fi mode remains experimental and still needs physical-device acceptance. Continuous Quick Play, mode playlists, and new score-based game modes are planned for v0.9.22+, **not currently playable**.
+**Current status: v0.9.21 development preview.** The APK is a working *debug test build*, not a Google Play production release. Solo combat has automated QA; the local two-phone Wi-Fi mode remains experimental and still needs physical-device acceptance. On accepted `main`, continuous Quick Play and new score-based modes are **not yet included**. On [draft PR #24](https://github.com/PlayerEden/Ricochet-Rumble/pull/24), saved survival playlists, NEXT MATCH, honest solo results and the approved camera are **implemented and Android/Chromium-tested**, but **not yet merged or fully phone-accepted**. Scored CQC/FFA/TDM remain future work.
 
 ## Start here
 
 - [Current status / new-chat handoff](docs/PROJECT_STATUS.md) -- first read for every development session
+- [Development plan completeness audit](docs/ROADMAP_COMPLETENESS_AUDIT_2026-10-27.md) -- what's decided, missing acceptance gates and owner launch-scope decisions
 - [Development protocol](docs/DEVELOPMENT_PROTOCOL.md) -- branching, PR, QA and release safeguards
 - [Integration QA evidence](docs/QA_MAINLINE_v0921_2026-10-27.md), [GitHub audit](docs/GITHUB_AUDIT_2026-10-27.md) and [branch register](docs/BRANCH_REGISTER.md)
 - [Google Play v1.0 roadmap](docs/ROADMAP_TO_GOOGLE_PLAY_V1.md)
