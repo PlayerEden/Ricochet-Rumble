@@ -19,7 +19,7 @@ const testMath=Object.create(Math);testMath.random=()=>simRand?simRand():Math.ra
 function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5;return(z>>>0)/4294967296;};}
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math:testMath,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,soloOptionsFor,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,soloOptionsFor,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -695,12 +695,16 @@ console.log('PASS v0.9.14 end-of-life powerup state audit.');
  assert.equal(node('aa-title').textContent,'SECTOR CLEARED');
  assert.equal(node('aa-kos').textContent,'2','KO metric must be accurately named');
  assert.equal(node('aa-lives').textContent,'3');
- assert.equal(node('aa-outcome').textContent,'SUCCESS');
+ assert.equal(node('aa-outcome').textContent,'VICTORY');
  assert.equal(node('quick-rematch').classList.contains('hidden'),false);
+ // A final result is immutable even if a late/duplicated combat event tries to change the winner.
+ const frozen=game.finalResult;
+ assert.ok(Object.isFrozen(frozen),'final result becomes an immutable summary');
  game.winner=1;game.winnerTeam=1;game.event='BOT 1 WINS!';
  win.__test.refreshHUD();
- assert.equal(node('aa-title').textContent,'SECTOR LOST');
- assert.equal(node('after-action').classList.contains('lost'),true,'defeat styling toggles');
+ assert.equal(game.finalResult,frozen,'refreshing a completed result does not rescore it');
+ assert.equal(node('aa-title').textContent,'SECTOR CLEARED','snapshot does not flicker or reverse');
+ assert.equal(node('aa-outcome').textContent,'VICTORY');
  for(const cb of handlers['quick-rematch:click'])cb();
  assert.equal(node('after-action').classList.contains('hidden'),true,'report closes on rematch');
  assert.equal(st().winner,-1);
@@ -941,3 +945,59 @@ console.log('PASS v0.9.21 menu cleanup, separate music/SFX options and 7% wider 
  assert.equal(/score|flag|capture/i.test(st().config.matchModeId),false,'proposed score modes never presented as live');
 }
 console.log('PASS v0.9.22 Slice A versioned playlist selection, shuffle-bag boundaries, real survival presets and fresh seeds.');
+
+// v0.9.22-dev2 — honest, one-time frozen solo result evidence and clock.
+{
+ const api=win.__test;
+ api.setPlaylistModes(['survival_ffa']);
+ api.newMatch('solo');
+ const s=st();s.tanks[0].shield=0;
+ assert.equal(s.elapsedSeconds,0);
+ api.step(1/60);assert.ok(s.elapsedSeconds>0,'active simulation advances match time');
+ const elapsed=s.elapsedSeconds;
+ // Pause and finalization must not advance the clock; only active simulation ticks count.
+ s.tanks[0].onFoot=true;s.tanks[0].shield=0;s.lives[0]=2;
+ s.kos[0]=0;
+ const target=s.tanks[1];target.onFoot=true;target.shield=0;s.lives[1]=1;
+ assert.equal(api.registerHit(0,1),true,'pilot elimination registers hit');
+ assert.equal(s.kos[0],1,'operator KO counts actual pilot elimination');
+ assert.equal(s.deaths[1],1,'victim death counts once');
+ assert.equal(s.respawns[1],0,'last life does not respawn');
+ assert.equal(s.finalResult.outcome,'victory');
+ assert.equal(s.finalResult.operatorKOs,1);
+ assert.equal(s.finalResult.deaths,0);
+ assert.equal(s.finalResult.livesRemaining,2);
+ assert.equal(s.finalResult.durationSeconds,elapsed);
+ assert.equal(s.finalResult.matchId,s.matchId);
+ assert.equal(s.finalResult.mazeSeed,s.mazeSeed);
+ assert.ok(Object.isFrozen(s.finalResult));
+ const snap=s.finalResult;
+ assert.equal(api.finalizeRound(),snap,'no duplicate finalizations');
+ assert.equal(api.registerHit(0,1),false,'late hit after result ignored');
+ api.step(3);assert.equal(s.elapsedSeconds,elapsed,'terminal clock frozen');
+ s.kos[0]=99;s.deaths[0]=99;s.lives[0]=0;
+ api.refreshHUD();
+ assert.equal(node('aa-kos').textContent,'1','results use frozen KO snapshot');
+ assert.equal(node('aa-deaths').textContent,'0');
+ assert.equal(node('aa-lives').textContent,'2','results use frozen life snapshot');
+ assert.equal(node('aa-duration').textContent,api.durationLabel(elapsed));
+ assert.equal(api.durationLabel(125.9),'02:05');
+ assert.equal(api.durationLabel(null),'—','unknown time must not appear as zero');
+ const old=s.finalResult,seed=s.mazeSeed,matchId=s.matchId;
+ api.resetAll(true);
+ assert.equal(st().finalResult,null,'fresh round clears finalized result');
+ assert.equal(st().deaths[0],0,'fresh round clears death counter');
+ assert.equal(st().elapsedSeconds,0,'fresh round clears timer');
+ assert.notEqual(st().mazeSeed,seed,'new round always new maze');
+ assert.ok(st().matchId>matchId,'new round new match ID');
+ assert.equal(old.operatorKOs,1,'previous snapshot remains unchanged');
+ // Respawn is counted once per actual nonterminal death, and ejection is not a death.
+ const next=st();next.tanks[0].shield=0;next.lives[0]=2;
+ api.ejectPilot(0);assert.equal(next.deaths[0],0,'vehicle ejection is not a pilot death');
+ next.tanks[0].shield=0;
+ assert.equal(api.registerHit(1,0),true);
+ assert.equal(next.deaths[0],1);
+ assert.equal(next.respawns[0],1);
+ assert.equal(next.winner,-1,'losing one life does not end match');
+}
+console.log('PASS v0.9.22-dev2 frozen final results, pilot deaths/respawns and active match clock.');

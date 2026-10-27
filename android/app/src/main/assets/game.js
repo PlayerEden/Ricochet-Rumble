@@ -236,13 +236,34 @@ function initialState(arena=0,options=null,seed=null){const config={...readSetti
  const mazeSeed=seed||Math.floor(Math.random()*0x7fffffff)||1,id=setArena(0,mazeSeed,config.mapSize);
  const numBots=config.botCount,humans=count,total=humans+numBots,tanks=Array.from({length:total},(_,i)=>freshTank(i));
  const vehicles=config.pilotMode?spawnVehicles(tanks,humans,mazeSeed):[];
- camera.x=0;camera.y=0;botBrains.clear();return {tanks,vehicles,vehicleDropTimer:28,dropIndex:0,vehicleBeacon:null,bullets:[],pickups:[],pickupTimer:5.5,arenaId:id,mazeSeed,config,humanCount:humans,fxEvents:[],lives:Array(total).fill(config.startLives),kos:Array(total).fill(0),winner:-1,winnerTeam:-1,event:'',eventTimer:0,matchId:++matchSerial};}
+ camera.x=0;camera.y=0;botBrains.clear();return {tanks,vehicles,vehicleDropTimer:28,dropIndex:0,vehicleBeacon:null,bullets:[],pickups:[],pickupTimer:5.5,arenaId:id,mazeSeed,config,humanCount:humans,fxEvents:[],lives:Array(total).fill(config.startLives),kos:Array(total).fill(0),winner:-1,winnerTeam:-1,event:'',eventTimer:0,matchId:++matchSerial,elapsedSeconds:0,deaths:Array(total).fill(0),respawns:Array(total).fill(0),finalResult:null};}
 state=initialState();
 function teamOf(i,st=state){const mode=st.config?.teamMode||'ffa';if(mode==='ffa')return i;if(mode==='coop')return i<st.humanCount?0:1;
  // Alternating teams; solo play always puts bots on the opposing team.
  return st.humanCount===1?(i===0?0:1):i%2;}
 function friendly(a,b){return teamOf(a)===teamOf(b)}
 function label(i){return i===0?'CYAN':i===1&&state.humanCount===2?'CORAL':`BOT ${i-state.humanCount+1}`;}
+// A completed result is a frozen per-match record. HUD refreshes must never re-score it.
+function finalizeRound(){
+ if(!state||state.winner<0||state.finalResult)return state?.finalResult||null;
+ const local=mode==='guest'?1:0,winningTeam=state.winnerTeam,playerAlive=(state.lives[local]||0)>0;
+ const won=playerAlive&&teamOf(local,state)===winningTeam;
+ const summary={
+  version:1,matchId:state.matchId,mazeSeed:state.mazeSeed,
+  matchModeId:state.config.matchModeId||null,teamMode:state.config.teamMode,mapSize:state.config.mapSize,
+  objective:'last_side_standing',outcome:won?'victory':'defeat',winner:state.winner,winnerTeam:winningTeam,
+  operatorKOs:state.kos[local]||0,deaths:state.deaths?.[local]??null,
+  respawns:state.respawns?.[local]??null,livesRemaining:state.lives[local]||0,
+  durationSeconds:state.elapsedSeconds??null,event:String(state.event||'MATCH COMPLETE')
+ };
+ state.finalResult=Object.freeze(summary);
+ return state.finalResult;
+}
+function durationLabel(seconds){
+ if(!Number.isFinite(seconds))return '—';
+ const n=Math.max(0,Math.floor(seconds));
+ return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');
+}
 function emitFx(kind,x,y,color,owner=-1,target=-1){const id=++fxSeq;state.fxEvents.push({id,kind,x,y,color,owner,target,ttl:kind==='shot'?1.8:kind==='hit'?.75:kind==='eject'?.8:kind==='guard'?.5:.4});if(state.fxEvents.length>12)state.fxEvents.shift();spawnParticles(kind,x,y,color);lastRemoteFxId=id}
 function spawnParticles(kind,x,y,color){const count=kind==='hit'?24:kind==='eject'?20:kind==='pickup'?17:kind==='bounce'?5:kind==='shot'?7:12;const speed=kind==='hit'?205:kind==='bounce'?95:kind==='shot'?115:135;
  for(let i=0;i<count;i++){const a=(i/count)*Math.PI*2+Math.random()*.4,velocity=speed*(.28+Math.random()*.72),life=(kind==='shot'?.17:kind==='bounce'?.14:.42)+Math.random()*.26;particles.push({x,y,vx:Math.cos(a)*velocity,vy:Math.sin(a)*velocity,life,maxLife:life,color,size:kind==='hit'?2.5+Math.random()*3:1.5+Math.random()*2.2})}if(particles.length>260)particles.splice(0,particles.length-260);}
@@ -310,7 +331,10 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  const ended=state.winner>=0&&mode!=='idle';if(ended||state.eventTimer>0)toast.classList.remove('visible');
  document.getElementById('game-screen')?.classList.toggle('match-finished',ended);
  const report=document.getElementById('after-action');
- const localWon=ended&&state.lives[me]>0&&teamOf(me)===state.winnerTeam;
+ // Solo results are captured once from combat state. LAN guest uses the existing
+ // replicated winner/KO fields until a host-authoritative result packet exists.
+ const soloResult=ended&&mode==='solo'?finalizeRound():null;
+ const localWon=ended&&(soloResult?soloResult.outcome==='victory':state.lives[me]>0&&teamOf(me)===state.winnerTeam);
  if(!ended)resultCuePlayed=false;
  else if(!resultCuePlayed){resultCuePlayed=true;audioCue(localWon?'victory':'defeat');}
  if(report){
@@ -319,10 +343,12 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
    if(ended){
      const modeTitle=document.getElementById('aa-mode-label');if(modeTitle&&mode==='solo')modeTitle.textContent=soloModeLabel(state.config);
      document.getElementById('aa-title').textContent=localWon?'SECTOR CLEARED':'SECTOR LOST';
-     document.getElementById('aa-event').textContent=String(state.event||'EXERCISE COMPLETE');
-     document.getElementById('aa-kos').textContent=String(state.kos[me]||0);
-     document.getElementById('aa-lives').textContent=String(state.lives[me]||0);
-     document.getElementById('aa-outcome').textContent=localWon?'SUCCESS':'DEFEAT';
+     document.getElementById('aa-event').textContent=soloResult?.event??String(state.event||'EXERCISE COMPLETE');
+     document.getElementById('aa-kos').textContent=String(soloResult?.operatorKOs??state.kos[me]??0);
+     document.getElementById('aa-deaths').textContent=soloResult?String(soloResult.deaths):'—';
+     document.getElementById('aa-duration').textContent=soloResult?durationLabel(soloResult.durationSeconds):'—';
+     document.getElementById('aa-lives').textContent=String(soloResult?.livesRemaining??state.lives[me]??0);
+     document.getElementById('aa-outcome').textContent=localWon?'VICTORY':'DEFEAT';
      document.getElementById('aa-note').textContent=mode==='guest'?'AWAIT HOST REDEPLOYMENT':'NEW PROCEDURAL SECTOR READY';
    }
  }
@@ -495,10 +521,11 @@ function registerHit(attacker,victim){if(state.winner>=0||state.lives[victim]<=0
    if(vehicle.armor===0)ejectPilot(victim);else{state.event=label(victim)+' '+vehicleDef(vehicle).name+' ARMOR '+vehicle.armor+'/'+vehicleDef(vehicle).armor;state.eventTimer=.75;}
    audioCue('armor-hit',target.x,target.y);refreshHUD();return true;
  }}
- emitFx('hit',target.x,target.y,colors[victim],attacker,victim);if(victim===(mode==='guest'?1:0)){screenKick=comfort.shake?3.2:0;damagePulse=.58;}state.lives[victim]--;if(attacker!==victim)state.kos[attacker]++;state.event=label(victim)+' LOSES A LIFE!';state.eventTimer=.85;audioCue('pilot-hit',target.x,target.y);
- if(state.lives[victim]>0)respawn(victim);else{target.vx=target.vy=0;target.powerType=null;target.powerTimer=0;state.bullets=state.bullets.filter(b=>b.owner!==victim);
+ emitFx('hit',target.x,target.y,colors[victim],attacker,victim);if(victim===(mode==='guest'?1:0)){screenKick=comfort.shake?3.2:0;damagePulse=.58;}state.lives[victim]--;if(state.deaths)state.deaths[victim]++;if(attacker!==victim)state.kos[attacker]++;state.event=label(victim)+' LOSES A LIFE!';state.eventTimer=.85;audioCue('pilot-hit',target.x,target.y);
+ if(state.lives[victim]>0){respawn(victim);if(state.respawns)state.respawns[victim]++;}else{target.vx=target.vy=0;target.powerType=null;target.powerTimer=0;state.bullets=state.bullets.filter(b=>b.owner!==victim);
  const active=state.tanks.map((_,i)=>i).filter(i=>state.lives[i]>0),teams=[...new Set(active.map(i=>teamOf(i)))];
  if(teams.length<=1){state.winnerTeam=teams[0]??teamOf(attacker);state.winner=active[0]??attacker;state.event=state.config.teamMode==='coop'?(state.winnerTeam===0?'HUMANS WIN!':'BOTS WIN!'):state.config.teamMode==='teams'?(`TEAM ${state.winnerTeam===0?'BLUE':'RED'} WINS!`):(label(state.winner)+' WINS!');state.eventTimer=0;}}
+ if(state.winner>=0)finalizeRound();
  refreshHUD();return true;}
 // Reassurance only: the minimap already shows contacts, and the reminder
 // cannot reveal enemies, change AI, or fire in multiplayer.
@@ -509,6 +536,7 @@ function updateQuietMatchPrompt(dt){
  }
 }
 function step(dt){if(paused||state.winner>=0)return;
+ if(Number.isFinite(dt)&&dt>0)state.elapsedSeconds=(state.elapsedSeconds||0)+dt;
  updateQuietMatchPrompt(dt);
  if(isPilotMatch())for(const vehicle of state.vehicles){
    if(vehicle.occupant>=0){const t=state.tanks[vehicle.occupant];vehicle.x=t.x;vehicle.y=t.y;vehicle.a=t.a;}

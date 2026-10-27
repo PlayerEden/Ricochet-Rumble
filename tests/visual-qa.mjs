@@ -129,8 +129,10 @@ try{
      $('aa-title').textContent='SECTOR CLEARED';
      $('aa-event').textContent='CYAN WINS!';
      $('aa-kos').textContent='3';
+     $('aa-deaths').textContent='1';
+     $('aa-duration').textContent='02:15';
      $('aa-lives').textContent='2';
-     $('aa-outcome').textContent='SUCCESS';
+     $('aa-outcome').textContent='VICTORY';
      $('aa-note').textContent='NEW PROCEDURAL SECTOR READY';
      $('quick-rematch').classList.remove('hidden');
     });
