@@ -44,9 +44,14 @@ for(const item of roster.cosmetics){
  assert.equal(item.selectable,false,'not approved for game UI yet');
  assert.equal(item.purchasable,false,'not authorized as an offer yet');
  assert.equal(item.billingProductId,null,'no invented SKU');
- assert.equal(item.art.status,'not_created','do not mark missing production art as ready');
- assert.equal(item.art.approvedExportPath,null);
- assert.equal(item.art.sourcePath,null);
+ assert.ok(['not_created','style_review'].includes(item.art.status),'only missing or review-stage art allowed in this archive');
+ assert.equal(item.art.approvedExportPath,null,'no unapproved export can be advertised');
+ if(item.art.status==='style_review'){
+  assert.equal(typeof item.art.sourcePath,'string');
+  const master=load(item.art.sourcePath);
+  assert.ok(master.startsWith('<svg')&&master.includes('viewBox="0 0 512 512"'),'prototype must be a 512-square editable SVG');
+  assert.ok(!master.includes('<text')&&!master.includes('foreignObject'),'no AI-esque tiny text or remote HTML in artwork');
+ }else assert.equal(item.art.sourcePath,null);
  if(item.category==='starter')assert.equal(item.acquisition.type,'free_immediate');
  if(item.category==='earned'){
   assert.equal(item.acquisition.type,'earned_stat');
