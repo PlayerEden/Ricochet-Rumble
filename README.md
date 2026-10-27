@@ -1,3 +1,11 @@
+# Sector Rebound — Development Status
+
+**Current game development is on a separate branch, not the default `main`.** The legacy Ricochet Rumble code and historical release notes below are retained for provenance. Do not use the v0.6.3 heading below as the current playable version.
+
+**Start here:** [Current status, roadmap and new-chat handoff](docs/PROJECT_STATUS.md) · [Development protocol](docs/DEVELOPMENT_PROTOCOL.md) · [v0.9.21 preview APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.21-polish-preview) · [latest source/draft PR #17](https://github.com/PlayerEden/Ricochet-Rumble/pull/17).
+
+---
+
 # Ricochet Rumble
 
 **v0.6.3 — Combat Feedback & Maze Performance** · Self-contained Android tank arcade with offline solo and local same-Wi-Fi multiplayer foundation.
