@@ -481,7 +481,17 @@ function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick
  }
  
 for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();c.arc(bump.x,bump.y,bump.r+glow,0,Math.PI*2);c.fillStyle='#34464b';c.fill();c.strokeStyle='#ffd67d';c.lineWidth=4;c.stroke();c.beginPath();c.arc(bump.x,bump.y,11,0,Math.PI*2);c.fillStyle='#ffc76a';c.fill()}
- for(const p of state.pickups||[]){const def=PICKUPS[p.type];if(!def)continue;const pulse=1+Math.sin(visualClock*5)*.09;c.beginPath();c.arc(p.x,p.y,23*pulse,0,Math.PI*2);c.fillStyle='#0b2630';c.fill();c.strokeStyle=def.color;c.lineWidth=3;c.stroke();c.fillStyle=def.color;c.font='900 22px system-ui';c.textAlign='center';c.fillText(def.label,p.x,p.y+7)}
+ for(const p of state.pickups||[]){const def=PICKUPS[p.type];if(!def)continue;
+   const pulse=Math.sin(visualClock*4.8+p.x*.013),radius=24+pulse*2.5;
+   c.save();c.translate(p.x,p.y);
+   c.globalAlpha=.16;c.fillStyle=def.color;c.beginPath();c.arc(0,0,radius+9,0,Math.PI*2);c.fill();
+   c.globalAlpha=1;c.fillStyle='#071e29';c.fillRect(-21,-21,42,42);c.strokeStyle=def.color;c.lineWidth=2;c.strokeRect(-21,-21,42,42);
+   c.strokeStyle='#b8e4e2';c.globalAlpha=.8;c.lineWidth=2;
+   for(const sx of [-1,1])for(const sy of [-1,1]){c.beginPath();c.moveTo(sx*24,sy*13);c.lineTo(sx*24,sy*24);c.lineTo(sx*13,sy*24);c.stroke();}
+   c.globalAlpha=1;c.fillStyle=def.color;c.font='900 23px monospace';c.textAlign='center';c.fillText(def.label,0,8);
+   c.font='700 9px monospace';c.fillStyle='#d0e9ec';c.fillText(p.type.toUpperCase(),0,35);
+   c.restore();
+ }
  if(isPilotMatch())for(const v of state.vehicles){if(v.occupant!==-1)continue;
    if(v.armor>0){c.beginPath();c.arc(v.x,v.y,v.type==='mech'?42:35,0,Math.PI*2);c.strokeStyle=v.type==='mech'?'#6a5486':'#3e7568';c.lineWidth=2;c.stroke();}
    c.save();c.translate(v.x,v.y);c.rotate(v.a);
@@ -503,7 +513,7 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  if(t.shield>0){c.globalAlpha=.65+.25*Math.sin(t.shield*15)}
  (currentVehicle(t)?.type==='mech'?drawTopMech(c,colors[i],false,Math.sin(visualClock*10+i*1.9)*Math.min(3.2,Math.hypot(t.vx,t.vy)/55),t.recoil||0,Math.sin(visualClock*20+i*3.8)*Math.min(.65,Math.hypot(t.vx,t.vy)/320)):drawTopTank(c,colors[i],false,t.trackLeft||0,t.trackRight||0,t.recoil||0,Math.min(1,Math.hypot(t.vx,t.vy)/240)));if(t.flash>0){c.fillStyle='#fff3a0';c.beginPath();c.arc(39,0,8+t.flash*70,0,Math.PI*2);c.fill()}c.restore();
  if(isPilotMatch()){const v=state.vehicles?.[t.vehicleId];if(v){c.fillStyle='#16313b';c.fillRect(t.x-19,t.y+29,38,5);c.fillStyle='#79eab2';c.fillRect(t.x-19,t.y+29,38*v.armor/vehicleDef(v).armor,5);}}}
- if(t.powerType&&t.powerTimer>0&&PICKUPS[t.powerType]){c.fillStyle=PICKUPS[t.powerType].color;c.font='900 11px system-ui';c.textAlign='center';c.fillText(PICKUPS[t.powerType].name+' '+Math.ceil(t.powerTimer)+'s',t.x,t.y+48)}
+ if(t.powerType&&t.powerTimer>0&&PICKUPS[t.powerType]){c.fillStyle=PICKUPS[t.powerType].color;c.font='800 10px monospace';c.textAlign='center';c.fillText(PICKUPS[t.powerType].name+' '+Math.ceil(t.powerTimer)+'s',t.x,t.y+49)}
  if(t.shield>0){c.beginPath();c.arc(t.x,t.y,32+Math.sin(t.shield*10)*2,0,Math.PI*2);c.strokeStyle=colors[i];c.globalAlpha=clamp(t.shield/1.8*.8,0,.8);c.lineWidth=3;c.stroke();c.globalAlpha=1}
  c.fillStyle=colors[i];c.font='bold 13px system-ui';c.textAlign='center';c.fillText(i<state.humanCount?'P'+(i+1):'AI'+(i-state.humanCount+1),t.x,t.y-38);
  if(i===(mode==='guest'?1:0)){c.beginPath();c.moveTo(t.x,t.y-59);c.lineTo(t.x-8,t.y-71);c.lineTo(t.x+8,t.y-71);c.closePath();c.fillStyle='#ffffff';c.fill();}}
