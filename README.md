@@ -1,3 +1,17 @@
+# Sector Rebound — v0.9.14 Camera & Quality Audit
+
+**Current test branch:** `dev/sector-rebound-camera-qa-v0914` · **Android versionCode:** 31
+
+The v0.9.13 combat/power-up improvements remain intact. Each camera state has been zoomed out by 0.04 for slightly more battlefield visibility: pilot **1.32**, tank **1.22**, mech **1.16**, fallback **1.24**. Smooth transitions, fullscreen gameplay and Android touch overlay are unchanged.
+
+**QA fixes:** uniquely identifiable supply marker letters (Barrier B, Capacitor C, Field Repair H); on-foot recovery waypoints no longer point to blocked vehicle bays; eliminated pilots no longer retain timed power-up labels or lingering buff state.
+
+**Verified October 26, 2026:** [successful Android + deterministic visual QA run](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40431956062). Gameplay smoke suite, 36 Chromium before/after screenshots, screenshot fit/full-bleed checks, and Android debug APK build passed. APK archive and internal APK ZIP integrity checked (74,621 bytes; SHA-256 `8fff3c45ce45c44cb80b827a6014b337d246aabec38d232330a9e63e7f2b65b5`).
+
+**Not yet verified:** two-phone LAN gameplay on physical Android devices, extended matches/performance, real hardware safe areas, and player perception of balance. The prior `dev/sector-rebound-combat-feel-v0913` remains untouched for rollback. See [v0.9.14 audit handoff](docs/AUDIT_CAMERA_v0.9.14.md).
+
+---
+
 # Sector Rebound — v0.9.13 Combat Feel and Supply Pass
 
 **Current experimental branch:** `dev/sector-rebound-combat-feel-v0913` · **Android versionCode:** 30
