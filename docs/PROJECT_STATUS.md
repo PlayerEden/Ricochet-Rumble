@@ -9,7 +9,9 @@
 
 **Repository cleanup:** Historical draft PRs **#1–#17 closed as superseded** with explanations, not independently merged or deleted. All their heads were confirmed ancestors of the integrated code; the [branch register](BRANCH_REGISTER.md) retains historical references. The original v0.6.3 `main` is preserved at `archive/legacy-main-v063-before-sector-rebound`. [Repository audit](GITHUB_AUDIT_2026-10-27.md) is a pre-cleanup historical snapshot, not current repository status. No open PRs remained immediately after consolidation.
 
-**Remaining work:** [#19 CI/release preview validation](https://github.com/PlayerEden/Ricochet-Rumble/issues/19) (normal CI and Android QA proven; new immutable publishing workflow not yet exercised); [#20 signing-key custody and package identity](https://github.com/PlayerEden/Ricochet-Rumble/issues/20); [#21 long-lived screenshots/QA evidence](https://github.com/PlayerEden/Ricochet-Rumble/issues/21); [#22 physical Android/two-device LAN acceptance](https://github.com/PlayerEden/Ricochet-Rumble/issues/22). Do not conflate these with new gameplay implementation.
+**QA archive secured:** [Original screenshot/simulation ZIP](https://github.com/PlayerEden/Ricochet-Rumble/releases/download/v0.9.21-polish-preview/v0921-integration-qa-40590979779.zip) and [SHA-256 manifest](https://github.com/PlayerEden/Ricochet-Rumble/releases/download/v0.9.21-polish-preview/v0921-integration-qa-MANIFEST.txt) are now permanent assets of the existing v0.9.21 pre-release; [archive workflow passed](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40592143998). #21 closed; existing APK unchanged.
+
+**Remaining work:** [#19 CI/release preview validation](https://github.com/PlayerEden/Ricochet-Rumble/issues/19) (normal CI and Android QA proven; new immutable publishing workflow not yet exercised); [#20 signing-key custody and package identity](https://github.com/PlayerEden/Ricochet-Rumble/issues/20); [completed #21 durable QA evidence](https://github.com/PlayerEden/Ricochet-Rumble/issues/21); [#22 physical Android/two-device LAN acceptance](https://github.com/PlayerEden/Ricochet-Rumble/issues/22). Do not conflate these with new gameplay implementation.
 
 ## Start here — exact state
 
@@ -92,6 +94,8 @@ These linked documents contain some historical "current v0.9.20" wording: this *
 - GitHub Actions costs should be respected: avoid wasteful full Android builds for documentation-only changes; artifact retention is temporary, GitHub Releases and Git history are longer-lived.
 
 ## Update log
+
+- **2026-10-27 (evidence archive):** Archived authentic v0.9.21 integration screenshots, seeded reports and checksums to GitHub Release assets before temporary Actions retention expiry. Closed issue #21; no APK replacement or gameplay changes.
 
 - **2026-10-27 (integration accepted):** [PR #23](https://github.com/PlayerEden/Ricochet-Rumble/pull/23) merged `main` at `4372ad95` after [passing full QA](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40590979779). Preserved legacy `main` as `archive/legacy-main-v063-before-sector-rebound`; closed all 17 historical chained PRs with explanatory comments. Production release signing, immutable preview workflow smoke launch, physical audio and two-device LAN remain unverified.
 
