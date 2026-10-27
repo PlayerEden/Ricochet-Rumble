@@ -9,6 +9,11 @@
 - Defined stable concept IDs in a separate manifest. No source icon artwork exists yet and no product is available for purchase.
 - Reserved final approval of palette, finished style master, art source, licensing, SKUs, purchase restoration and real-money pricing for future iterations.
 
+## 2026-10-27 — v0.9.20 proposed lobby direction
+- Shift home screen from full technical briefing to mobile-game lobby with featured actual tank rendering, dominant Quick Play, and secondary local multiplayer/settings/help.
+- Simplify the actual overhead pilot to head, torso, two separate gaited boots, minimal arms and tiny pistol. No mechanics changes.
+- Save design rationale and screenshot gates in `reviews/2026-10-27_GAME_LOBBY_PILOT_v0920.md`. Owner mobile review still needed before approval.
+
 ## Decisions awaiting owner approval
 1. Choose the **first three style-lock portrait prototypes**: Recruit, Relay and Cold Cell (recommended).
 2. Confirm the launch target **5 free / 3 earned / 10 premium** or reduce the premium wave before release.
