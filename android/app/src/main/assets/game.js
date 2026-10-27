@@ -705,7 +705,10 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
    else {c.globalAlpha=.64;
     if(v.type==='mech')drawTopMech(c,'#b69aff',true);else drawTopTank(c,'#72c3a8',true);}
    c.restore();if(v.armor>0){const me=state.tanks[mode==='guest'?1:0];const near=me?.onFoot&&Math.hypot(me.x-v.x,me.y-v.y)<68;
-     if(near){c.fillStyle='#bff9d9';c.font='bold 12px system-ui';c.textAlign='center';c.fillText('ENTER  ·  '+vehicleDef(v).name,v.x,v.y+48);c.strokeStyle='#aaf3da';c.lineWidth=2;c.beginPath();c.arc(v.x,v.y,37+Math.sin(visualClock*5)*3,0,Math.PI*2);c.stroke();}}
+     if(near){ // The real ENTER action is in the touch HUD; a floating label
+       // used to cover the small pilot standing beside this vehicle.
+       c.strokeStyle='#aaf3da';c.lineWidth=1.5;c.beginPath();c.arc(v.x,v.y,36+Math.sin(visualClock*5)*2,0,Math.PI*2);c.stroke();
+      }}
  }
  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]<=0)continue;
  if(state.config?.teamMode!=='ffa'){c.beginPath();c.arc(t.x,t.y,29,0,Math.PI*2);c.strokeStyle=teamOf(i)===0?'#60dfff':'#ffb06e';c.lineWidth=4;c.stroke()}
@@ -721,8 +724,16 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  if(isPilotMatch()){const v=state.vehicles?.[t.vehicleId];if(v){c.fillStyle='#16313b';c.fillRect(t.x-19,t.y+29,38,5);c.fillStyle='#79eab2';c.fillRect(t.x-19,t.y+29,38*v.armor/vehicleDef(v).armor,5);}}}
  if(t.powerType&&t.powerTimer>0&&PICKUPS[t.powerType]){c.fillStyle=PICKUPS[t.powerType].color;c.font='800 10px monospace';c.textAlign='center';c.fillText(PICKUPS[t.powerType].name+' '+Math.ceil(t.powerTimer)+'s',t.x,t.y+49)}
  if(t.shield>0){c.beginPath();c.arc(t.x,t.y,32+Math.sin(t.shield*10)*2,0,Math.PI*2);c.strokeStyle=colors[i];c.globalAlpha=clamp(t.shield/1.8*.8,0,.8);c.lineWidth=3;c.stroke();c.globalAlpha=1}
- c.fillStyle=colors[i];c.font='bold 13px system-ui';c.textAlign='center';c.fillText(i<state.humanCount?'P'+(i+1):'AI'+(i-state.humanCount+1),t.x,t.y-38);
- if(i===(mode==='guest'?1:0)){c.beginPath();c.moveTo(t.x,t.y-59);c.lineTo(t.x-8,t.y-71);c.lineTo(t.x+8,t.y-71);c.closePath();c.fillStyle='#ffffff';c.fill();}}
+ c.fillStyle=colors[i];c.font='bold 13px system-ui';c.textAlign='center';
+ // Ground personnel stand close to parked vehicles. Move their label
+ // to the side, rather than painting it across the abandoned tank.
+ c.fillText(i<state.humanCount?'P'+(i+1):'AI'+(i-state.humanCount+1),t.x+(t.onFoot?27:0),t.y+(t.onFoot?5:-38));
+ if(i===(mode==='guest'?1:0)){
+  c.beginPath();
+  if(t.onFoot){c.moveTo(t.x,t.y-26);c.lineTo(t.x-6,t.y-36);c.lineTo(t.x+6,t.y-36);}
+  else{c.moveTo(t.x,t.y-59);c.lineTo(t.x-8,t.y-71);c.lineTo(t.x+8,t.y-71);}
+  c.closePath();c.fillStyle='#ffffff';c.fill();
+ }}
  for(const b of state.bullets){
    const foot=b.kind==='sidearm',heavy=b.kind==='mech';
    const length=Math.min(foot?10:heavy?24:19,Math.hypot(b.vx,b.vy)*.037);
