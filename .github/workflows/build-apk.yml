@@ -1,4 +1,4 @@
-name: Android Test APK # Sector Rebound v0.9.21 game feel, camera, pilot and synthesized music QA
+name: Android Test APK # Sector Rebound v0.9.21 final animated showroom, music and reduced-motion QA
 on:
   workflow_dispatch:
   push:
