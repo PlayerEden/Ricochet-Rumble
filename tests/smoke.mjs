@@ -621,3 +621,24 @@ assert.equal(win.__test.closestAvailableVehicle(0)?.id,bay.id,'clear bay becomes
 console.log('PASS v0.9.14 camera, supply glyphs, recovery waypoints and prior combat regressions.');
 
 }
+
+
+{
+ // v0.9.14 end-of-life UI reliability: the last pilot life ends active
+ // temporary supply effects immediately, rather than leaving a stale timer.
+ click('solo');
+ const actor=st().tanks[0];
+ assert.equal(win.__test.tryInteract(0),true,'pilot can exit for terminal-life QA');
+ actor.shield=0;
+ st().lives[0]=1;
+ actor.powerType='turbo';
+ actor.powerTimer=3;
+ win.__test.refreshHUD();
+ assert.equal(node('power-status').classList.contains('hidden'),false,'living boosted pilot has active status');
+ assert.equal(win.__test.registerHit(0,0),true,'pilot loses final life');
+ assert.equal(st().lives[0],0);
+ assert.equal(actor.powerType,null);
+ assert.equal(actor.powerTimer,0);
+ assert.equal(node('power-status').classList.contains('hidden'),true,'eliminated pilot has no lingering HUD buff');
+}
+console.log('PASS v0.9.14 end-of-life powerup state audit.');
