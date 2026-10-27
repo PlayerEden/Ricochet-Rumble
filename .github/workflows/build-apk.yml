@@ -1,4 +1,4 @@
-name: Android Test APK # Sector Rebound v0.9.13 combat feel / powerups experiment
+name: Android Test APK # Sector Rebound v0.9.13 verified combat and supply QA
 on:
   workflow_dispatch:
   push:
