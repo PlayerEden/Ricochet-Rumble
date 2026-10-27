@@ -8,7 +8,7 @@
 
 - [Current status / new-chat handoff](docs/PROJECT_STATUS.md) -- first read for every development session
 - [Development protocol](docs/DEVELOPMENT_PROTOCOL.md) -- branching, PR, QA and release safeguards
-- [GitHub health audit](docs/GITHUB_AUDIT_2026-10-27.md) and [branch register](docs/BRANCH_REGISTER.md)
+- [Integration QA evidence](docs/QA_MAINLINE_v0921_2026-10-27.md), [GitHub audit](docs/GITHUB_AUDIT_2026-10-27.md) and [branch register](docs/BRANCH_REGISTER.md)
 - [Google Play v1.0 roadmap](docs/ROADMAP_TO_GOOGLE_PLAY_V1.md)
 - [FIELDGRID design archive](docs/design/README.md) -- designs are not necessarily implemented
 
@@ -33,7 +33,7 @@ The repo intentionally keeps browser and Android game files duplicated for offli
 
 ## Branching and history
 
-The original repository name `Ricochet-Rumble` stays intact for GitHub links. `main` was on the older v0.6.3 game before the integration candidate; this proposed mainline update contains v0.9.21 runtime plus the repository handoff documentation. **Do not treat this branch as approved until [draft integration PR #23](https://github.com/PlayerEden/Ricochet-Rumble/pull/23) passes review and is merged.**
+The original repository name `Ricochet-Rumble` stays intact for GitHub links. `main` now contains the v0.9.21 runtime and durable development documents. The earlier v0.6.3-era main is preserved in [`archive/legacy-main-v063-before-sector-rebound`](https://github.com/PlayerEden/Ricochet-Rumble/tree/archive/legacy-main-v063-before-sector-rebound). **[Integration PR #23](https://github.com/PlayerEden/Ricochet-Rumble/pull/23) merged on October 27, 2026 after successful Android, visual, smoke and catalog QA.** `main` is now the active v0.9.21 development baseline, not an older game. Physical phone acceptance and Play release signing remain pending.
 
 Original chronological development README: [preserved archive](docs/history/README_DEVELOPMENT_THROUGH_V0921.md). Historical branches, draft PRs, and preview APKs remain available for rollback.
 

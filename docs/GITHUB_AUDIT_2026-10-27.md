@@ -1,5 +1,7 @@
 # Sector Rebound — GitHub Structure & Readiness Audit
 
+> **Post-audit resolution, 2026-10-27:** This document records the **pre-integration snapshot** and retains its original findings as historical evidence. Since then, [PR #23](https://github.com/PlayerEden/Ricochet-Rumble/pull/23) merged v0.9.21 into `main` after [successful full QA](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40590979779); old PRs #1–#17 were closed with explanations. The original main was preserved as `archive/legacy-main-v063-before-sector-rebound`. See [current project status](PROJECT_STATUS.md) and [permanent integration QA](QA_MAINLINE_v0921_2026-10-27.md) for current facts. Unresolved: signing custody, real two-device testing, permanent visual evidence and the new preview-publication workflow's first use.
+
 **Audited:** 2026-10-27. **Repository:** [PlayerEden/Ricochet-Rumble](https://github.com/PlayerEden/Ricochet-Rumble) (public). **Scope:** source layout, commit/PR graph, branch/tag/release references, workflows, Android config, smoke/visual QA, release evidence, documentation and secrets-handling signals. This is a repository/CI inspection, **not** a physical-device security penetration test or a claim that newly run builds passed.
 
 ## Overall result

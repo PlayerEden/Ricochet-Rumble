@@ -13,8 +13,8 @@ We prioritize a smaller excellent game over a large unfinished live-service feat
 
 ## Actual technical baseline / risk
 
-- Latest tested preview is v0.9.21 on `dev/sector-rebound-polish-v0921`; the integration candidate includes that source, but has not yet been accepted into default `main`. This is not a Google Play production release.
-- As of integration preparation, GitHub `main` carried historical v0.6.3 source and latest v0.9.21 is a **review-pending integration candidate**. PRs #1–#17 form a largely chained draft history. Do not bulk-merge or delete; review integration branch, PR CI, source provenance and rollback separately.
+- The tested v0.9.21 development source is now on `main` after [merged PR #23](https://github.com/PlayerEden/Ricochet-Rumble/pull/23) and [full Android/visual QA](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40590979779). This is **not** a signed Google Play production release.
+- The old `main` v0.6.3 era is preserved at `archive/legacy-main-v063-before-sector-rebound`. Historical chained PRs #1–#17 were closed as superseded **after** verifying their heads are included in merged `main`; old branches/releases are kept for rollback.
 - Current local Wi-Fi host/guest code exists but physical two-phone correctness is **not yet verified**.
 - Android API 36 debug APK and **unsigned** AAB work exists. Production release signing, app listing, privacy, purchase systems and devices QA remain open.
 - Pilot portraits are **style-review SVG candidates** only; profile, entitlements and purchasable items have not shipped.
@@ -103,4 +103,4 @@ Never declare a future feature present solely because it exists in a Bible. Neve
 
 ## First action / immediate next build
 
-**v0.9.20 baseline and the v0.9.21 game-feel preview exist and passed automated tests.** Finish the reviewed mainline integration/maintenance gate; then begin Gate 2 (real mode architecture and Next Match loop). Manual phone acceptance remains separate from automation.
+**Gate 0 mainline integration is complete** and the v0.9.21 game passed full integration CI. Next: Gate 2 (real mode architecture and Next Match loop). Manual phone/LAN acceptance and Google Play compliance remain separate gates.

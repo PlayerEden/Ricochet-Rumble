@@ -8,16 +8,16 @@
 - The default-branch `docs/PROJECT_STATUS.md` is the **navigation/status entry point**. Update it whenever current branch, release, validation, blockers, or planned next action changes. It links to the versioned technical/design documents.
 - **Actual tested source and tests** determine what exists. A design Bible is not implementation. A CI pass is not proof of human hardware acceptance.
 - Design decisions belong in `docs/design/`. Audit and acceptance notes belong in `docs/design/reviews/` or a clearly named release QA report. Long-term Play planning belongs in the roadmap. Avoid duplicating full Bibles into README.
-- README on `main` identifies the default branch's code as historical until an actual reviewed integration; do not represent it as current game source.
+- README on `main` now describes the accepted v0.9.21 development game. Keep it, project status and actual source synchronized after each accepted slice.
 - If documentation gets behind reality, repair its status **in the same session** as code work, not "next time."
 
 ## Branches and commit discipline
 
-1. Preserve the v0.9.20 baseline `dev/sector-rebound-integrated-v0920` and v0.9.21 preview `dev/sector-rebound-polish-v0921` with draft PR #17 and its release. Historical draft PRs/branches may be chained; do not blindly merge or delete them.
-2. Create each new development slice from the **known-good, explicitly named branch**, not automatically from outdated `main`. Use descriptive names such as `dev/sector-rebound-quick-play-v0922` for experiments.
+1. Preserve v0.9.20 baseline `dev/sector-rebound-integrated-v0920`, v0.9.21 preview `dev/sector-rebound-polish-v0921`, and pre-integration `archive/legacy-main-v063-before-sector-rebound`. Historical PRs #1–#17 are closed after consolidation, but retained for traceability.
+2. Create each new development slice from the **known-good `main`** or another documented accepted baseline. Use descriptive names such as `dev/sector-rebound-quick-play-v0922` for experiments.
 3. Keep code/visual/gameplay changes together only when they form one reviewable feature. Commit scopes plainly; use draft PR until full checks and owner review.
 4. Never discard an earlier working APK. Use annotated notes/release tags for acceptance checkpoints and keep download links pointing to **GitHub Releases**, rather than expiring chat/Actions artifact URLs.
-5. When ready to consolidate development into `main`, review the true commit graph/diff, preserve provenance and release history, test a dedicated integration candidate, then update README/docs only after the code is there.
+5. For each new feature PR into `main`, review diff/history and source parity, require successful checks, preserve rollback evidence and update README/status as part of acceptance. The exceptional v0.9.21 historical consolidation has already occurred.
 
 ## Definition of done per slice
 
@@ -47,11 +47,11 @@ ChatGPT does not provide a reliable advance warning of remaining context capacit
 - **2026-10-27:** Keep a safe, reviewable `main` status hub while modern playable code remains in explicitly identified dev branches pending integration.
 - **2026-10-27:** A complete Quick Play loop is more important than a rushed store, profile, remote PvP or a sprawling unfinished mode list. Preserve the "new procedural maze every match" game identity.
 
-## Reusable Actions & release discipline (integration candidate)
+## Reusable Actions & release discipline (mainline)
 
 - Every PR targeting `main` runs inexpensive source parity, Node smoke, and catalog validation checks. No need to invoke Android Gradle for documentation-only changes.
 - Full Android build/visual QA is intentionally `workflow_dispatch` only; select the desired branch/ref in Actions. The v0.9.20 baseline remains the visual default until approved otherwise. Review source SHA and artifacts before declaring acceptance.
 - A new preview APK requires a **fresh versioned Git tag** supplied at manual dispatch. Do not reuse an existing tag or replace an existing release asset. The preview workflow refuses an existing tag and records its source SHA/checksum. Version `versionName` must agree with the tag's version core.
 - Release notes state exact validation scope and whether files are debug signed or unsigned. Do not mistake CI installation for proof on real physical phones.
-- After integration PR acceptance, consolidate historical chained draft PRs with informative closing comments (not force-delete); keep accepted milestone tags and rollbacks.
+- Historical chained PRs #1–#17 were closed with explanatory comments after [PR #23](https://github.com/PlayerEden/Ricochet-Rumble/pull/23) merged. Do not delete their commits, recovery branches or release tags.
 - An encrypted signing backup is visible in this public repository. Treat custody verification as a separate security task, not an automatic deletion. Never print, decrypt, or commit release credentials in development workflows.
