@@ -1,13 +1,13 @@
 plugins { id 'com.android.application' }
 android {
     namespace 'com.playereden.ricochetrumble'
-    compileSdk 35
+    compileSdk 36
     defaultConfig {
         applicationId 'com.playereden.ricochetrumble'
         minSdk 26
-        targetSdk 35
-        versionCode 34
-        versionName '0.9.17-match-readability'
+        targetSdk 36
+        versionCode 35
+        versionName '0.9.18-play-foundation'
     }
     buildTypes {
         release { minifyEnabled false }
