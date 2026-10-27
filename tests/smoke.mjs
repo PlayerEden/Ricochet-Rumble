@@ -912,6 +912,7 @@ console.log('PASS v0.9.21 menu cleanup, separate music/SFX options and 7% wider 
 {
  const api=win.__test;
  assert.ok(menuHtml.includes('data-playlist-mode="survival_ffa"')&&menuHtml.includes('data-playlist-mode="survival_teams"'));
+ assert.ok(menuHtml.includes('↻ NEXT MATCH'),'solo result primary CTA is explicit');
  assert.equal(api.normalizePlaylistModes(['retired','survival_ffa','survival_ffa']).join(','),'survival_ffa');
  assert.equal(api.normalizePlaylistModes(null).length,2,'legacy saves default to both supported modes');
  api.setPlaylistModes(['survival_ffa','survival_teams']);
