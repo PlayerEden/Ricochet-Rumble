@@ -234,7 +234,23 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  document.getElementById('game-screen')?.classList.toggle('pilot-match',isPilotMatch());
  const shellMeter=document.getElementById('shell-meter');if(shellMeter){const cap=activeBulletCap(state.tanks[me]);shellMeter.textContent=`${Math.max(0,cap-active)}/${cap} READY`;shellMeter.classList.toggle('empty',active>=cap)}
  const power=document.getElementById('power-status');if(power){const def=PICKUPS[localPilot?.powerType];const activePower=(state.lives[me]??0)>0&&!!def&&localPilot.powerTimer>0;power.classList.toggle('hidden',!activePower);power.textContent=activePower?def.name+' · '+Math.ceil(localPilot.powerTimer)+'s':'';if(activePower)power.style.borderColor=def.color;}
- const ended=state.winner>=0&&mode!=='idle';if(ended||state.eventTimer>0)toast.classList.remove('visible');document.getElementById('game-screen')?.classList.toggle('match-finished',ended);const replay=document.getElementById('quick-rematch');if(replay)replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));
+ const ended=state.winner>=0&&mode!=='idle';if(ended||state.eventTimer>0)toast.classList.remove('visible');
+ document.getElementById('game-screen')?.classList.toggle('match-finished',ended);
+ const report=document.getElementById('after-action');
+ const localWon=ended&&state.lives[me]>0&&teamOf(me)===state.winnerTeam;
+ if(report){
+   report.classList.toggle('hidden',!ended);
+   report.classList.toggle('lost',ended&&!localWon);
+   if(ended){
+     document.getElementById('aa-title').textContent=localWon?'SECTOR CLEARED':'SECTOR LOST';
+     document.getElementById('aa-event').textContent=String(state.event||'EXERCISE COMPLETE');
+     document.getElementById('aa-kos').textContent=String(state.kos[me]||0);
+     document.getElementById('aa-lives').textContent=String(state.lives[me]||0);
+     document.getElementById('aa-outcome').textContent=localWon?'SUCCESS':'DEFEAT';
+     document.getElementById('aa-note').textContent=mode==='guest'?'AWAIT HOST REDEPLOYMENT':'NEW PROCEDURAL SECTOR READY';
+   }
+ }
+ const replay=document.getElementById('quick-rematch');if(replay)replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));
  const label0=document.getElementById('player0-label');if(label0)label0.textContent='YOU';const label1=document.getElementById('player1-label');if(label1)label1.textContent=mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';if(mode==='solo')document.getElementById('score1').textContent=botLives;}
 function newMatch(which){if(bridgeReady())window.AndroidBridge.stopNetwork();mode=which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;savePrefs();
  const arena=selectArena();state=initialState(arena,{...selectedRules,pilotMode:true});camera.zoom=null;particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();refreshHUD();document.getElementById('mode-label').textContent=which==='solo'?(state.config.botCount===0?'PRACTICE FIELD':'QUICK MATCH'):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'){exitMenu();if(which==='solo')firstMatchHint();}}
@@ -582,18 +598,7 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
    c.fillStyle=secondary?'#aac5d0':'#f8eacb';c.font='800 15px system-ui';c.textAlign='left';
    c.fillText(text,27,76);
  }
- if(state.winner>=0){
-   c.fillStyle='#06141ce8';c.fillRect(0,0,W,H);
-   const pw=Math.min(570,W-80),left=(W-pw)/2,py=H/2-134;
-   c.fillStyle='#102b38';c.fillRect(left,py,pw,214);c.strokeStyle='#557685';c.lineWidth=2;c.strokeRect(left+.5,py+.5,pw-1,213);
-   c.fillStyle='#5dd4e9';c.fillRect(left,py,5,214);
-   c.textAlign='center';c.fillStyle='#a6c2cd';c.font='800 15px system-ui';c.fillText('FIELDGRID  /  AFTER ACTION',W/2,py+37);
-   const localWon=state.lives[me]>0&&teamOf(me)===state.winnerTeam;
-   c.fillStyle=localWon?'#8fe3bf':'#f1d19d';c.font='900 42px system-ui';c.fillText(localWon?'SECTOR CLEARED':'SECTOR LOST',W/2,py+95);
-   c.fillStyle='#e0f1f3';c.font='800 17px system-ui';c.fillText(String(state.event||'MATCH COMPLETE'),W/2,py+128);
-   c.fillStyle='#9abac6';c.font='600 15px system-ui';c.fillText(`PILOT LIVES  ${state.lives[me]||0}   ·   HITS  ${state.kos[me]||0}`,W/2,py+163);
-   c.fillStyle='#7f9daa';c.font='600 13px system-ui';c.fillText(mode==='guest'?'WAIT FOR HOST TO REDEPLOY':'NEW MAZE AVAILABLE',W/2,py+190);
- }
+ // End-of-round report is a responsive DOM overlay with real touch targets.
  if(paused&&mode==='host'&&!connected){c.fillStyle='#071b26b5';c.fillRect(0,0,W,H);c.fillStyle='#d4f0f2';c.font='bold 28px system-ui';c.textAlign='center';c.fillText('WAITING FOR PLAYER TWO',W/2,H/2)}
  if(damagePulse>0){c.strokeStyle='#ff766d';c.globalAlpha=Math.min(.65,damagePulse);c.lineWidth=12+damagePulse*24;c.strokeRect(7,7,W-14,H-14);c.globalAlpha=1}
  }
@@ -623,6 +628,7 @@ function showPauseMenu(){releaseControls();if(mode==='idle')return;
  else if(mode==='guest'){if(connected)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}});setPanel('<div class="eyebrow">FIELDGRID / PLAYER MENU</div><h2>SECTOR <span>MENU</span></h2><p class="pause-hint">The host controls rematches.</p><div class="pause-actions"><button class="primary" data-action="resume">BACK TO ARENA</button><button data-action="close">DISCONNECT</button></div>')}}
 document.getElementById('menu-button').addEventListener('click',showPauseMenu);
 document.getElementById('quick-rematch')?.addEventListener('click',()=>{if(state.winner>=0&&mode!=='guest'&&mode!=='idle'){resetAll();notice('NEW FIELD · NEW FIGHT',1400)}});
+ document.getElementById('results-menu')?.addEventListener('click',()=>{if(state.winner>=0&&mode!=='idle')stop()});
 document.getElementById('interact-btn')?.addEventListener('pointerdown',e=>{e.preventDefault();if(mode==='guest'){if(connected&&!paused&&menu.classList.contains('hidden')&&!state.hostPaused)nativePacket({type:'interact'});}else tryInteract(0)});
 menu.addEventListener('click',e=>{const a=e.target?.dataset?.action;
  if(a==='resume'){if(mode==='solo'||mode==='duel'||mode==='host')paused=false;exitMenu()}
