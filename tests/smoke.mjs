@@ -487,3 +487,16 @@ for(const [w,h] of [[740,360],[915,412],[1280,720],[1536,672]]){
  assert.ok(Number.isFinite(win.__test.camera.zoom)&&Number.isFinite(win.__test.camera.x)&&Number.isFinite(win.__test.camera.y),'camera must stay finite across viewport sizes');
 }
 console.log('PASS v0.9.12: closer camera, bay clearance, animation resets and viewport-safe rendering.');
+
+// v0.9.12 LAN rematch audit: camera reset only on a genuinely changed field.
+click('solo');
+const preShift=st().mazeSeed,preSize=st().config.mapSize;
+win.__test.camera.x=2600;win.__test.camera.y=1200;win.__test.camera.zoom=1.21;
+win.__test.setArena(0,preShift,preSize);
+assert.equal(win.__test.camera.x,2600,'routine same-maze snapshot should not jump the camera');
+assert.equal(win.__test.camera.zoom,1.21,'routine same-maze snapshot should not snap zoom');
+win.__test.setArena(0,preShift+1,'small');
+assert.equal(win.__test.camera.x,0,'new guest arena must discard previous camera location');
+assert.equal(win.__test.camera.y,0);
+assert.equal(win.__test.camera.zoom,null,'new guest arena should ease from correct new unit zoom');
+console.log('PASS v0.9.12 LAN map-change camera reset, unchanged-field continuity.');
