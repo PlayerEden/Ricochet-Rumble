@@ -70,6 +70,14 @@ try{
      $('aa-note').textContent='NEW PROCEDURAL SECTOR READY';
      $('quick-rematch').classList.remove('hidden');
     });
+    // In the layout-only fixture the actual solo simulation keeps running.
+    // Keep our presentation visible even when its next HUD tick clears 'ended'.
+    // This style is injected only into Chromium QA, never into the shipped game.
+    await page.addStyleTag({content:[
+     '#after-action.hidden{display:grid!important}',
+     '#after-action .quick-rematch.hidden{display:block!important}',
+     '#game-screen .game-hud,#game-screen .battlefield>.touch-zone{display:none!important}'
+    ].join('\n')});
     const rect=await page.locator('.aa-panel').boundingBox();
     const replay=await page.locator('#quick-rematch').boundingBox();
     const main=await page.locator('#results-menu').boundingBox();
@@ -77,6 +85,8 @@ try{
       throw new Error('After-action panel is clipped at '+label);
     if(replay.width<75||main.width<75||replay.height<37||main.height<37)
       throw new Error('After-action controls too small at '+label);
+    if(!await page.locator('#after-action').isVisible()||!await page.locator('#quick-rematch').isVisible())
+      throw new Error('After-action report not visually rendered at '+label);
     await shot('after-action-layout-fixture');
    }
    await page.close();
