@@ -267,7 +267,7 @@ const live=st().tanks[1];live.x=vacant.x;live.y=vacant.y;live.vx=live.vy=0;
 lone.x=vacant.x-37;lone.y=vacant.y;lone.vx=lone.vy=0;
 win.__test.tankMove(lone,{moveX:1,moveY:0},.13,0);
 assert.ok(lone.x<=vacant.x-37+1,'living occupied actors still block vehicles');
-assert.ok(menuHtml.includes('PLAY TOGETHER')&&menuHtml.includes('ADVANCED RULES'));
+assert.ok(menuHtml.includes('PLAY TOGETHER')&&menuHtml.includes('QUICK PLAY MODES + ADVANCED'));
 console.log('PASS v0.9.8: vacant vehicle is passable and non-cover; occupied actors block; UI hierarchy present.');
 
 // v0.9.8.1 entry-clearance regression. Empty deployments never block movement,
