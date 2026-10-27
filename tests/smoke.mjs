@@ -1109,6 +1109,7 @@ console.log('PASS v0.9.22-dev5 vehicle-wide camera, unchanged pilot and widescre
  assert.equal(src,bundled,'Android and web JS should remain byte-identical');
  assert.ok(src.includes('if(t.onFoot)return 1.07'),'pilot view unchanged');
  assert.ok(src.includes('const CAMERA_APRON=420'),'new exterior perimeter present');
+ assert.ok(!src.includes('const CAMERA_APRON=380'),'old exterior camera limit must not silently return');
  assert.ok(src.includes("v?.type==='mech'?.77:v?.type==='tank'?.82"),'mech/tank zooms changed together');
 }
 console.log('PASS v0.9.22-dev5 small vehicle-only pullback, pilot preserved and assets mirrored.');
