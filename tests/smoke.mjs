@@ -16,7 +16,7 @@ const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},join
 const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(){return null},setItem(){}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(){return []}};
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,teamOf,botInput,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,teamOf,botInput,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -377,8 +377,8 @@ console.log('PASS v0.9.10 fullscreen canvas, overlay HUD, independently moving t
 win.innerWidth=1536;win.innerHeight=672;win.devicePixelRatio=1;
 assert.equal(win.__test.resizeArenaCanvas(),true);
 const [fieldWidth,fieldHeight]=win.__test.world;
-const expectedZoom=Math.max(1.20,1536/(fieldWidth+160),672/(fieldHeight+120));
-assert.ok(Math.abs(win.__test.cameraZoom()-expectedZoom)<1e-9,'zoom accounts for playable perimeter without black side gutters');
+const expectedZoom=Math.max(1.20,1536/(fieldWidth+224),672/(fieldHeight+224));
+assert.ok(Math.abs(win.__test.cameraZoom(null)-expectedZoom)<1e-9,'zoom accounts for playable perimeter without black side gutters');
 assert.ok(win.__test.cameraZoom()<Math.max(1.28,1536/fieldWidth,672/fieldHeight),'new widescreen camera genuinely shows more world');
 const motions=[];
 const motionPaint={save(){},restore(){},translate(x,y){motions.push([x,y])},scale(){},fillRect(){},strokeRect(){},arc(){},beginPath(){},stroke(){},fill(){},set lineWidth(v){},set lineJoin(v){},set strokeStyle(v){},set fillStyle(v){}};
@@ -407,3 +407,44 @@ st().bullets.length=0;
 assert.equal(win.__test.shoot(0),true);
 assert.equal(motionTank.recoil,.28,'on-foot pistol recoil is lightweight');
 console.log('PASS v0.9.10b: zoom-out, perimeter fill, softer tank motion, mech gait and pilot recoil.');
+
+
+// v0.9.11 — institutional menu identity, real camera distinctions, eased changes.
+{
+ const fs=await import('node:fs');
+ const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
+ const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
+ assert.ok(html.includes('OPERATIONS TRAINING DIVISION')&&html.includes('FIELDGRID // SIMULATION CONTROL'));
+ assert.ok(html.includes('terminal-rail')&&html.includes('terminal-footer'));
+ assert.ok(html.includes('FIELD MANUAL')&&html.includes('SECTOR <span>REBOUND</span>'));
+ assert.ok(css.includes('FIELDGRID COMMAND CONSOLE')&&css.includes('sans-serif-condensed'));
+ assert.ok(css.includes('monospace'),'technical micro-label font is available offline');
+}
+click('solo');
+const local=st().tanks[0],veh=st().vehicles[local.vehicleId];
+veh.type='tank';
+win.innerWidth=1536;win.innerHeight=672;win.devicePixelRatio=1;
+win.__test.resizeArenaCanvas();
+const minZoom=Math.max(1536/(win.__test.world[0]+224),672/(win.__test.world[1]+224));
+assert.ok(Math.abs(win.__test.unitTargetZoom(local)-1.18)<1e-9);
+assert.ok(Math.abs(win.__test.cameraZoom(local)-Math.max(1.18,minZoom))<1e-9);
+win.__test.render(1/60);
+const zTank=win.__test.camera.zoom;
+assert.ok(Math.abs(zTank-Math.max(1.18,minZoom))<1e-7);
+local.onFoot=true;local.vehicleId=null;
+assert.equal(win.__test.unitTargetZoom(local),1.28);
+win.__test.render(1/60);
+assert.ok(win.__test.camera.zoom>zTank&&win.__test.camera.zoom<1.28,'zoom must ease in rather than snap to foot');
+for(let i=0;i<80;i++)win.__test.render(1/60);
+assert.ok(Math.abs(win.__test.camera.zoom-1.28)<.003,'foot zoom should converge');
+local.onFoot=false;local.vehicleId=veh.id;veh.occupant=0;veh.type='mech';
+assert.equal(win.__test.unitTargetZoom(local),1.12);
+const zFoot=win.__test.camera.zoom;
+win.__test.render(1/60);
+assert.ok(win.__test.camera.zoom<zFoot&&win.__test.camera.zoom>Math.max(1.12,minZoom),'mech transition eases outward');
+for(let i=0;i<85;i++)win.__test.render(1/60);
+assert.ok(Math.abs(win.__test.camera.zoom-Math.max(1.12,minZoom))<.003,'mech target converges');
+veh.type='tank';
+for(let i=0;i<85;i++)win.__test.render(1/60);
+assert.ok(Math.abs(win.__test.camera.zoom-Math.max(1.18,minZoom))<.003,'tank transition converges');
+console.log('PASS v0.9.11 console design, camera targets, smooth transitions and viewport floor.');
