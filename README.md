@@ -1,3 +1,17 @@
+# Sector Rebound — v0.9.16 Combat Intelligence & Arena QA
+
+**Current test branch:** `dev/sector-rebound-combat-intelligence-v0916` · **Android versionCode:** 33
+
+This reliability pass improves solo bots' decisions without buffing their aim, movement speed or damage. They now prioritize clear replacement vehicles, useful nearby power-ups, and limited retreat when exposed; their movement includes conservative anti-stall steering. A collision deadlock was fixed so already-overlapping actors can move **apart** but cannot penetrate one another more deeply.
+
+**Verified October 26, 2026:** [successful full gameplay, combat simulation, Chromium QA, and Android APK workflow](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40438222025). 18 fixed-seed arena/AI simulations and the prior regression suite pass. The worst bot immobility in those sampled scenarios decreased from **8.85 s to 1.05 s**. All sampled initial spawns were connected and wall-safe. The 15-second simulation windows did not finish full matches, so the result is **not** evidence of final match pace or actual player balance.
+
+The 39 verified browser screenshots show the approved v0.9.15 FIELDGRID visual design is retained. Android APK (78,417 bytes; SHA-256 `29de07c70734299f594ed356d846b001d965ebab6c7ddb230e359381bf9c12e8`) built and passed integrity checks. Physical Android audio, extended human play sessions and two-phone LAN pairing remain pending.
+
+See [the v0.9.16 audit and measurements](docs/COMBAT_INTELLIGENCE_v0.9.16.md). The previous `dev/sector-rebound-feedback-v0915` remains unmodified for rollback.
+
+---
+
 # Sector Rebound — v0.9.15 Combat Feedback & After-Action
 
 **Current experimental branch:** `dev/sector-rebound-feedback-v0915` · **Android versionCode:** 32
