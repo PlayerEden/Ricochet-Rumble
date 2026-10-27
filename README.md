@@ -11,6 +11,7 @@
 - [Development protocol](docs/DEVELOPMENT_PROTOCOL.md) -- branching, PR, QA and release safeguards
 - [Integration QA evidence](docs/QA_MAINLINE_v0921_2026-10-27.md), [GitHub audit](docs/GITHUB_AUDIT_2026-10-27.md) and [branch register](docs/BRANCH_REGISTER.md)
 - [Google Play v1.0 roadmap](docs/ROADMAP_TO_GOOGLE_PLAY_V1.md)
+- [Plan coverage / missing dependency audit](docs/DEVELOPMENT_PLAN_COVERAGE_AUDIT_2026-10-27.md) -- what is accounted for, what still needs explicit acceptance
 - [FIELDGRID design archive](docs/design/README.md) -- designs are not necessarily implemented
 
 ## Play the latest preview
