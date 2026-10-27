@@ -30,6 +30,10 @@ Machine-readable **concept catalog**: [../../game-data/cosmetics/pilot_icons.v1.
 
 - [Game Lobby & Minimal Pilot — v0.9.20 review](reviews/2026-10-27_GAME_LOBBY_PILOT_v0920.md): applies the visual system to the real mobile home screen and the small on-foot character. Builds directly on in-game assets, prioritizes primary-play hierarchy and simple silhouettes.
 
+### Quick Play post-match flow
+
+- [23 — Quick Play Session & After-Action Bible](23_QUICK_PLAY_AFTER_ACTION_BIBLE_DRAFT.md): after each completed match show mode-specific statistics, then **NEXT MATCH** from the player's selected playlist or **MAIN MENU**. Includes no-repeat shuffle, session stats and host/guest rules. **Proposal only, not implemented.**
+
 ## Authority / conflict rules
 
 - **Production shipping behavior:** running game source and passed tests win.
