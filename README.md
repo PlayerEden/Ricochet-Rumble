@@ -1,3 +1,19 @@
+# Sector Rebound — v0.9.17 Match Flow, Readability & First-Play
+
+**Active test branch:** `dev/sector-rebound-match-flow-v0917` · **Android versionCode:** 34
+
+The first solo session now provides a brief, contextual FIELDGRID training label for aiming/firing, pilot recovery and collecting supplies. It floats over the fullscreen arena, expires quickly, and never blocks movement. The shell HUD clearly distinguishes available shots from shots already **IN FLIGHT**; critically damaged armor has a clearer warning. A single no-contact reminder after 28 seconds of quiet solo fighting points players back to the existing radar. No enemy reveals, time limits, changes to tank/mech balance, camera, audio, or multiplayer protocol.
+
+**Verified October 26–27, 2026:** [successful smoke, 18 seeded 30-second pacing diagnostics, 42 Chromium screenshots and Android debug APK workflow](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40440351037). The tests distinguish genuine pathing stalls from intentional close combat holding. In the 18 artificial stationary-human scenarios, the maximum measured genuine navigation stall was **0.02s**; none of the 18 matches completed in the 30s observation window. This is **not** a human win-rate or typical match duration.
+
+The installed APK contains the correct `SYSTEM 0.9.17` menu label and matching bundled Android/web assets. Final verified debug APK: 79,633 bytes, SHA-256 `9ac5ba35b007b0cc72d46e4af74750fc76d4767f7a596e555c8dc622f11fe800`.
+
+**Pending human acceptance:** multi-round solo playtest for pacing/readability, Android sound listening, and physical two-phone Wi-Fi multiplayer. Prior stable candidate `dev/sector-rebound-combat-intelligence-v0916` remains intact for rollback.
+
+See [match-flow handoff](docs/MATCH_FLOW_v0.9.17.md) for details and limitations.
+
+---
+
 # Sector Rebound — v0.9.16 Combat Intelligence & Arena QA
 
 **Current test branch:** `dev/sector-rebound-combat-intelligence-v0916` · **Android versionCode:** 33
