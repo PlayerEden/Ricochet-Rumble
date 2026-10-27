@@ -1,7 +1,7 @@
 (()=>{'use strict';
 let W=960,H=600;const START_LIVES=5,STEP=1/60;
 const PREF_KEY='rr-options-v06'; // Preserve existing options across this patch.
-let comfort={sound:true,shake:false,autoFire:false,leftHanded:false},fixedAccumulator=0;
+let comfort={sound:true,music:true,shake:false,autoFire:false,leftHanded:false},fixedAccumulator=0;
 let selectedRules={botCount:2,bulletCap:4,startLives:2,teamMode:'ffa',botSkill:'normal',mapSize:'small'};
 // W/H are the camera canvas resolution. Mazes have much larger world coordinates.
 let worldW=W,worldH=H,mazeGrid=null,currentArena=-1,currentSeed=0,currentMapSize='';const camera={x:0,y:0,zoom:null};
@@ -489,6 +489,56 @@ const AUDIO_CUES={
  'victory':{wave:'triangle',start:390,end:550,duration:.18,gain:.021},
  'defeat':{wave:'triangle',start:240,end:85,duration:.25,gain:.022}
 };
+// v0.9.21 original offline procedural music: same Web Audio context as SFX.
+// This is a tiny, consciously composed four-bar tonal pattern, not a copy
+// or a streaming track. Audio starts only after a real player gesture.
+let musicGesture=false,musicNext=0,musicStep=0,musicScene='';
+function armMusic(){
+ musicGesture=true;
+ if(!comfort.music)return;
+ try{
+  const AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC)return;
+  if(!window.rrAudio)window.rrAudio=new AC();
+  if(window.rrAudio.state==='suspended')window.rrAudio.resume();
+ }catch(_){}
+}
+document.addEventListener('pointerdown',armMusic,{passive:true});
+function updateMusic(){
+ if(!musicGesture||!comfort.music||document.hidden)return;
+ const scene=(mode==='idle' || !menu.classList.contains('hidden'))?'menu':(!paused&&state?.winner<0?'combat':null);
+ if(!scene)return;
+ const ac=window.rrAudio;
+ if(!ac||ac.state!=='running')return;
+ if(musicScene!==scene){musicScene=scene;musicStep=0;musicNext=ac.currentTime+.035;}
+ const beat=60/(scene==='menu'?96:116)/2; // steady quiet eighth notes
+ const notes=[130.81,155.56,196.0,233.08,174.61,196.0,155.56,116.54];
+ // Schedule only a short horizon; browser lifecycle/pause must stop cleanly.
+ if(musicNext<ac.currentTime-.2)musicNext=ac.currentTime+.03;
+ let scheduled=0;
+ while(musicNext<ac.currentTime+.10&&scheduled++<2){
+  const k=musicStep%16,at=musicNext;
+  const pitch=notes[(Math.floor(k/2)+Math.floor(musicStep/16))%notes.length];
+  if(k%2===0){
+   const o=ac.createOscillator(),g=ac.createGain();
+   o.type='triangle';o.frequency.setValueAtTime(pitch/2,at);
+   g.gain.setValueAtTime(.0001,at);
+   g.gain.linearRampToValueAtTime(scene==='menu'?.005:.004,at+.025);
+   g.gain.exponentialRampToValueAtTime(.0001,at+beat*.88);
+   o.connect(g).connect(ac.destination);o.start(at);o.stop(at+beat*.90);
+  }
+  if((scene==='combat'&&k%4===2)||(scene==='menu'&&k===6)){
+   const o=ac.createOscillator(),g=ac.createGain();
+   o.type='sine';o.frequency.setValueAtTime(pitch*2,at);
+   g.gain.setValueAtTime(.0001,at);
+   g.gain.linearRampToValueAtTime(.0025,at+.012);
+   g.gain.exponentialRampToValueAtTime(.0001,at+beat*.3);
+   o.connect(g).connect(ac.destination);o.start(at);o.stop(at+beat*.32);
+  }
+  musicNext+=beat;musicStep++;
+ }
+}
+
 const lastAudioCue=new Map();
 function audioCue(kind,x=null,y=null){
  if(!comfort.sound)return false;
@@ -849,7 +899,7 @@ function loop(now){const dt=clamp((now-lastTime)/1000,0,.085);lastTime=now;
  updateVisuals(dt);hudTimer+=dt;if(hudTimer>.15){hudTimer=0;refreshHUD();}
  if(mode==='host'&&connected){snapshotTimer+=dt;if(snapshotTimer>.09){snapshotTimer=0;nativePacket({type:'state',state:serializeState()})}}
  if(mode==='guest'&&connected){sendTimer+=dt;if(sendTimer>.05){sendTimer=0;nativePacket({type:'input',input:menu.classList.contains('hidden')&&!document.hidden?makeControl(true):{moveX:0,moveY:0,fire:false}})}}
- render(dt);drawLobbyPreview(dt);requestAnimationFrame(loop)}
+ render(dt);drawLobbyPreview(dt);updateMusic();requestAnimationFrame(loop)}
 function bridgeReady(){return !!window.AndroidBridge}
 function host(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('host');setPanel('<div class="eyebrow">NEARBY PLAY</div><h2>HOSTING MATCH</h2><p id="host-status">Starting local game...</p><div class="host-address" id="host-address"></div><button data-action="close">CANCEL</button>');window.AndroidBridge.hostGame()}
 function find(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('guest');setPanel('<div class="eyebrow">NEARBY PLAY</div><h2>FIND A MATCH</h2><p id="find-status">Looking for games on the same Wi-Fi...</p><div id="rooms"></div><button data-action="manual">JOIN BY LOCAL IP</button><button data-action="close">BACK</button>');window.AndroidBridge.findGames()}
