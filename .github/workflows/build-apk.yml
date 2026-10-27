@@ -1,8 +1,8 @@
-name: Android Test APK # Sector Rebound v0.9.18 Play API 36 and bundle readiness QA
+name: Android Test APK # Sector Rebound v0.9.19 pilot silhouette and portrait prototype QA
 on:
   workflow_dispatch:
   push:
-    branches: [dev/sector-rebound-play-foundation-v0918]
+    branches: [dev/sector-rebound-pilot-silhouette-v0919]
     paths:
       - '.github/workflows/build-apk.yml'
 permissions:
@@ -31,14 +31,14 @@ jobs:
       - name: Upload combat simulation and spawn fairness report
         uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.18-pacing-qa
+          name: sector-rebound-v0.9.19-pacing-qa
           path: qa-results/combat-simulation.json
           if-no-files-found: error
           retention-days: 14
-      - name: Checkout v0.9.17 visual baseline
+      - name: Checkout v0.9.18 pilot visual baseline
         uses: actions/checkout@v4
         with:
-          ref: dev/sector-rebound-match-flow-v0917
+          ref: design/fieldgrid-cosmetics-bible-v1
           path: visual-baseline
       - name: Capture visual before/after QA
         run: |
@@ -48,11 +48,15 @@ jobs:
           if [ -z "$CHROME_BIN" ]; then echo "Chrome is required for visual QA" >&2; exit 1; fi
           npm install --no-save --ignore-scripts playwright-core@1.56.1
           node tests/visual-qa.mjs
+      - name: Validate pilot concept roster and editable sources
+        run: node tools/validate-cosmetic-catalog.mjs
+      - name: Capture 3 pilot vector art review at actual UI sizes
+        run: node tests/pilot-art-review.mjs
       - name: Upload visual QA screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.18-visual-before-after
+          name: sector-rebound-v0.9.19-visual-before-after
           path: qa-screens/
           if-no-files-found: error
           retention-days: 14
@@ -65,13 +69,13 @@ jobs:
       - name: Upload unsigned release AAB for validation only
         uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.18-unsigned-aab-NOT-FOR-PLAY
+          name: sector-rebound-v0.9.19-unsigned-aab-NOT-FOR-PLAY
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 14
       - uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.18-debug-apk
+          name: sector-rebound-v0.9.19-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
