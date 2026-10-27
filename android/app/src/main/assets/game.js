@@ -325,6 +325,12 @@ function botInput(i,dt){
   if(!bot.onFoot){objective=target;}
  }
  let direction=Math.atan2(objective.y-bot.y,objective.x-bot.x);
+ // Short local recovery when another actor or a narrow corner pins the bot.
+ // This is steering, not teleportation, boosted speed, or perfect aim.
+ const travelled=Number.isFinite(brain.lastX)?Math.hypot(bot.x-brain.lastX,bot.y-brain.lastY):999;
+ const objectiveDistance=Math.hypot(objective.x-bot.x,objective.y-bot.y);
+ brain.stuckFor=(objectiveDistance>58&&travelled<.08)?(brain.stuckFor||0)+dt:0;
+ brain.lastX=bot.x;brain.lastY=bot.y;
  brain.timer-=dt;
  if(brain.intent!==choice.kind){brain.timer=0;brain.path=[];brain.goal=-1;}
  brain.intent=choice.kind;
@@ -347,6 +353,13 @@ function botInput(i,dt){
  }else{
   const aheadX=bot.x+Math.cos(direction)*72,aheadY=bot.y+Math.sin(direction)*72;
   if(blocked(aheadX,aheadY,27))direction+=Math.sin(visualClock*.9+i)>0?1.4:-1.4;
+ }
+ if(brain.stuckFor>.95){
+  // Try the left and right shoulders on alternate stuck intervals. Unlike
+  // applying an arbitrary force, this still respects the usual collisions.
+  const side=((i+Math.floor(brain.stuckFor/.75))%2===0)?1:-1;
+  direction+=side*1.18;
+  if(brain.stuckFor<1.04){brain.timer=0;brain.path=[];brain.goal=-1;}
  }
  botBrains.set(i,brain);
  const delta=Math.atan2(Math.sin(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a),Math.cos(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a));
