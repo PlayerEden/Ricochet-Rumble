@@ -56,3 +56,14 @@ The accompanying automated \`tests/pilot-art-review.mjs\` renders an honest cont
 - build installable debug APK and unsigned Android App Bundle; latter not Play-uploadable
 
 This is an intentionally scoped **visual prototype**, not a complete product/profile release.
+
+
+## Screenshot-driven follow-up — labeling collision found
+
+The actual 915×412 captured dismount shows why art alone cannot fix readability: \`ENTER · TANK\` was drawn almost directly on top of the pilot, and the \`P1\` identity marker/triangle could overlap the parked tank. Revised the world annotation:
+- Nearby usable vehicle now has only a thin entry ring; the existing HUD ENTER control remains the actionable text.
+- On-foot player/bot IDs render alongside the character rather than across the empty vehicle.
+- The local on-foot chevron sits nearer the actor instead of hovering above the parked hull.
+- Tank/mech labels and default HUD remain unchanged.
+
+This fixes competing interface layers without hiding vehicle affordance or changing input hit targets. The new CI images include the true dismounted pilot state rather than only the tank-spawn state. Ground-view camera and hitboxes are unmodified.
