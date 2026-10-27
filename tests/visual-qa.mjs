@@ -86,6 +86,11 @@ try{
     await shot('settings-playlist-expanded');
     await options.locator('summary').click();
    }
+   // Stable art comparison: no bots can KO the pilot while capturing live gait
+   // and directional poses. Both baseline and candidate use identical settings.
+   await page.locator('#bot-count').evaluate(el=>{
+     el.value='0';el.dispatchEvent(new Event('change',{bubbles:true}));
+   });
    await page.locator('#menu button[data-action="settings-back"]').click();
    await page.locator('#menu button[data-action="help"]').click();
    await shot('help');
