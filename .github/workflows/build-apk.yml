@@ -1,4 +1,4 @@
-name: Android Test APK # Sector Rebound v0.9.17 corridor escape and contextual readability QA
+name: Android Test APK # Sector Rebound v0.9.17 distinguish navigation stalls from close duels
 on:
   workflow_dispatch:
   push:
