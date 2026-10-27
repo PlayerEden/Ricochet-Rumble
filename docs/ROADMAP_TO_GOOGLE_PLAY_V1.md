@@ -2,7 +2,7 @@
 
 **Planning checkpoint:** 2026-10-27  
 **Status:** Ordered development plan for review, **not a record of implemented features**.  
-**Current playable reference:** [v0.9.20 game-lobby preview](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.20-lobby-preview).  
+**Current playable reference:** [v0.9.21 game-feel preview](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.21-polish-preview) (automated QA passed; owner phone acceptance outstanding).  
 **Design references:** [Mode Bible](design/20_MATCH_MODES_BIBLE_DRAFT.md), [After-Action Bible](design/23_QUICK_PLAY_AFTER_ACTION_BIBLE_DRAFT.md), [Procedural Arena Identity](design/24_PROCEDURAL_ARENAS_IDENTITY_DRAFT.md), [Music Bible](design/21_MUSIC_AND_SOUND_BIBLE_DRAFT.md), [Pilot Icon Bible](design/10_PILOT_ICON_BIBLE.md), [Play foundation](PLAY_LAUNCH_v0.9.18.md).
 
 ## Product promise
@@ -13,8 +13,8 @@ We prioritize a smaller excellent game over a large unfinished live-service feat
 
 ## Actual technical baseline / risk
 
-- Current newest test build is v0.9.20 on `dev/sector-rebound-lobby-pilot-v0920`, not a Google Play production release.
-- GitHub `main` is not yet the consolidated v0.9.20 release baseline. PRs #1–#16 are mostly a **chain of draft PRs**, each depending on its previous dev/design branch. Do not blindly merge or delete this history. Make one reviewed, tested integration branch and establish a reproducible tagged checkpoint.
+- Latest tested preview is v0.9.21 on `dev/sector-rebound-polish-v0921`; the integration candidate includes that source, but has not yet been accepted into default `main`. This is not a Google Play production release.
+- As of integration preparation, GitHub `main` carried historical v0.6.3 source and latest v0.9.21 is a **review-pending integration candidate**. PRs #1–#17 form a largely chained draft history. Do not bulk-merge or delete; review integration branch, PR CI, source provenance and rollback separately.
 - Current local Wi-Fi host/guest code exists but physical two-phone correctness is **not yet verified**.
 - Android API 36 debug APK and **unsigned** AAB work exists. Production release signing, app listing, privacy, purchase systems and devices QA remain open.
 - Pilot portraits are **style-review SVG candidates** only; profile, entitlements and purchasable items have not shipped.
@@ -103,4 +103,4 @@ Never declare a future feature present solely because it exists in a Bible. Neve
 
 ## First action / immediate next build
 
-**First safeguard v0.9.20 into a clean, reproducible integration baseline; then make v0.9.21 a narrowly scoped menu-animation/wording + foot-silhouette/zoom experiment.** Gate 2 (real match-mode architecture and Next Match loop) begins after that, not after all artwork or monetization is finished.
+**v0.9.20 baseline and the v0.9.21 game-feel preview exist and passed automated tests.** Finish the reviewed mainline integration/maintenance gate; then begin Gate 2 (real mode architecture and Next Match loop). Manual phone acceptance remains separate from automation.

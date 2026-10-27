@@ -1,52 +1,93 @@
-name: Publish Sector Rebound Android Preview
+name: Sector Rebound - publish immutable Android preview
 on:
-  push:
-    branches: [dev/sector-rebound-polish-v0921]
-    paths:
-      - '.github/workflows/publish-preview-apk.yml'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'New unique preview tag (example: v0.9.22-preview.1)'
+        required: true
+        type: string
+
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: publish-preview
+  cancel-in-progress: false
+
 jobs:
   publish-preview:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - name: Install Android SDK 36
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Validate unique tag and matching Android version
+        env:
+          TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-[a-z0-9][a-z0-9.-]*$ ]]; then
+            echo "Use a unique prerelease tag such as v0.9.22-preview.1" >&2
+            exit 1
+          fi
+          CORE_VERSION="${BASH_REMATCH[1]}"
+          VERSION_NAME="$(sed -nE "s/^[[:space:]]*versionName[[:space:]]+'([^']+)'.*/\1/p" android/app/build.gradle | head -n1)"
+          if [[ "$VERSION_NAME" != "$CORE_VERSION"* ]]; then
+            echo "Tag $TAG and android versionName $VERSION_NAME disagree" >&2
+            exit 1
+          fi
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag already exists. Do not replace a published preview." >&2
+            exit 1
+          fi
+      - name: Verify smoke, art catalog, and web/Android parity
+        run: |
+          set -euo pipefail
+          node tests/smoke.mjs
+          node tools/validate-cosmetic-catalog.mjs
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/index.html android/app/src/main/assets/index.html
+          cmp web/style.css android/app/src/main/assets/style.css
+      - name: Install required Android SDK
         run: |
           set -euo pipefail
           SDKMANAGER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
           test -n "$SDKMANAGER"
           "$SDKMANAGER" --install "platforms;android-36" "build-tools;35.0.0"
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.13'
-      - name: Verify game regression and pilot art manifest
-        run: |
-          node tests/smoke.mjs
-          node tools/validate-cosmetic-catalog.mjs
-      - name: Build test APK
+      - name: Build debug APK
         working-directory: android
         run: gradle --no-daemon :app:assembleDebug
-      - name: Publish permanent GitHub pre-release APK
+      - name: Create permanent GitHub prerelease (never clobber)
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: v0.9.21-polish-preview
+          TAG: ${{ inputs.tag }}
           APK: android/app/build/outputs/apk/debug/app-debug.apk
-          ASSET: Sector-Rebound-v0.9.21-Game-Feel-Preview.apk
         run: |
           set -euo pipefail
           test -s "$APK"
-          sha256sum "$APK"
-          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$APK#$ASSET" --clobber --repo "$GITHUB_REPOSITORY"
-          else
-            gh release create "$TAG" "$APK#$ASSET" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
-              --title 'Sector Rebound v0.9.21 — Game Feel & Music Preview (Android)' \
-              --notes 'Installable Android debug test APK for the animated tank/mech showcase, simplified foot pilot, subtle camera pullback and original music prototype. This is a pre-release, not a signed Google Play production build. Gameplay balance and LAN protocol are unchanged. Portrait icons are only design-review source files, not selectable cosmetics. Existing installations signed with a different debug key may need to be uninstalled before this APK installs; back up any local data first.'
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag already exists; declining to overwrite." >&2
+            exit 1
           fi
+          CHECKSUM="$(sha256sum "$APK" | awk '{print $1}')"
+          {
+            echo "Sector Rebound Android debug preview; NOT a signed Google Play production release."
+            echo
+            echo "Source commit: $GITHUB_SHA"
+            echo "Workflow: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo "APK SHA-256: $CHECKSUM"
+            echo "Android version: $(grep -E 'versionName' android/app/build.gradle | head -n1 | xargs)"
+            echo
+            echo "Automated smoke tests passed in this job. Real Android sound, performance, and two-device LAN acceptance are separate and may remain pending."
+            echo "A different debug signing certificate may block in-place installation. Back up local data before uninstalling an older APK."
+          } > release-notes.md
+          gh release create "$TAG" "$APK#app-debug.apk" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title "Sector Rebound $TAG Android Debug Preview" --notes-file release-notes.md

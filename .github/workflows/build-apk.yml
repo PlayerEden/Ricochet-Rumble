@@ -1,81 +1,83 @@
-name: Android Test APK # Sector Rebound v0.9.21 final animated showroom, music and reduced-motion QA
+name: Sector Rebound - manual full Android and visual QA
 on:
   workflow_dispatch:
-  push:
-    branches: [dev/sector-rebound-polish-v0921]
-    paths:
-      - '.github/workflows/build-apk.yml'
+    inputs:
+      baseline_ref:
+        description: 'Known-good branch/tag for screenshot comparison'
+        required: true
+        default: 'dev/sector-rebound-integrated-v0920'
+        type: string
+
 permissions:
   contents: read
+
 jobs:
-  build:
+  full-qa:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
       - name: Install required Android SDK
         run: |
           set -euo pipefail
           SDKMANAGER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
           test -n "$SDKMANAGER"
           "$SDKMANAGER" --install "platforms;android-36" "build-tools;35.0.0"
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.13'
-      - name: Run gameplay smoke tests
-        run: node tests/smoke.mjs
-      - name: Upload combat simulation and spawn fairness report
-        uses: actions/upload-artifact@v4
-        with:
-          name: sector-rebound-v0.9.21-pacing-qa
-          path: qa-results/combat-simulation.json
-          if-no-files-found: error
-          retention-days: 14
-      - name: Checkout v0.9.20 integrated baseline
+      - name: Run full headless gameplay and asset parity checks
+        run: |
+          set -euo pipefail
+          node tests/smoke.mjs
+          node tools/validate-cosmetic-catalog.mjs
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/index.html android/app/src/main/assets/index.html
+          cmp web/style.css android/app/src/main/assets/style.css
+      - name: Checkout screenshot comparison baseline
         uses: actions/checkout@v4
         with:
-          ref: dev/sector-rebound-integrated-v0920
+          ref: ${{ inputs.baseline_ref }}
           path: visual-baseline
-      - name: Capture visual before/after QA
+      - name: Capture actual Chromium before/after scenes
         run: |
-          set -e
+          set -euo pipefail
           CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
           export CHROME_BIN
-          if [ -z "$CHROME_BIN" ]; then echo "Chrome is required for visual QA" >&2; exit 1; fi
+          test -n "$CHROME_BIN"
           npm install --no-save --ignore-scripts playwright-core@1.56.1
           node tests/visual-qa.mjs
-      - name: Validate pilot concept roster and editable sources
-        run: node tools/validate-cosmetic-catalog.mjs
-      - name: Capture 3 pilot vector art review at actual UI sizes
-        run: node tests/pilot-art-review.mjs
-      - name: Upload visual QA screenshots
+          node tests/pilot-art-review.mjs
+      - name: Upload visual and simulation evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.21-visual-before-after
-          path: qa-screens/
-          if-no-files-found: error
+          name: sector-rebound-qa-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            qa-screens/
+            qa-results/combat-simulation.json
+          if-no-files-found: warn
           retention-days: 14
-      - name: Build debug APK (no secrets required)
+      - name: Build debug Android APK and unsigned release AAB
         working-directory: android
-        run: gradle --no-daemon :app:assembleDebug
-      - name: Generate unsigned release Android App Bundle (Play readiness artifact)
-        working-directory: android
-        run: gradle --no-daemon :app:bundleRelease
-      - name: Upload unsigned release AAB for validation only
+        run: |
+          gradle --no-daemon :app:assembleDebug
+          gradle --no-daemon :app:bundleRelease
+      - name: Upload unsigned AAB - NOT Play signed
         uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.21-unsigned-aab-NOT-FOR-PLAY
+          name: unsigned-aab-NOT-FOR-PLAY-${{ github.run_id }}
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 14
-      - uses: actions/upload-artifact@v4
+      - name: Upload installable debug APK
+        uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-v0.9.21-debug-apk
+          name: debug-apk-${{ github.run_id }}
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14

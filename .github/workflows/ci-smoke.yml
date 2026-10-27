@@ -1,0 +1,42 @@
+name: Sector Rebound - fast PR regression
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'android/app/src/main/assets/**'
+      - 'tests/**'
+      - 'tools/**'
+      - 'game-data/**'
+      - '.github/workflows/ci-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fast-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check syntax and byte-for-byte Android/web asset parity
+        run: |
+          set -euo pipefail
+          node --check web/game.js
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/index.html android/app/src/main/assets/index.html
+          cmp web/style.css android/app/src/main/assets/style.css
+      - name: Game regression and seeded combat tests
+        run: node tests/smoke.mjs
+      - name: Validate FIELDGRID cosmetic manifest
+        run: node tools/validate-cosmetic-catalog.mjs
