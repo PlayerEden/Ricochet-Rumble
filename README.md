@@ -14,6 +14,15 @@ See [v0.9.18 Play launch checklist](docs/PLAY_LAUNCH_v0.9.18.md). The earlier `d
 
 ---
 
+## FIELDGRID Design Archive — backed up in this repository
+
+The [FIELDGRID Design Archive](docs/design/README.md) is the durable home for the game's **visual identity and future design bibles**, independent of any ChatGPT conversation. It contains a [Master Visual System](docs/design/00_FIELDGRID_VISUAL_SYSTEM.md), [Pilot Icon Design Bible](docs/design/10_PILOT_ICON_BIBLE.md), [18-pilot launch roster](docs/design/11_PILOT_ROSTER_LAUNCH.md), [vehicle paint/trail/projectile cosmetics plan](docs/design/12_COSMETIC_EXTENSION_BIBLE.md), and [reusable design-bible template](docs/design/90_DESIGN_BIBLE_TEMPLATE.md).
+
+The matching [pilot icon manifest](game-data/cosmetics/pilot_icons.v1.json) has permanent concept IDs and an automated [catalog validator](tools/validate-cosmetic-catalog.mjs). **Design only:** these assets, cosmetic unlocks, Play purchase SKUs and monetization are *not* available in the playable game yet. Keep a small, polished free roster and avoid pay-to-win.
+
+---
+
+
 # Sector Rebound — v0.9.17 Match Flow, Readability & First-Play
 
 **Active test branch:** `dev/sector-rebound-match-flow-v0917` · **Android versionCode:** 34
