@@ -19,7 +19,7 @@ const testMath=Object.create(Math);testMath.random=()=>simRand?simRand():Math.ra
 function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5;return(z>>>0)/4294967296;};}
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math:testMath,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -303,7 +303,7 @@ console.log('PASS v0.9.8.1: entry clearance, Android asset parity and offline he
  const fs=await import('node:fs');
  const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
  const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
- for(const metadata of ['SOLO / AI','LOCAL WI-FI','ARMORED RESPONSE','FIELDGRID READY'])
+ for(const metadata of ['SOLO / AI','LOCAL WI-FI','ARMORED RESPONSE','NEW MAZE. NEW FIGHT.'])
    assert.ok(html.includes(metadata),'missing purposeful action/context label: '+metadata);
  assert.ok(css.includes('.scorestrip .middle.on-foot')&&css.includes('.interact-btn.busy'),'semantic HUD and bay-busy states must have authored styles');
  assert.ok(css.includes('max-width:760px')&&css.includes('max-height:390px'),'responsive phone-landscape thresholds retained');
@@ -385,7 +385,7 @@ console.log('PASS v0.9.10 fullscreen canvas, overlay HUD, independently moving t
 win.innerWidth=1536;win.innerHeight=672;win.devicePixelRatio=1;
 assert.equal(win.__test.resizeArenaCanvas(),true);
 const [fieldWidth,fieldHeight]=win.__test.world;
-const expectedZoom=Math.max(1.24,1536/(fieldWidth+224),672/(fieldHeight+224));
+const expectedZoom=Math.max(1.15,1536/(fieldWidth+224),672/(fieldHeight+224));
 assert.ok(Math.abs(win.__test.cameraZoom(null)-expectedZoom)<1e-9,'zoom accounts for playable perimeter without black side gutters');
 assert.ok(win.__test.cameraZoom()<Math.max(1.28,1536/fieldWidth,672/fieldHeight),'new widescreen camera genuinely shows more world');
 const motions=[];
@@ -434,27 +434,27 @@ veh.type='tank';
 win.innerWidth=1536;win.innerHeight=672;win.devicePixelRatio=1;
 win.__test.resizeArenaCanvas();
 const minZoom=Math.max(1536/(win.__test.world[0]+224),672/(win.__test.world[1]+224));
-assert.ok(Math.abs(win.__test.unitTargetZoom(local)-1.22)<1e-9);
-assert.ok(Math.abs(win.__test.cameraZoom(local)-Math.max(1.22,minZoom))<1e-9);
+assert.ok(Math.abs(win.__test.unitTargetZoom(local)-1.13)<1e-9);
+assert.ok(Math.abs(win.__test.cameraZoom(local)-Math.max(1.13,minZoom))<1e-9);
 win.__test.render(1/60);
 const zTank=win.__test.camera.zoom;
-assert.ok(Math.abs(zTank-Math.max(1.22,minZoom))<1e-7);
+assert.ok(Math.abs(zTank-Math.max(1.13,minZoom))<1e-7);
 local.onFoot=true;local.vehicleId=null;
-assert.equal(win.__test.unitTargetZoom(local),1.32);
+assert.equal(win.__test.unitTargetZoom(local),1.22);
 win.__test.render(1/60);
-assert.ok(win.__test.camera.zoom>zTank&&win.__test.camera.zoom<1.32,'zoom must ease in rather than snap to foot');
+assert.ok(win.__test.camera.zoom>zTank&&win.__test.camera.zoom<1.22,'zoom must ease in rather than snap to foot');
 for(let i=0;i<80;i++)win.__test.render(1/60);
-assert.ok(Math.abs(win.__test.camera.zoom-1.32)<.003,'foot zoom should converge');
+assert.ok(Math.abs(win.__test.camera.zoom-1.22)<.003,'foot zoom should converge');
 local.onFoot=false;local.vehicleId=veh.id;veh.occupant=0;veh.type='mech';
-assert.equal(win.__test.unitTargetZoom(local),1.16);
+assert.equal(win.__test.unitTargetZoom(local),1.08);
 const zFoot=win.__test.camera.zoom;
 win.__test.render(1/60);
-assert.ok(win.__test.camera.zoom<zFoot&&win.__test.camera.zoom>Math.max(1.16,minZoom),'mech transition eases outward');
+assert.ok(win.__test.camera.zoom<zFoot&&win.__test.camera.zoom>Math.max(1.08,minZoom),'mech transition eases outward');
 for(let i=0;i<85;i++)win.__test.render(1/60);
-assert.ok(Math.abs(win.__test.camera.zoom-Math.max(1.16,minZoom))<.003,'mech target converges');
+assert.ok(Math.abs(win.__test.camera.zoom-Math.max(1.08,minZoom))<.003,'mech target converges');
 veh.type='tank';
 for(let i=0;i<85;i++)win.__test.render(1/60);
-assert.ok(Math.abs(win.__test.camera.zoom-Math.max(1.22,minZoom))<.003,'tank transition converges');
+assert.ok(Math.abs(win.__test.camera.zoom-Math.max(1.13,minZoom))<.003,'tank transition converges');
 console.log('PASS v0.9.11 console design, camera targets, smooth transitions and viewport floor.');
 
 // v0.9.12 reliability and camera audit: close each unit's view modestly,
@@ -475,7 +475,7 @@ for(const typ of ['mech','tank']){
 }
 unit.onFoot=true;
 cameraOrder.push(win.__test.unitTargetZoom(unit));
-assert.deepEqual(cameraOrder,[1.16,1.22,1.32],'mech/tank/foot view hierarchy');
+assert.deepEqual(cameraOrder,[1.08,1.13,1.22],'mech/tank/foot view hierarchy');
 unit.onFoot=false;model.type='tank';
 unit.recoil=.72;unit.trackLeft=83;unit.trackRight=119;
 const freeBay=st().vehicles.find(v=>v.occupant===-1&&v.armor>0);
@@ -511,15 +511,15 @@ console.log('PASS v0.9.12 LAN map-change camera reset, unchanged-field continuit
 
 // v0.9.12a: deliberately small, uniform +.04 across camera modes.
 // Large map and aspect-ratio minimum continue to prevent letterboxing.
-assert.equal(win.__test.unitTargetZoom(null),1.24,'spectator fallback zoom');
+assert.equal(win.__test.unitTargetZoom(null),1.15,'spectator fallback zoom');
 click('solo');
 const zoomOperator=st().tanks[0],zoomVehicle=st().vehicles[zoomOperator.vehicleId];
 zoomOperator.onFoot=false;zoomVehicle.type='tank';
-assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-1.22)<1e-9);
+assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-1.13)<1e-9);
 zoomVehicle.type='mech';
-assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-1.16)<1e-9);
+assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-1.08)<1e-9);
 zoomOperator.onFoot=true;
-assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-1.32)<1e-9);
+assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-1.22)<1e-9);
 console.log('PASS v0.9.12a closer pilot/tank/mech zoom with unchanged viewport floor.');
 
 
@@ -606,8 +606,8 @@ assert.deepEqual(['mech','tank','foot'].map(type=>{
  actor.onFoot=type==='foot';
  if(!actor.onFoot&&v)v.type=type;
  return win.__test.unitTargetZoom(actor);
-}),[1.16,1.22,1.32]);
-assert.equal(win.__test.unitTargetZoom(null),1.24);
+}),[1.08,1.13,1.22]);
+assert.equal(win.__test.unitTargetZoom(null),1.15);
 {
  const src=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
  assert.ok(src.includes("guard:{label:'B'")&&src.includes("overcharge:{label:'C'")&&src.includes("repair:{label:'H'"),'pickup types should use unique glyphs');
@@ -845,7 +845,8 @@ console.log('PASS v0.9.15: after-action stats, result transitions, replay/menu a
  const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
  const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
  assert.ok(html.includes('id="field-coach"')&&css.includes('.field-coach.hidden'),'optional coach has an explicit hidden state');
- assert.ok(html.includes('V0.9.20 · LOCAL'),'menu version should match current build');
+ assert.ok(!html.includes('NO ACCOUNT REQUIRED')&&!html.includes('V0.9.20 · LOCAL'),'home must not show redundant account or build wording');
+ assert.ok(html.includes('id="home-unit-name"')&&html.includes('id="pref-music"'),'rotating vehicle presentation and music preference exist');
  assert.ok(html.includes('id="menu-preview"')&&html.includes('class="home-screen"'),'home menu uses the in-game tank lobby stage');
  assert.ok(html.includes('data-action="solo"')&&html.includes('data-action="nearby"')&&html.includes('data-action="settings"')&&html.includes('data-action="help"'),'all entry actions retained');
  assert.equal(html,fs.readFileSync(new URL('../android/app/src/main/assets/index.html',import.meta.url),'utf8'),'Android and web menus must remain identical');
@@ -885,3 +886,23 @@ console.log('PASS v0.9.17 contextual guidance, true projectile availability, one
  assert.equal(source,fs.readFileSync(new URL('../android/app/src/main/assets/game.js',import.meta.url),'utf8'),'Android and browser share pilot renderer');
 }
 console.log('PASS v0.9.19 on-foot readability, safe parked-vehicle labeling and Android/web parity.');
+
+
+{
+ const save=node('pref-music');assert.ok(save,'music has an independent preference');
+ const oldAudio=win.rrAudio;
+ const oldSetting=win.__test.comfort.sound;
+ const oldMusic=win.__test.comfort.music;
+ const musicAc=win.rrAudio;
+ win.__test.comfort.sound=false;
+ win.__test.comfort.music=true;
+ win.__test.armMusic();
+ assert.ok(musicAc||win.rrAudio,'user gesture can initialize offline synth music');
+ win.__test.updateMusic();
+ assert.equal(win.__test.audioCue('tank-shot'),false,'muted SFX remain muted with music enabled');
+ win.__test.comfort.music=false;
+ win.__test.comfort.sound=true;
+ assert.equal(win.__test.audioCue('does-not-exist'),false,'music toggle is independent of SFX');
+ win.__test.comfort.sound=oldSetting;win.__test.comfort.music=oldMusic;
+}
+console.log('PASS v0.9.21 menu cleanup, separate music/SFX options and 7% wider class cameras.');
