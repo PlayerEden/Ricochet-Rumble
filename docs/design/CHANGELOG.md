@@ -14,6 +14,15 @@
 - Simplify the actual overhead pilot to head, torso, two separate gaited boots, minimal arms and tiny pistol. No mechanics changes.
 - Save design rationale and screenshot gates in `reviews/2026-10-27_GAME_LOBBY_PILOT_v0920.md`. Owner mobile review still needed before approval.
 
+## 2026-10-27 — Game-mode and music discussion archive
+
+- Propose a small game-mode playlist: Close Quarters pilot-only, vehicle FFA, TDM, then CTF and Elimination.
+- Separate map size, respawn and match victory rules per mode. Existing 2-lives, small-map FFA is a baseline, not a finalized launch experience.
+- Consider generated in-map Forward Bays for team modes, distinct from the menu cosmetic Hangar.
+- Preserve requests for calmer original synth menu/battle loops, animated tank/mech hero, trimmed menu copy, simpler pilot and a moderate pullback.
+- Decisions **not approved**: exact limits, score/time thresholds, flag carriers, team base naming, soundtrack selection, camera percentage.
+- Files: 20_MATCH_MODES_BIBLE_DRAFT.md, 21_MUSIC_AND_SOUND_BIBLE_DRAFT.md, 22_GAME_FEEL_AND_UI_DRAFT.md. Existing runnable game untouched.
+
 ## Decisions awaiting owner approval
 1. Choose the **first three style-lock portrait prototypes**: Recruit, Relay and Cold Cell (recommended).
 2. Confirm the launch target **5 free / 3 earned / 10 premium** or reduce the premium wave before release.
