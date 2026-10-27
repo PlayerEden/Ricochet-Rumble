@@ -23,6 +23,14 @@
 - Decisions **not approved**: exact limits, score/time thresholds, flag carriers, team base naming, soundtrack selection, camera percentage.
 - Files: 20_MATCH_MODES_BIBLE_DRAFT.md, 21_MUSIC_AND_SOUND_BIBLE_DRAFT.md, 22_GAME_FEEL_AND_UI_DRAFT.md. Existing runnable game untouched.
 
+## 2026-10-27 — Quick Play continuation and match-summary direction
+
+- User endorsed a continuous Quick Play session: complete a match, review outcome and real statistics, choose NEXT MATCH from selected modes or MAIN MENU.
+- Proposed shuffle-bag randomization avoids repeats where multiple modes are enabled; no auto-start.
+- Distinguish match-only scoreboard from running session totals; show mode-specific metrics, not fictional placeholders.
+- Solo next-match selection is local; LAN host decides and guest sees matching results and waits/readies.
+- Added [23_QUICK_PLAY_AFTER_ACTION_BIBLE_DRAFT.md](23_QUICK_PLAY_AFTER_ACTION_BIBLE_DRAFT.md) and linked it in Mode Bible; all remain design-only.
+
 ## Decisions awaiting owner approval
 1. Choose the **first three style-lock portrait prototypes**: Recruit, Relay and Cold Cell (recommended).
 2. Confirm the launch target **5 free / 3 earned / 10 premium** or reduce the premium wave before release.
