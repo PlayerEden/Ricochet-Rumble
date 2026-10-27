@@ -1,12 +1,13 @@
 # Branch register — Sector Rebound
 
-**Updated: 2026-10-27 after mainline integration.** These preserved branches are history/rollback references; don't delete or force-push simply to reduce clutter. The next feature starts from tested `main`.
+**Updated: 2026-10-27 through v0.9.22-dev5 / roadmap audit.** These preserved branches are history/rollback references; don't delete or force-push simply to reduce clutter. The next feature starts from tested `main`.
 
 ## Active and preserved checkpoints
 
 | Branch | Purpose | Status |
 | --- | --- | --- |
 | `main` | **Current** tested v0.9.21 development baseline | [PR #23 merged](https://github.com/PlayerEden/Ricochet-Rumble/pull/23); [full QA passed](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40590979779) |
+| `dev/sector-rebound-quick-play-v0922` | **Active unmerged v0.9.22 branch** — survival playlists, frozen solo match results, owner-approved camera | [Draft PR #24](https://github.com/PlayerEden/Ricochet-Rumble/pull/24); [full Android/Chromium QA passed](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40601021890); [dev5 debug APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.22-dev5-final-camera-test); phone playlist/results acceptance remains pending |
 | `integration/sector-rebound-mainline-v0921` | Accepted one-time integration branch | Historical merge branch, not the place for future changes |
 | `dev/sector-rebound-polish-v0921` | Original v0.9.21 game-feel branch | Preserved rollback and release source; [closed historical PR #17](https://github.com/PlayerEden/Ricochet-Rumble/pull/17) |
 | `dev/sector-rebound-integrated-v0920` | Pre-polish consolidated checkpoint | Preserve rollback; do not alter |
