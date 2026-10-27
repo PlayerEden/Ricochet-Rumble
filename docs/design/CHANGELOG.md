@@ -38,6 +38,12 @@
 - New [24_PROCEDURAL_ARENAS_IDENTITY_DRAFT.md](24_PROCEDURAL_ARENAS_IDENTITY_DRAFT.md) documents per-mode generator constraints, seed determinism, balanced spawns/objectives, same-map LAN authority, and test gates.
 - Cross-linked mode/after-action bibles. No code changes in this discussion branch.
 
+## 2026-10-27 — Consolidated v1.0 roadmap
+
+- Established one staged build order in [Roadmap to Google Play](../ROADMAP_TO_GOOGLE_PLAY_V1.md): **integrate/test v0.9.20 baseline first**, then narrow home/camera/pilot polish, mode architecture and continuous Quick Play, three initial modes, persistent Pilot Dossier and simple cosmetics, and finally commercial/privacy/release QA.
+- Capture the Flag, Elimination spectators, XL sectors and large cosmetic expansions remain post-launch candidates unless quality evidence and scope permit.
+- Highlighted stacked unmerged draft PRs (#1–#16) as technical debt; keep them safe and avoid falsely representing design-only concepts as implemented.
+
 ## Decisions awaiting owner approval
 1. Choose the **first three style-lock portrait prototypes**: Recruit, Relay and Cold Cell (recommended).
 2. Confirm the launch target **5 free / 3 earned / 10 premium** or reduce the premium wave before release.
