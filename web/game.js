@@ -800,23 +800,21 @@ function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
  if(shooting){c.fillStyle='#ffe5ad';c.beginPath();c.arc(19,0,2.4,0,Math.PI*2);c.fill()}
  c.restore();
 }
-// Unit-specific camera language: agile pilot sees a closer view, heavier units
-// pull back for situational awareness. The apron keeps wide displays covered.
-const CAMERA_APRON=112;
+// v0.9.22-dev3: give ALL combat classes a wider tactical field of view.
+// On-foot remains closer than tank, while the mech has the broadest awareness.
+// Larger *rendered* apron allows zoom-out even on wide Android screens.
+const CAMERA_APRON=260;
 function unitTargetZoom(t){
- // v0.9.14: a measured four-hundredths zoom-out in each unit state.
- // Keep the unit hierarchy, smoothing and screen-size minimum unchanged.
- // Approximately 7% wider view, retaining distinct vehicle handling.
- if(!t)return 1.15;
- if(t.onFoot)return 1.22;
+ if(!t)return 1.00;
+ if(t.onFoot)return 1.07;
  const v=currentVehicle(t);
- return v?.type==='mech'?1.08:v?.type==='tank'?1.13:1.15;
+ return v?.type==='mech'?.94:v?.type==='tank'?.98:1.00;
 }
 function cameraZoom(t=state?.tanks?.[mode==='guest'?1:0]){
  return mazeGrid?Math.max(unitTargetZoom(t),W/(worldW+CAMERA_APRON*2),H/(worldH+CAMERA_APRON*2)):1;
 }
-function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick>0)c.translate(Math.sin(visualClock*130)*screenKick,Math.cos(visualClock*98)*screenKick*.5);// A 6.25% camera pullback. The perimeter includes a small rendered exterior
- // apron so wide Android screens never reveal blank letterbox gutters.
+function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick>0)c.translate(Math.sin(visualClock*130)*screenKick,Math.cos(visualClock*98)*screenKick*.5);// Widened tactical camera. The perimeter includes enough rendered exterior
+ // floor tiles so wide Android screens do not reveal blank side gutters.
  const me=mode==='guest'?1:0,localTank=state.lives[me]>0?state.tanks[me]:(state.tanks.find((t,i)=>state.lives[i]>0)||state.tanks[me]||state.tanks[0]);
  const zoomTarget=cameraZoom(localTank);
  if(!Number.isFinite(camera.zoom))camera.zoom=zoomTarget;
@@ -833,7 +831,8 @@ function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick
  // Modular FIELDGRID surface, deterministic from cell coordinates with no per-frame randomness.
  // Culling ensures large mazes don't draw decorative details outside the camera.
  const left=camera.x-56,right=camera.x+viewW+56,top=camera.y-56,bottom=camera.y+viewH+56;
- const tile=132,xmin=Math.max(-1,Math.floor(left/tile)),xmax=Math.min(Math.ceil(worldW/tile)+1,Math.ceil(right/tile)),ymin=Math.max(-1,Math.floor(top/tile)),ymax=Math.min(Math.ceil(worldH/tile)+1,Math.ceil(bottom/tile));
+ const tile=132,apronCells=Math.ceil(CAMERA_APRON/tile)+1;
+ const xmin=Math.max(-apronCells,Math.floor(left/tile)),xmax=Math.min(Math.ceil(worldW/tile)+apronCells,Math.ceil(right/tile)),ymin=Math.max(-apronCells,Math.floor(top/tile)),ymax=Math.min(Math.ceil(worldH/tile)+apronCells,Math.ceil(bottom/tile));
  for(let gy=ymin;gy<ymax;gy++)for(let gx=xmin;gx<xmax;gx++){
    const x=gx*tile,y=gy*tile,hash=(gx*19+gy*37+currentSeed%23)%11;
    if(x<0||y<0||x>=worldW||y>=worldH){c.fillStyle='#10242e';c.fillRect(x+1,y+1,tile-2,tile-2);c.strokeStyle='#25414b';c.lineWidth=1;c.strokeRect(x+2,y+2,tile-4,tile-4);continue;}
