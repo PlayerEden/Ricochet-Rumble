@@ -464,3 +464,18 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 
 /* v0.9.15 release polish: both active after-action choices fill their equal grid cells. */
 .after-action .quick-rematch,.after-action #results-menu{width:100%!important;max-width:none!important}
+
+
+/* v0.9.17: contextual field coach. Light and non-interactive, never a modal. */
+.field-coach{position:absolute;left:50%;top:clamp(84px,22dvh,152px);transform:translateX(-50%);z-index:5;
+ width:max-content;max-width:min(68vw,520px);padding:7px 14px;border:1px solid #76adbbad;
+ background:#102b37e6;box-shadow:0 5px 15px #03111b78;color:#d2edf1;
+ font:800 clamp(10px,1.32vw,13px)/1.35 'Droid Sans Mono',Consolas,monospace;
+ text-align:center;letter-spacing:.28px;pointer-events:none;user-select:none}
+.field-coach.hidden{display:none}
+.game-screen:has(.overlay:not(.hidden)) .field-coach,
+.game-screen.match-finished .field-coach{display:none}
+.game-hud .scorestrip .middle.damaged{border-color:#e49c7e!important;background:#4e292bd9!important;color:#ffe0d3!important}
+.shell-meter.empty{color:#ffbc9b!important;letter-spacing:.35px}
+@media(max-width:760px){.field-coach{top:clamp(70px,21dvh,98px);max-width:59vw;padding:5px 8px;font-size:10px}}
+@media(max-height:380px){.field-coach{top:72px;max-width:54vw;font-size:9px;padding:4px 7px}}
