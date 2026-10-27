@@ -62,6 +62,10 @@ function createMaze(def,seed){const {cols,rows,cell}=def,rng=mazeRandom(seed),op
  return {cols,rows,cell,open,walls};}
 function setArena(id=0,seed=1,size=selectedRules.mapSize){const sizeId=MAP_SIZES[size]?size:'standard';
  if(currentArena===0&&currentSeed===seed&&currentMapSize===sizeId)return 0;
+ // A host-authoritative LAN rematch can replace a large map with a small
+ // one while the guest camera still points far outside the new world.
+ // Reset only when the arena actually changes, never on regular snapshots.
+ if(currentArena===0){camera.x=0;camera.y=0;camera.zoom=null;}
  currentArena=0;currentSeed=seed;currentMapSize=sizeId;
  mazeGrid=createMaze(MAP_SIZES[sizeId],seed);wallSet=mazeGrid.walls;bumpers=[];
  worldW=mazeGrid.cols*mazeGrid.cell;worldH=mazeGrid.rows*mazeGrid.cell;rebuildWallLookup();return 0;}
