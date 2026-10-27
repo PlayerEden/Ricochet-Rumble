@@ -18,6 +18,18 @@
 
 **Development discipline:** No more feature work piled onto PR #24 once it is acceptable. Close it, cut a dedicated pilot-art branch from accepted main, gather Android screenshots + tested APK, record QA and rollback at each milestone. Current code is offline-first; do not present unimplemented CQC, scored modes, matchmaking, profiles or purchases as functional.
 
+## Cross-cutting release gates added by the plan audit
+
+[2026-10-27 full development-plan coverage and gap report](DEVELOPMENT_PLAN_COVERAGE_AUDIT_2026-10-27.md) is the companion dependency checklist to this phased roadmap. It **does not rewrite the approved artistic direction** or claim future features are implemented.
+
+1. **Procedural authenticity [#28](https://github.com/PlayerEden/Ricochet-Rumble/issues/28):** new random *seed* alone is insufficient to promise a genuinely different arena geometry. Record generator version and normalized topology fingerprint, bounded recent-layout deduplication, valid/fair connected map and objective geometry, 300+ seeds per implemented mode/size, and deterministic failed-seed replay.
+2. **Save/update continuity [#29](https://github.com/PlayerEden/Ricochet-Rumble/issues/29):** define versioned offline progression/preferences, migration/atomic writes, backup/restore policy, and exactly-once rewards before Pilot Dossier/IAP. Current debug signer conflicts and Android `allowBackup=false` can cause local data loss; no persistence claim until tested.
+3. **Launch boundary/quality [#30](https://github.com/PlayerEden/Ricochet-Rumble/issues/30):** confirm with owner whether **offline-only v1** is acceptable while two-device LAN remains unaccepted; decide first-launch cosmetics/commerce scope; require realistic device/frame-time/heat/touch/resume acceptance, content rating, privacy/Data safety, trademark and asset/music rights, Play Console account-specific testing, and signed AAB upgrade QA. Do not assume online play, monetization or 18 finished pilots are mandatory for the first acceptable release.
+4. **Identity/version discipline:** final release signing/custody [#20](https://github.com/PlayerEden/Ricochet-Rumble/issues/20), immutable Android app ID before Play publication, incremented versionName/versionCode, restore/update strategy, and separate debuggable vs official Play releases.
+5. **Release pacing:** after approved camera and v0.9.22 PR closure, create **a separate pilot-art PR**, then separate combat-feedback PR. No new score modes or cosmetic shop before those mechanics exist. Respect owner's deferral of audio and physical LAN testing.
+
+**Current official Google Play requirement checks (as of 2026-10-27):** Android new apps/updates target API 36 since August 31, 2026; our Gradle build currently targets 36. Personal Play developer accounts created after November 13, 2023 have a conditional 12-tester/14-day closed test before applying for production access. A Data safety declaration and privacy policy may be required even when no data is collected. Recheck the current Play Console rules and the actual account's eligibility before submitting: [API policy](https://support.google.com/googleplay/android-developer/answer/11926878), [account testing](https://support.google.com/googleplay/android-developer/answer/14151465), [Data safety](https://support.google.com/googleplay/android-developer/answer/10787469).
+
 ## Product promise
 
 A compact, satisfying, original **mobile ricochet combat game**: every match gives all participants a **new procedurally generated maze**; success comes from piloting, situational awareness, ricochet geometry, team coordination, adaptation and some luck. Tanks/mechs, dismounted pilots and optional cosmetic identity give continuity. No purchased item changes combat outcomes.
