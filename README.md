@@ -1,5 +1,8 @@
 # Sector Rebound — v0.9.19 Pilot Readability & Icon Style Prototypes
 
+**Reliable Android test download:** [Sector Rebound v0.9.19 Pilot Preview on GitHub Releases](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.19-pilot-preview) — [direct APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/download/v0.9.19-pilot-preview/app-debug.apk). GitHub Releases is the stable public distribution location; ChatGPT Library links and short-lived Actions artifacts are not the primary download route. This is a **debug preview**, not a Google Play-signed release. If Android reports a signature conflict, back up local data before removing an older build.
+
+
 **Experimental branch:** \`dev/sector-rebound-pilot-silhouette-v0919\` · Android **versionCode 36**.
 
 The FIELDGRID design archive now includes three **editable vector pilot portrait prototypes** (Recruit, Relay, Cold Cell), sized for a controlled 240/64/48/32px art review, not yet approved or purchasable. The playable **on-foot pilot** has a newly structured overhead silhouette: separated boots with gait, distinguishable arms/shoulders, helmet, visor and compact sidearm. The duplicated world ENTER caption has been removed to prevent hiding the small character next to an empty tank; on-foot ID and indicator have been moved away from parked armor, with the player ring rendered behind the sprite.
