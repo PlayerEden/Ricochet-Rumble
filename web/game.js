@@ -291,7 +291,9 @@ function shoot(owner){if(state.lives[owner]<=0)return false;
  let x=t.x+dx*(isFoot?7:12),y=t.y+dy*(isFoot?7:12);
  for(let distance=isFoot?9:14;distance<=(isFoot?17:34);distance+=2){const bx=t.x+dx*distance,by=t.y+dy*distance;if(blocked(bx,by,isFoot?3:5))break;x=bx;y=by;}
  t.shield=0; // Shooting cancels spawn/ejection immunity.
- const speed=isFoot?475:def.projectileSpeed;state.bullets.push({x,y,vx:dx*speed,vy:dy*speed,owner,life:isFoot?.82:v?.type==='mech'?2.05:2.55,bounces:0,age:0,kind:isFoot?'sidearm':v?.type==='mech'?'mech':'shell'});t.flash=.11;t.recoil=isFoot?.28:v?.type==='mech'?.56:.72;emitFx('shot',x,y,colors[owner],owner);sound(410+owner*80,.065,x,y);refreshHUD();return true;}
+ const speed=isFoot?475:def.projectileSpeed;const baselineLife=isFoot?.82:v?.type==='mech'?2.05:2.55;
+ const rapid=t.powerTimer>0&&t.powerType==='rapid';const shellLife=rapid&&!isFoot?baselineLife*.68:baselineLife;
+ state.bullets.push({x,y,vx:dx*speed,vy:dy*speed,owner,life:shellLife,bounces:0,age:0,kind:isFoot?'sidearm':v?.type==='mech'?'mech':'shell'});t.flash=.11;t.recoil=isFoot?.28:v?.type==='mech'?.56:.72;emitFx('shot',x,y,colors[owner],owner);sound(410+owner*80,.065,x,y);refreshHUD();return true;}
 function respawn(victim){const enemies=state.tanks.filter((_,i)=>i!==victim&&state.lives[i]>0&&!friendly(victim,i));const spots=[];
  if(mazeGrid){for(let r=0;r<mazeGrid.rows;r++)for(let c=0;c<mazeGrid.cols;c++)spots.push([(c+.5)*mazeGrid.cell,(r+.5)*mazeGrid.cell]);}
  else spots.push(...[[130,300],[830,300],[130,100],[830,500],[480,96],[480,500],[130,480],[830,120],[340,70],[620,525]]);
