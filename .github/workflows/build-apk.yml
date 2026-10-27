@@ -1,4 +1,4 @@
-name: Android Test APK # Sector Rebound v0.9.17 distinguish navigation stalls from close duels
+name: Android Test APK # Sector Rebound v0.9.17 final match pacing and coach release QA
 on:
   workflow_dispatch:
   push:
