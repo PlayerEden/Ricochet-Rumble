@@ -7,6 +7,8 @@
 
 This is the permanent source of truth for **future art and interface decisions**. It is intentionally separate from release notes and gameplay implementation. The previous playable branch remains unchanged.
 
+**Current implementation plan:** [Roadmap to Google Play v1.0](../ROADMAP_TO_GOOGLE_PLAY_V1.md). It documents the order of work, integration risks, and acceptance gates; it does not claim the proposed modes, music, cosmetics or purchases are shipping yet.
+
 ## Current discussion drafts (not implemented)
 
 - [20 — Match Modes & Playlist Bible](20_MATCH_MODES_BIBLE_DRAFT.md): pilot-only close combat, FFA, team deathmatch, capture the flag, elimination, respawns, generated Forward Bays and safe Quick Play selection.
