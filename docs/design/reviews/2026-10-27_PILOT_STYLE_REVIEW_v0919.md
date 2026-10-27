@@ -70,3 +70,15 @@ This fixes competing interface layers without hiding vehicle affordance or chang
 
 ## Actual-size sprite comparison review
 The first 915×412 crop showed a remaining visual ambiguity: solid cyan shoulder pads and a long light-colored sidearm resembled tank treads and a turret. We reduced the colored pad area to small signals and shortened/narrowed the pistol barrel, preserving the human head, shoulders, two counter-stepping legs and exact original hitbox. Final Android-screen comparison still requires owner confirmation.
+
+
+## Verified build checkpoint
+
+**Automated GitHub Actions:** https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40543841291 — **success**. Gameplay regression including revised boot/stride geometry, 3-style draft catalog/source validator, deterministic Chromium before/after captures with on-foot idle and walking states across three Android landscape sizes, actual 3-source vector contact sheet, Android API 36 debug APK build, and unsigned release AAB build passed.
+
+- Screenshot artifact: \`sector-rebound-v0.9.19-visual-before-after\` (includes pilot idle/walking and portrait sheet).
+- APK artifact: \`sector-rebound-v0.9.19-debug-apk\`; **80,501 bytes**, SHA-256 \`b69e881286790be9f3c72c0db7c2ef4a82e52484eb3e2b7f64bb2cc4a5a163e3\`; ZIP/APK CRC tested after download.
+- App Bundle: \`sector-rebound-v0.9.19-unsigned-aab-NOT-FOR-PLAY\`; intended only to prove packaging.
+- Full-size browser screenshots may still differ from real Android visual clarity, cutouts or performance.
+
+**Decision:** experimental pass ready for the owner's visual review. Not an approved icon art style, published store item or production release.
