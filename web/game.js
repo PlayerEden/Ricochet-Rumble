@@ -683,9 +683,9 @@ function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
  c.save();c.translate(-recoil*.2,bob);
  // Legs are two visible counter-stepping boots; preserve exact actor hitbox.
  c.fillStyle='#081923';
- c.fillRect(-23+step,-8,10,7);c.fillRect(-23-step,2,10,7);
+ c.fillRect(-23+step,-9,10,7);c.fillRect(-23-step,3,10,7);
  c.fillStyle='#465f68';
- c.fillRect(-21+step,-7,7,5);c.fillRect(-21-step,3,7,5);
+ c.fillRect(-21+step,-8,7,5);c.fillRect(-21-step,4,7,5);
  // Longish jacket body with one color band; head is physically ahead of it.
  c.fillStyle='#0b202b';c.fillRect(-17,-9,19,18);
  c.fillStyle='#45636d';c.fillRect(-15,-7,17,14);
