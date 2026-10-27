@@ -49,6 +49,12 @@ Option B: vehicles also carry, but flag position is highly visible and mobility 
 
 Prototype and test one rule first. Two actual, reachable team flags; drop/return timer; score and UI; objective-aware bots; validated host/guest replication. No gimmicky extra systems until this works.
 
+## Quick Play as an ongoing session
+
+Winning or losing a battle must **not** automatically return the player to the main menu. Show a mode-appropriate AFTER ACTION summary, followed by **NEXT MATCH** (chosen from enabled mode selections, using a fair shuffled rotation with no immediate repeat when possible) and **MAIN MENU**. The choice is always voluntary; another match never begins automatically. Player session totals continue across completed rounds; each match keeps its separate verified stats. For LAN, the host selects the next mode/maze and the guest waits or marks ready.
+
+**Full specifications:** [23 — Quick Play & After-Action Bible](23_QUICK_PLAY_AFTER_ACTION_BIBLE_DRAFT.md). This is a proposed future design, not functioning v0.9.20 behavior.
+
 ## Player mode selection
 
 Quick Play displays selected modes via a small MODES choice beside the main PLAY action. All released modes selected by default. Saving preferences locally is fine; mode rotation randomly draws from enabled supported modes only and avoids immediate duplicates where possible. When exactly one is enabled it always runs. Zero selected must disable Play with an intelligible message.
