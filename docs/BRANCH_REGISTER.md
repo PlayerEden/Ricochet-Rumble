@@ -6,6 +6,7 @@
 
 | Branch | Purpose | Status |
 | --- | --- | --- |
+| `dev/sector-rebound-quick-play-v0922` | **Active draft [PR #24](https://github.com/PlayerEden/Ricochet-Rumble/pull/24)**; Quick Play, frozen result stats, approved camera | [Full QA passed](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40601021890) on `55e69a82`; [dev5 APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.22-dev5-final-camera-test); **not merged** |
 | `main` | **Current** tested v0.9.21 development baseline | [PR #23 merged](https://github.com/PlayerEden/Ricochet-Rumble/pull/23); [full QA passed](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40590979779) |
 | `dev/sector-rebound-quick-play-v0922` | **Active unmerged v0.9.22 branch** — survival playlists, frozen solo match results, owner-approved camera | [Draft PR #24](https://github.com/PlayerEden/Ricochet-Rumble/pull/24); [full Android/Chromium QA passed](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40601021890); [dev5 debug APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.22-dev5-final-camera-test); phone playlist/results acceptance remains pending |
 | `integration/sector-rebound-mainline-v0921` | Accepted one-time integration branch | Historical merge branch, not the place for future changes |
