@@ -80,7 +80,7 @@ The game may add an optional externally-rendered rectangle, rarity tab, border, 
 ## 8. Implementation contract (future)
 
 - One manifest ID identifies the cosmetic permanently.
-- Profile stores \`equippedPilotIconId\`, and entitlement ledger stores owned IDs.
+- Profile stores `equippedPilotIconId`, and entitlement ledger stores owned IDs.
 - Unlock/purchase gates are checked independently of avatar renderer.
 - Default/fallback always a free starter ID, never a broken image.
 - Explicit handling for missing file, deprecated item, save migration, billing refund/revocation.
