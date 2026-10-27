@@ -386,7 +386,7 @@ console.log('PASS v0.9.10 fullscreen canvas, overlay HUD, independently moving t
 win.innerWidth=1536;win.innerHeight=672;win.devicePixelRatio=1;
 assert.equal(win.__test.resizeArenaCanvas(),true);
 const [fieldWidth,fieldHeight]=win.__test.world;
-const expectedZoom=Math.max(1.00,1536/(fieldWidth+760),672/(fieldHeight+760));
+const expectedZoom=Math.max(1.00,1536/(fieldWidth+840),672/(fieldHeight+840));
 assert.ok(Math.abs(win.__test.cameraZoom(null)-expectedZoom)<1e-9,'zoom accounts for playable perimeter without black side gutters');
 assert.ok(win.__test.cameraZoom()<Math.max(1.28,1536/fieldWidth,672/fieldHeight),'new widescreen camera genuinely shows more world');
 const motions=[];
@@ -434,12 +434,12 @@ const local=st().tanks[0],veh=st().vehicles[local.vehicleId];
 veh.type='tank';
 win.innerWidth=1536;win.innerHeight=672;win.devicePixelRatio=1;
 win.__test.resizeArenaCanvas();
-const minZoom=Math.max(1536/(win.__test.world[0]+760),672/(win.__test.world[1]+760));
-assert.ok(Math.abs(win.__test.unitTargetZoom(local)-0.87)<1e-9);
-assert.ok(Math.abs(win.__test.cameraZoom(local)-Math.max(0.87,minZoom))<1e-9);
+const minZoom=Math.max(1536/(win.__test.world[0]+840),672/(win.__test.world[1]+840));
+assert.ok(Math.abs(win.__test.unitTargetZoom(local)-0.82)<1e-9);
+assert.ok(Math.abs(win.__test.cameraZoom(local)-Math.max(0.82,minZoom))<1e-9);
 win.__test.render(1/60);
 const zTank=win.__test.camera.zoom;
-assert.ok(Math.abs(zTank-Math.max(0.87,minZoom))<1e-7);
+assert.ok(Math.abs(zTank-Math.max(0.82,minZoom))<1e-7);
 local.onFoot=true;local.vehicleId=null;
 assert.equal(win.__test.unitTargetZoom(local),1.07);
 win.__test.render(1/60);
@@ -447,15 +447,15 @@ assert.ok(win.__test.camera.zoom>zTank&&win.__test.camera.zoom<1.07,'zoom must e
 for(let i=0;i<80;i++)win.__test.render(1/60);
 assert.ok(Math.abs(win.__test.camera.zoom-1.07)<.003,'foot zoom should converge');
 local.onFoot=false;local.vehicleId=veh.id;veh.occupant=0;veh.type='mech';
-assert.equal(win.__test.unitTargetZoom(local),0.82);
+assert.equal(win.__test.unitTargetZoom(local),0.77);
 const zFoot=win.__test.camera.zoom;
 win.__test.render(1/60);
-assert.ok(win.__test.camera.zoom<zFoot&&win.__test.camera.zoom>Math.max(0.82,minZoom),'mech transition eases outward');
+assert.ok(win.__test.camera.zoom<zFoot&&win.__test.camera.zoom>Math.max(0.77,minZoom),'mech transition eases outward');
 for(let i=0;i<85;i++)win.__test.render(1/60);
-assert.ok(Math.abs(win.__test.camera.zoom-Math.max(0.82,minZoom))<.003,'mech target converges');
+assert.ok(Math.abs(win.__test.camera.zoom-Math.max(0.77,minZoom))<.003,'mech target converges');
 veh.type='tank';
 for(let i=0;i<85;i++)win.__test.render(1/60);
-assert.ok(Math.abs(win.__test.camera.zoom-Math.max(0.87,minZoom))<.003,'tank transition converges');
+assert.ok(Math.abs(win.__test.camera.zoom-Math.max(0.82,minZoom))<.003,'tank transition converges');
 console.log('PASS v0.9.11 console design, camera targets, smooth transitions and viewport floor.');
 
 // v0.9.12 reliability and camera audit: close each unit's view modestly,
@@ -476,7 +476,7 @@ for(const typ of ['mech','tank']){
 }
 unit.onFoot=true;
 cameraOrder.push(win.__test.unitTargetZoom(unit));
-assert.deepEqual(cameraOrder,[0.82,0.87,1.07],'mech/tank/foot view hierarchy');
+assert.deepEqual(cameraOrder,[0.77,0.82,1.07],'mech/tank/foot view hierarchy');
 unit.onFoot=false;model.type='tank';
 unit.recoil=.72;unit.trackLeft=83;unit.trackRight=119;
 const freeBay=st().vehicles.find(v=>v.occupant===-1&&v.armor>0);
@@ -486,11 +486,11 @@ unit.x=freeBay.x;unit.y=freeBay.y;
 assert.equal(win.__test.tryInteract(0),true,'board recovery vehicle');
 assert.equal(unit.recoil,0,'old tank recoil does not carry to fresh hull');
 assert.equal(unit.trackLeft,0);assert.equal(unit.trackRight,0);
-assert.equal(win.__test.cameraZoom(unit),Math.max(win.__test.unitTargetZoom(unit),1536/(win.__test.world[0]+760),672/(win.__test.world[1]+760)));
+assert.equal(win.__test.cameraZoom(unit),Math.max(win.__test.unitTargetZoom(unit),1536/(win.__test.world[0]+840),672/(win.__test.world[1]+840)));
 for(const [w,h] of [[740,360],[915,412],[1280,720],[1536,672]]){
  win.innerWidth=w;win.innerHeight=h;win.devicePixelRatio=1;
  assert.equal(win.__test.resizeArenaCanvas(),true);
- const expected=Math.max(win.__test.unitTargetZoom(unit),w/(win.__test.world[0]+760),h/(win.__test.world[1]+760));
+ const expected=Math.max(win.__test.unitTargetZoom(unit),w/(win.__test.world[0]+840),h/(win.__test.world[1]+840));
  assert.ok(Math.abs(win.__test.cameraZoom(unit)-expected)<1e-9);
  win.__test.render(1/60);
  assert.ok(Number.isFinite(win.__test.camera.zoom)&&Number.isFinite(win.__test.camera.x)&&Number.isFinite(win.__test.camera.y),'camera must stay finite across viewport sizes');
@@ -516,9 +516,9 @@ assert.equal(win.__test.unitTargetZoom(null),1.00,'spectator fallback zoom');
 click('solo');
 const zoomOperator=st().tanks[0],zoomVehicle=st().vehicles[zoomOperator.vehicleId];
 zoomOperator.onFoot=false;zoomVehicle.type='tank';
-assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-0.87)<1e-9);
-zoomVehicle.type='mech';
 assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-0.82)<1e-9);
+zoomVehicle.type='mech';
+assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-0.77)<1e-9);
 zoomOperator.onFoot=true;
 assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-1.07)<1e-9);
 console.log('PASS v0.9.12a closer pilot/tank/mech zoom with unchanged viewport floor.');
@@ -607,7 +607,7 @@ assert.deepEqual(['mech','tank','foot'].map(type=>{
  actor.onFoot=type==='foot';
  if(!actor.onFoot&&v)v.type=type;
  return win.__test.unitTargetZoom(actor);
-}),[0.82,0.87,1.07]);
+}),[0.77,0.82,1.07]);
 assert.equal(win.__test.unitTargetZoom(null),1.00);
 {
  const src=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
@@ -1041,15 +1041,15 @@ console.log('PASS v0.9.22-dev2 frozen final results, win/loss, pilot deaths/resp
    if(!actor.onFoot)actor.vehicleId=ride.id;
    after.push(api.unitTargetZoom(actor));
  }
- assert.deepEqual(after,[.82,.87,1.07]);
+ assert.deepEqual(after,[.77,.82,1.07]);
  after.forEach((z,i)=>assert.ok(z<before[i]*.89,'each unit gets a meaningful world-space zoom-out'));
  actor.onFoot=false;ride.type='tank';actor.vehicleId=ride.id;
  for(const [w,h] of [[740,360],[915,412],[1280,720],[1536,672]]){
    win.innerWidth=w;win.innerHeight=h;win.devicePixelRatio=1;
    assert.equal(api.resizeArenaCanvas(),true);
    const [ww,wh]=api.world;
-   const floor=Math.max(w/(ww+760),h/(wh+760));
-   assert.equal(api.cameraZoom(actor),Math.max(.87,floor));
+   const floor=Math.max(w/(ww+840),h/(wh+840));
+   assert.equal(api.cameraZoom(actor),Math.max(.82,floor));
    api.render(1/60);
    assert.ok(Number.isFinite(api.camera.x)&&Number.isFinite(api.camera.y)&&Number.isFinite(api.camera.zoom),'all device cameras stay finite');
  }
@@ -1057,7 +1057,7 @@ console.log('PASS v0.9.22-dev2 frozen final results, win/loss, pilot deaths/resp
 console.log('PASS v0.9.22-dev3 tactical pullback, wide-screen floor and class hierarchy.');
 
 
-// v0.9.22-dev4 camera: vehicles get another tactical pullback;
+// v0.9.22-dev5 camera: vehicles get another tactical pullback;
 // approved on-foot view and future pilot-only CQC are not disturbed.
 {
  const api=win.__test;
@@ -1065,23 +1065,24 @@ console.log('PASS v0.9.22-dev3 tactical pullback, wide-screen floor and class hi
  node('map-size').value='small';
  api.newMatch('solo');
  const actor=st().tanks[0],vehicle=st().vehicles[actor.vehicleId];
- const pilotBefore=1.07,oldTank=.98,oldMech=.94;
+ const pilotBefore=1.07,oldTank=.87,oldMech=.82;
  actor.onFoot=true;
  assert.equal(api.unitTargetZoom(actor),pilotBefore,'on-foot view MUST remain at dev3-approved zoom');
  actor.onFoot=false;actor.vehicleId=vehicle.id;
- vehicle.type='tank';assert.equal(api.unitTargetZoom(actor),.87);
- vehicle.type='mech';assert.equal(api.unitTargetZoom(actor),.82);
- assert.ok(.87<oldTank&&.82<oldMech,'both vehicles see more terrain than dev3');
- assert.ok(.82<.87&&.87<1.07,'mech, tank, pilot hierarchy unchanged');
+ vehicle.type='tank';assert.equal(api.unitTargetZoom(actor),.82);
+ vehicle.type='mech';assert.equal(api.unitTargetZoom(actor),.77);
+ assert.ok(.82<oldTank&&.77<oldMech,'both vehicles see more terrain than dev4');
+ assert.ok(.77<.82&&.82<1.07,'mech, tank, pilot hierarchy unchanged');
  // True 1536px wide, SMALL map must not clamp either vehicle above its target.
  win.innerWidth=1536;win.innerHeight=672;win.devicePixelRatio=1;
  assert.equal(api.resizeArenaCanvas(),true);
  const [w,h]=api.world;
  assert.equal(w,9*132);assert.equal(h,6*132,'small-map test uses real 9x6 world');
- const floor=Math.max(1536/(w+760),672/(h+760));
- assert.ok(floor<.82,'apron is large enough to deliver intended mech FOV');
- assert.equal(api.cameraZoom(actor),.82,'wide 1536 small map reaches full mech zoom');
- vehicle.type='tank';assert.equal(api.cameraZoom(actor),.87);
+ const floor=Math.max(1536/(w+840),672/(h+840));
+ assert.ok(1536/(w+760)>.77,'old apron would clamp the latest mech zoom');
+ assert.ok(floor<.77,'apron is large enough to deliver intended mech FOV');
+ assert.equal(api.cameraZoom(actor),.77,'wide 1536 small map reaches full mech zoom');
+ vehicle.type='tank';assert.equal(api.cameraZoom(actor),.82);
  actor.onFoot=true;assert.equal(api.cameraZoom(actor),pilotBefore);
  // In-game rendering and camera must remain stable for every class and view size.
  for(const [screenW,screenH] of [[740,360],[915,412],[1280,720],[1536,672]]){
@@ -1090,8 +1091,8 @@ console.log('PASS v0.9.22-dev3 tactical pullback, wide-screen floor and class hi
   for(const type of ['tank','mech','pilot']){
    actor.onFoot=type==='pilot';
    if(!actor.onFoot){actor.vehicleId=vehicle.id;vehicle.type=type;}
-   const wanted=type==='pilot'?1.07:type==='tank'?.87:.82;
-   const deviceFloor=Math.max(screenW/(w+760),screenH/(h+760));
+   const wanted=type==='pilot'?1.07:type==='tank'?.82:.77;
+   const deviceFloor=Math.max(screenW/(w+840),screenH/(h+840));
    assert.ok(Math.abs(api.cameraZoom(actor)-Math.max(wanted,deviceFloor))<1e-9,'every unit reaches its correct viewport-limited zoom target');
    api.render(1/60);
    assert.ok(Number.isFinite(api.camera.x)&&Number.isFinite(api.camera.y)&&Number.isFinite(api.camera.zoom),'camera stays finite after class/viewport switch');
@@ -1099,4 +1100,15 @@ console.log('PASS v0.9.22-dev3 tactical pullback, wide-screen floor and class hi
   }
  }
 }
-console.log('PASS v0.9.22-dev4 vehicle-wide camera, unchanged pilot and widescreen small-map FOV.');
+console.log('PASS v0.9.22-dev5 vehicle-wide camera, unchanged pilot and widescreen small-map FOV.');
+
+// v0.9.22-dev5 owner camera constraint: pilot must never be pushed farther away.
+{
+ const src=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
+ const bundled=fs.readFileSync(new URL('../android/app/src/main/assets/game.js',import.meta.url),'utf8');
+ assert.equal(src,bundled,'Android and web JS should remain byte-identical');
+ assert.ok(src.includes('if(t.onFoot)return 1.07'),'pilot view unchanged');
+ assert.ok(src.includes('const CAMERA_APRON=420'),'new exterior perimeter present');
+ assert.ok(src.includes("v?.type==='mech'?.77:v?.type==='tank'?.82"),'mech/tank zooms changed together');
+}
+console.log('PASS v0.9.22-dev5 small vehicle-only pullback, pilot preserved and assets mirrored.');

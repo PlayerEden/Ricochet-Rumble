@@ -800,15 +800,14 @@ function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
  if(shooting){c.fillStyle='#ffe5ad';c.beginPath();c.arc(19,0,2.4,0,Math.PI*2);c.fill()}
  c.restore();
 }
-// v0.9.22-dev4: preserve on-foot clarity for future pilot-only CQC;
-// tank and mech get a wider tactical view for vehicle combat.
-// The rendered perimeter supports target zoom on wide-screen small maps.
-const CAMERA_APRON=380;
+// v0.9.22-dev5: final small vehicle-only pullback after owner phone feedback.
+// Keep pilot at approved scale for future pilot-only Close Quarters.
+const CAMERA_APRON=420;
 function unitTargetZoom(t){
  if(!t)return 1.00;
- if(t.onFoot)return 1.07; // Intentionally unchanged from approved dev3 pilot view.
+ if(t.onFoot)return 1.07; // Explicitly unchanged from dev3 / dev4.
  const v=currentVehicle(t);
- return v?.type==='mech'?.82:v?.type==='tank'?.87:1.00;
+ return v?.type==='mech'?.77:v?.type==='tank'?.82:1.00;
 }
 function cameraZoom(t=state?.tanks?.[mode==='guest'?1:0]){
  return mazeGrid?Math.max(unitTargetZoom(t),W/(worldW+CAMERA_APRON*2),H/(worldH+CAMERA_APRON*2)):1;
