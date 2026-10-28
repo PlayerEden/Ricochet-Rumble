@@ -1,7 +1,7 @@
 name: FIELDGRID pilot silhouette prototype — Android + before/after QA
 on:
   push:
-    branches: [prototype/pilot-human-silhouette-v0923]
+    branches: [prototype/pilot-human-silhouette-v0923, prototype/pilot-true-overhead-v0923]
     paths:
       - '.github/workflows/pilot-silhouette-prototype-qa.yml'
       - 'web/game.js'

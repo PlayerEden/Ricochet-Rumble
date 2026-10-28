@@ -221,14 +221,12 @@ console.log('PASS v0.9.4 visual clarity: pilot duel advantage, tactical sidearm,
  assert.notEqual(mechIdle[0].x,mechMove[0].x,'left leg advances when walking');
  assert.notEqual(mechIdle[1].x,mechMove[1].x,'right leg counter-steps');
  assert.equal(mechMove[0].x+mechMove[1].x,mechIdle[0].x+mechIdle[1].x,'walking gait remains centered');
- const bootsIdle=geom('pilot',0).filter(o=>o.w===12&&o.h===6);
- const bootsMove=geom('pilot',2).filter(o=>o.w===12&&o.h===6);
- assert.equal(bootsIdle.length,2,'pilot keeps two separated boot silhouettes');
- assert.equal(bootsMove.length,2,'walking pilot still shows both boots');
- assert.notEqual(bootsIdle[0].x,bootsMove[0].x,'first boot advances');
- assert.notEqual(bootsIdle[1].x,bootsMove[1].x,'second boot counter-steps');
- assert.equal(bootsMove[0].x+bootsMove[1].x,bootsIdle[0].x+bootsIdle[1].x,'walk cycle stays centered');
- assert.notEqual(bootsIdle[0].side,bootsIdle[1].side,'feet remain separated on opposite sides of the torso');
+ // Strict overhead view: head/shoulders only. Legs are intentionally NOT visible.
+ const idle=geom('pilot',0),moving=geom('pilot',2);
+ assert.ok(idle.some(o=>o.w===14&&o.h===16),'small upper-back shape exists under helmet');
+ assert.ok(!idle.some(o=>o.w===12&&o.h===6),'no exposed crawling-legs geometry');
+ assert.equal(idle.filter(o=>o.w===4&&o.h===4).length,2,'two small team shoulder patches');
+ assert.equal(moving.filter(o=>o.w===4&&o.h===4).length,2,'shoulder markings survive animated pose');
 }
 // Emergency ejection is a cosmetic event, not damage to pilot lives.
 click('solo');const v0=st().vehicles[st().tanks[0].vehicleId],pilot=st().tanks[0],lives=st().lives[0];
@@ -1196,8 +1194,7 @@ console.log('PASS v0.9.22-dev5 small vehicle-only pullback, pilot preserved and 
 console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real rematches, fresh seeds and true frozen After Action.');
 
 
-// v0.9.23 pilot study: validate original human silhouette draw calls, directional
-// weapon, mirrored walking and zero mutation of existing gameplay camera/hitbox.
+// v0.9.23 Lab B -- test actual TOP-DOWN construction, no low-crawl sprite.
 {
  const api=win.__test;
  const calls=[];
@@ -1210,24 +1207,24 @@ console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real r
   arc(...v){calls.push(['arc',...v])}
  },{get(t,k){return t[k]},set(t,k,v){t[k]=v;return true}});
  api.drawTopPilot(artist,'#46d2f5',false,-3,0,0);
- const movingLeft=calls.filter(x=>x[0]==='rect').map(x=>x.join(','));
- const bootR=calls.filter(x=>x[0]==='rect'&&x[2]===5&&x[3]===12);
- assert.equal(bootR.length,2,'two distinct articulated boots, not one tread');
- assert.ok(calls.filter(x=>x[0]==='scale').some(x=>x[2]===-1),'mirrored leg movement');
- assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===13&&x[2]===7&&x[3]===11),'pistol is offset from the helmet');
- assert.equal(calls.filter(x=>x[0]==='arc').length,0,'no circular turret/cockpit in idle silhouette');
- const total= calls.length;
+ const first=calls.slice();
+ const arcs=first.filter(x=>x[0]==='arc');
+ assert.ok(arcs.some(x=>x[1]===2&&x[2]===0&&x[3]===11.1),'helmet top is dominant round mass, centered in footprint');
+ assert.ok(arcs.filter(x=>x[1]===-5&&x[2]===12).length===4,'distinct two shoulder forms in mirrored coordinates');
+ assert.ok(first.some(x=>x[0]==='rect'&&x[1]===-12&&x[2]===-8&&x[3]===14&&x[4]===16),'only short upper back below helmet');
+ assert.ok(first.some(x=>x[0]==='rect'&&x[1]===5&&x[2]===11&&x[3]===11&&x[4]===3),'small sidearm, not centerline cannon');
+ assert.equal(first.filter(x=>x[0]==='rect'&&x[1]<-16).length,0,'no trailing horizontal boots / prone silhouette');
+ assert.ok(!first.some(x=>x[0]==='rect'&&x[3]>18),'no long horizontal turret body or limb');
+ const prev=calls.length;
  api.drawTopPilot(artist,'#fc856e',true,3,.2,0);
- assert.ok(calls.length>total,'alternate gait and firing pose render');
- assert.ok(calls.some(x=>x[0]==='arc'&&x[1]===26&&x[2]===9),'sidearm flash follows barrel, not nose');
- assert.equal(calls.filter(x=>x[0]==='save').length,calls.filter(x=>x[0]==='restore').length,'canvas state balanced across poses');
- assert.ok(calls.every(x=>x.slice(1).every(n=>typeof n!=='number'||Number.isFinite(n))),'valid geometry numbers');
- assert.equal(api.unitTargetZoom({onFoot:true}),1.07,'pilot camera locked');
+ assert.ok(calls.length>prev,'walking/shooting pose still animates');
+ assert.ok(calls.some(x=>x[0]==='arc'&&x[1]===19&&x[2]===12&&x[3]===2.1),'muzzle flash follows offset handgun');
+ assert.equal(calls.filter(x=>x[0]==='save').length,calls.filter(x=>x[0]==='restore').length,'canvas transform stack remains balanced');
+ assert.ok(calls.every(x=>x.slice(1).every(n=>typeof n!=='number'||Number.isFinite(n))),'no invalid geometry');
+ assert.equal(api.unitTargetZoom({onFoot:true}),1.07,'pilot camera remains locked');
  assert.equal(api.unitTargetZoom({onFoot:false,vehicleId:null}),1.00,'fallback camera unchanged');
- assert.ok(movingLeft.length>=12,'human sprite has separate kit/limb/shading planes');
 }
-console.log('PASS pilot prototype: visible human anatomy, sidearm, gait, canvas balance, fixed pilot camera.');
-
+console.log('PASS pilot LAB B strict overhead top-of-head + shoulders, minimal weapon, no crawling limbs, camera preserved.');
 
 // Prototype A field audit: human silhouette must not be occluded by the
 // previous oversized pilot locator, P1 label and selected-player triangle.

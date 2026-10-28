@@ -773,62 +773,48 @@ function drawLobbyPreview(dt){
  c.globalAlpha=1;
 }
 function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
- // v0.9.23 experimental FIELDGRID ground operator, NOT an icon or premium skin.
- // Forward is local +X, the aiming pistol is held by the lower (+Y) hand.
- // Human-readable anatomy: two staggered boots, shoulder/arms, narrow vest,
- // separate helmet/visor and an OFFSET sidearm instead of a centerline turret.
- const step=clamp(stride,-3,3);
- c.save();c.translate(-recoil*.2,bob);c.lineJoin='round';
- // Explicit two-foot gait. Keep original gameplay hitboxes completely untouched.
+ // FIELDGRID LAB B -- STRICT 90-DEGREE OVERHEAD, NOT 2.5D / 3/4.
+ // Only top-of-helmet, shoulders, small upper-back and hands are visible.
+ // +X is the aiming heading; full character rotates in the world renderer.
+ // No exposed horizontal legs, upright torso face or front-facing visor.
+ const swing=clamp(stride,-3,3)*.22;
+ c.save();c.translate(-recoil*.15,bob*.25);
+ // A small soft ground shadow is behind the head/shoulders, never a cockpit.
+ c.fillStyle='#081924';
+ c.beginPath();c.arc(-2,0,14,0,Math.PI*2);c.fill();
+ // Compact top surface of vest: head occludes most of it from straight above.
+ c.fillStyle='#263c48';
+ c.fillRect(-12,-8,14,16);
+ c.fillStyle='#506671';c.fillRect(-11,-5,5,10);
+ // Left and right shoulders are visibly separated from the helmet.
  for(const side of [-1,1]){
-   c.save();c.scale(1,side);
-   const footOffset=side*step;
-   c.fillStyle='#091923';c.fillRect(-23+footOffset,5,12,6);
-   c.fillStyle='#506c78';c.fillRect(-21+footOffset,6,8,3);
-   c.fillStyle='#172c36';c.fillRect(-12+footOffset*.28,5,8,5);
-   c.restore();
+  c.save();c.scale(1,side);c.translate(-swing*side,0);
+  c.fillStyle='#0b202b';
+  c.beginPath();c.arc(-5,12,6,0,Math.PI*2);c.fill();
+  c.fillStyle='#58717b';
+  c.beginPath();c.arc(-5,12,4.7,0,Math.PI*2);c.fill();
+  c.fillStyle=paint;
+  c.fillRect(-9,10,4,4); // compact team-color shoulder marking
+  c.fillStyle='#334d57';
+  c.fillRect(0,10,5,4); // hand/forearm barely visible from overhead
+  c.restore();
  }
- // Narrow shoulders with an actual neck/hip, not a rectangular tank hull.
- c.fillStyle='#071923';
- c.beginPath();c.moveTo(-15,-7);c.lineTo(-8,-11);c.lineTo(1,-12);
- c.lineTo(7,-8);c.lineTo(7,8);c.lineTo(1,12);c.lineTo(-8,11);
- c.lineTo(-15,7);c.closePath();c.fill();
- c.fillStyle='#334d59';c.fillRect(-12,-7,18,14);
- c.fillStyle='#5c7983';c.fillRect(-10,-5,14,10);
- // Kit is a readable single-colored patch, not noisy fake micro-labels.
- c.fillStyle=paint;c.fillRect(-10,-6,5,12);
- c.fillStyle='#1c3540';c.fillRect(-2,-4,5,8);
- c.fillStyle='#a1b7b5';c.fillRect(-1,-3,3,6);
- // Upper support arm leaves a dark gap between shoulder and head.
- c.fillStyle='#304e5b';
- c.beginPath();c.moveTo(-4,-11);c.lineTo(4,-13);c.lineTo(11,-8);
- c.lineTo(9,-5);c.lineTo(1,-7);c.lineTo(-3,-7);c.closePath();c.fill();
- c.fillStyle='#8da8ad';c.fillRect(-4,-12,8,3); // arm catches upper light
- c.fillStyle='#a0b1ae';c.fillRect(7,-8,4,3); // glove
- // Lower arm bends toward an OFFSET hand-held weapon at +Y.
- c.fillStyle='#304e5b';
- c.beginPath();c.moveTo(-4,8);c.lineTo(1,12);c.lineTo(9,10);
- c.lineTo(12,6);c.lineTo(9,3);c.lineTo(4,8);c.closePath();c.fill();
- c.fillStyle='#8da8ad';c.fillRect(-3,9,8,3); // opposite shoulder highlight
- c.fillStyle='#a0b1ae';c.fillRect(9,6,5,4); // weapon hand
- // Helmet uses a subtle faceted silhouette; square chin/neck and narrow visor.
- // No circular cockpit ring and NO centerline barrel through the face.
- c.fillStyle='#091c27';
- c.beginPath();c.moveTo(3,-6);c.lineTo(7,-9);c.lineTo(13,-8);
- c.lineTo(17,-5);c.lineTo(17,5);c.lineTo(13,8);
- c.lineTo(7,9);c.lineTo(3,6);c.closePath();c.fill();
- c.fillStyle='#748c92';
- c.beginPath();c.moveTo(5,-5);c.lineTo(9,-7);c.lineTo(13,-6);
- c.lineTo(15,-4);c.lineTo(15,4);c.lineTo(13,6);
- c.lineTo(9,7);c.lineTo(5,5);c.closePath();c.fill();
- c.fillStyle='#315662';c.fillRect(12,-4,3,8);
- c.fillStyle='#c4ebdf';c.fillRect(15,-3,2,6);
- // Compact sidearm in the lower hand, aimed +X but visibly offset from helmet.
- c.fillStyle='#0b222e';c.fillRect(13,7,11,4);
- c.fillStyle='#7199a1';c.fillRect(14,7,8,2);
- c.fillStyle='#112c36';c.fillRect(14,10,4,4);
+ // One large, round *top* of helmet dominates the character.
+ c.fillStyle='#081a25';
+ c.beginPath();c.arc(2,0,11.1,0,Math.PI*2);c.fill();
+ c.fillStyle='#6c858c';
+ c.beginPath();c.arc(2,0,9.2,0,Math.PI*2);c.fill();
+ // Shaded patch on the helmet's TOP, not a face seen from the side.
+ c.fillStyle='#91a7aa';
+ c.beginPath();c.arc(-1,-3,4.2,0,Math.PI*2);c.fill();
+ c.fillStyle='#365560';
+ c.fillRect(8,-3,2,6); // tiny bearing/notch shows facing direction
+ // Hand-held sidearm stays small and OFFSET; never crosses head center.
+ c.fillStyle='#0c2833';c.fillRect(5,11,11,3);
+ c.fillStyle='#9bc1ba';c.fillRect(12,11,3,2);
  if(shooting){
-   c.fillStyle='#ffdb9f';c.beginPath();c.arc(26,9,2.2,0,Math.PI*2);c.fill();
+  c.fillStyle='#ffdaa0';
+  c.beginPath();c.arc(19,12,2.1,0,Math.PI*2);c.fill();
  }
  c.restore();
 }
