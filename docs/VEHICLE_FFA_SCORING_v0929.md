@@ -16,12 +16,18 @@
 
 ## CI and acceptance
 
-- [ ] Node 300 seeded maze/team/vehicle regression, old Survival & CQC, new actual tank armor→eject→pilot KO / respawn / vehicle re-entry / 10-KO / 4m DRAW / fresh-match checks.
-- [ ] Real Chromium launch scored vehicle FFA, actual death attribution and After Action, timer, NEXT MATCH; verify CQC screen, three landscape sizes, Android/browser script parity.
-- [ ] Android debug APK and unsigned AAB built from same exact code SHA; no Play signing or stable main merge.
+- [x] [Fast CI **40638575991 SUCCESS**](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40638575991): 300 seeds and all old Survival/CQC, exact tank armor→eject→pilot KO and safe respawn, re-entry, 10-KO win/4m DRAW/new sector tests.
+- [x] [Full real Chromium **40638575751 SUCCESS**](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40638575751): scored FFA menu→armor/eject without KO→10 pilot KOs→truthful After Action→NEXT MATCH→4-min DRAW, existing CQC, mobile landscape snapshots and mirrored Web/Android source.
+- [x] Android debug APK and unsigned AAB built successfully in [full QA 40638575751](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40638575751), exact game/test SHA `d9933a8edb585b05d71408cd1cff9a867f6710ea`. **Experimental debug only**, not Play signed or merged.
 - [ ] Owner physical phone comparison: tank/mech fight, ejection and pilot movement, re-entry, KO accounting, respawn fairness, match time, score UI, NEW SECTOR; check CQC unchanged.
 - [ ] Record performance, 50+ complete AI match telemetry and 300+ dynamic respawn scenarios for balance before release.
 
 ## Risks / strict boundaries
 
 Keep a pilot's `vehicleId` cleared after ejection and KO; never let a wreck or armor hit increment `operatorKOs`. Score and win conditions must never depend on finite-life Survivor elimination state. Do not introduce scored team logic until #36 separately implements fair 2v2 assignments. No support for custom script rules, 3v3 or online matchmaking. No change to stable `main`, existing debug APKs and signing. [Scored FFA issue #37](https://github.com/PlayerEden/Ricochet-Rumble/issues/37) and [Custom Match #38](https://github.com/PlayerEden/Ricochet-Rumble/issues/38).
+
+## Exact APK release and test result — 2026-10-28
+
+- **[v0.9.29 scored vehicle FFA prerelease](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.29-scored-vehicle-ffa-test)**, original QA-built **[APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/download/v0.9.29-scored-vehicle-ffa-test/sector-rebound-v0.9.29-scored-vehicle-ffa-debug.apk)** (96,337 bytes), attached ~6.2MB Chromium visual QA ZIP + SHA256 hashes. Recovered **byte-for-byte with no recompilation or resigning** from [successful QA workflow 40638575751](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40638575751), exact source SHA `d9933a8edb585b05d71408cd1cff9a867f6710ea`, via one-off [publisher 40639160628 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40639160628), then removed the one-use publisher workflow.
+- Branch [**DRAFT PR #46**](https://github.com/PlayerEden/Ricochet-Rumble/pull/46) retargeted to owner-positive v0.9.28 [aim PR #45](https://github.com/PlayerEden/Ricochet-Rumble/pull/45) for accurate 9-file review diff (paired runtime assets, two regression tests and this handoff). All upstream CQC score/aim/Survival code and immutable earlier APKs preserved. No merge to stable main.
+- **Manual acceptance open:** owner to install v0.9.29, verify armor/ejection not credited as KO, genuine pilot death scores, vehicle recovery, reasonable 10-KO/4-min match pacing, respawn safety, and CQC controls unchanged. 50+ natural full AI matches and 300-seed *dynamic* spawn fairness telemetry remain future. Android production signing/update continuity and LAN scored PvP not tested.
