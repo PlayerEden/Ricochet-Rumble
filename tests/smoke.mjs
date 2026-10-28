@@ -223,10 +223,10 @@ console.log('PASS v0.9.4 visual clarity: pilot duel advantage, tactical sidearm,
  assert.equal(mechMove[0].x+mechMove[1].x,mechIdle[0].x+mechIdle[1].x,'walking gait remains centered');
  // Strict overhead view: head/shoulders only. Legs are intentionally NOT visible.
  const idle=geom('pilot',0),moving=geom('pilot',2);
- assert.ok(idle.some(o=>o.w===13&&o.h===16),'small upper-back shape exists under helmet');
+ assert.ok(idle.some(o=>o.w===2&&o.h===10),'small vest highlight remains below overhead helmet');
  assert.ok(!idle.some(o=>o.w===12&&o.h===6),'no exposed crawling-legs geometry');
- assert.equal(idle.filter(o=>o.w===4&&o.h===3&&o.x===-9).length,2,'two compact team shoulder patches');
- assert.ok(moving.filter(o=>o.w===4&&o.h===3).length>=2,'shoulder/hand accents survive animated pose even as shoulders sway');
+ assert.equal(idle.filter(o=>o.w===5&&o.h===2&&o.x===-11).length,2,'two restrained team shoulder patches');
+ assert.equal(moving.filter(o=>o.w===5&&o.h===2).length,2,'team patches survive the independent arm sway');
 }
 // Emergency ejection is a cosmetic event, not damage to pilot lives.
 click('solo');const v0=st().vehicles[st().tanks[0].vehicleId],pilot=st().tanks[0],lives=st().lives[0];
@@ -886,7 +886,8 @@ console.log('PASS v0.9.17 contextual guidance, true projectile availability, one
  const source=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
  assert.equal(source.includes("c.fillText('ENTER  ·  '+vehicleDef(v).name"),false,'dismounted pilot must not be covered by duplicate world enter label');
  assert.ok(source.includes('t.x+(t.onFoot?42:0)'),'on-foot ID stays further from new helmet and parked armor');
- assert.ok(source.includes('c.arc(0,0,21,0,Math.PI*2)'),'on-foot locator is a subtle larger background ring');
+ assert.ok(source.includes('drawPilotLocator(c,t.x,t.y'),'operator uses fixed tactical brackets');
+ assert.equal(source.includes('c.arc(0,0,21,0,Math.PI*2)'),false,'always-on circular pilot ring removed');
  assert.ok(source.includes('c.moveTo(t.x-30,t.y)'),'on-foot chevron clears the animated boots and parked vehicle');
  assert.equal(source,fs.readFileSync(new URL('../android/app/src/main/assets/game.js',import.meta.url),'utf8'),'Android and browser share pilot renderer');
 }
