@@ -85,47 +85,6 @@ assert.equal(node('player1-label').textContent,'RED','HUD clearly shows the oppo
 const shooter=st().tanks[0];shooter.shield=0;
 assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),false,'shell cap');
 assert.equal(win.__test.botInput(1,1/60).bot,true);
-// Team Survival is currently last-team-standing, NOT scored respawning TDM.
-{
- const api=win.__test;
- assert.ok(menuHtml.includes('TEAM SURVIVAL (BLUE + AI VS RED)'),'mode name correctly promises AI allies');
- const blue=api.soloOptionsFor('survival_teams',{botCount:1,teamMode:'ffa'});
- assert.equal(blue.botCount,2,'one bot is promoted to one teammate AND one enemy');
- assert.equal(api.soloOptionsFor('survival_teams',{botCount:0}).botCount,0,'explicit 0 bots remains free roam practice');
- assert.equal(api.soloOptionsFor('survival_ffa',{botCount:1}).botCount,1,'FFA bot count unaffected');
- const clean=api.initialState(0,{pilotMode:true,botCount:2,teamMode:'teams',matchModeId:'survival_teams',startLives:2},542);
- assert.equal(clean.tanks.length,3);
- assert.equal(api.teamOf(2,clean),0);
- assert.equal(api.teamOf(1,clean),1);
- assert.equal(api.combatColor(2,clean),'#46d2f5');
- assert.equal(api.combatColor(1,clean),'#fc856e');
- assert.equal(api.opposingCount(0,clean),1);
- clean.lives[0]=0;clean.lives[1]=0;clean.lives[2]=1;
- clean.winner=2;clean.winnerTeam=0;clean.event='TEAM BLUE WINS!';
- // Explicitly reinitialize live state using the public menu flow, then recreate
- // a team win with the human eliminated but a friendly AI surviving.
- api.setPlaylistModes(['survival_teams']);
- node('bot-count').value='2';node('lives-choice').value='2';api.newMatch('solo');
- const live=st();assert.equal(live.config.botCount,2);
- live.lives[0]=0;live.lives[1]=0;live.lives[2]=1;
- live.winner=2;live.winnerTeam=0;live.event='TEAM BLUE WINS!';
- const result=api.finalizeRound();
- assert.equal(result.outcome,'victory','team victory counts even if human had died');
- assert.equal(result.livesRemaining,0,'team victory does not fake surviving personal lives');
- api.refreshHUD();
- assert.equal(node('aa-outcome').textContent,'VICTORY','visible After Action reflects side victory');
- assert.equal(node('aa-lives').textContent,'0');
- assert.equal(node('score1').textContent,0,'enemy red force eliminated');
- api.newMatch('solo');assert.equal(st().winner,-1,'new team match still resets');
- node('bot-count').value='1';api.newMatch('solo');
- assert.equal(st().config.botCount,2,'one configured bot transparently deploys second for teams');
- assert.equal(st().tanks.length,3);
- node('bot-count').value='0';api.newMatch('solo');
- assert.equal(st().tanks.length,1,'team free-roam with zero bots remains no-bot practice');
- node('bot-count').value='4';
-}
-console.log('PASS Team Survival: real BLUE allies, RED opponents, mirrored tank/pilot material IDs, enemy-only HUD and team-win results.');
-
 // Large mazes remain navigable and spare vehicles never appear inside walls.
 for(const size of ['small','standard','large'])for(let seed=1;seed<=60;seed++){
  const generated=win.__test.initialState(0,{pilotMode:true,mapSize:size,botCount:4,teamMode:'ffa'},seed);
@@ -1352,3 +1311,45 @@ console.log('PASS Lab E chunky two-hand operator, four palette IDs, preserved de
  assert.ok(src.includes("t.onFoot?.42:.8"),'on-foot shield retains readable cue without a massive outline');
 }
 console.log('PASS pilot prototype visibility: label, arrow, shield and locator clear the operator shape.');
+
+// Team Survival is currently last-team-standing, NOT scored respawning TDM.
+{
+ const api=win.__test;
+ assert.ok(menuHtml.includes('TEAM SURVIVAL (BLUE + AI VS RED)'),'mode name correctly promises AI allies');
+ const blue=api.soloOptionsFor('survival_teams',{botCount:1,teamMode:'ffa'});
+ assert.equal(blue.botCount,2,'one bot is promoted to one teammate AND one enemy');
+ assert.equal(api.soloOptionsFor('survival_teams',{botCount:0}).botCount,0,'explicit 0 bots remains free roam practice');
+ assert.equal(api.soloOptionsFor('survival_ffa',{botCount:1}).botCount,1,'FFA bot count unaffected');
+ const clean=api.initialState(0,{pilotMode:true,botCount:2,teamMode:'teams',matchModeId:'survival_teams',startLives:2},542);
+ assert.equal(clean.tanks.length,3);
+ assert.equal(api.teamOf(2,clean),0);
+ assert.equal(api.teamOf(1,clean),1);
+ assert.equal(api.combatColor(2,clean),'#46d2f5');
+ assert.equal(api.combatColor(1,clean),'#fc856e');
+ assert.equal(api.opposingCount(0,clean),1);
+ clean.lives[0]=0;clean.lives[1]=0;clean.lives[2]=1;
+ clean.winner=2;clean.winnerTeam=0;clean.event='TEAM BLUE WINS!';
+ // Explicitly reinitialize live state using the public menu flow, then recreate
+ // a team win with the human eliminated but a friendly AI surviving.
+ api.setPlaylistModes(['survival_teams']);
+ node('bot-count').value='2';node('lives-choice').value='2';api.newMatch('solo');
+ const live=st();assert.equal(live.config.botCount,2);
+ live.lives[0]=0;live.lives[1]=0;live.lives[2]=1;
+ live.winner=2;live.winnerTeam=0;live.event='TEAM BLUE WINS!';
+ const result=api.finalizeRound();
+ assert.equal(result.outcome,'victory','team victory counts even if human had died');
+ assert.equal(result.livesRemaining,0,'team victory does not fake surviving personal lives');
+ api.refreshHUD();
+ assert.equal(node('aa-outcome').textContent,'VICTORY','visible After Action reflects side victory');
+ assert.equal(node('aa-lives').textContent,'0');
+ assert.equal(node('score1').textContent,0,'enemy red force eliminated');
+ api.newMatch('solo');assert.equal(st().winner,-1,'new team match still resets');
+ node('bot-count').value='1';api.newMatch('solo');
+ assert.equal(st().config.botCount,2,'one configured bot transparently deploys second for teams');
+ assert.equal(st().tanks.length,3);
+ node('bot-count').value='0';api.newMatch('solo');
+ assert.equal(st().tanks.length,1,'team free-roam with zero bots remains no-bot practice');
+ node('bot-count').value='4';
+}
+console.log('PASS Team Survival: real BLUE allies, RED opponents, mirrored tank/pilot material IDs, enemy-only HUD and team-win results.');
+
