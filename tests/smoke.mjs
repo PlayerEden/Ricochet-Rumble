@@ -21,7 +21,7 @@ const testMath=Object.create(Math);testMath.random=()=>simRand?simRand():Math.ra
 function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5;return(z>>>0)/4294967296;};}
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math:testMath,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -70,10 +70,62 @@ win.__test.setPlaylistModes(['survival_teams']);
 node('map-size').value='large';node('bot-count').value='4';node('lives-choice').value='3';node('bullet-cap').value='2';node('bot-skill').value='casual';node('team-choice').value='coop';
 click('solo');assert.equal(st().tanks.length,5);assert.equal(st().lives[0],3);
 assert.equal(st().config.bulletCap,2);assert.equal(st().config.teamMode,'teams');assert.equal(st().config.matchModeId,'survival_teams');
-assert.equal(win.__test.teamOf(1),win.__test.teamOf(4));
+assert.equal(win.__test.teamOf(0),0,'human pilot is BLUE');
+assert.equal(win.__test.teamOf(1),1,'AI1 is RED opponent');
+assert.equal(win.__test.teamOf(2),0,'AI2 is BLUE ally');
+assert.equal(win.__test.teamOf(3),1,'AI3 is RED opponent');
+assert.equal(win.__test.teamOf(4),0,'AI4 is BLUE ally');
+assert.equal(win.__test.combatColor(0),'#46d2f5','player team paint matches Cyan');
+assert.equal(win.__test.combatColor(2),'#46d2f5','AI ally uses same BLUE paint');
+assert.equal(win.__test.combatColor(1),'#fc856e','enemy tank and pilot use RED paint');
+assert.equal(win.__test.combatColor(3),'#fc856e','all Red AI painted consistently');
+assert.equal(win.__test.opposingCount(0),2,'only red alive pilots appear in enemy HUD counter');
+assert.equal(node('score1').textContent,'2','team HUD excludes the allied bots');
+assert.equal(node('player1-label').textContent,'RED','HUD clearly shows the opposing team');
 const shooter=st().tanks[0];shooter.shield=0;
 assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),false,'shell cap');
 assert.equal(win.__test.botInput(1,1/60).bot,true);
+// Team Survival is currently last-team-standing, NOT scored respawning TDM.
+{
+ const api=win.__test;
+ assert.ok(menuHtml.includes('TEAM SURVIVAL (BLUE + AI VS RED)'),'mode name correctly promises AI allies');
+ const blue=api.soloOptionsFor('survival_teams',{botCount:1,teamMode:'ffa'});
+ assert.equal(blue.botCount,2,'one bot is promoted to one teammate AND one enemy');
+ assert.equal(api.soloOptionsFor('survival_teams',{botCount:0}).botCount,0,'explicit 0 bots remains free roam practice');
+ assert.equal(api.soloOptionsFor('survival_ffa',{botCount:1}).botCount,1,'FFA bot count unaffected');
+ const clean=api.initialState(0,{pilotMode:true,botCount:2,teamMode:'teams',matchModeId:'survival_teams',startLives:2},542);
+ assert.equal(clean.tanks.length,3);
+ assert.equal(api.teamOf(2,clean),0);
+ assert.equal(api.teamOf(1,clean),1);
+ assert.equal(api.combatColor(2,clean),'#46d2f5');
+ assert.equal(api.combatColor(1,clean),'#fc856e');
+ assert.equal(api.opposingCount(0,clean),1);
+ clean.lives[0]=0;clean.lives[1]=0;clean.lives[2]=1;
+ clean.winner=2;clean.winnerTeam=0;clean.event='TEAM BLUE WINS!';
+ // Explicitly reinitialize live state using the public menu flow, then recreate
+ // a team win with the human eliminated but a friendly AI surviving.
+ api.setPlaylistModes(['survival_teams']);
+ node('bot-count').value='2';node('lives-choice').value='2';api.newMatch('solo');
+ const live=st();assert.equal(live.config.botCount,2);
+ live.lives[0]=0;live.lives[1]=0;live.lives[2]=1;
+ live.winner=2;live.winnerTeam=0;live.event='TEAM BLUE WINS!';
+ const result=api.finalizeRound();
+ assert.equal(result.outcome,'victory','team victory counts even if human had died');
+ assert.equal(result.livesRemaining,0,'team victory does not fake surviving personal lives');
+ api.refreshHUD();
+ assert.equal(node('aa-outcome').textContent,'VICTORY','visible After Action reflects side victory');
+ assert.equal(node('aa-lives').textContent,'0');
+ assert.equal(node('score1').textContent,'0','enemy red force eliminated');
+ api.newMatch('solo');assert.equal(st().winner,-1,'new team match still resets');
+ node('bot-count').value='1';api.newMatch('solo');
+ assert.equal(st().config.botCount,2,'one configured bot transparently deploys second for teams');
+ assert.equal(st().tanks.length,3);
+ node('bot-count').value='0';api.newMatch('solo');
+ assert.equal(st().tanks.length,1,'team free-roam with zero bots remains no-bot practice');
+ node('bot-count').value='4';
+}
+console.log('PASS Team Survival: real BLUE allies, RED opponents, mirrored tank/pilot material IDs, enemy-only HUD and team-win results.');
+
 // Large mazes remain navigable and spare vehicles never appear inside walls.
 for(const size of ['small','standard','large'])for(let seed=1;seed<=60;seed++){
  const generated=win.__test.initialState(0,{pilotMode:true,mapSize:size,botCount:4,teamMode:'ffa'},seed);
