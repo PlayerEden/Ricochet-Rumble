@@ -1,0 +1,71 @@
+name: Archive exact Pilot Lab C QA APK and screenshots
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-pilot-lab-c-v0923.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: archive-pilot-lab-c-v0923
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Fetch identical tested APK and original Chromium screenshots
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh run view 40610547845 --repo "$REPO" --json conclusion,headSha --jq '"QA: " + .conclusion + " " + .headSha' > provenance.txt
+          grep -Fxq 'QA: success 0e5b389f9a7fbfe37afef8a531cb2eb5fa50fec2' provenance.txt
+          gh run download 40610547845 --repo "$REPO" --name pilot-prototype-debug-apk-40610547845 --dir original-apk
+          gh run download 40610547845 --repo "$REPO" --name pilot-silhouette-qa-40610547845 --dir qa
+          APK="$(find original-apk -type f -name 'app-debug.apk' | head -n 1)"
+          test -s "$APK"
+          cp "$APK" sector-rebound-v0.9.23-pilot-lab-c-twohand-debug.apk
+          for kind in on-foot-idle pilot-aim-east pilot-fire; do
+            SCREEN="$(find qa -type f -path "*/after/915x412-$kind.png" | head -n 1)"
+            test -s "$SCREEN"
+            cp "$SCREEN" "lab-c-$kind-915x412.png"
+          done
+          (cd qa && zip -q -r ../lab-c-full-original-QA.zip .)
+          sha256sum sector-rebound-v0.9.23-pilot-lab-c-twohand-debug.apk lab-c-*.png lab-c-full-original-QA.zip > lab-c-sha256.txt
+      - name: Release distinct unapproved Lab C prototype
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TAG=v0.9.23-pilot-lab-c-two-hand-test
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            echo 'The pilot Lab C release already exists; refusing overwrite'
+            exit 1
+          fi
+          cat > notes.md <<'EOF'
+          # Sector Rebound — Pilot Lab C two-hand pistol and real muzzle origin
+
+          **EXPERIMENTAL / NOT USER APPROVED / NOT A PRODUCTION APK.** Exact original debug APK from [full successful gameplay, Chromium visual and Android QA 40610547845](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40610547845) on `0e5b389f9a7fbfe37afef8a531cb2eb5fa50fec2`. Uploaded unchanged; no recompilation or resigning. Included original 915x412 idle/aim/fire screenshots, entire browser QA archive and SHA-256.
+
+          ## Owner-requested change
+          After trying top-down Lab B, owner liked the basic head-and-shoulders direction but wanted more clearly visible outward forearms holding a pistol with **both hands** (or possibly rifle) and noticed bullets launching from the **center of the character**.
+
+          - Reworked original procedural FIELDGRID top-down operator arms into a braced two-handed pistol V, compact helmet and shoulders, with absolutely no faux-3D/prone legs.
+          - Drawing muzzle and projectile origin now use the **same local-space anchor (24,2)** rotated with pilot heading. In unobstructed space the shot begins at the visible pistol tip; along walls the existing blocked trace prevents shooting through solid cover.
+          - Projectile speed, damage, capacity, cooldown, directional velocity, weapon type `sidearm`, tank/mech weapons, hitbox, bot behavior, Android touch controls and camera **pilot 1.07 / tank 0.82 / mech 0.77** unchanged.
+          - A carbine/rifle would be a *future separate weapon and balancing decision*, not silently substituted for the current pilot sidearm.
+          - See [Lab C design and QA notes](https://github.com/PlayerEden/Ricochet-Rumble/blob/prototype/pilot-two-hand-muzzle-v0923/docs/PILOT_LAB_C_TWO_HAND_MUZZLE_v0923.md), [art issue #26](https://github.com/PlayerEden/Ricochet-Rumble/issues/26).
+
+          ## Owner phone review
+          Check idle and moving soldier at normal size; can you see both arms holding gun? Fire while facing four directions. Shot and muzzle flash must start at weapon, not head. Check near solid cover for erroneous through-wall firing, and inspect whether large ring/label distract from the tiny pilot. Current visuals are experimental and **not accepted** until the user reports back.
+
+          **Debug signer/update warning:** Internal Android versionName still `0.9.21-game-feel` in these experimental debug builds. GitHub CI debug signing keys may differ; Android may reject in-place installation over prior Sector Rebound packages. **Uninstalling deletes local app data/settings.** No Play-ready signing or tested migration claim. Preserve [Lab B](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.23-pilot-lab-b-overhead-test), [Lab A](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.23-pilot-lab-a-test), and [dev5 known-good](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.22-dev5-final-camera-test). Main and [draft PR #24](https://github.com/PlayerEden/Ricochet-Rumble/pull/24) **unchanged**.
+          EOF
+          gh release create "$TAG" sector-rebound-v0.9.23-pilot-lab-c-twohand-debug.apk lab-c-on-foot-idle-915x412.png lab-c-pilot-aim-east-915x412.png lab-c-pilot-fire-915x412.png lab-c-full-original-QA.zip lab-c-sha256.txt --repo "$REPO" --target 0e5b389f9a7fbfe37afef8a531cb2eb5fa50fec2 --title 'Sector Rebound v0.9.23 — two-hand pistol/muzzle Lab C phone test' --notes-file notes.md --prerelease
