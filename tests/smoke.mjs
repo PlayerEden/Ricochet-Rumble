@@ -195,7 +195,7 @@ assert.notEqual(st().mazeSeed,initialMaze,'replay refreshes procedural field');
 assert.equal(node('quick-rematch').classList.contains('hidden'),true,'no replay button during combat');
 // Mech shell limitation preserves separate tank identity and avoids limitless ricochets.
 assert.ok(script.includes("b.kind==='mech'?2:5"),'mech rounds stop after fewer bounces');
-assert.ok(script.includes("b.kind==='mech'?5:0"),'mech rounds have distinguishable hit width');
+assert.ok(script.includes("bullet.kind==='mech'?5:0"),'mech rounds retain distinguishable hit width via shared collision helper');
 // v0.9.2: menu safety for both host and guest; no sticky auto-fire while paused.
 click('solo');win.__test.comfort.autoFire=true;
 assert.equal(win.__test.makeControl(true).fire,true,'auto-fire works during live match');
@@ -1530,6 +1530,7 @@ console.log('PASS playable CQC contract: real 10 pilot KOs, protected safe respa
 
  api.newMatch('solo');
  assert.equal(api.projectileHitRadius(st().tanks[0],{kind:'sidearm'}),26,'occupied vehicle collision remains unchanged');
+ assert.equal(api.projectileHitRadius(st().tanks[0],{kind:'mech'}),31,'mech still has five extra hit units in actual collision path');
  st().tanks[0].onFoot=true;
  assert.equal(api.projectileHitRadius(st().tanks[0],{kind:'sidearm'}),14,'Survival sidearm hitbox unaffected');
  st().tanks[0].a=0;
