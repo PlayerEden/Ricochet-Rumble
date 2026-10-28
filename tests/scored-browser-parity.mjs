@@ -1,10 +1,12 @@
-import fs from 'node:fs';import assert from 'node:assert/strict';import vm from 'node:vm';
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
 const pure=fs.readFileSync('game-data/rules/scored-match.v1.mjs','utf8');
-const generated="(function(root){'use strict';\\n".replace('\\\\n','\\n')+pure.replace(/^export /gm,'')+"\\nroot.SectorScored=Object.freeze({SCORED_MATCH_PRESETS,createScoredMatch,recordPilotKO,recordScoredRespawn,advanceScoreClock,scoredOutcomeFor,chooseSafeScoreSpawn});\\n})(typeof window!=='undefined'?window:globalThis);\\n".replaceAll('\\n','\n');
+const generated="(function(root){'use strict';\n"+pure.replace(/^export /gm,'')+"\nroot.SectorScored=Object.freeze({SCORED_MATCH_PRESETS,createScoredMatch,recordPilotKO,recordScoredRespawn,advanceScoreClock,scoredOutcomeFor,chooseSafeScoreSpawn});\n})(typeof window!=='undefined'?window:globalThis);\n";
 const browser=fs.readFileSync('web/scored-match.js','utf8');
 assert.equal(browser,fs.readFileSync('android/app/src/main/assets/scored-match.js','utf8'));
-assert.equal(browser,generated,'Browser pure scoring kernel must be generated from canonical ESM source');
+assert.equal(browser,generated,'Browser score source must match the canonical ESM rules');
 const ctx={};vm.runInNewContext(browser,ctx);
 const a=ctx.SectorScored.createScoredMatch({mode:'ffa',playerCount:2,scoreTarget:2,clockSeconds:180,matchId:1});
 assert.equal(a.finished,false);assert.equal(ctx.SectorScored.SCORED_MATCH_PRESETS.cqc.scoreTarget,10);
-console.log('PASS score browser/Android mirror is exactly derived from canonical pure module');
+console.log('PASS scoring WebView mirror is exactly generated from tested shared kernel');
