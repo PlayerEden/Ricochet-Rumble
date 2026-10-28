@@ -686,7 +686,37 @@ function audioCue(kind,x=null,y=null){
 }
 function updateVisuals(dt){visualClock+=dt;if(coachRemaining>0){coachRemaining=Math.max(0,coachRemaining-dt);if(coachRemaining===0)document.getElementById('field-coach')?.classList.add('hidden');}screenKick=Math.max(0,screenKick-dt*22);damagePulse=Math.max(0,damagePulse-dt*1.65);for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.max(0,1-dt*3);p.vy*=Math.max(0,1-dt*3)}particles=particles.filter(p=>p.life>0)}
 
-function drawTopTank(c,paint,parked=false,trackLeft=0,trackRight=0,recoil=0,suspension=0){
+
+ // LAB E. Gameplay-only materials, separate from pilot dossier portraits or shop.
+ // A skin ID changes three flat paint planes, never gameplay or team ownership.
+ // Null armor/trim means: preserve existing per-player painted vehicle color.
+const FIELDGRID_UNIT_SKINS=Object.freeze({
+ 'fieldgrid.standard':{
+  pilot:{armor:'#607a85',shadow:'#294650',light:'#9fb7bc',trim:'#78949b'},
+  tank:{armor:null,shadow:'#193845',light:'#bfe3e6',trim:null},
+  mech:{armor:null,shadow:'#243d55',light:'#e5e5ff',trim:null}},
+ 'fieldgrid.moss':{
+  pilot:{armor:'#71866f',shadow:'#354b3f',light:'#b5c6a0',trim:'#98ad7c'},
+  tank:{armor:'#759376',shadow:'#354e42',light:'#c6d9ad',trim:'#93b58f'},
+  mech:{armor:'#779480',shadow:'#3a5145',light:'#c2d3ae',trim:'#93ae96'}},
+ 'fieldgrid.dune':{
+  pilot:{armor:'#b49c74',shadow:'#5e5142',light:'#ead8aa',trim:'#d2b788'},
+  tank:{armor:'#c0a675',shadow:'#5c4f40',light:'#f0dfb0',trim:'#d5be89'},
+  mech:{armor:'#b6a27f',shadow:'#615548',light:'#f0e0bd',trim:'#d3c398'}},
+ 'fieldgrid.oxide':{
+  pilot:{armor:'#9e6858',shadow:'#512f31',light:'#d9a18c',trim:'#bf795f'},
+  tank:{armor:'#a66d5b',shadow:'#573637',light:'#e5b5a2',trim:'#c4836f'},
+  mech:{armor:'#a46c64',shadow:'#573940',light:'#dfaaa1',trim:'#be8479'}}
+});
+function resolveUnitMaterials(unit,teamPaint,skinId='fieldgrid.standard'){
+ const preset=FIELDGRID_UNIT_SKINS[skinId]||FIELDGRID_UNIT_SKINS['fieldgrid.standard'];
+ const role=preset[unit]||preset.pilot;
+ return {armor:role.armor||teamPaint,shadow:role.shadow,light:role.light,
+         trim:role.trim||teamPaint,team:teamPaint};
+}
+
+function drawTopTank(c,paint,parked=false,trackLeft=0,trackRight=0,recoil=0,suspension=0,skinId='fieldgrid.standard'){
+ const skin=resolveUnitMaterials('tank',paint,skinId);
  // Art contract v0.9.6: vehicle local +X is FORWARD (toward the barrel).
  // Tracks run parallel to +X at BOTH sides of the hull. Mirror them from
  // one geometry definition, never draw the right tread with separate offsets.
@@ -708,20 +738,21 @@ function drawTopTank(c,paint,parked=false,trackLeft=0,trackRight=0,recoil=0,susp
  }
  // Center chassis is bilaterally symmetric; armor plate has a visible forward nose.
  c.fillStyle='#0a1d27';c.fillRect(-23,-16,46,32);
- c.fillStyle=paint;c.fillRect(-22,-15,43,30);c.strokeStyle='#071a22';c.strokeRect(-22,-15,43,30);
- c.fillStyle='#193845';c.fillRect(-17,-11,34,22);
+ c.fillStyle=skin.armor;c.fillRect(-22,-15,43,30);c.strokeStyle='#071a22';c.strokeRect(-22,-15,43,30);
+ c.fillStyle=skin.shadow;c.fillRect(-17,-11,34,22);
  c.fillStyle='#3d6673';c.fillRect(-17,-11,7,22);
- c.fillStyle=paint;c.fillRect(-12,-10,24,20);c.strokeRect(-12,-10,24,20);
- c.fillStyle='#bfe3e6';c.fillRect(-7,-5,8,10);
+ c.fillStyle=skin.armor;c.fillRect(-12,-10,24,20);c.strokeRect(-12,-10,24,20);
+ c.fillStyle=skin.light;c.fillRect(-7,-5,8,10);
  // A single centerline weapon (not an extra sideways track or misaligned gun).
  c.fillStyle='#081924';c.fillRect(10,-6,25,12);c.strokeRect(10,-6,25,12);
  c.fillStyle='#477e8b';c.fillRect(13,-3,22,6);
- c.fillStyle=paint;c.fillRect(33,-5,6,10);
+ c.fillStyle=skin.armor;c.fillRect(33,-5,6,10);
  c.fillStyle='#eaf9f5';c.fillRect(38,-3,3,6);
  if(parked){c.strokeStyle='#83bba9';c.lineWidth=1.7;c.strokeRect(-29,-30,58,60)}
  c.restore();
 }
-function drawTopMech(c,paint,parked=false,stride=0,recoil=0,bob=0){
+function drawTopMech(c,paint,parked=false,stride=0,recoil=0,bob=0,skinId='fieldgrid.standard'){
+ const skin=resolveUnitMaterials('mech',paint,skinId);
  // True top-down walker: two separate articulated legs, shoulders and central cockpit.
  // Readable at phone scale; the dark gaps distinguish the mech from tracked tanks.
  // Weight is subtle and only affects this unit's own art, not physics.
@@ -731,19 +762,19 @@ function drawTopMech(c,paint,parked=false,stride=0,recoil=0,bob=0){
    // Alternating walking gait; mirrored limbs retain their geometry at rest.
    c.translate(side*stride,0);
    c.fillStyle='#111f2c';c.fillRect(-25,12,17,12);c.fillRect(-22,19,15,17);
-   c.fillStyle=paint;c.fillRect(-23,15,12,9);c.strokeRect(-23,15,12,9);
+   c.fillStyle=skin.armor;c.fillRect(-23,15,12,9);c.strokeRect(-23,15,12,9);
    c.fillStyle='#6c84a0';c.fillRect(-20,28,16,7);c.strokeRect(-20,28,16,7);
    // Forward shoulder/arm, separated visibly from the torso.
-   c.fillStyle=paint;c.fillRect(2,17,17,12);c.strokeRect(2,17,17,12);
+   c.fillStyle=skin.armor;c.fillRect(2,17,17,12);c.strokeRect(2,17,17,12);
    c.fillStyle='#192a3e';c.fillRect(13,19,12,7);c.strokeRect(13,19,12,7);
    c.restore();
  }
  c.fillStyle='#17283a';c.fillRect(-14,-17,32,34);
- c.fillStyle=paint;c.fillRect(-13,-15,27,30);c.strokeRect(-13,-15,27,30);
- c.fillStyle='#243d55';c.fillRect(-8,-10,16,20);
- c.fillStyle='#e5e5ff';c.fillRect(-3,-8,9,16);
+ c.fillStyle=skin.armor;c.fillRect(-13,-15,27,30);c.strokeRect(-13,-15,27,30);
+ c.fillStyle=skin.shadow;c.fillRect(-8,-10,16,20);
+ c.fillStyle=skin.light;c.fillRect(-3,-8,9,16);
  c.fillStyle='#162639';c.fillRect(12,-6,20,12);c.strokeRect(12,-6,20,12);
- c.fillStyle=paint;c.fillRect(27,-5,8,10);c.fillStyle='#e6f8ff';c.fillRect(33,-3,5,6);
+ c.fillStyle=skin.armor;c.fillRect(27,-5,8,10);c.fillStyle='#e6f8ff';c.fillRect(33,-3,5,6);
  if(parked){c.strokeStyle='#cfb4fd';c.lineWidth=2;c.strokeRect(-29,-38,67,76)}
  c.restore();
 }
@@ -790,48 +821,63 @@ function drawLobbyPreview(dt){
  c.fillRect(w*.12,h*.26,55,2);c.fillRect(w*.77,h*.66,47,2);
  c.globalAlpha=1;
 }
-function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
- // LAB D -- FIELDGRID operator: strict 90-degree overhead, FACETED armor.
- // Entirely original procedural geometry; no face/profile, legs or circular caps.
+function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0,skinId='fieldgrid.standard'){
+ // LAB E: chunky, engineered arcade modules matching the TANK chassis/treads.
+ // The pilot is strict 90-degree overhead, not a profile or an aerial drone.
+ // Named paint roles are shared with tank/mech without touching their physics.
+ const skin=resolveUnitMaterials('pilot',paint,skinId);
  const sway=clamp(stride,-3,3)*.15;
- const facet=(color,points)=>{
-  c.fillStyle=color;c.beginPath();
-  c.moveTo(points[0][0],points[0][1]);
-  for(let k=1;k<points.length;k++)c.lineTo(points[k][0],points[k][1]);
-  c.closePath();c.fill();
- };
  c.save();c.translate(-recoil*.15,bob*.25);
- // Compact trapezoid vest; mostly concealed by overhead helmet.
- facet('#081c27',[[-14,-8],[-5,-11],[5,-8],[7,-3],[7,3],[5,8],[-5,11],[-14,8]]);
- facet('#294650',[[-12,-7],[-5,-9],[3,-7],[3,7],[-5,9],[-12,6]]);
- c.fillStyle='#78949b';c.fillRect(-11,-5,2,10);
- // Left/right plated shoulders, bent elbows, forearms and two pistol gloves.
- // Draw BEFORE helmet so the head remains the dominant overhead shape.
+ c.lineJoin='miter';c.lineWidth=2;c.strokeStyle='#071923';
+ // Upper back, blocky vest, collar: same dark silhouette + flat panels as tanks.
+ c.fillStyle='#071923';c.fillRect(-17,-12,23,25);
+ c.fillStyle=skin.armor;c.fillRect(-15,-10,19,21);
+ c.fillStyle=skin.shadow;c.fillRect(-12,-8,5,16);
+ c.fillStyle=skin.light;c.fillRect(-11,-6,2,10);
+ c.fillStyle='#16323e';c.fillRect(-2,-11,6,3);
+ // Two separately armored shoulders: like miniature mirrored tread modules.
+ // Each has one block plate, one upper-left lit edge, and a narrow team ID bar.
  for(const side of [-1,1]){
   c.save();c.scale(1,side);c.translate(-sway*side,0);
-  facet('#061824',[[-12,12],[-8,10],[-1,11],[6,16],[5,21],[-6,22],[-13,18]]);
-  facet('#5a7883',[[-11,13],[-6,11],[-1,12],[3,16],[1,19],[-8,19],[-12,17]]);
-  facet('#a0b3b4',[[-9,13],[-4,12],[0,14],[-1,15],[-9,15]]);
-  c.fillStyle=paint;c.fillRect(-11,16,5,2); // restrained team-color patch
-  // Distinct joint and angled forearm. No circular attachment or hand ring.
-  facet('#0a2330',[[1,16],[5,20],[10,17],[20,7],[20,3],[16,2],[9,11]]);
-  facet('#839ca4',[[2,18],[5,19],[18,6],[20,6],[17,9],[7,19]]);
-  facet('#4d6974',[[8,14],[10,15],[17,8],[15,7]]);
-  facet('#b8c8c3',[[17,3],[22,3],[22,6],[18,8],[16,6]]);
+  c.fillStyle='#071923';c.fillRect(-12,10,16,12);
+  c.fillStyle=skin.armor;c.fillRect(-10,12,12,8);
+  c.fillStyle=skin.light;c.fillRect(-9,12,9,2);
+  c.fillStyle=skin.team;c.fillRect(-10,17,5,2);
+  // One square elbow block, one bent diagonal forearm, no secondary appendage.
+  c.fillStyle='#071923';c.fillRect(1,16,7,7);
+  c.fillStyle=skin.shadow;c.fillRect(3,18,4,3);
+  c.fillStyle='#071923';c.beginPath();
+  c.moveTo(5,21);c.lineTo(10,20);c.lineTo(21,8);
+  c.lineTo(21,3);c.lineTo(17,3);c.lineTo(7,15);c.closePath();c.fill();
+  c.fillStyle=skin.armor;c.beginPath();
+  c.moveTo(8,18);c.lineTo(10,18);c.lineTo(19,7);
+  c.lineTo(19,5);c.lineTo(17,5);c.lineTo(8,15);c.closePath();c.fill();
+  c.fillStyle=skin.light;c.fillRect(16,7,3,3);
+  // Two neutral gloves clamp the ONE handgun, not two independent weapons.
+  c.fillStyle='#071923';c.fillRect(16,2,8,6);
+  c.fillStyle='#b4c7c3';c.fillRect(18,3,5,4);
   c.restore();
  }
- // Faceted helmet top viewed from directly above (not a profile visor).
- facet('#061823',[[-10,-6],[-7,-11],[3,-13],[11,-10],[14,-5],[14,5],[8,12],[-3,12],[-10,7]]);
- facet('#526e79',[[-8,-5],[-5,-9],[3,-10],[10,-8],[12,-4],[12,4],[7,9],[-3,9],[-8,5]]);
- facet('#91a8ab',[[-6,-6],[-3,-8],[4,-9],[8,-7],[5,-4],[-3,-3]]);
- facet('#314b57',[[8,-6],[11,-4],[11,5],[8,7],[6,3],[6,-3]]);
- c.fillStyle='#1b3947';c.fillRect(-4,7,9,2); // rear armor seam, no fake eyes
- // One mechanical pistol, clearly connected to BOTH gloves.
+ // Helmet: flat square crown plus 45-degree front chamfers, one rim highlight.
+ // No concentric disks, eye-face profile, or tiny polished armor facets.
+ c.fillStyle='#071923';c.beginPath();
+ c.moveTo(-10,-9);c.lineTo(-6,-13);c.lineTo(7,-13);
+ c.lineTo(13,-7);c.lineTo(13,7);c.lineTo(7,12);
+ c.lineTo(-6,12);c.lineTo(-10,8);c.closePath();c.fill();
+ c.fillStyle=skin.armor;c.fillRect(-8,-9,17,18);
+ c.fillStyle=skin.shadow;c.fillRect(-8,4,17,5);
+ c.fillStyle=skin.light;c.fillRect(-5,-9,10,3);
+ c.fillStyle=skin.trim;c.fillRect(8,-5,3,10);
+ c.fillStyle='#122b39';c.fillRect(-2,7,7,2);
+ // Pistol remains mechanically small, in the same direction as both gloves.
  c.fillStyle='#071923';c.fillRect(17,0,11,4);
- c.fillStyle='#9eb8b9';c.fillRect(20,0,6,1);
- c.fillStyle='#345666';c.fillRect(19,4,5,3);
+ c.fillStyle='#7b9da8';c.fillRect(19,0,7,1);
+ c.fillStyle='#36535b';c.fillRect(19,4,4,3);
  c.fillStyle='#e1f3d8';c.fillRect(PILOT_MUZZLE_X-1,PILOT_MUZZLE_Y-1,2,2);
- if(shooting)facet('#ffda91',[[PILOT_MUZZLE_X+1,2],[PILOT_MUZZLE_X+5,-2],[PILOT_MUZZLE_X+4,2],[PILOT_MUZZLE_X+5,6]]);
+ if(shooting){c.fillStyle='#ffda91';c.beginPath();
+  c.moveTo(PILOT_MUZZLE_X+1,2);c.lineTo(PILOT_MUZZLE_X+5,-2);
+  c.lineTo(PILOT_MUZZLE_X+4,2);c.lineTo(PILOT_MUZZLE_X+5,6);
+  c.closePath();c.fill();}
  c.restore();
 }
 // Four fixed WORLD-SPACE corner brackets, not a rotating ring/turret silhouette.
