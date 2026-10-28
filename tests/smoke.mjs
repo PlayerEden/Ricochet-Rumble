@@ -80,7 +80,7 @@ assert.equal(win.__test.combatColor(2),'#46d2f5','AI ally uses same BLUE paint')
 assert.equal(win.__test.combatColor(1),'#fc856e','enemy tank and pilot use RED paint');
 assert.equal(win.__test.combatColor(3),'#fc856e','all Red AI painted consistently');
 assert.equal(win.__test.opposingCount(0),2,'only red alive pilots appear in enemy HUD counter');
-assert.equal(node('score1').textContent,'2','team HUD excludes the allied bots');
+assert.equal(node('score1').textContent,2,'team HUD excludes the allied bots');
 assert.equal(node('player1-label').textContent,'RED','HUD clearly shows the opposing team');
 const shooter=st().tanks[0];shooter.shield=0;
 assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),false,'shell cap');
@@ -115,7 +115,7 @@ assert.equal(win.__test.botInput(1,1/60).bot,true);
  api.refreshHUD();
  assert.equal(node('aa-outcome').textContent,'VICTORY','visible After Action reflects side victory');
  assert.equal(node('aa-lives').textContent,'0');
- assert.equal(node('score1').textContent,'0','enemy red force eliminated');
+ assert.equal(node('score1').textContent,0,'enemy red force eliminated');
  api.newMatch('solo');assert.equal(st().winner,-1,'new team match still resets');
  node('bot-count').value='1';api.newMatch('solo');
  assert.equal(st().config.botCount,2,'one configured bot transparently deploys second for teams');
