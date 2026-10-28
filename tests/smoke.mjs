@@ -21,7 +21,7 @@ const testMath=Object.create(Math);testMath.random=()=>simRand?simRand():Math.ra
 function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5;return(z>>>0)/4294967296;};}
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math:testMath,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -225,8 +225,8 @@ console.log('PASS v0.9.4 visual clarity: pilot duel advantage, tactical sidearm,
  const idle=geom('pilot',0),moving=geom('pilot',2);
  assert.ok(idle.some(o=>o.w===2&&o.h===10),'small vest highlight remains below overhead helmet');
  assert.ok(!idle.some(o=>o.w===12&&o.h===6),'no exposed crawling-legs geometry');
- assert.equal(idle.filter(o=>o.w===5&&o.h===2&&o.x===-11).length,2,'two restrained team shoulder patches');
- assert.equal(moving.filter(o=>o.w===5&&o.h===2).length,2,'team patches survive the independent arm sway');
+ assert.equal(idle.filter(o=>o.w===5&&o.h===2&&o.x===-10).length,2,'two chunky team shoulder marks');
+ assert.equal(moving.filter(o=>o.w===5&&o.h===2).length,2,'two separate team patches survive arm sway');
 }
 // Emergency ejection is a cosmetic event, not damage to pilot lives.
 click('solo');const v0=st().vehicles[st().tanks[0].vehicleId],pilot=st().tanks[0],lives=st().lives[0];
@@ -1195,9 +1195,9 @@ console.log('PASS v0.9.22-dev5 small vehicle-only pullback, pilot preserved and 
 console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real rematches, fresh seeds and true frozen After Action.');
 
 
-// v0.9.23 LAB D: faceted overhead FIELDGRID operator, one locator, shared muzzle.
+// v0.9.24 LAB E -- arcade-block overhead pilot and shared modular paint roles.
 {
- const api=win.__test,calls=[];
+ const api=win.__test,calls=[],colors=[];
  const painter=new Proxy({
   save(){calls.push(['save'])},restore(){calls.push(['restore'])},
   translate(...a){calls.push(['translate',...a])},
@@ -1206,26 +1206,59 @@ console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real r
   lineTo(...a){calls.push(['line',...a])},fill(){},stroke(){calls.push(['stroke'])},
   fillRect(...a){calls.push(['rect',...a])},
   arc(...a){calls.push(['arc',...a])}
- },{get(obj,key){return obj[key]},set(obj,key,val){obj[key]=val;return true}});
+ },{get(obj,key){return obj[key]},set(obj,key,val){if(key==='fillStyle')colors.push(val);obj[key]=val;return true}});
  api.drawTopPilot(painter,'#46d2f5',false,1,0,0);
- assert.equal(calls.filter(x=>x[0]==='arc').length,0,'operator has no round head, shoulder or turret cap');
- assert.equal(calls.filter(x=>x[0]==='move'&&x[1]===-12&&x[2]===12).length,2,'two angular plated shoulders');
- assert.equal(calls.filter(x=>x[0]==='move'&&x[1]===1&&x[2]===16).length,2,'two angular braced forearms');
- assert.ok(calls.some(x=>x[0]==='move'&&x[1]===-10&&x[2]===-6),'faceted helmet is overhead and central');
- assert.equal(calls.filter(x=>x[0]==='move'&&x[1]===17&&x[2]===3).length,2,'both angled polygon gloves reach pistol');
- assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===17&&x[2]===0&&x[3]===11),'compact gun distinctly projects forwards');
- assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===27&&x[2]===1),'true muzzle tip at shared local 28,2');
- assert.ok(!calls.some(x=>x[0]==='rect'&&x[3]>17),'no profile or crawling legs');
+ assert.equal(calls.filter(x=>x[0]==='arc').length,0,'pilot has no layered circular head, arms or turret');
+ assert.equal(calls.filter(x=>x[0]==='rect'&&x[1]===-12&&x[2]===10&&x[3]===16&&x[4]===12).length,2,'symmetrical chunky shoulder modules');
+ assert.equal(calls.filter(x=>x[0]==='rect'&&x[1]===16&&x[2]===2&&x[3]===8&&x[4]===6).length,2,'two square gloves on one shared pistol');
+ assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===-8&&x[2]===-9&&x[3]===17&&x[4]===18),'flat block helmet instead of tiny facets');
+ assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===17&&x[2]===0&&x[3]===11),'same compact gun projects beyond head');
+ assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===27&&x[2]===1),'shared muzzle tip exactly at (28,2)');
+ assert.ok(!calls.some(x=>x[0]==='rect'&&x[4]>26),'no fake 2.5D crawling legs');
+ assert.ok(colors.includes('#46d2f5'),'team accent remains visible independent of paint');
+ assert.ok(colors.includes('#607a85'),'standard armored body is steel blue, not team colored entirely');
  api.drawTopPilot(painter,'#fc856e',true,0,.2,0);
- assert.ok(calls.some(x=>x[0]==='move'&&x[1]===29&&x[2]===2),'polygon muzzle flash begins after barrel tip');
- assert.equal(calls.filter(x=>x[0]==='arc').length,0,'shooting adds no new circular turret geometry');
+ assert.ok(calls.some(x=>x[0]==='move'&&x[1]===29&&x[2]===2),'pistol flash stays beyond muzzle');
+ assert.equal(calls.filter(x=>x[0]==='arc').length,0,'even firing uses zero decorative circular caps');
  const before=calls.length;
  api.drawPilotLocator(painter,220,170,'#60dfff');
  const locator=calls.slice(before);
- assert.equal(locator.filter(x=>x[0]==='move').length,4,'four fixed tactical corner brackets');
- assert.equal(locator.filter(x=>x[0]==='line').length,8,'each bracket has just two strokes');
- assert.equal(locator.filter(x=>x[0]==='arc').length,0,'normal locator is not a permanent circle');
- assert.equal(calls.filter(x=>x[0]==='save').length,calls.filter(x=>x[0]==='restore').length,'canvas transforms balance');
+ assert.equal(locator.filter(x=>x[0]==='move').length,4,'four fixed tactical locator brackets');
+ assert.equal(locator.filter(x=>x[0]==='line').length,8,'two lines per bracket');
+ assert.equal(locator.filter(x=>x[0]==='arc').length,0,'no permanent circular player ring');
+ assert.equal(calls.filter(x=>x[0]==='save').length,calls.filter(x=>x[0]==='restore').length,'canvas transforms balanced');
+ // Four original shared material families; no runtime/purchase/selection required.
+ assert.deepEqual(Object.keys(api.FIELDGRID_UNIT_SKINS),['fieldgrid.standard','fieldgrid.moss','fieldgrid.dune','fieldgrid.oxide']);
+ assert.deepEqual(Object.keys(api.resolveUnitMaterials('pilot','#19aaff')).sort(),['armor','light','shadow','team','trim']);
+ const normalTank=api.resolveUnitMaterials('tank','#19aaff');
+ const normalMech=api.resolveUnitMaterials('mech','#19aaff');
+ const normalPilot=api.resolveUnitMaterials('pilot','#19aaff');
+ assert.equal(normalTank.armor,'#19aaff','tank keeps its exact current live color in standard skin');
+ assert.equal(normalTank.shadow,'#193845','default tank shadow stays unchanged');
+ assert.equal(normalTank.light,'#bfe3e6','default tank light stays unchanged');
+ assert.equal(normalMech.armor,'#19aaff','mech keeps its live team fill');
+ assert.equal(normalMech.shadow,'#243d55','mech core stays unchanged');
+ assert.equal(normalMech.light,'#e5e5ff','mech light stays unchanged');
+ assert.equal(normalPilot.team,'#19aaff','team identity independent of player helmet color');
+ for(const id of Object.keys(api.FIELDGRID_UNIT_SKINS)){
+  for(const type of ['tank','mech','pilot']){
+   const mat=api.resolveUnitMaterials(type,'#19aaff',id);
+   for(const role of ['armor','shadow','light','trim','team'])assert.match(mat[role],/^#[0-9a-f]{6}$/,'palette contains safe fixed hex color');
+   assert.equal(mat.team,'#19aaff','cosmetics cannot overwrite team identifying accent');
+  }
+ }
+ assert.equal(api.resolveUnitMaterials('pilot','#19aaff','not-approved.fake').armor,normalPilot.armor,'bad cosmetic IDs revert to default');
+ const sample=api.resolveUnitMaterials('pilot','#19aaff','fieldgrid.moss');
+ assert.notEqual(sample.armor,normalPilot.armor,'same geometry may take a new palette');
+ const tankCalls=[],tankColors=[];
+ const tankPainter=new Proxy({
+  save(){},restore(){},scale(){},translate(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},fill(){},stroke(){},
+  fillRect(...v){tankCalls.push(v)},strokeRect(){},
+ },{get(o,k){return o[k]},set(o,k,v){if(k==='fillStyle')tankColors.push(v);o[k]=v;return true}});
+ api.drawTopTank(tankPainter,'#19aaff',false,0,0,0,0,'fieldgrid.moss');
+ api.drawTopMech(tankPainter,'#19aaff',false,0,0,0,'fieldgrid.moss');
+ assert.ok(tankColors.includes('#759376')&&tankColors.includes('#779480'),'tank and mech use the same named cosmetic material system');
+ assert.ok(tankCalls.length>25,'actual tank/mech geometry remains drawn');
  // Test true gun-origin fire on four rotations from an obstacle-free point.
  api.setPlaylistModes(['survival_ffa']);
  node('bot-count').value='0';node('map-size').value='large';
@@ -1254,7 +1287,7 @@ console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real r
  }
  assert.equal(api.unitTargetZoom({onFoot:true}),1.07,'approved pilot camera fixed');
 }
-console.log('PASS pilot Lab D: angular two-hand sprite, 4 tactical locator brackets and 4-axis muzzle-origin shots.');
+console.log('PASS Lab E chunky two-hand operator, four palette IDs, preserved default vehicles, team identity and rotated muzzle geometry.');
 // Operator field audit: human silhouette must not be occluded by the
 // previous oversized pilot locator, P1 label and selected-player triangle.
 {
