@@ -1,0 +1,64 @@
+name: Archive exact QA-proven Sector Rebound CQC Android preview
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-cqc-v0927.yml'
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: archive-sector-cqc-v0927
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Download exact successful QA artifact without rebuilding
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          EXACT="$(gh run view 40634687933 --repo "$REPO" --json conclusion,headSha --jq '.conclusion + " " + .headSha')"
+          test "$EXACT" = "success 5b36403c74d0a2f718dc440b1e7327518af9be73"
+          gh run download 40634687933 --repo "$REPO" --name debug-apk-40634687933 --dir tested-apk
+          gh run download 40634687933 --repo "$REPO" --name sector-rebound-qa-40634687933-1 --dir qa
+          FILE="$(find tested-apk -type f -name 'app-debug.apk' -print -quit)"
+          test -s "$FILE"
+          cp "$FILE" sector-rebound-v0.9.27-cqc-scored-debug.apk
+          (cd qa && zip -q -r ../sector-rebound-v0.9.27-cqc-qa-evidence.zip .)
+          sha256sum sector-rebound-v0.9.27-cqc-scored-debug.apk sector-rebound-v0.9.27-cqc-qa-evidence.zip > cqc-sha256.txt
+      - name: Publish immutable experimental debug APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TAG=v0.9.27-cqc-scored-test
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            echo "Release already exists; refusing overwrite"
+            exit 1
+          fi
+          cat > notes.md <<'EOF'
+          # Sector Rebound v0.9.27 — Pilot-only Close Quarters first scored Android test
+
+          **Experimental Android debug preview, NOT Play signed or merged into stable main.**
+
+          Try **CLOSE QUARTERS · PILOT-ONLY · SCORE TEST** in the main menu:
+          - Exactly one local player and three AI opponents; all spawn on foot. No tanks, mechs, vehicle boarding, or vehicle drops in CQC.
+          - **First to 10 real pilot KOs wins**; the match timer runs for **3 minutes of active gameplay**, and a tie at expiry is a DRAW. The HUD shows your KO count, the highest score (including yours), and time remaining.
+          - Genuine pilot deaths use the tested shared scored rules kernel with unique match incident attribution; a KO yields a short respawn delay, conservative maze/actor/bullet proximity spawn selection, a visible temporary shield canceled by firing. If no safe spawn exists it remains pending rather than teleporting into a wall.
+          - After Action displays true KOs/deaths, KO target, win/defeat/draw and reason; NEXT MATCH keeps pilot-only CQC and generates a new procedural sector.
+          - **Existing Quick Play Survival and Team Survival remain separate and unchanged**. Team Survival Blue/Red ally fix is included from previous v0.9.25, still awaiting owner natural phone verdict.
+
+          **Exact source commit:** `5b36403c74d0a2f718dc440b1e7327518af9be73`, draft [PR #44](https://github.com/PlayerEden/Ricochet-Rumble/pull/44), on a clean dependency stack [runtime PR #41](https://github.com/PlayerEden/Ricochet-Rumble/pull/41) + [pure rules PR #42](https://github.com/PlayerEden/Ricochet-Rumble/pull/42).
+          **Full real Chromium match flow, 300-seed maze regression, Android debug APK and unsigned bundle PASS:** [GitHub Actions run 40634687933](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40634687933).
+          This release's APK is copied BYTE FOR BYTE from that successful run, without rebuilding, resigning, or post-build changes. Browser screenshots/QA evidence ZIP and SHA-256 hashes included.
+
+          **Please test on physical Android:** Can you start CQC, encounter active AI, earn real KOs, respawn without spawn-camping, see time/leader, reach victory or timeout, and start a new sector? Check Team Survival ally colors too if desired.
+
+          **Limitations:** KO/time balance and rare respawn failures need natural mobile evidence. CQC is local solo with bots, not LAN or online TDM. Android manifest/debug version metadata is still from older test packaging; Play signing and reliable in-place upgrades remain future release gates. Debug certificate may differ; uninstalling old APKs can erase settings. Stable v0.9.21 main remains untouched; [known v0.9.25 previous test release](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.25-team-survival-allies-test) remains rollback.
+          EOF
+          gh release create "$TAG" sector-rebound-v0.9.27-cqc-scored-debug.apk sector-rebound-v0.9.27-cqc-qa-evidence.zip cqc-sha256.txt --repo "$REPO" --target 5b36403c74d0a2f718dc440b1e7327518af9be73 --title 'Sector Rebound v0.9.27 — Pilot-only scored Close Quarters Android test' --notes-file notes.md --prerelease
