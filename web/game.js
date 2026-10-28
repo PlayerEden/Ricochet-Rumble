@@ -791,43 +791,59 @@ function drawLobbyPreview(dt){
  c.globalAlpha=1;
 }
 function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
- // LAB C REV2 -- truly overhead helmet + OPEN V-shaped TWO-HAND sidearm brace.
- // Raise elbows beyond helmet sides; no low-crawling legs or profile view.
+ // LAB D -- FIELDGRID operator: strict 90-degree overhead, FACETED armor.
+ // Entirely original procedural geometry; no face/profile, legs or circular caps.
  const sway=clamp(stride,-3,3)*.15;
+ const facet=(color,points)=>{
+  c.fillStyle=color;c.beginPath();
+  c.moveTo(points[0][0],points[0][1]);
+  for(let k=1;k<points.length;k++)c.lineTo(points[k][0],points[k][1]);
+  c.closePath();c.fill();
+ };
  c.save();c.translate(-recoil*.15,bob*.25);
- c.fillStyle='#071b25';c.beginPath();c.arc(-2,0,14,0,Math.PI*2);c.fill();
- c.fillStyle='#263f49';c.fillRect(-11,-8,13,16);
- c.fillStyle='#6d8790';c.fillRect(-10,-5,3,10);
- // Render both upper arms/forearms from the shoulders toward one pistol.
- // Elbows bend OUT to y=+/-19, staying clearly visible around the head.
+ // Compact trapezoid vest; mostly concealed by overhead helmet.
+ facet('#081c27',[[-14,-8],[-5,-11],[5,-8],[7,-3],[7,3],[5,8],[-5,11],[-14,8]]);
+ facet('#294650',[[-12,-7],[-5,-9],[3,-7],[3,7],[-5,9],[-12,6]]);
+ c.fillStyle='#78949b';c.fillRect(-11,-5,2,10);
+ // Left/right plated shoulders, bent elbows, forearms and two pistol gloves.
+ // Draw BEFORE helmet so the head remains the dominant overhead shape.
  for(const side of [-1,1]){
   c.save();c.scale(1,side);c.translate(-sway*side,0);
-  c.fillStyle='#0a202c';c.beginPath();c.arc(-5,14,6.5,0,Math.PI*2);c.fill();
-  c.fillStyle='#738e98';c.beginPath();c.arc(-5,14,5.2,0,Math.PI*2);c.fill();
-  c.fillStyle=paint;c.fillRect(-9,12,4,3);
-  c.fillStyle='#0e2933';
-  c.beginPath();c.moveTo(-4,13);c.lineTo(3,20);c.lineTo(11,16);
-  c.lineTo(21,6);c.lineTo(18,2);c.lineTo(10,10);
-  c.lineTo(3,14);c.lineTo(-4,10);c.closePath();c.fill();
-  // A bright outer forearm edge makes the grip legible at phone size.
-  c.fillStyle='#819fa5';
-  c.beginPath();c.moveTo(2,17);c.lineTo(4,17);c.lineTo(17,6);
-  c.lineTo(18,8);c.lineTo(7,18);c.closePath();c.fill();
-  c.fillStyle='#b2c7c2';c.fillRect(17,3,5,4); // glove meets pistol
+  facet('#061824',[[-12,12],[-8,10],[-1,11],[6,16],[5,21],[-6,22],[-13,18]]);
+  facet('#5a7883',[[-11,13],[-6,11],[-1,12],[3,16],[1,19],[-8,19],[-12,17]]);
+  facet('#a0b3b4',[[-9,13],[-4,12],[0,14],[-1,15],[-9,15]]);
+  c.fillStyle=paint;c.fillRect(-11,16,5,2); // restrained team-color patch
+  // Distinct joint and angled forearm. No circular attachment or hand ring.
+  facet('#0a2330',[[1,16],[5,20],[10,17],[20,7],[20,3],[16,2],[9,11]]);
+  facet('#839ca4',[[2,18],[5,19],[18,6],[20,6],[17,9],[7,19]]);
+  facet('#4d6974',[[8,14],[10,15],[17,8],[15,7]]);
+  facet('#b8c8c3',[[17,3],[22,3],[22,6],[18,8],[16,6]]);
   c.restore();
  }
- // The single round helmet is viewed from directly ABOVE (no face/visor).
- c.fillStyle='#071b26';c.beginPath();c.arc(2,0,11.1,0,Math.PI*2);c.fill();
- c.fillStyle='#6b858d';c.beginPath();c.arc(2,0,9.2,0,Math.PI*2);c.fill();
- c.fillStyle='#93aaad';c.beginPath();c.arc(-1,-3,4,0,Math.PI*2);c.fill();
- c.fillStyle='#345461';c.fillRect(8,-3,2,6);
- // Compact pistol extends beyond helmet but never becomes a rifle/turret.
- c.fillStyle='#081f2b';c.fillRect(17,0,11,4);
- c.fillStyle='#a0c3c5';c.fillRect(19,0,7,1.5);
- c.fillStyle='#23434d';c.fillRect(19,4,4,3);
+ // Faceted helmet top viewed from directly above (not a profile visor).
+ facet('#061823',[[-10,-6],[-7,-11],[3,-13],[11,-10],[14,-5],[14,5],[8,12],[-3,12],[-10,7]]);
+ facet('#526e79',[[-8,-5],[-5,-9],[3,-10],[10,-8],[12,-4],[12,4],[7,9],[-3,9],[-8,5]]);
+ facet('#91a8ab',[[-6,-6],[-3,-8],[4,-9],[8,-7],[5,-4],[-3,-3]]);
+ facet('#314b57',[[8,-6],[11,-4],[11,5],[8,7],[6,3],[6,-3]]);
+ c.fillStyle='#1b3947';c.fillRect(-4,7,9,2); // rear armor seam, no fake eyes
+ // One mechanical pistol, clearly connected to BOTH gloves.
+ c.fillStyle='#071923';c.fillRect(17,0,11,4);
+ c.fillStyle='#9eb8b9';c.fillRect(20,0,6,1);
+ c.fillStyle='#345666';c.fillRect(19,4,5,3);
  c.fillStyle='#e1f3d8';c.fillRect(PILOT_MUZZLE_X-1,PILOT_MUZZLE_Y-1,2,2);
- if(shooting){c.fillStyle='#ffdaa0';c.beginPath();c.arc(PILOT_MUZZLE_X+2,PILOT_MUZZLE_Y,2.1,0,Math.PI*2);c.fill();}
+ if(shooting)facet('#ffda91',[[PILOT_MUZZLE_X+1,2],[PILOT_MUZZLE_X+5,-2],[PILOT_MUZZLE_X+4,2],[PILOT_MUZZLE_X+5,6]]);
  c.restore();
+}
+// Four fixed WORLD-SPACE corner brackets, not a rotating ring/turret silhouette.
+// Team color replaces player color for team matches; never stack both locators.
+function drawPilotLocator(c,x,y,color){
+ c.save();c.strokeStyle=color;c.globalAlpha=.54;c.lineWidth=1.4;
+ c.beginPath();
+ for(const sx of [-1,1])for(const sy of [-1,1]){
+  const bx=x+sx*26,by=y+sy*25;
+  c.moveTo(bx-sx*6,by);c.lineTo(bx,by);c.lineTo(bx,by-sy*6);
+ }
+ c.stroke();c.restore();
 }
 // v0.9.22-dev5: final small vehicle-only pullback after owner phone feedback.
 // Keep pilot at approved scale for future pilot-only Close Quarters.
@@ -912,13 +928,12 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
       }}
  }
  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]<=0)continue;
- if(state.config?.teamMode!=='ffa'){c.beginPath();c.arc(t.x,t.y,29,0,Math.PI*2);c.strokeStyle=teamOf(i)===0?'#60dfff':'#ffb06e';c.lineWidth=4;c.stroke()}
+ if(state.config?.teamMode!=='ffa'&&!t.onFoot){c.beginPath();c.arc(t.x,t.y,29,0,Math.PI*2);c.strokeStyle=teamOf(i)===0?'#60dfff':'#ffb06e';c.lineWidth=4;c.stroke()}
+ if(t.onFoot)drawPilotLocator(c,t.x,t.y,state.config?.teamMode!=='ffa'?(teamOf(i)===0?'#60dfff':'#ffb06e'):colors[i]);
  c.save();c.translate(t.x,t.y);c.rotate(t.a);
  if(t.onFoot){
    const stride=Math.sin(visualClock*15+i*1.7)*Math.min(3.5,Math.hypot(t.vx,t.vy)/65);
-   // Readable ground-operator selection: draw a soft, wider locator BEHIND
-   // the helmet, arms and boots. The old solid ring overprinted the human shape.
-   c.strokeStyle=colors[i];c.globalAlpha=.28;c.lineWidth=1.2;c.beginPath();c.arc(0,0,21,0,Math.PI*2);c.stroke();c.globalAlpha=1;
+   // No permanent ring. Fixed world-space FIELDGRID brackets render behind the operator.
    drawTopPilot(c,colors[i],t.flash>0,stride,t.recoil||0,Math.sin(visualClock*15+i*1.7)*Math.min(.45,Math.hypot(t.vx,t.vy)/400));
    c.restore();
    if(t.ejectAnim>0){c.save();c.globalAlpha=Math.min(.7,t.ejectAnim/.62);c.strokeStyle='#e5faff';c.lineWidth=2;c.beginPath();c.arc(t.x,t.y,18+(1-t.ejectAnim/.62)*22,0,Math.PI*2);c.stroke();c.restore();}
