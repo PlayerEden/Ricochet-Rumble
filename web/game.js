@@ -37,7 +37,13 @@ function nextPlaylistMode(random=Math.random){
  lastSoloModeId=id;
  return id;
 }
-function soloOptionsFor(id,base=selectedRules){const preset=MATCH_MODE_PRESETS[id];if(!preset)return null;return {...base,teamMode:preset.teamMode,matchModeId:id,pilotMode:true};}
+function soloOptionsFor(id,base=selectedRules){
+ const preset=MATCH_MODE_PRESETS[id];if(!preset)return null;
+ // Team Survival needs an ally AND a foe. Preserve intentionally empty
+ // zero-bot practice instead of silently creating opposition.
+ const teamBotMinimum=preset.teamMode==='teams'&&base.botCount>0?Math.max(2,base.botCount):base.botCount;
+ return {...base,botCount:teamBotMinimum,teamMode:preset.teamMode,matchModeId:id,pilotMode:true};
+}
 function freshSectorSeed(previous=0){
  let s=Math.floor(Math.random()*0x7fffffff)||1;
  if(s===previous)s=s===0x7ffffffe?1:s+1;
@@ -219,7 +225,7 @@ function pilotExitSite(i,vehicleId){const t=state.tanks[i];
 }
 function tryInteract(i=0){if(!isPilotMatch()||paused||state.winner>=0||state.lives[i]<=0)return false;const t=state.tanks[i];
  if(t.onFoot){const v=nearestEmptyVehicle(i);if(!v){if(i===0){const bay=(state.vehicles||[]).some(q=>q.occupant===-1&&q.armor>0&&Math.hypot(q.x-t.x,q.y-t.y)<58&&hasLineOfSight(t.x,t.y,q.x,q.y)&&!vehicleEntryClear(i,q));notice(bay?'Vehicle bay occupied · clear the area':'Find a parked tank and move closer');}return false}
-  v.occupant=i;t.vehicleId=v.id;t.onFoot=false;Object.assign(t,{x:v.x,y:v.y,a:v.a,vx:0,vy:0,recoil:0,trackLeft:0,trackRight:0});state.event=vehicleDef(v).name+' ONLINE · '+v.armor+' ARMOR';state.eventTimer=.9;emitFx('pickup',v.x,v.y,colors[i],i);}
+  v.occupant=i;t.vehicleId=v.id;t.onFoot=false;Object.assign(t,{x:v.x,y:v.y,a:v.a,vx:0,vy:0,recoil:0,trackLeft:0,trackRight:0});state.event=vehicleDef(v).name+' ONLINE · '+v.armor+' ARMOR';state.eventTimer=.9;emitFx('pickup',v.x,v.y,combatColor(i),i);}
  else{const v=state.vehicles?.[t.vehicleId];if(!v)return false;
   const spot=pilotExitSite(i,v.id);
   if(!spot){if(i===0)notice('Need space beside the tank to exit');return false}
@@ -229,7 +235,7 @@ function ejectPilot(i){const t=state.tanks[i],v=state.vehicles?.[t.vehicleId];if
  v.x=t.x;v.y=t.y;v.a=t.a;v.occupant=-1;v.armor=0;v.respawn=9;
  const exit=pilotExitSite(i,v.id)||[t.x,t.y];
  t.onFoot=true;t.vehicleId=null;Object.assign(t,{x:exit[0],y:exit[1],vx:0,vy:0,shield:EJECTION_SHIELD,powerType:null,powerTimer:0});
- t.ejectAnim=.62;if(i===0&&coachEnabled&&!coachPilotShown){coachPilotShown=true;coachTip('ON FOOT · FOLLOW THE VEHICLE ARROW · ENTER TO BOARD',4.4);}audioCue('eject',v.x,v.y);state.event=label(i)+' EJECTED · FIND COVER!';state.eventTimer=1.15;emitFx('eject',v.x,v.y,colors[i],-1,i);
+ t.ejectAnim=.62;if(i===0&&coachEnabled&&!coachPilotShown){coachPilotShown=true;coachTip('ON FOOT · FOLLOW THE VEHICLE ARROW · ENTER TO BOARD',4.4);}audioCue('eject',v.x,v.y);state.event=label(i)+' EJECTED · FIND COVER!';state.eventTimer=1.15;emitFx('eject',v.x,v.y,combatColor(i),-1,i);
 }
 function initialState(arena=0,options=null,seed=null){const config={...readSettings(),pilotMode:true,...(options||{})};let count=mode==='solo'?1:2;
  // Zero bots is a legitimate free-roam practice setting; don't silently add an enemy.
@@ -238,16 +244,31 @@ function initialState(arena=0,options=null,seed=null){const config={...readSetti
  const vehicles=config.pilotMode?spawnVehicles(tanks,humans,mazeSeed):[];
  camera.x=0;camera.y=0;botBrains.clear();return {tanks,vehicles,vehicleDropTimer:28,dropIndex:0,vehicleBeacon:null,bullets:[],pickups:[],pickupTimer:5.5,arenaId:id,mazeSeed,config,humanCount:humans,fxEvents:[],lives:Array(total).fill(config.startLives),kos:Array(total).fill(0),winner:-1,winnerTeam:-1,event:'',eventTimer:0,matchId:++matchSerial,elapsedSeconds:0,deaths:Array(total).fill(0),respawns:Array(total).fill(0),finalResult:null};}
 state=initialState();
-function teamOf(i,st=state){const mode=st.config?.teamMode||'ffa';if(mode==='ffa')return i;if(mode==='coop')return i<st.humanCount?0:1;
- // Alternating teams; solo play always puts bots on the opposing team.
- return st.humanCount===1?(i===0?0:1):i%2;}
+function teamOf(i,st=state){
+ const rules=st.config?.teamMode||'ffa';
+ if(rules==='ffa')return i;
+ if(rules==='coop')return i<st.humanCount?0:1;
+ // Solo Team Survival: human BLUE, AI1 RED, AI2 BLUE, AI3 RED, AI4 BLUE.
+ // In two-human matches, player indices 0/1 sit on opposite teams.
+ // Keep this deterministic for network state, scoring, and bot target filters.
+ return i%2;
+}
 function friendly(a,b){return teamOf(a)===teamOf(b)}
+function combatColor(i,st=state){
+ return st.config?.teamMode==='ffa'?colors[i]:(teamOf(i,st)===0?'#46d2f5':'#fc856e');
+}
+function opposingCount(i,st=state){
+ return st.lives.reduce((sum,lives,j)=>sum+(lives>0&&!friendlyForState(i,j,st)?1:0),0);
+}
+function friendlyForState(a,b,st){return teamOf(a,st)===teamOf(b,st);}
 function label(i){return i===0?'CYAN':i===1&&state.humanCount===2?'CORAL':`BOT ${i-state.humanCount+1}`;}
 // A completed result is a frozen per-match record. HUD refreshes must never re-score it.
 function finalizeRound(){
  if(!state||state.winner<0||state.finalResult)return state?.finalResult||null;
  const local=mode==='guest'?1:0,winningTeam=state.winnerTeam,playerAlive=(state.lives[local]||0)>0;
- const won=playerAlive&&teamOf(local,state)===winningTeam;
+ // Team Survival is a SIDE victory. A living teammate can win the match
+ // after the player has been eliminated; do not report that as DEFEAT.
+ const won=teamOf(local,state)===winningTeam&&(state.config?.teamMode==='teams'||playerAlive);
  const summary={
   version:1,matchId:state.matchId,mazeSeed:state.mazeSeed,
   matchModeId:state.config.matchModeId||null,teamMode:state.config.teamMode,mapSize:state.config.mapSize,
@@ -306,7 +327,7 @@ function makeControl(isPlayer1){return isPlayer1?inputFrom(keys1,true):inputFrom
 function serializeState(){return {tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,vehicleDropTimer:state.vehicleDropTimer,dropIndex:state.dropIndex,vehicleBeacon:state.vehicleBeacon?{...state.vehicleBeacon}:null,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,hostPaused:mode==='host'&&paused};}
 function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  document.getElementById('score0').textContent=state.lives[me]??0;document.getElementById('score1').textContent=state.lives[other]??0;
- const botLives=state.lives.slice(state.humanCount||2).filter(v=>v>0).length,active=state.bullets.filter(b=>b.owner===me).length;
+ const botLives=mode==='solo'?opposingCount(me):state.lives.slice(state.humanCount||2).filter(v=>v>0).length,active=state.bullets.filter(b=>b.owner===me).length;
  const phase=document.getElementById('round'),localPilot=state.tanks[me],localVehicle=currentVehicle(localPilot),foot=!!localPilot?.onFoot,hostPaused=mode==='guest'&&state.hostPaused;
  const armor=localVehicle?.armor??0,maxArmor=vehicleDef(localVehicle).armor;
  phase.textContent=hostPaused?'HOST PAUSED':state.winner>=0?'MATCH OVER':foot?'PILOT · ON FOOT':`${vehicleDef(localVehicle).name} · ${armor}/${maxArmor}`;
@@ -353,7 +374,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
    }
  }
  const replay=document.getElementById('quick-rematch');if(replay){replay.textContent=mode==='solo'?'↻ NEXT MATCH':'↻ NEW SECTOR';replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));}
- const label0=document.getElementById('player0-label');if(label0)label0.textContent='YOU';const label1=document.getElementById('player1-label');if(label1)label1.textContent=mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';if(mode==='solo')document.getElementById('score1').textContent=botLives;}
+ const label0=document.getElementById('player0-label');if(label0)label0.textContent='YOU';const label1=document.getElementById('player1-label');if(label1)label1.textContent=mode==='solo'&&state.config?.teamMode==='teams'?'RED':mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';if(mode==='solo')document.getElementById('score1').textContent=botLives;}
 function newMatch(which){
  savePrefs();
  if(which==='solo'&&!selectedPlaylistIds.length){notice('SELECT A QUICK PLAY MODE IN MATCH SETTINGS',2300);return false;}
@@ -523,7 +544,7 @@ function shoot(owner){if(state.lives[owner]<=0)return false;
  t.shield=0; // Shooting cancels spawn/ejection immunity.
  const speed=isFoot?475:def.projectileSpeed;const baselineLife=isFoot?.82:v?.type==='mech'?2.05:2.55;
  const rapid=t.powerTimer>0&&t.powerType==='rapid';const shellLife=rapid&&!isFoot?baselineLife*.68:baselineLife;
- state.bullets.push({x,y,vx:dx*speed,vy:dy*speed,owner,life:shellLife,bounces:0,age:0,kind:isFoot?'sidearm':v?.type==='mech'?'mech':'shell'});t.flash=.11;t.recoil=isFoot?.28:v?.type==='mech'?.56:.72;emitFx('shot',x,y,colors[owner],owner);audioCue(isFoot?'pilot-shot':v?.type==='mech'?'mech-shot':'tank-shot',x,y);refreshHUD();return true;}
+ state.bullets.push({x,y,vx:dx*speed,vy:dy*speed,owner,life:shellLife,bounces:0,age:0,kind:isFoot?'sidearm':v?.type==='mech'?'mech':'shell'});t.flash=.11;t.recoil=isFoot?.28:v?.type==='mech'?.56:.72;emitFx('shot',x,y,combatColor(owner),owner);audioCue(isFoot?'pilot-shot':v?.type==='mech'?'mech-shot':'tank-shot',x,y);refreshHUD();return true;}
 function respawn(victim){const enemies=state.tanks.filter((_,i)=>i!==victim&&state.lives[i]>0&&!friendly(victim,i));const spots=[];
  if(mazeGrid){for(let r=0;r<mazeGrid.rows;r++)for(let c=0;c<mazeGrid.cols;c++)spots.push([(c+.5)*mazeGrid.cell,(r+.5)*mazeGrid.cell]);}
  else spots.push(...[[130,300],[830,300],[130,100],[830,500],[480,96],[480,500],[130,480],[830,120],[340,70],[620,525]]);
@@ -534,12 +555,12 @@ function respawn(victim){const enemies=state.tanks.filter((_,i)=>i!==victim&&sta
 function registerHit(attacker,victim){if(state.winner>=0||state.lives[victim]<=0||state.tanks[victim].shield>0||(attacker!==victim&&friendly(attacker,victim)))return false;
  quietContactSeconds=0;const target=state.tanks[victim];if(target.powerType==='guard'&&target.powerTimer>0){target.powerType=null;target.powerTimer=0;emitFx('guard',target.x,target.y,'#b59aff');audioCue('barrier',target.x,target.y);state.event='BARRIER BLOCKED THE HIT!';state.eventTimer=.8;return false;}
  if(isPilotMatch()&&!target.onFoot){const vehicle=state.vehicles?.[target.vehicleId];if(vehicle&&vehicle.armor>0){
-   vehicle.armor--;emitFx('hit',target.x,target.y,colors[victim],attacker,victim);
+   vehicle.armor--;emitFx('hit',target.x,target.y,combatColor(victim),attacker,victim);
    if(victim===0){screenKick=comfort.shake?2.3:0;damagePulse=.28;}
    if(vehicle.armor===0)ejectPilot(victim);else{state.event=label(victim)+' '+vehicleDef(vehicle).name+' ARMOR '+vehicle.armor+'/'+vehicleDef(vehicle).armor;state.eventTimer=.75;}
    audioCue('armor-hit',target.x,target.y);refreshHUD();return true;
  }}
- emitFx('hit',target.x,target.y,colors[victim],attacker,victim);if(victim===(mode==='guest'?1:0)){screenKick=comfort.shake?3.2:0;damagePulse=.58;}state.lives[victim]--;if(state.deaths)state.deaths[victim]++;if(attacker!==victim)state.kos[attacker]++;state.event=label(victim)+' LOSES A LIFE!';state.eventTimer=.85;audioCue('pilot-hit',target.x,target.y);
+ emitFx('hit',target.x,target.y,combatColor(victim),attacker,victim);if(victim===(mode==='guest'?1:0)){screenKick=comfort.shake?3.2:0;damagePulse=.58;}state.lives[victim]--;if(state.deaths)state.deaths[victim]++;if(attacker!==victim)state.kos[attacker]++;state.event=label(victim)+' LOSES A LIFE!';state.eventTimer=.85;audioCue('pilot-hit',target.x,target.y);
  if(state.lives[victim]>0){respawn(victim);if(state.respawns)state.respawns[victim]++;}else{target.vx=target.vy=0;target.powerType=null;target.powerTimer=0;state.bullets=state.bullets.filter(b=>b.owner!==victim);
  const active=state.tanks.map((_,i)=>i).filter(i=>state.lives[i]>0),teams=[...new Set(active.map(i=>teamOf(i)))];
  if(teams.length<=1){state.winnerTeam=teams[0]??teamOf(attacker);state.winner=active[0]??attacker;state.event=state.config.teamMode==='coop'?(state.winnerTeam===0?'HUMANS WIN!':'BOTS WIN!'):state.config.teamMode==='teams'?(`TEAM ${state.winnerTeam===0?'BLUE':'RED'} WINS!`):(label(state.winner)+' WINS!');state.eventTimer=0;}}
@@ -578,8 +599,8 @@ function step(dt){if(paused||state.winner>=0)return;
  fireCooldown[i]=Math.max(0,(fireCooldown[i]||0)-dt);if(inputs[i]?.fire&&fireCooldown[i]<=0&&shoot(i))fireCooldown[i]=fireInterval(t);}
  for(const b of state.bullets){b.age+=dt;b.life-=dt;const substeps=Math.max(1,Math.ceil(Math.max(Math.abs(b.vx),Math.abs(b.vy))*dt/5)),subDt=dt/substeps;
  for(let j=0;j<substeps&&b.life>0&&state.winner<0;j++){const nx=b.x+b.vx*subDt,ny=b.y+b.vy*subDt;
- if(blocked(nx,b.y,b.kind==='sidearm'?3:5)){if(b.kind==='sidearm'){b.life=0;break}b.vx=-b.vx;b.bounces++;emitFx('bounce',b.x,b.y,colors[b.owner]);audioCue('ricochet',b.x,b.y)}else b.x=nx;
- if(blocked(b.x,ny,b.kind==='sidearm'?3:5)){if(b.kind==='sidearm'){b.life=0;break}b.vy=-b.vy;b.bounces++;emitFx('bounce',b.x,b.y,colors[b.owner]);audioCue('ricochet',b.x,b.y)}else b.y=ny;
+ if(blocked(nx,b.y,b.kind==='sidearm'?3:5)){if(b.kind==='sidearm'){b.life=0;break}b.vx=-b.vx;b.bounces++;emitFx('bounce',b.x,b.y,combatColor(b.owner));audioCue('ricochet',b.x,b.y)}else b.x=nx;
+ if(blocked(b.x,ny,b.kind==='sidearm'?3:5)){if(b.kind==='sidearm'){b.life=0;break}b.vy=-b.vy;b.bounces++;emitFx('bounce',b.x,b.y,combatColor(b.owner));audioCue('ricochet',b.x,b.y)}else b.y=ny;
  for(const bump of bumpers){const dx=b.x-bump.x,dy=b.y-bump.y,dist=Math.hypot(dx,dy);if(dist>0&&dist<bump.r+6&&(b.bumpDelay||0)<=0){const ux=dx/dist,uy=dy/dist,dot=b.vx*ux+b.vy*uy;if(dot<0){b.vx-=2*dot*ux;b.vy-=2*dot*uy;b.x=bump.x+ux*(bump.r+7);b.y=bump.y+uy*(bump.r+7);b.bounces++;b.bumpDelay=.09;emitFx('bounce',b.x,b.y,'#ffdf7b');audioCue('bumper',b.x,b.y)}}}
  b.bumpDelay=Math.max(0,(b.bumpDelay||0)-subDt);if(b.bounces>(b.kind==='mech'?2:5)){b.life=0;break}
  // Unoccupied vehicle bays are non-solid training projections. Projectiles
@@ -975,24 +996,25 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  }
  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]<=0)continue;
  if(state.config?.teamMode!=='ffa'&&!t.onFoot){c.beginPath();c.arc(t.x,t.y,29,0,Math.PI*2);c.strokeStyle=teamOf(i)===0?'#60dfff':'#ffb06e';c.lineWidth=4;c.stroke()}
- if(t.onFoot)drawPilotLocator(c,t.x,t.y,state.config?.teamMode!=='ffa'?(teamOf(i)===0?'#60dfff':'#ffb06e'):colors[i]);
+ if(t.onFoot)drawPilotLocator(c,t.x,t.y,state.config?.teamMode!=='ffa'?(teamOf(i)===0?'#60dfff':'#ffb06e'):combatColor(i));
+ const paint=combatColor(i);
  c.save();c.translate(t.x,t.y);c.rotate(t.a);
  if(t.onFoot){
    const stride=Math.sin(visualClock*15+i*1.7)*Math.min(3.5,Math.hypot(t.vx,t.vy)/65);
    // No permanent ring. Fixed world-space FIELDGRID brackets render behind the operator.
-   drawTopPilot(c,colors[i],t.flash>0,stride,t.recoil||0,Math.sin(visualClock*15+i*1.7)*Math.min(.45,Math.hypot(t.vx,t.vy)/400));
+   drawTopPilot(c,paint,t.flash>0,stride,t.recoil||0,Math.sin(visualClock*15+i*1.7)*Math.min(.45,Math.hypot(t.vx,t.vy)/400));
    c.restore();
    if(t.ejectAnim>0){c.save();c.globalAlpha=Math.min(.7,t.ejectAnim/.62);c.strokeStyle='#e5faff';c.lineWidth=2;c.beginPath();c.arc(t.x,t.y,18+(1-t.ejectAnim/.62)*22,0,Math.PI*2);c.stroke();c.restore();}
  }else{
  if(t.shield>0){c.globalAlpha=.65+.25*Math.sin(t.shield*15)}
- (currentVehicle(t)?.type==='mech'?drawTopMech(c,colors[i],false,Math.sin(visualClock*10+i*1.9)*Math.min(3.2,Math.hypot(t.vx,t.vy)/55),t.recoil||0,Math.sin(visualClock*20+i*3.8)*Math.min(.65,Math.hypot(t.vx,t.vy)/320)):drawTopTank(c,colors[i],false,t.trackLeft||0,t.trackRight||0,t.recoil||0,Math.min(1,Math.hypot(t.vx,t.vy)/240)));if(t.flash>0){c.fillStyle='#fff3a0';c.beginPath();c.arc(39,0,8+t.flash*70,0,Math.PI*2);c.fill()}c.restore();
+ (currentVehicle(t)?.type==='mech'?drawTopMech(c,paint,false,Math.sin(visualClock*10+i*1.9)*Math.min(3.2,Math.hypot(t.vx,t.vy)/55),t.recoil||0,Math.sin(visualClock*20+i*3.8)*Math.min(.65,Math.hypot(t.vx,t.vy)/320)):drawTopTank(c,paint,false,t.trackLeft||0,t.trackRight||0,t.recoil||0,Math.min(1,Math.hypot(t.vx,t.vy)/240)));if(t.flash>0){c.fillStyle='#fff3a0';c.beginPath();c.arc(39,0,8+t.flash*70,0,Math.PI*2);c.fill()}c.restore();
  if(isPilotMatch()){const v=state.vehicles?.[t.vehicleId];if(v){c.fillStyle='#16313b';c.fillRect(t.x-19,t.y+29,38,5);c.fillStyle='#79eab2';c.fillRect(t.x-19,t.y+29,38*v.armor/vehicleDef(v).armor,5);}}}
  if(t.powerType&&t.powerTimer>0&&PICKUPS[t.powerType]){c.fillStyle=PICKUPS[t.powerType].color;c.font='800 10px monospace';c.textAlign='center';c.fillText(PICKUPS[t.powerType].name+' '+Math.ceil(t.powerTimer)+'s',t.x,t.y+49)}
- if(t.shield>0){c.beginPath();c.arc(t.x,t.y,32+Math.sin(t.shield*10)*2,0,Math.PI*2);c.strokeStyle=colors[i];c.globalAlpha=clamp(t.shield/1.8*(t.onFoot?.42:.8),0,t.onFoot?.42:.8);c.lineWidth=t.onFoot?1.8:3;c.stroke();c.globalAlpha=1}
- c.fillStyle=colors[i];c.font='bold 13px system-ui';c.textAlign='center';
+ if(t.shield>0){c.beginPath();c.arc(t.x,t.y,32+Math.sin(t.shield*10)*2,0,Math.PI*2);c.strokeStyle=paint;c.globalAlpha=clamp(t.shield/1.8*(t.onFoot?.42:.8),0,t.onFoot?.42:.8);c.lineWidth=t.onFoot?1.8:3;c.stroke();c.globalAlpha=1}
+ c.fillStyle=paint;c.font='bold 13px system-ui';c.textAlign='center';
  // Ground personnel stand close to parked vehicles. Move their label
  // to the side, rather than painting it across the abandoned tank.
- c.fillText(i<state.humanCount?'P'+(i+1):'AI'+(i-state.humanCount+1),t.x+(t.onFoot?42:0),t.y+(t.onFoot?-18:-38));
+ c.fillText(i<state.humanCount?'P'+(i+1):state.config?.teamMode==='teams'&&friendly(i,mode==='guest'?1:0)?'ALLY '+(i-state.humanCount+1):'AI'+(i-state.humanCount+1),t.x+(t.onFoot?42:0),t.y+(t.onFoot?-18:-38));
  if(i===(mode==='guest'?1:0)){
   c.beginPath();
   if(t.onFoot){c.moveTo(t.x-30,t.y);c.lineTo(t.x-40,t.y-6);c.lineTo(t.x-40,t.y+6);}
@@ -1003,9 +1025,9 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
    const foot=b.kind==='sidearm',heavy=b.kind==='mech';
    const length=Math.min(foot?10:heavy?24:19,Math.hypot(b.vx,b.vy)*.037);
    c.beginPath();c.moveTo(b.x-b.vx/405*length,b.y-b.vy/405*length);c.lineTo(b.x,b.y);
-   c.strokeStyle=foot?'#d9f3e8':colors[b.owner];c.lineWidth=foot?2.5:heavy?6:4;c.stroke();
+   c.strokeStyle=foot?'#d9f3e8':combatColor(b.owner);c.lineWidth=foot?2.5:heavy?6:4;c.stroke();
    c.beginPath();c.arc(b.x,b.y,foot?3.2:heavy?8:6,0,Math.PI*2);
-   c.fillStyle=foot?'#dbffd8':'#f8ffff';c.shadowColor=colors[b.owner];c.shadowBlur=foot?3:heavy?17:12;c.fill();c.shadowBlur=0;
+   c.fillStyle=foot?'#dbffd8':'#f8ffff';c.shadowColor=combatColor(b.owner);c.shadowBlur=foot?3:heavy?17:12;c.fill();c.shadowBlur=0;
    if(heavy){c.beginPath();c.arc(b.x,b.y,11,0,Math.PI*2);c.strokeStyle='#c5a6ff';c.lineWidth=2;c.stroke();}
  }
  // Short, readable impact rings; effects are serialized for nearby-play guests.
@@ -1056,7 +1078,7 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  c.scale(mw/worldW,mh/worldH);c.fillStyle='#19313e';c.fillRect(0,0,worldW,worldH);
  c.fillStyle='#789ba7';for(const w of wallSet)c.fillRect(w.x,w.y,w.w,w.h);if(isPilotMatch()){for(const v of state.vehicles)if(v.occupant===-1&&v.armor>0){c.fillStyle=v.type==='mech'?'#d7a8ff':'#74e0a6';c.fillRect(v.x-28,v.y-28,56,56);}}
  if(state.vehicleBeacon?.ttl>0){c.strokeStyle='#fff6bf';c.lineWidth=19;c.beginPath();c.arc(state.vehicleBeacon.x,state.vehicleBeacon.y,55+Math.sin(visualClock*6)*15,0,Math.PI*2);c.stroke();}
- for(let i=0;i<state.tanks.length;i++){if(state.lives[i]<=0)continue;const t=state.tanks[i],me=mode==='guest'?1:0;if(i!==me&&Math.hypot(t.x-state.tanks[me].x,t.y-state.tanks[me].y)>400)continue;c.beginPath();c.arc(t.x,t.y,37,0,Math.PI*2);c.fillStyle=colors[i];c.fill()}
+ for(let i=0;i<state.tanks.length;i++){if(state.lives[i]<=0)continue;const t=state.tanks[i],me=mode==='guest'?1:0;if(i!==me&&Math.hypot(t.x-state.tanks[me].x,t.y-state.tanks[me].y)>400)continue;c.beginPath();c.arc(t.x,t.y,37,0,Math.PI*2);c.fillStyle=combatColor(i);c.fill()}
  // Nearby hostile gunfire briefly appears as a *rough* sound ring, not a permanent wallhack.
  const local=state.tanks[me];if(local)for(const fx of (state.fxEvents||[])){if(fx.kind!=='shot'||!(fx.ttl>0)||!Number.isInteger(fx.owner)||fx.owner<0||fx.owner>=state.tanks.length||friendly(fx.owner,me))continue;
    if(Math.hypot(fx.x-local.x,fx.y-local.y)>1000)continue;
