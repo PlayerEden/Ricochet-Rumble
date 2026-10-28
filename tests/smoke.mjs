@@ -1353,6 +1353,23 @@ console.log('PASS pilot prototype visibility: label, arrow, shield and locator c
  assert.equal(st().tanks.length,3);
  node('bot-count').value='0';api.newMatch('solo');
  assert.equal(st().tanks.length,1,'team free-roam with zero bots remains no-bot practice');
+ // Verify the helmet/vest/shoulder ARMS are visibly team-painted at source
+ // geometry level, not merely surrounded by a colored selection ring.
+ const drawn=[];
+ const painter=new Proxy({save(){},restore(){},translate(){},scale(){},beginPath(){},
+  moveTo(){},lineTo(){},closePath(){},fill(){},fillRect(){}},
+  {get(o,k){return o[k]},set(o,k,v){if(k==='fillStyle')drawn.push(v);o[k]=v;return true}});
+ api.drawTopPilot(painter,'#46d2f5',false,0,0,0,'fieldgrid.standard',true);
+ assert.ok(drawn.filter(color=>color==='#46d2f5').length>=5,'team blue covers multiple full armor pieces');
+ drawn.length=0;
+ api.drawTopPilot(painter,'#fc856e',false,0,0,0,'fieldgrid.standard',true);
+ assert.ok(drawn.filter(color=>color==='#fc856e').length>=5,'team red covers helmet, vest, shoulders and forearms');
+ drawn.length=0;
+ api.drawTopPilot(painter,'#46d2f5',false,0,0,0,'fieldgrid.standard',false);
+ assert.ok(drawn.includes('#607a85'),'FFA keeps approved Lab E neutral steel operator art');
+ drawn.length=0;
+ api.drawTopPilot(painter,'#46d2f5',false,0,0,0,'fieldgrid.moss',true);
+ assert.ok(drawn.includes('#71866f'),'future explicit skin retains independent armor material');
  node('bot-count').value='4';
 }
 console.log('PASS Team Survival: real BLUE allies, RED opponents, mirrored tank/pilot material IDs, enemy-only HUD and team-win results.');
