@@ -1,0 +1,67 @@
+name: Archive exact QA-tested Sector Rebound tactical tank AIM Android APK
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/archive-tactical-aim-v0930.yml']
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: archive-tactical-aim-v0930
+  cancel-in-progress: false
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Verify SHA and retrieve original successful Android debug APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          PROOF="$(gh run view 40641075963 --repo "$REPO" --json conclusion,headSha --jq '.conclusion + " " + .headSha')"
+          test "$PROOF" = "success 916b402e87395b1912fabcee94a36982093e1f36"
+          gh run download 40641075963 --repo "$REPO" --name debug-apk-40641075963 --dir tested-apk
+          gh run download 40641075963 --repo "$REPO" --name sector-rebound-qa-40641075963-1 --dir qa-screenshots
+          FILE="$(find tested-apk -type f -name 'app-debug.apk' -print -quit)"
+          test -s "$FILE"
+          cp "$FILE" sector-rebound-v0.9.30-tactical-vehicle-aim-debug.apk
+          (cd qa-screenshots && zip -q -r ../sector-rebound-v0.9.30-tactical-aim-qa.zip .)
+          sha256sum sector-rebound-v0.9.30-tactical-vehicle-aim-debug.apk sector-rebound-v0.9.30-tactical-aim-qa.zip > tactical-aim-sha256.txt
+      - name: Publish immutable experimental Android release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TAG=v0.9.30-tactical-vehicle-aim-test
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then echo "Release exists, refusing overwrite"; exit 1; fi
+          cat > release-notes.md <<'EOF'
+          # Sector Rebound v0.9.30 — Tactical Ricochet Movement + Stationary AIM
+
+          **Experimental Android debug APK. NOT merged to stable main or signed for Google Play.** Built to compare against the still-available [v0.9.29 scored vehicle FFA](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.29-scored-vehicle-ffa-test).
+
+          ## What's changed (SCORED VEHICLE FREE-FOR-ALL TEST mode only)
+
+          - Player tank target speed **222 → 185** (17% slower), bot tank **178 → 152** (~15% slower). Mech retains its existing 0.76x movement factor.
+          - Tank and mech hull turn cap **12 → 5.5 rad/s** (~688 → ~315 degrees/s), for human and bots alike.
+          - **New AIM control while driving:** On the right side of the screen, press and drag the small blue AIM pad in the direction you want the tank/mech to face. The hull pivots **while you remain stationary, without firing or consuming a shell slot**. Release AIM to keep the direction, then tap/hold FIRE to send an intentional shot. You can still use FIRE and drag it while shooting if you prefer.
+          - Tanks now move about **2.24 times slower than their own shells**, compared with the old 1.87 ratio. Tank shells still move 415 units/s and persist 2.55 seconds; default 4 simultaneous shots, 0.36-second cooldown and up to 5 wall bounces **unchanged**.
+          - Pilot-only CQC retains the previously approved FIRE-drag control feel; classic finite-life Solo/Team Survival and LAN vehicle speeds/aim are **not** modified. Scored vehicle FFA still uses 10 true pilot KOs/4 active minutes, no KO on armor break/ejection, safe pilot respawns and NEXT MATCH new procedural sectors.
+
+          ## Actual source verification
+
+          - Fast [300-seed & scored/Survival regressions PASS 40641076005](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40641076005).
+          - Full [real Chromium right-AIM press/drag/release, three landscape viewport visual tests, browser/Android assets, Android debug APK + unsigned AAB PASS 40641075963](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40641075963).
+          - The APK is copied **byte-for-byte without rebuilding or resigning** from that successful workflow, on exact runtime/test SHA `916b402e87395b1912fabcee94a36982093e1f36`. QA screenshot ZIP and SHA-256 manifest included.
+          - [DRAFT feature PR #48](https://github.com/PlayerEden/Ricochet-Rumble/pull/48) built over deliberately scoped vehicle tempo [PR #47](https://github.com/PlayerEden/Ricochet-Rumble/pull/47).
+          - The first full browser run caught a missing CSS pointer-event exemption on AIM. It was fixed, retested, and the **final** build passed genuine pointer input checks.
+
+          ## What to report from your phone
+
+          Compare v0.9.30 with v0.9.29: Does tank movement feel more intentional or just sluggish? Can you hold still and set up a ricochet angle using **AIM**, then tap **FIRE**? Is the AIM pad comfortable in landscape or too crowded? Does 10 true pilot KOs/4min now feel too slow? If this trial feels right, we can introduce consistent handling presets to other modes later.
+
+          **Limitations:** No physical phone acceptance of these experimental controls yet, no 50+ complete bot-match pacing results, production signing, reliable APK update migration or scored online PvP. Existing [v0.9.29 vehicle FFA](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.29-scored-vehicle-ffa-test) and owner-positive [v0.9.28 CQC](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.28-cqc-aim-feel-test) remain preserved for comparison. Debug APK cert may differ from previous builds; uninstall can erase local settings.
+          EOF
+          gh release create "$TAG" sector-rebound-v0.9.30-tactical-vehicle-aim-debug.apk sector-rebound-v0.9.30-tactical-aim-qa.zip tactical-aim-sha256.txt --repo "$REPO" --target 916b402e87395b1912fabcee94a36982093e1f36 --title 'Sector Rebound v0.9.30 — Tactical Ricochet & Stationary AIM Android Test' --notes-file release-notes.md --prerelease
