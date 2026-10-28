@@ -62,6 +62,12 @@ Option B: vehicles also carry, but flag position is highly visible and mobility 
 
 Prototype and test one rule first. Two actual, reachable team flags; drop/return timer; score and UI; objective-aware bots; validated host/guest replication. No gimmicky extra systems until this works.
 
+## Custom Match / configurable casual sessions (2026-10-27 owner direction)
+
+**Design request, NOT implemented:** Add **Custom Match** as a menu choice independent of Quick Play, so players can intentionally choose a released base mode, field/maze size, bots and skills, available life and shell settings, and (later, once actual scored modes exist) real score/time limits and respawns. [Dedicated feature issue #38](https://github.com/PlayerEden/Ricochet-Rumble/issues/38).
+
+Start by reusing real engine-supported settings: maps small (9×6), standard (13×9), large (18×12); 0–4 bots; relaxed/normal/challenge AI; finite life choices 2/3/5; shell limits. **Do not promise XL, 5+ bots/3v3, selectable scored limits, CQC pilot-only, vehicle restrictions or LAN hosting before their engine systems and QA exist.** Clearly separate friendly Blue/Red assignment from bot count and show honest player/AI team sizes. Show a human-readable rules preview before Deploy and reject impossible combinations. Non-ranked custom sessions and optional later named offline presets should **not alter saved Quick Play rotation**. After Action should show **NEW SECTOR — SAME RULES**, EDIT RULES, MAIN MENU rather than shuffle a mode. Replay exact seed as optional future deterministic challenge only. Version and validate custom saves/configurations, preserve fair procedural spawns and rollback, then add configurable scored rules after those modes actually ship. Make skill/game feel delightful without an overloaded menu: advanced controls collapsed by default.
+
 ## Quick Play as an ongoing session
 
 Winning or losing a battle must **not** automatically return the player to the main menu. Show a mode-appropriate AFTER ACTION summary, followed by **NEXT MATCH** (chosen from enabled mode selections, using a fair shuffled rotation with no immediate repeat when possible) and **MAIN MENU**. The choice is always voluntary; another match never begins automatically. Player session totals continue across completed rounds; each match keeps its separate verified stats. For LAN, the host selects the next mode/maze and the guest waits or marks ready.
