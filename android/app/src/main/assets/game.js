@@ -494,14 +494,32 @@ function botInput(i,dt){
  const chasePace=choice.kind==='engage'&&hasLine&&enemyDist<115?pace*.34:pace;
  return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,fire:Math.abs(delta)<aim&&hasLine,bot:true};
 }
+// One shared local-space pistol muzzle anchor, used by BOTH art and physics.
+// +X is actor facing; +Y is the tiny visual hand offset in top-down view.
+const PILOT_MUZZLE_X=24,PILOT_MUZZLE_Y=2;
+function pilotMuzzlePoint(t){
+ const forward=Math.cos(t.a),side=Math.sin(t.a);
+ return {x:t.x+forward*PILOT_MUZZLE_X-side*PILOT_MUZZLE_Y,
+         y:t.y+side*PILOT_MUZZLE_X+forward*PILOT_MUZZLE_Y};
+}
 function shoot(owner){if(state.lives[owner]<=0)return false;
  const isFoot=isPilotMatch()&&state.tanks[owner].onFoot;
  const v=currentVehicle(state.tanks[owner]),def=vehicleDef(v);const cap=activeBulletCap(state.tanks[owner]);if(state.bullets.filter(b=>b.owner===owner&&b.life>0).length>=cap)return false;
  const t=state.tanks[owner],dx=Math.cos(t.a),dy=Math.sin(t.a);
- // Trace the barrel from the tank toward the muzzle. A tank beside a wall
- // must not launch its shell on the opposite side of that wall.
+ // Trace the visible weapon path, not the middle of the operator's head.
+ // A muzzle too close to solid cover stops at the last unobstructed point,
+ // preventing an offset pistol from firing through walls.
  let x=t.x+dx*(isFoot?7:12),y=t.y+dy*(isFoot?7:12);
- for(let distance=isFoot?9:14;distance<=(isFoot?17:34);distance+=2){const bx=t.x+dx*distance,by=t.y+dy*distance;if(blocked(bx,by,isFoot?3:5))break;x=bx;y=by;}
+ if(isFoot){
+  const muzzle=pilotMuzzlePoint(t);
+  for(let k=1;k<=12;k++){
+   const bx=t.x+(muzzle.x-t.x)*k/12,by=t.y+(muzzle.y-t.y)*k/12;
+   if(blocked(bx,by,3))break;
+   x=bx;y=by;
+  }
+ }else{
+  for(let distance=14;distance<=34;distance+=2){const bx=t.x+dx*distance,by=t.y+dy*distance;if(blocked(bx,by,5))break;x=bx;y=by;}
+ }
  t.shield=0; // Shooting cancels spawn/ejection immunity.
  const speed=isFoot?475:def.projectileSpeed;const baselineLife=isFoot?.82:v?.type==='mech'?2.05:2.55;
  const rapid=t.powerTimer>0&&t.powerType==='rapid';const shellLife=rapid&&!isFoot?baselineLife*.68:baselineLife;
@@ -773,48 +791,45 @@ function drawLobbyPreview(dt){
  c.globalAlpha=1;
 }
 function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
- // FIELDGRID LAB B -- STRICT 90-DEGREE OVERHEAD, NOT 2.5D / 3/4.
- // Only top-of-helmet, shoulders, small upper-back and hands are visible.
- // +X is the aiming heading; full character rotates in the world renderer.
- // No exposed horizontal legs, upright torso face or front-facing visor.
- const swing=clamp(stride,-3,3)*.22;
+ // LAB C: STRICT 90-DEGREE OVERHEAD TWO-HAND PISTOL STANCE.
+ // Hands connect visibly to weapon, with helmet TOP hiding the chest.
+ // No front-facing torso, dangling legs, tilted camera or center-spawned shot.
+ const sway=clamp(stride,-3,3)*.15;
  c.save();c.translate(-recoil*.15,bob*.25);
- // A small soft ground shadow is behind the head/shoulders, never a cockpit.
- c.fillStyle='#081924';
- c.beginPath();c.arc(-2,0,14,0,Math.PI*2);c.fill();
- // Compact top surface of vest: head occludes most of it from straight above.
- c.fillStyle='#263c48';
- c.fillRect(-12,-8,14,16);
- c.fillStyle='#506671';c.fillRect(-11,-5,5,10);
- // Left and right shoulders are visibly separated from the helmet.
+ // Small, compact back beneath a dominant helmet.
+ c.fillStyle='#071b25';c.beginPath();c.arc(-2,0,14,0,Math.PI*2);c.fill();
+ c.fillStyle='#263f49';c.fillRect(-11,-8,13,16);
+ c.fillStyle='#6d8790';c.fillRect(-10,-5,3,10);
+ // Two shoulder caps and both forearms form a recognizable braced V.
  for(const side of [-1,1]){
-  c.save();c.scale(1,side);c.translate(-swing*side,0);
-  c.fillStyle='#0b202b';
-  c.beginPath();c.arc(-5,12,6,0,Math.PI*2);c.fill();
-  c.fillStyle='#58717b';
-  c.beginPath();c.arc(-5,12,4.7,0,Math.PI*2);c.fill();
-  c.fillStyle=paint;
-  c.fillRect(-9,10,4,4); // compact team-color shoulder marking
-  c.fillStyle='#334d57';
-  c.fillRect(0,10,5,4); // hand/forearm barely visible from overhead
+  c.save();c.scale(1,side);
+  c.translate(-sway*side,0);
+  c.fillStyle='#0a202c';c.beginPath();c.arc(-5,12,6,0,Math.PI*2);c.fill();
+  c.fillStyle='#607983';c.beginPath();c.arc(-5,12,4.8,0,Math.PI*2);c.fill();
+  c.fillStyle=paint;c.fillRect(-9,10,4,3);
+  // Upper arm bends outward before coming inward to the pistol grip.
+  c.fillStyle='#142f39';
+  c.beginPath();c.moveTo(-3,10);c.lineTo(2,14);c.lineTo(11,8);
+  c.lineTo(17,4);c.lineTo(13,1);c.lineTo(7,5);
+  c.lineTo(-2,8);c.closePath();c.fill();
+  c.fillStyle='#729096';
+  c.beginPath();c.moveTo(1,11);c.lineTo(4,11);
+  c.lineTo(13,5);c.lineTo(13,7);c.lineTo(5,13);c.closePath();c.fill();
+  c.fillStyle='#a1b9b5';c.fillRect(13,3,4,3); // both gloves contact the gun
   c.restore();
  }
- // One large, round *top* of helmet dominates the character.
- c.fillStyle='#081a25';
- c.beginPath();c.arc(2,0,11.1,0,Math.PI*2);c.fill();
- c.fillStyle='#6c858c';
- c.beginPath();c.arc(2,0,9.2,0,Math.PI*2);c.fill();
- // Shaded patch on the helmet's TOP, not a face seen from the side.
- c.fillStyle='#91a7aa';
- c.beginPath();c.arc(-1,-3,4.2,0,Math.PI*2);c.fill();
- c.fillStyle='#365560';
- c.fillRect(8,-3,2,6); // tiny bearing/notch shows facing direction
- // Hand-held sidearm stays small and OFFSET; never crosses head center.
- c.fillStyle='#0c2833';c.fillRect(5,11,11,3);
- c.fillStyle='#9bc1ba';c.fillRect(12,11,3,2);
+ // Head from the top, on top of arm roots. No front/profile face.
+ c.fillStyle='#071b26';c.beginPath();c.arc(2,0,11.1,0,Math.PI*2);c.fill();
+ c.fillStyle='#6b858d';c.beginPath();c.arc(2,0,9.2,0,Math.PI*2);c.fill();
+ c.fillStyle='#93aaad';c.beginPath();c.arc(-1,-3,4,0,Math.PI*2);c.fill();
+ c.fillStyle='#345461';c.fillRect(8,-3,2,6); // directional helmet notch
+ // Compact actual sidearm. Muzzle equals physics anchor exactly.
+ c.fillStyle='#081f2b';c.fillRect(14,0,11,4);
+ c.fillStyle='#8cb1b3';c.fillRect(17,0,6,1.5);
+ c.fillStyle='#1d3944';c.fillRect(16,4,4,3);
+ c.fillStyle='#e1f3d8';c.fillRect(PILOT_MUZZLE_X-1,PILOT_MUZZLE_Y-1,2,2);
  if(shooting){
-  c.fillStyle='#ffdaa0';
-  c.beginPath();c.arc(19,12,2.1,0,Math.PI*2);c.fill();
+  c.fillStyle='#ffdaa0';c.beginPath();c.arc(PILOT_MUZZLE_X+2,PILOT_MUZZLE_Y,2.1,0,Math.PI*2);c.fill();
  }
  c.restore();
 }

@@ -223,10 +223,10 @@ console.log('PASS v0.9.4 visual clarity: pilot duel advantage, tactical sidearm,
  assert.equal(mechMove[0].x+mechMove[1].x,mechIdle[0].x+mechIdle[1].x,'walking gait remains centered');
  // Strict overhead view: head/shoulders only. Legs are intentionally NOT visible.
  const idle=geom('pilot',0),moving=geom('pilot',2);
- assert.ok(idle.some(o=>o.w===14&&o.h===16),'small upper-back shape exists under helmet');
+ assert.ok(idle.some(o=>o.w===13&&o.h===16),'small upper-back shape exists under helmet');
  assert.ok(!idle.some(o=>o.w===12&&o.h===6),'no exposed crawling-legs geometry');
- assert.equal(idle.filter(o=>o.w===4&&o.h===4).length,2,'two small team shoulder patches');
- assert.equal(moving.filter(o=>o.w===4&&o.h===4).length,2,'shoulder markings survive animated pose');
+ assert.equal(idle.filter(o=>o.w===4&&o.h===3).length,2,'two compact team shoulder patches');
+ assert.equal(moving.filter(o=>o.w===4&&o.h===3).length,2,'shoulder markings survive animated pose');
 }
 // Emergency ejection is a cosmetic event, not damage to pilot lives.
 click('solo');const v0=st().vehicles[st().tanks[0].vehicleId],pilot=st().tanks[0],lives=st().lives[0];
@@ -1194,38 +1194,57 @@ console.log('PASS v0.9.22-dev5 small vehicle-only pullback, pilot preserved and 
 console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real rematches, fresh seeds and true frozen After Action.');
 
 
-// v0.9.23 Lab B -- test actual TOP-DOWN construction, no low-crawl sprite.
+// v0.9.23 LAB C: top-down two-arm firing pose + rotated muzzle launch.
 {
- const api=win.__test;
- const calls=[];
- const artist=new Proxy({
+ const api=win.__test,calls=[];
+ const painter=new Proxy({
   save(){calls.push(['save'])},restore(){calls.push(['restore'])},
-  translate(...v){calls.push(['translate',...v])},scale(...v){calls.push(['scale',...v])},
-  beginPath(){},closePath(){},moveTo(...v){calls.push(['moveTo',...v])},
-  lineTo(...v){calls.push(['lineTo',...v])},fill(){},stroke(){},
-  fillRect(...v){calls.push(['rect',...v])},
-  arc(...v){calls.push(['arc',...v])}
- },{get(t,k){return t[k]},set(t,k,v){t[k]=v;return true}});
- api.drawTopPilot(artist,'#46d2f5',false,-3,0,0);
- const first=calls.slice();
- const arcs=first.filter(x=>x[0]==='arc');
- assert.ok(arcs.some(x=>x[1]===2&&x[2]===0&&x[3]===11.1),'helmet top is dominant round mass, centered in footprint');
- assert.ok(arcs.filter(x=>x[1]===-5&&x[2]===12).length===4,'distinct two shoulder forms in mirrored coordinates');
- assert.ok(first.some(x=>x[0]==='rect'&&x[1]===-12&&x[2]===-8&&x[3]===14&&x[4]===16),'only short upper back below helmet');
- assert.ok(first.some(x=>x[0]==='rect'&&x[1]===5&&x[2]===11&&x[3]===11&&x[4]===3),'small sidearm, not centerline cannon');
- assert.equal(first.filter(x=>x[0]==='rect'&&x[1]<-16).length,0,'no trailing horizontal boots / prone silhouette');
- assert.ok(!first.some(x=>x[0]==='rect'&&x[3]>18),'no long horizontal turret body or limb');
- const prev=calls.length;
- api.drawTopPilot(artist,'#fc856e',true,3,.2,0);
- assert.ok(calls.length>prev,'walking/shooting pose still animates');
- assert.ok(calls.some(x=>x[0]==='arc'&&x[1]===19&&x[2]===12&&x[3]===2.1),'muzzle flash follows offset handgun');
- assert.equal(calls.filter(x=>x[0]==='save').length,calls.filter(x=>x[0]==='restore').length,'canvas transform stack remains balanced');
- assert.ok(calls.every(x=>x.slice(1).every(n=>typeof n!=='number'||Number.isFinite(n))),'no invalid geometry');
- assert.equal(api.unitTargetZoom({onFoot:true}),1.07,'pilot camera remains locked');
- assert.equal(api.unitTargetZoom({onFoot:false,vehicleId:null}),1.00,'fallback camera unchanged');
+  translate(...a){calls.push(['translate',...a])},
+  scale(...a){calls.push(['scale',...a])},
+  beginPath(){},closePath(){},moveTo(...a){calls.push(['move',...a])},
+  lineTo(...a){calls.push(['line',...a])},fill(){},stroke(){},
+  fillRect(...a){calls.push(['rect',...a])},
+  arc(...a){calls.push(['arc',...a])}
+ },{get(obj,key){return obj[key]},set(obj,key,val){obj[key]=val;return true}});
+ api.drawTopPilot(painter,'#46d2f5',false,1,0,0);
+ assert.ok(calls.some(x=>x[0]==='arc'&&x[1]===2&&x[2]===0&&x[3]===11.1),'dominant helmet top remains');
+ assert.equal(calls.filter(x=>x[0]==='arc'&&x[1]===-5&&x[2]===12).length,4,'both shoulder caps visibly separate');
+ assert.equal(calls.filter(x=>x[0]==='rect'&&x[1]===13&&x[2]===3&&x[3]===4).length,2,'two visible hands brace the sidearm');
+ assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===14&&x[2]===0&&x[3]===11),'pistol projects FORWARD beyond helmet');
+ assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===23&&x[2]===1),'pistol muzzle anchor drawn exactly at 24,2');
+ assert.ok(!calls.some(x=>x[0]==='rect'&&x[3]>17),'no long crawling legs or fake 2.5D body');
+ api.drawTopPilot(painter,'#fc856e',true,0,.2,0);
+ assert.ok(calls.some(x=>x[0]==='arc'&&x[1]===26&&x[2]===2),'muzzle flash remains aligned with tip');
+ assert.equal(calls.filter(x=>x[0]==='save').length,calls.filter(x=>x[0]==='restore').length,'canvas transform balance');
+ // Test true gun-origin fire on four rotations from an obstacle-free point.
+ api.setPlaylistModes(['survival_ffa']);
+ node('bot-count').value='0';node('map-size').value='large';
+ api.newMatch('solo');
+ const shooter=st().tanks[0];shooter.onFoot=true;shooter.vehicleId=null;
+ const ww=api.world[0],hh=api.world[1];let clear=null;
+ for(let y=90;y<hh-90&&!clear;y+=40)for(let x=90;x<ww-90&&!clear;x+=40)
+   if([0,Math.PI/2,Math.PI,Math.PI*1.5].every(a=>{
+     for(let k=0;k<=12;k++){
+      const bx=x+(Math.cos(a)*24-Math.sin(a)*2)*k/12;
+      const by=y+(Math.sin(a)*24+Math.cos(a)*2)*k/12;
+      if(api.blocked(bx,by,4))return false;
+     }
+     return true;
+   }))clear={x,y};
+ assert.ok(clear,'test finds a walkable open square with 360-degree muzzle clearance');
+ shooter.x=clear.x;shooter.y=clear.y;shooter.shield=0;
+ for(const angle of [0,Math.PI/2,Math.PI,3*Math.PI/2]){
+  st().bullets.length=0;shooter.a=angle;
+  assert.equal(api.shoot(0),true,'every compass direction can shoot');
+  const b=st().bullets.at(-1),mx=clear.x+Math.cos(angle)*24-Math.sin(angle)*2,
+   my=clear.y+Math.sin(angle)*24+Math.cos(angle)*2;
+  assert.ok(Math.hypot(b.x-mx,b.y-my)<1e-7,'bullet starts at rotated hand-held muzzle, NOT head center');
+  assert.ok(Math.hypot(b.x-shooter.x,b.y-shooter.y)>22,'round never starts inside helmet');
+  assert.ok(Math.abs(b.vx-Math.cos(angle)*475)<1e-7&&Math.abs(b.vy-Math.sin(angle)*475)<1e-7,'direction and speed unchanged');
+ }
+ assert.equal(api.unitTargetZoom({onFoot:true}),1.07,'approved pilot camera fixed');
 }
-console.log('PASS pilot LAB B strict overhead top-of-head + shoulders, minimal weapon, no crawling limbs, camera preserved.');
-
+console.log('PASS pilot Lab C: both hands brace pistol, 4-axis muzzle-origin shots, no false-depth body.');
 // Prototype A field audit: human silhouette must not be occluded by the
 // previous oversized pilot locator, P1 label and selected-player triangle.
 {
