@@ -92,6 +92,9 @@ const colors=PALETTE,pressed=new Set(),touch=new Set();
 const stick={x:0,y:0,pointerId:null};
 // CQC mobile: right FIRE thumb can drag to aim while left thumb steers.
 const fireAim={pointerId:null,startX:0,startY:0,x:0,y:0,active:false};
+// Tactical scored-FFA test: let bounced shells work ahead of the tank.
+// Other modes and all shell speeds, bounce rules and caps remain untouched.
+const SCORED_FFA_VEHICLE_PACE=Object.freeze({human:185,bot:152,turnRate:5.5});
 const CQC_HUMAN_TURN_RATE=6.5; // original movement-driven 12rad/s was too twitchy on phones
 const CQC_PILOT_HIT_RADIUS=17.5; // modestly forgiving for ALL CQC pilots, not homing
 let mode='idle',connected=false,paused=true,lastTime=performance.now(),sendTimer=0,snapshotTimer=0,toastTimer=0,botTimer=0,hudTimer=0;
@@ -436,13 +439,18 @@ function circlesRect(x,y,r,w){const nx=clamp(x,w.x,w.x+w.w),ny=clamp(y,w.y,w.y+w
 function blocked(x,y,r=21){return x<r+13||x>worldW-r-13||y<r+13||y>worldH-r-13||nearWall(x,y,r)}
 function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=clamp(Number(inp.moveX)||0,-1,1),my=clamp(Number(inp.moveY)||0,-1,1);let mag=Math.hypot(mx,my);
  if(mag>1){mx/=mag;my/=mag;mag=1}if(mag<.09){mx=0;my=0;mag=0}
- const speed=(t.onFoot?(inp.bot?194:268):(inp.bot?178:222)*vehicleDef(currentVehicle(t)).speed)*(t.powerType==='turbo'&&t.powerTimer>0?1.48:1),blend=Math.min(1,dt*(mag?9:13));t.vx+=(mx*speed-t.vx)*blend;t.vy+=(my*speed-t.vy)*blend;
+ const tacticalVehicle=state?.config?.matchModeId==='scored_ffa'&&!t.onFoot;
+ const baseVehicleSpeed=tacticalVehicle?(inp.bot?SCORED_FFA_VEHICLE_PACE.bot:SCORED_FFA_VEHICLE_PACE.human):(inp.bot?178:222);
+ const speed=(t.onFoot?(inp.bot?194:268):baseVehicleSpeed*vehicleDef(currentVehicle(t)).speed)*(t.powerType==='turbo'&&t.powerTimer>0?1.48:1),blend=Math.min(1,dt*(mag?9:13));t.vx+=(mx*speed-t.vx)*blend;t.vy+=(my*speed-t.vy)*blend;
  // CQC pilot controls: move and face together by default; when the player
  // drags FIRE, the right thumb independently controls facing. Bots and all
  // existing tank/mech/Survival controls keep their previous 12rad/s behavior.
  const cqcHuman=isScoredMatch()&&t.onFoot&&i===0&&!inp.bot;
- const aimed=cqcHuman&&Number.isFinite(inp.aimX)&&Number.isFinite(inp.aimY)&&Math.hypot(inp.aimX,inp.aimY)>.6;
- if(mag||aimed){const target=aimed?Math.atan2(inp.aimY,inp.aimX):Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a)),maxTurn=dt*(cqcHuman?CQC_HUMAN_TURN_RATE:12);t.a+=clamp(diff,-maxTurn,maxTurn)}
+ // In scored vehicle FFA, dragging FIRE independently aims the whole hull
+ // even when the left movement stick is at rest. CQC behavior is unchanged.
+ const independentAim=cqcHuman||(tacticalVehicle&&i===0&&!inp.bot);
+ const aimed=independentAim&&Number.isFinite(inp.aimX)&&Number.isFinite(inp.aimY)&&Math.hypot(inp.aimX,inp.aimY)>.6;
+ if(mag||aimed){const target=aimed?Math.atan2(inp.aimY,inp.aimX):Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a)),maxTurn=dt*(cqcHuman?CQC_HUMAN_TURN_RATE:tacticalVehicle?SCORED_FFA_VEHICLE_PACE.turnRate:12);t.a+=clamp(diff,-maxTurn,maxTurn)}
  const nx=t.x+t.vx*dt,ny=t.y+t.vy*dt;
  const radius=t.onFoot?10:21;
  const collides=(x,y)=>blocked(x,y,radius)||state.tanks.some((other,j)=>{
