@@ -204,9 +204,28 @@ try{
  assert.equal(ffaStart.clock,240);
  assert.equal((await page.locator('#mode-label').textContent()).trim(),'SCORED FREE-FOR-ALL');
  assert.equal((await page.locator('#score-clock').textContent()).trim(),'04:00');
- assert.equal(await page.locator('#vehicle-aim').isVisible(),true,'scored vehicle shows deliberate AIM button');
+ assert.equal(await page.locator('#vehicle-aim').isVisible(),true,'scored vehicle shows deliberate AIM pad');
+ // Touch geometry matters more than a screenshot: no overlap, thumb-sized
+ // independent controls, and no HUD/edge clipping across phone landscapes.
+ for(const [vw,vh] of [[740,360],[915,412],[1280,720]]){
+  await page.setViewportSize({width:vw,height:vh});
+  const layout=await page.evaluate(()=>{
+   const bounds=id=>{const b=document.querySelector(id)?.getBoundingClientRect();return b?{x:b.x,y:b.y,width:b.width,height:b.height,right:b.right,bottom:b.bottom}:null};
+   return {aim:bounds('#vehicle-aim'),fire:bounds('.fire-btn'),enter:bounds('#interact-btn'),joy:bounds('#joystick'),hud:bounds('#menu-button'),
+    aimPointer:getComputedStyle(document.getElementById('vehicle-aim')).pointerEvents};
+  });
+  assert.ok(layout.aim.width>=96&&layout.aim.height>=96,'aim thumb pad at least 96px '+vw);
+  assert.ok(layout.fire.width>=64&&layout.fire.height>=64,'FIRE remains large '+vw);
+  assert.ok(layout.enter.height>=42,'vehicle ENTER stays reachable '+vw);
+  assert.ok(layout.aim.right+7<=layout.fire.x,'AIM and FIRE separately spaced for thumb '+vw);
+  assert.ok(layout.aim.y>layout.hud.bottom+20,'main HUD separated from aim controls '+vw);
+  assert.ok(layout.fire.bottom<=vh-2&&layout.aim.bottom<=vh-2,'bottom safe boundary '+vw);
+  assert.ok(layout.joy.right+35<layout.aim.x,'two thumb zones cannot overlap '+vw);
+  assert.equal(layout.aimPointer,'auto','AIM must accept pointer events '+vw);
+ }
+ await page.setViewportSize({width:915,height:412});
  const aimBounds=await page.locator('#vehicle-aim').boundingBox();
- assert.ok(aimBounds?.width>=70&&aimBounds?.height>=32,'mobile vehicle AIM touch pad is reachable');
+ assert.ok(aimBounds?.width>=96&&aimBounds?.height>=96,'vehicle AIM thumb pad is generously sized');
  const aimX=aimBounds.x+aimBounds.width/2,aimY=aimBounds.y+aimBounds.height/2;
  const initialBullets=await page.evaluate(()=>window.__flowQA.state.bullets.length);
  await page.mouse.move(aimX,aimY);await page.mouse.down();
@@ -220,7 +239,10 @@ try{
  assert.ok(activeAim.control.aimY<-.95,'AIM points vehicle upward');
  assert.equal(activeAim.control.fire,false,'independent vehicle AIM must never press FIRE');
  assert.equal(activeAim.bullets,initialBullets,'AIM never consumes scarce projectiles');
+ const moved=await page.locator('#vehicle-aim-knob').evaluate(el=>el.style.transform);
+ assert.ok(moved.includes('calc('),'AIM knob visibly tracks the finger direction');
  await page.mouse.up();
+ assert.equal((await page.locator('#vehicle-aim-knob').evaluate(el=>el.style.transform)),'translate(-50%, -50%)','release visually centers the aim stick');
  assert.equal((await page.evaluate(()=>window.__flowQA.aim)).active,false,'AIM pointer release resets control');
  assert.equal((await page.evaluate(()=>window.__flowQA.aim)).source,null);
  result.steps.push('real scored FFA vehicle AIM pad touch drag: rotation vector without moving, shooting or losing shells');
