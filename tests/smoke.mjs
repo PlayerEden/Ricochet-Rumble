@@ -1686,3 +1686,61 @@ console.log('PASS scored vehicle FFA: tank armor not KO, real ejection, safe pil
  close(pilot.a,6.5*dt,'owner-approved CQC pilot turning unchanged');
 }
 console.log('PASS scored vehicle FFA tactical pacing: 185/152 movement and 5.5rad turns; 415 shell and 2.55s lifetime/4-cap unchanged; original CQC and Survival intact.');
+
+
+// Scored FFA station-keeping design: a dedicated AIM pointer turns the hull
+// *without* allocating shells or forcing a move-stick input. This matters more
+// when the hull is deliberately slower than its ricocheting shells.
+{
+ const api=win.__test,dt=1/60;
+ assert.ok(menuHtml.includes('id="vehicle-aim"'),'dedicated scored vehicle AIM control is shipped');
+ api.newMatch('scored_ffa');
+ const g=st(),pilot=g.tanks[0];
+ assert.equal(node('vehicle-aim').classList.contains('hidden'),false,'vehicle AIM shown only in scored vehicle FFA');
+ pilot.a=0;pilot.vx=0;pilot.vy=0;
+ const count=g.bullets.length;
+ api.beginFireAim({pointerId:42,clientX:300,clientY:190},'aim');
+ assert.equal(api.fireAim.source,'aim');
+ api.updateFireAim({pointerId:42,clientX:304,clientY:191});
+ assert.equal(api.fireAim.active,false,'small touch jitter does not rotate the stationary tank');
+ api.updateFireAim({pointerId:900,clientX:300,clientY:260});
+ assert.equal(api.fireAim.active,false,'other touch fingers must not hijack AIM');
+ api.updateFireAim({pointerId:42,clientX:300,clientY:255});
+ assert.equal(api.fireAim.active,true);
+ const target=api.makeControl(true);
+ assert.equal(target.moveX,0);assert.equal(target.moveY,0);
+ assert.equal(target.fire,false,'AIM drag never consumes an in-flight shell slot');
+ assert.equal(g.bullets.length,count,'no shell created by setting an aim vector');
+ assert.ok(target.aimY>.95&&Math.abs(target.aimX)<.01,'AIM vectors point in chosen direction');
+ api.tankMove(pilot,target,dt,0);
+ assert.ok(Math.abs(pilot.a-5.5*dt)<.000001,'stationary hull pivots at deliberate scored FFA turn cap');
+ assert.equal(pilot.x,g.tanks[0].x,'position is stable when not using movement stick');
+ assert.equal(g.bullets.length,count,'hull pivot has no side-effect shot');
+ const rotated=pilot.a;
+ api.clearFireAim();
+ assert.equal(api.fireAim.source,null);
+ assert.equal(api.makeControl(true).aimX,undefined,'release holds chosen angle until movement/next aim input');
+ assert.equal(api.makeControl(true).fire,false);
+ assert.equal(api.shoot(0),true,'FIRE independently launches a normal tank shell after aiming');
+ assert.equal(g.bullets.length,count+1);
+ assert.ok(Math.abs(g.bullets.at(-1).vx-415*Math.cos(rotated))<.000001,'shell direction follows precisely aimed hull');
+ assert.ok(Math.abs(g.bullets.at(-1).vy-415*Math.sin(rotated))<.000001);
+ const localTank=g.tanks[0],mech=g.vehicles[localTank.vehicleId];
+ mech.type='mech';localTank.a=0;localTank.vx=0;localTank.vy=0;
+ api.beginFireAim({pointerId:43,clientX:300,clientY:190},'aim');
+ api.updateFireAim({pointerId:43,clientX:300,clientY:250});
+ api.tankMove(localTank,api.makeControl(true),dt,0);
+ assert.ok(Math.abs(localTank.a-5.5*dt)<.000001,'same stationary pivot works when occupying a mech');
+ api.releaseControls();
+ assert.equal(api.fireAim.active,false);
+ assert.equal(api.fireAim.source,null);
+ api.newMatch('cqc');
+ assert.equal(node('vehicle-aim').classList.contains('hidden'),true,'vehicle AIM hidden in CQC');
+ api.beginFireAim({pointerId:44,clientX:300,clientY:190},'aim');
+ assert.equal(api.fireAim.pointerId,null,'AIM-only gesture prohibited in pilot-only CQC');
+ api.newMatch('solo');
+ assert.equal(node('vehicle-aim').classList.contains('hidden'),true,'vehicle AIM hidden in ordinary Survival');
+ api.beginFireAim({pointerId:45,clientX:300,clientY:190},'aim');
+ assert.equal(api.fireAim.pointerId,null,'Survival cannot enter experimental aim state');
+}
+console.log('PASS vehicle tactical stationary AIM: held right AIM rotates hull/mech at 5.5rad/s without shots; FIRE shoots in the chosen direction; modes isolated.');
