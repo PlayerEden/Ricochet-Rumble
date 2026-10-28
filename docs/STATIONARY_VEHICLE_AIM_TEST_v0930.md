@@ -14,9 +14,9 @@
 
 ## Engineering acceptance
 
-- [ ] New Node tests actually exercise stationary tank and mech rotation with AIM-only control, 14px dead zone, no unintended FIRE/projectile, unchanged shell velocity/cap/cooldown, 300 seeded mazes and full previous CQC/Survival/FFA regressions.
-- [ ] Real Chromium pointerdown→pointermove→pointerup on actual AIM pad; confirm no bullets and correct aim vector in 915×412 view and screenshot checks at 740×360, 915×412, 1280×720.
-- [ ] Full paired Android debug APK and unsigned AAB QA from **same exact tested commit**; only then publish immutable test APK without rebuilding.
+- [x] [Fast CI 40641076005 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40641076005), exact gameplay SHA `916b402e87395b1912fabcee94a36982093e1f36`. Actual tank/mech stationary aim, zero fired projectiles, unchanged shell speed and caps, 300 maze seeds and legacy CQC/Survival/FFA all verified.
+- [x] [Full actual Chromium 40641075963 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40641075963), real button pointer capture/drag/release and no fire, all three mobile landscape screens. First run 40640602673 failed because new AIM pad inherited disabled pointer events from fullscreen control-zone; fixed specifically for AIM and verified by the second passing live browser run.
+- [x] [Android debug APK and unsigned release AAB 40641075963 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40641075963), exact gameplay SHA `916b402e87395b1912fabcee94a36982093e1f36`, byte-identical web and Android game/HTML/CSS. Permanent APK release publication handled separately; note source binary SHA must not be confused with documentation-only follow-up commits.
 - [ ] User physically tests whether slower movement and turn can still keep battles energetic, whether AIM+FIRE arrangement fits their hands, whether they can plan a bounce without automatically firing, and whether the 10-KO / 4min FFA score limit is now too hard.
 - [ ] 50+ true bot matches, real opponent encounters and repeated self-ricochet hit fairness measurement before adopting these values across other modes.
 
@@ -25,3 +25,9 @@
 The player does **not** have an independent rotating turret: the entire hull rotates. We are deliberately trying a full hull bank-shot arcade control, not silently adding a turret mechanic or turning Sector Rebound into Tank Trouble. If the AIM button crowds the right side or creates thumb juggling, revisit right-stick/FIRE control ergonomics rather than simply making shots faster.
 
 **No automatic merge; stable main game v0.9.21 remains safe.** 
+
+## Automated release QA outcome (2026-10-28)
+
+- Full tests are green: [fast run 40641076005](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40641076005) and [real Chromium+Android 40641075963](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40641075963) on **exact built code SHA `916b402e87395b1912fabcee94a36982093e1f36`**. Browser snapshots and original Android artifacts are preserved as Actions outputs (limited retention). Later documentation edits do not modify the proven game binary.
+- An initial real browser run failed because `.battlefield .touch-zone` has `pointer-events:none` for its large non-interactive wrapper and the new AIM child lacked the explicit `pointer-events:auto` used by FIRE. Final matched CSS now grants proper pointer capture to AIM in both browser and Android, and the full Chromium test validates actual press/drag/release + no shell consumption. Do not roll back the CSS exemption.
+- Manual owner Android control-feel and 10-KO / 4-minute scored FFA pacing remain unverified. **Stable main gameplay remains v0.9.21 and upstream gameplay drafts remain unmerged**; don't mistake test APK for a Play production bundle.
