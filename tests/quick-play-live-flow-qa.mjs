@@ -85,10 +85,11 @@ try{
 
  await page.locator('#quick-rematch').click();
  await page.evaluate(()=>window.__flowQA.freeze());
- const after=await page.evaluate(()=>({id:window.__flowQA.state.matchId,seed:window.__flowQA.state.mazeSeed,mode:window.__flowQA.state.config.matchModeId,final:window.__flowQA.state.finalResult,ended:window.__flowQA.state.winner>=0}));
+ const after=await page.evaluate(()=>({id:window.__flowQA.state.matchId,seed:window.__flowQA.state.mazeSeed,mode:window.__flowQA.state.config.matchModeId,bots:window.__flowQA.state.config.botCount,final:window.__flowQA.state.finalResult,ended:window.__flowQA.state.winner>=0}));
  assert.notEqual(after.id,before.id,'NEXT MATCH creates new match ID');
  assert.notEqual(after.seed,before.seed,'NEXT MATCH creates new procedural maze seed');
  assert.notEqual(after.mode,before.mode,'with both modes selected NEXT MATCH does not repeat');
+ assert.equal(after.bots,after.mode==='survival_teams'?2:1,'NEXT MATCH recalculates bot count from user settings for each mode');
  assert.equal(after.final,null,'old result discarded only for next match');
  assert.equal(after.ended,false,'fresh match active');
  assert.equal(await page.locator('#after-action').isVisible(),false,'results close after new match');
