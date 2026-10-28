@@ -1539,3 +1539,98 @@ console.log('PASS playable CQC contract: real 10 pilot KOs, protected safe respa
  api.clearFireAim();
 }
 console.log('PASS CQC aim polish: dual-thumb independent FIRE aim, no tap jitter, slower player turn, all-player fair sidearm radius; survival/tank/bot unchanged.');
+
+
+// Scored vehicle FFA reuses the EXACT CQC scoring kernel, but pilots must
+// first lose occupied armor and survive an actual vehicle ejection. No tank
+// armor chip, vehicle destruction or empty parked tank is ever a player KO.
+{
+ const api=win.__test;
+ assert.ok(menuHtml.includes('data-action="scored_ffa"'),'scored FFA has honest separate test menu choice');
+ api.newMatch('scored_ffa');
+ const m=st(),enemy=m.tanks[1],vehicle=m.vehicles[enemy.vehicleId];
+ assert.equal(m.config.matchModeId,'scored_ffa');
+ assert.equal(m.config.mapSize,'standard');
+ assert.equal(m.config.botCount,3);
+ assert.equal(m.scored.scoreTarget,10);
+ assert.equal(m.scored.clockSeconds,240);
+ assert.equal(m.tanks.length,4);
+ assert.ok(m.tanks.every(t=>!t.onFoot),'vehicle scored FFA starts players inside their tanks');
+ assert.ok(m.vehicles.some(v=>v.type==='mech'),'vehicle FFA includes spare mech');
+ assert.ok(m.vehicles.some(v=>v.type==='tank'&&v.occupant<0),'vehicle FFA has spare tanks');
+ assert.ok(vehicle.armor>0);
+ assert.equal(node('score-clock').textContent,'04:00');
+ assert.equal(node('player0-label').textContent,'YOU KOs');
+ assert.equal(node('mode-label').textContent,'SCORED FREE-FOR-ALL');
+ const hp=vehicle.armor;
+ for(let n=0;n<hp;n++){
+   assert.equal(api.registerHit(0,1),true,'real tank armor impact');
+   assert.equal(m.scored.operatorKOs[0],0,'vehicle armor loss never credits a pilot KO');
+   assert.equal(m.scored.deaths[1],0,'vehicle armor loss never credits pilot death');
+ }
+ assert.equal(vehicle.armor,0);
+ assert.equal(vehicle.occupant,-1);
+ assert.equal(enemy.onFoot,true,'last armor loss ejects the pilot');
+ assert.equal(m.lives[1],1,'ejection keeps pilot alive in scored match');
+ assert.ok(enemy.shield>0,'ejected pilot has an invulnerability window');
+ assert.equal(api.registerHit(0,1),false,'ejection shield cannot yield instant KO');
+ enemy.shield=0;
+ assert.equal(api.registerHit(0,1),true,'actual vulnerable pilot death scores');
+ assert.equal(m.scored.operatorKOs[0],1);
+ assert.equal(m.scored.deaths[1],1);
+ assert.equal(m.kos[0],1);
+ assert.equal(m.lives[1],0,'scored pilot waiting for respawn');
+ assert.equal(node('score0').textContent,1);
+ enemy.respawnWait=0;
+ assert.equal(api.tryCqcRespawn(1),true,'same safe score respawn system handles vehicle FFA');
+ assert.equal(m.lives[1],1);
+ assert.equal(enemy.onFoot,true,'scored pilot recovers on foot, not resurrected in destroyed tank');
+ assert.equal(enemy.vehicleId,null);
+ assert.equal(m.scored.respawns[1],1);
+ assert.equal(m.vehicles[vehicle.id].occupant,-1,'dead pilot never remains attached to a vehicle');
+ const empty=m.vehicles.find(v=>v.occupant===-1&&v.armor>0);
+ assert.ok(empty,'healthy parked ride remains available after a score');
+ const player=m.tanks[0];
+ const pveh=m.vehicles[player.vehicleId];
+ pveh.x=player.x;pveh.y=player.y;pveh.a=player.a;
+ assert.equal(api.tryInteract(0),true,'player can exit tank in scored FFA');
+ assert.equal(player.onFoot,true);
+ player.x=empty.x;player.y=empty.y-45;player.shield=0;
+ // Explicit vehicle bay interaction is permitted when an accessible safe bay exists.
+ assert.equal(api.tryInteract(0),true,'player can re-enter a spare scored FFA tank');
+ assert.equal(player.onFoot,false);
+ assert.equal(empty.occupant,0);
+ // Prevent a phantom KO on a tank even when damaged in a scored match.
+ const before=m.scored.operatorKOs[1];
+ assert.equal(api.creditScoredPilotKO(1,0),false,'scored hits cannot credit an occupied vehicle as operator death');
+ assert.equal(m.scored.operatorKOs[1],before);
+ assert.equal(m.lives[0],1);
+ // The same 10 point target now ends vehicle FFA only on genuine pilot deaths.
+ for(let n=1;n<10;n++){
+   enemy.shield=0;
+   assert.equal(api.registerHit(0,1),true,'scored vehicle FFA real pilot KO '+(n+1));
+   if(n<9){enemy.respawnWait=0;assert.equal(api.tryCqcRespawn(1),true);}
+ }
+ assert.equal(m.finalResult.outcome,'victory');
+ assert.equal(m.finalResult.matchModeId,'scored_ffa');
+ assert.equal(m.finalResult.operatorKOs,10);
+ assert.equal(m.finalResult.reason,'score_target');
+ assert.equal(m.finalResult.durationSeconds,m.scored.elapsedSeconds);
+ const oldSeed=m.mazeSeed,oldMatch=m.matchId;
+ api.resetAll(true);
+ assert.equal(st().config.matchModeId,'scored_ffa','NEXT MATCH retains vehicle FFA');
+ assert.notEqual(st().mazeSeed,oldSeed);
+ assert.notEqual(st().matchId,oldMatch);
+ assert.ok(st().vehicles.length>0,'new scored FFA retains tank and mech spawns');
+ assert.deepEqual([...st().scored.operatorKOs],[0,0,0,0],'new FFA round starts without previous KOs');
+ api.step(240);
+ assert.equal(st().finalResult.outcome,'draw','4-minute no-score expiration is a DRAW');
+ assert.equal(st().finalResult.reason,'time_limit');
+ api.newMatch('cqc');
+ assert.equal(st().config.matchModeId,'cqc');
+ assert.equal(st().vehicles.length,0,'old CQC still absolutely vehicle-free');
+ assert.equal(st().scored.clockSeconds,180,'CQC keeps its own score timer');
+ api.newMatch('solo');
+ assert.equal(st().scored,null,'finite-life Survival unaffected by scored presets');
+}
+console.log('PASS scored vehicle FFA: tank armor not KO, real ejection, safe pilot respawn, vehicle re-entry, real 10-KO finish, 4m draw, next maze, CQC/Survival isolation.');
