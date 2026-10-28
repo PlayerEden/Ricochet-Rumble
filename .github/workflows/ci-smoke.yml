@@ -36,6 +36,8 @@ jobs:
           cmp web/game.js android/app/src/main/assets/game.js
           cmp web/index.html android/app/src/main/assets/index.html
           cmp web/style.css android/app/src/main/assets/style.css
+          cmp web/scored-match.js android/app/src/main/assets/scored-match.js
+          node tests/scored-browser-parity.mjs
       - name: Game regression and seeded combat tests
         run: node tests/smoke.mjs
       - name: Verify pure scored KO, team timeouts and spawn ranking contract
