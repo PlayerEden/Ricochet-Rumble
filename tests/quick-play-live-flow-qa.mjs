@@ -62,7 +62,7 @@ try{
  await page.waitForFunction(()=>!document.querySelector('#menu').classList.contains('hidden')===false);
  await page.evaluate(()=>window.__flowQA.freeze());
  const before=await page.evaluate(()=>({id:window.__flowQA.state.matchId,seed:window.__flowQA.state.mazeSeed,mode:window.__flowQA.state.config.matchModeId,human:window.__flowQA.state.humanCount,bots:window.__flowQA.state.config.botCount}));
- assert.equal(before.bots,1,'one bot from actual settings');
+ assert.equal(before.bots,before.mode==='survival_teams'?2:1,'one-bot Team Survival adds one ally without affecting FFA');
  assert.equal(before.human,1,'solo actual player');
  assert.ok(['survival_ffa','survival_teams'].includes(before.mode),'supported mode shown');
  assert.equal(await page.locator('#after-action').isVisible(),false,'no premature results');
@@ -97,9 +97,15 @@ try{
  const defeat=await page.evaluate(()=>{
   const qa=window.__flowQA,local=qa.state.tanks[0];qa.ejectPilot(0);local.shield=0;
   const hits=[qa.registerHit(1,0)];local.shield=0;hits.push(qa.registerHit(1,0));
+  // In Team Survival the player can be eliminated while BLUE survives:
+  // defeat is not final until the RED side also defeats the last BLUE bot.
+  if(qa.state.config.matchModeId==='survival_teams'){
+   const ally=qa.state.tanks[2];qa.ejectPilot(2);ally.shield=0;
+   hits.push(qa.registerHit(1,2));ally.shield=0;hits.push(qa.registerHit(1,2));
+  }
   return {hits,final:qa.state.finalResult};
  });
- assert.deepEqual(defeat.hits,[true,true]);
+ assert.ok(defeat.hits.length>=2&&defeat.hits.every(Boolean),'each hit is a real combat event');
  assert.equal(defeat.final.outcome,'defeat');
  assert.equal(defeat.final.deaths,2);
  assert.equal(defeat.final.operatorKOs,0);
