@@ -1,0 +1,60 @@
+name: Publish original Lab C2 refined two-handed pilot APK
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/archive-pilot-lab-c2-v0923.yml']
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: pilot-lab-c2-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Download exact successful QA APK/screenshots and verify SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh run view 40611501968 --repo "$REPO" --json conclusion,headSha --jq '"QA: " + .conclusion + " " + .headSha' > provenance.txt
+          grep -Fxq 'QA: success 455fe51736e651741ddb47ee9f07d770d22a6307' provenance.txt
+          gh run download 40611501968 --repo "$REPO" --name pilot-prototype-debug-apk-40611501968 --dir original-apk
+          gh run download 40611501968 --repo "$REPO" --name pilot-silhouette-qa-40611501968 --dir qa
+          APK="$(find original-apk -type f -name 'app-debug.apk' | head -n 1)"
+          test -s "$APK"
+          cp "$APK" sector-rebound-v0.9.23-pilot-lab-c2-twohand-debug.apk
+          for kind in on-foot-idle pilot-aim-east pilot-fire; do
+            SOURCE="$(find qa -type f -path "*/after/915x412-$kind.png" | head -n 1)"
+            test -s "$SOURCE"
+            cp "$SOURCE" "lab-c2-$kind-915x412.png"
+          done
+          (cd qa && zip -q -r ../lab-c2-original-QA.zip .)
+          sha256sum sector-rebound-v0.9.23-pilot-lab-c2-twohand-debug.apk lab-c2-*.png lab-c2-original-QA.zip > lab-c2-checksums.sha256
+      - name: Publish immutable debug-only Lab C2 test prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TAG=v0.9.23-pilot-lab-c2-two-hand-test
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+             echo "Existing tag: refusing destructive overwrite";exit 1
+          fi
+          cat > notes.md <<'EOF'
+          # Sector Rebound Pilot Lab C2 — two-handed true-overhead operator test
+
+          **Unapproved art prototype, NOT Play-ready and NOT merged into main.** The user liked strict overhead head/shoulders in Lab B but wanted arms visibly reaching outward and both hands gripping the weapon, plus bullets launching from the **actual muzzle rather than pilot center**.
+
+          **Source:** [prototype/pilot-two-hand-muzzle-v0923](https://github.com/PlayerEden/Ricochet-Rumble/tree/prototype/pilot-two-hand-muzzle-v0923), exact SHA `455fe51736e651741ddb47ee9f07d770d22a6307`. [Full headless gameplay, Chromium phone screenshot QA and Android debug build 40611501968 PASSED](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40611501968). This APK is the exact artifact from that run, neither rebuilt nor re-signed here. SHA-256 manifest included.
+
+          **What changed vs Lab B:** Head remains strict 90-degree overhead. Two deliberately exposed elbows bend to either side, then both forearms and gloves converge on compact sidearm, with no long crawling legs. A shared local muzzle anchor `(28,2)` drives both canvas barrel tip and rotated physics spawn, plus collision tracing to avoid shooting through walls. **Damage, projectile speed/life/cooldown, player hitboxes, vehicle weapons, modes and locked camera values (pilot 1.07, tank 0.82, mech 0.77) unchanged**. A rifle is NOT a playable option in this build.
+
+          **Review:** Inspect genuine captured 915x412 game screenshots (idle / aim east / fire), or the full multi-resolution Chromium QA ZIP. Play on a physical Android phone: evaluate whether the pose now reads like a two-handed firearm, aim/firing visibly matches barrel in all directions and edge-of-wall shots do not bypass cover. Both arm and visual-size approval remain pending until the owner reports back.
+
+          **APK install warning:** Debug signing certificates may differ between CI runs; Android can reject updating an existing installed game. Uninstalling erases app data/settings. Internal Gradle versionName still `0.9.21-game-feel` even though experimental code is newer. Not a production signing or migration guarantee. Previous [Lab B](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.23-pilot-lab-b-overhead-test) and [v0.9.22 dev5 camera build](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.22-dev5-final-camera-test) remain available as comparison/rollback; [PR #24](https://github.com/PlayerEden/Ricochet-Rumble/pull/24) remains DRAFT and unmerged.
+          EOF
+          gh release create "$TAG" sector-rebound-v0.9.23-pilot-lab-c2-twohand-debug.apk lab-c2-on-foot-idle-915x412.png lab-c2-pilot-aim-east-915x412.png lab-c2-pilot-fire-915x412.png lab-c2-original-QA.zip lab-c2-checksums.sha256 --repo "$REPO" --target 455fe51736e651741ddb47ee9f07d770d22a6307 --title 'Sector Rebound v0.9.23 -- Pilot Lab C2 two-handed overhead Android test' --notes-file notes.md --prerelease
