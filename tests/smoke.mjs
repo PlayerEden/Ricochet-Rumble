@@ -22,7 +22,7 @@ function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math:testMath,Number,Set,JSON,String};
 vm.runInNewContext(fs.readFileSync(new URL('../web/scored-match.js',import.meta.url),'utf8'),env,{filename:'scored-match.js'});
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,projectileHitRadius,beginFireAim,updateFireAim,clearFireAim,get fireAim(){return {...fireAim}},get touch(){return touch},tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -1480,3 +1480,61 @@ console.log('PASS Team Survival: real BLUE allies, RED opponents, mirrored tank/
  assert.equal(node('score-clock').classList.contains('hidden'),true,'no score clock shown in survival');
 }
 console.log('PASS playable CQC contract: real 10 pilot KOs, protected safe respawns, clock draw, next sector and survival isolation.');
+
+
+// 2026-10-28 owner Android feedback: CQC pilot rotation too fast and aiming
+// painfully precise. Test REAL movement/turn code plus FIRE drag state.
+{
+ const api=win.__test,dt=1/60;
+ api.newMatch('cqc');
+ const game=st(),pilot=game.tanks[0];
+ assert.equal(game.config.matchModeId,'cqc');
+ assert.equal(api.projectileHitRadius(pilot,{kind:'sidearm'}),17.5,'fair pilot CQC hit tolerance');
+ assert.equal(api.projectileHitRadius(game.tanks[1],{kind:'sidearm'}),17.5,'bot and human sidearms use same radius');
+ assert.equal(api.projectileHitRadius(pilot,{kind:'shell'}),14,'tank shells have unchanged pilot radius');
+ pilot.a=0;
+ api.tankMove(pilot,{moveX:0,moveY:1,bot:false},dt,0);
+ assert.ok(Math.abs(pilot.a-6.5*dt)<.000001,'CQC local thumb facing is deliberately slower than previous 12rad/s');
+ pilot.a=0;
+ api.tankMove(pilot,{moveX:0,moveY:1,aimX:1,aimY:0,bot:false},dt,0);
+ assert.equal(pilot.a,0,'right-thumb aim stays east while left joystick moves south');
+ api.tankMove(pilot,{moveX:0,moveY:1,aimX:0,aimY:-1,bot:false},dt,0);
+ assert.ok(Math.abs(pilot.a+6.5*dt)<.000001,'right thumb controls aim even while moving the other way');
+ pilot.a=0;
+ api.tankMove(pilot,{moveX:0,moveY:0,aimX:0,aimY:1,bot:false},dt,0);
+ assert.ok(pilot.a>0,'stand-still FIRE drag permits fine aiming without steering');
+ const bot=game.tanks[1];
+ bot.a=0;
+ api.tankMove(bot,{moveX:0,moveY:1,bot:true},dt,1);
+ assert.ok(Math.abs(bot.a-12*dt)<.000001,'bot rotation unchanged');
+
+ api.beginFireAim({pointerId:77,clientX:210,clientY:240});
+ assert.equal(api.fireAim.active,false);
+ api.updateFireAim({pointerId:77,clientX:216,clientY:243});
+ assert.equal(api.fireAim.active,false,'finger jitter under 14px must not swing player');
+ api.updateFireAim({pointerId:999,clientX:270,clientY:240});
+ assert.equal(api.fireAim.active,false,'unrelated multitouch pointer cannot hijack aim');
+ api.updateFireAim({pointerId:77,clientX:210,clientY:180});
+ assert.equal(api.fireAim.active,true);
+ assert.equal(api.fireAim.y,-1);
+ api.touch.add('fire');
+ let input=api.makeControl(true);
+ assert.equal(input.fire,true,'dragging FIRE continues firing');
+ assert.equal(input.aimX,0);
+ assert.equal(input.aimY,-1);
+ api.clearFireAim();
+ assert.equal(api.fireAim.active,false);
+ input=api.makeControl(true);
+ assert.equal(input.aimX,undefined,'release restores movement-based aiming');
+ api.touch.delete('fire');
+
+ api.newMatch('solo');
+ assert.equal(api.projectileHitRadius(st().tanks[0],{kind:'sidearm'}),26,'occupied vehicle collision remains unchanged');
+ st().tanks[0].onFoot=true;
+ assert.equal(api.projectileHitRadius(st().tanks[0],{kind:'sidearm'}),14,'Survival sidearm hitbox unaffected');
+ st().tanks[0].a=0;
+ api.tankMove(st().tanks[0],{moveX:0,moveY:1,aimX:1,aimY:0,bot:false},dt,0);
+ assert.ok(Math.abs(st().tanks[0].a-12*dt)<.000001,'Survival ignores CQC FIRE aim and keeps old turn speed');
+ api.clearFireAim();
+}
+console.log('PASS CQC aim polish: dual-thumb independent FIRE aim, no tap jitter, slower player turn, all-player fair sidearm radius; survival/tank/bot unchanged.');
