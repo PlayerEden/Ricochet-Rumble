@@ -94,7 +94,9 @@ const stick={x:0,y:0,pointerId:null};
 const fireAim={pointerId:null,source:null,startX:0,startY:0,x:0,y:0,active:false};
 // Tactical scored-FFA test: let bounced shells work ahead of the tank.
 // Other modes and all shell speeds, bounce rules and caps remain untouched.
-const SCORED_FFA_VEHICLE_PACE=Object.freeze({human:185,bot:152,turnRate:5.5});
+// Thumb-comfort experiment: modestly slower hull, much calmer maximum slew.
+// Keep CQC pilot, shells, normal Survival and LAN on their accepted rules.
+const SCORED_FFA_VEHICLE_PACE=Object.freeze({human:178,bot:146,turnRate:3.6});
 const CQC_HUMAN_TURN_RATE=6.5; // original movement-driven 12rad/s was too twitchy on phones
 const CQC_PILOT_HIT_RADIUS=17.5; // modestly forgiving for ALL CQC pilots, not homing
 let mode='idle',connected=false,paused=true,lastTime=performance.now(),sendTimer=0,snapshotTimer=0,toastTimer=0,botTimer=0,hudTimer=0;
@@ -405,7 +407,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  const label0=document.getElementById('player0-label');if(label0)label0.textContent=isScoredMatch()?'YOU KOs':'YOU';
  const label1=document.getElementById('player1-label');if(label1)label1.textContent=isScoredMatch()?'LEADER':mode==='solo'&&state.config?.teamMode==='teams'?'RED':mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';
  if(mode==='solo')document.getElementById('score1').textContent=botLives;
- const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=isScoredMatch()?'HOLD · DRAG TO AIM':comfort.autoFire?'AUTO ON':'HOLD TO FIRE';
+ const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=state?.config?.matchModeId==='scored_ffa'&&!foot?'AIM / FIRE':isScoredMatch()?'HOLD · DRAG TO AIM':comfort.autoFire?'AUTO ON':'HOLD TO FIRE';
  const aimPad=document.getElementById('vehicle-aim');if(aimPad)aimPad.classList.toggle('hidden',!(state?.config?.matchModeId==='scored_ffa'&&!foot&&state.lives[me]>0&&state.winner<0));
  const clock=document.getElementById('score-clock'),life=document.querySelector('.scorestrip .hud-life');
  if(clock){clock.classList.toggle('hidden',!isScoredMatch());if(isScoredMatch())clock.textContent=durationLabel(Math.ceil(Math.max(0,state.scored.clockSeconds-state.scored.elapsedSeconds)));}
@@ -1232,7 +1234,7 @@ panel.addEventListener('change',e=>{const el=e.target;if(el.id?.startsWith('pref
 loadPrefs();
 
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
- if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. In CLOSE QUARTERS, drag FIRE to aim independently. In SCORED VEHICLE FFA, hold and drag AIM to turn the hull before firing; tap FIRE when lined up. Drags under 14px are ignored.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
+ if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. In CLOSE QUARTERS, drag FIRE to aim independently. In SCORED VEHICLE FFA, drag the large circular AIM pad to turn the hull without firing, then tap FIRE when lined up. The centered AIM thumbstick has a dead zone to ignore jitter.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
  const s=document.getElementById('lan-address').value.trim(),m=s.match(/^([\da-fA-F:.]+):(\d{1,5})$/);
  if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';window.AndroidBridge.joinGame(m[1],Number(m[2]));}});
 function showPauseMenu(){releaseControls();if(mode==='idle')return;
@@ -1259,10 +1261,10 @@ if(vehicleAimButton){
  vehicleAimButton.addEventListener('pointerdown',e=>{
   if(!isScoredMatch()||state.config.matchModeId!=='scored_ffa'||state.tanks[0].onFoot||fireAim.pointerId!==null)return;
   e.preventDefault();beginFireAim(e,'aim');vehicleAimButton.classList.add('active');
-  vehicleAimButton.setPointerCapture(e.pointerId);
+  vehicleAimButton.setPointerCapture(e.pointerId);updateVehicleAimPad(e);
  });
  vehicleAimButton.addEventListener('pointermove',e=>{
-  if(fireAim.pointerId===e.pointerId&&fireAim.source==='aim'){e.preventDefault();updateFireAim(e)}
+  if(fireAim.pointerId===e.pointerId&&fireAim.source==='aim'){e.preventDefault();updateVehicleAimPad(e)}
  });
  const releaseAim=e=>{
   if(fireAim.pointerId===e.pointerId&&fireAim.source==='aim')clearFireAim();
@@ -1275,17 +1277,34 @@ if(vehicleAimButton){
 }
 const joystick=document.getElementById('joystick'),knob=document.getElementById('stick-knob');
 function clearStick(){stick.x=stick.y=0;stick.pointerId=null;knob.style.transform='translate(-50%, -50%)';joystick.classList.remove('active')}
-function clearFireAim(){fireAim.pointerId=null;fireAim.source=null;fireAim.x=0;fireAim.y=0;fireAim.active=false;}
+function clearFireAim(){fireAim.pointerId=null;fireAim.source=null;fireAim.x=0;fireAim.y=0;fireAim.active=false;const knob=document.getElementById('vehicle-aim-knob');if(knob)knob.style.transform='translate(-50%, -50%)';}
 function beginFireAim(e,source='fire'){
  if(!isScoredMatch()||fireAim.pointerId!==null||!['fire','aim'].includes(source))return;
  if(source==='aim'&&!(state?.config?.matchModeId==='scored_ffa'&&!state?.tanks?.[0]?.onFoot))return;
  fireAim.pointerId=e.pointerId;fireAim.source=source;fireAim.startX=Number(e.clientX)||0;fireAim.startY=Number(e.clientY)||0;
  fireAim.x=0;fireAim.y=0;fireAim.active=false;
 }
+// A vehicle aim stick uses the fixed center of its large thumb region,
+// not the initial fingertip point. The dead zone reduces accidental pivots.
+// Keeping the last vector inside the center zone prevents twitching back to
+// movement-facing while the AIM thumb is still held.
+function updateVehicleAimPad(e){
+ if(fireAim.source!=='aim'||fireAim.pointerId!==e.pointerId||!isScoredMatch()||state.config.matchModeId!=='scored_ffa')return;
+ const pad=document.getElementById('vehicle-aim');
+ if(!pad||pad.classList.contains('hidden'))return;
+ const rect=pad.getBoundingClientRect();
+ const dx=(Number(e.clientX)||0)-(rect.left+rect.width/2),dy=(Number(e.clientY)||0)-(rect.top+rect.height/2);
+ const d=Math.hypot(dx,dy),size=Math.min(rect.width,rect.height);
+ if(!Number.isFinite(d)||size<1||d<Math.max(16,size*.17))return;
+ fireAim.x=dx/d;fireAim.y=dy/d;fireAim.active=true;
+ const knob=document.getElementById('vehicle-aim-knob');
+ if(knob){const radius=size*.28,travel=Math.min(radius,d);knob.style.transform=`translate(calc(-50% + ${fireAim.x*travel}px), calc(-50% + ${fireAim.y*travel}px))`;}
+}
 function updateFireAim(e){
  if(fireAim.pointerId!==e.pointerId||!isScoredMatch())return;
+ if(fireAim.source==='aim'){updateVehicleAimPad(e);return;}
  const dx=(Number(e.clientX)||0)-fireAim.startX,dy=(Number(e.clientY)||0)-fireAim.startY,d=Math.hypot(dx,dy);
- // 14px dead zone prevents touch jitter from swinging the pilot or vehicle.
+ // Preserve accepted pilot FIRE drag sensitivity without new tuning.
  if(d<14)return;
  fireAim.x=dx/d;fireAim.y=dy/d;fireAim.active=true;
 }
