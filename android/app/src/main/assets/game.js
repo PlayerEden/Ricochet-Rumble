@@ -398,7 +398,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  if(life)life.classList.toggle('hidden',isScoredMatch());
  if(isScoredMatch()){
    document.getElementById('score0').textContent=state.scored.operatorKOs[me];
-   document.getElementById('score1').textContent=Math.max(0,...state.scored.operatorKOs.filter((_,i)=>i!==me));
+   document.getElementById('score1').textContent=Math.max(0,...state.scored.operatorKOs);
  }
 }
 function newMatch(which){
