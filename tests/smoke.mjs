@@ -21,7 +21,7 @@ const testMath=Object.create(Math);testMath.random=()=>simRand?simRand():Math.ra
 function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5;return(z>>>0)/4294967296;};}
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math:testMath,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -1194,7 +1194,7 @@ console.log('PASS v0.9.22-dev5 small vehicle-only pullback, pilot preserved and 
 console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real rematches, fresh seeds and true frozen After Action.');
 
 
-// v0.9.23 LAB C: top-down two-arm firing pose + rotated muzzle launch.
+// v0.9.23 LAB D: faceted overhead FIELDGRID operator, one locator, shared muzzle.
 {
  const api=win.__test,calls=[];
  const painter=new Proxy({
@@ -1202,21 +1202,29 @@ console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real r
   translate(...a){calls.push(['translate',...a])},
   scale(...a){calls.push(['scale',...a])},
   beginPath(){},closePath(){},moveTo(...a){calls.push(['move',...a])},
-  lineTo(...a){calls.push(['line',...a])},fill(){},stroke(){},
+  lineTo(...a){calls.push(['line',...a])},fill(){},stroke(){calls.push(['stroke'])},
   fillRect(...a){calls.push(['rect',...a])},
   arc(...a){calls.push(['arc',...a])}
  },{get(obj,key){return obj[key]},set(obj,key,val){obj[key]=val;return true}});
  api.drawTopPilot(painter,'#46d2f5',false,1,0,0);
- assert.ok(calls.some(x=>x[0]==='arc'&&x[1]===2&&x[2]===0&&x[3]===11.1),'dominant helmet top remains');
- assert.equal(calls.filter(x=>x[0]==='arc'&&x[1]===-5&&x[2]===14).length,4,'both shoulder caps visibly separate');
- assert.equal(calls.filter(x=>x[0]==='rect'&&x[1]===17&&x[2]===3&&x[3]===5).length,2,'two visible hands brace the sidearm');
- assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===17&&x[2]===0&&x[3]===11),'pistol projects FORWARD beyond helmet');
- assert.ok(calls.some(x=>x[0]==='line'&&x[1]===3&&x[2]===20),'visible outward elbow extends beyond helmet, not low-crawl');
- assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===27&&x[2]===1),'pistol muzzle anchor drawn exactly at 24,2');
- assert.ok(!calls.some(x=>x[0]==='rect'&&x[3]>17),'no long crawling legs or fake 2.5D body');
+ assert.equal(calls.filter(x=>x[0]==='arc').length,0,'operator has no round head, shoulder or turret cap');
+ assert.equal(calls.filter(x=>x[0]==='move'&&x[1]===-12&&x[2]===12).length,2,'two angular plated shoulders');
+ assert.equal(calls.filter(x=>x[0]==='move'&&x[1]===1&&x[2]===16).length,2,'two angular braced forearms');
+ assert.ok(calls.some(x=>x[0]==='move'&&x[1]===-10&&x[2]===-6),'faceted helmet is overhead and central');
+ assert.equal(calls.filter(x=>x[0]==='move'&&x[1]===17&&x[2]===3).length,2,'both angled polygon gloves reach pistol');
+ assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===17&&x[2]===0&&x[3]===11),'compact gun distinctly projects forwards');
+ assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===27&&x[2]===1),'true muzzle tip at shared local 28,2');
+ assert.ok(!calls.some(x=>x[0]==='rect'&&x[3]>17),'no profile or crawling legs');
  api.drawTopPilot(painter,'#fc856e',true,0,.2,0);
- assert.ok(calls.some(x=>x[0]==='arc'&&x[1]===30&&x[2]===2),'muzzle flash remains aligned with tip');
- assert.equal(calls.filter(x=>x[0]==='save').length,calls.filter(x=>x[0]==='restore').length,'canvas transform balance');
+ assert.ok(calls.some(x=>x[0]==='move'&&x[1]===29&&x[2]===2),'polygon muzzle flash begins after barrel tip');
+ assert.equal(calls.filter(x=>x[0]==='arc').length,0,'shooting adds no new circular turret geometry');
+ const before=calls.length;
+ api.drawPilotLocator(painter,220,170,'#60dfff');
+ const locator=calls.slice(before);
+ assert.equal(locator.filter(x=>x[0]==='move').length,4,'four fixed tactical corner brackets');
+ assert.equal(locator.filter(x=>x[0]==='line').length,8,'each bracket has just two strokes');
+ assert.equal(locator.filter(x=>x[0]==='arc').length,0,'normal locator is not a permanent circle');
+ assert.equal(calls.filter(x=>x[0]==='save').length,calls.filter(x=>x[0]==='restore').length,'canvas transforms balance');
  // Test true gun-origin fire on four rotations from an obstacle-free point.
  api.setPlaylistModes(['survival_ffa']);
  node('bot-count').value='0';node('map-size').value='large';
