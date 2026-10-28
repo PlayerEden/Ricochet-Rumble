@@ -19,11 +19,12 @@ const instrumented=game.replace(closing,`
 window.__flowQA={
  get state(){return state}, get mode(){return mode},
  get playlist(){return selectedPlaylistIds.slice()},
- freeze(){paused=true}, registerHit, ejectPilot, refreshHUD
+ freeze(){paused=true}, registerHit, ejectPilot, refreshHUD, tryCqcRespawn, resetAll,
+ expire(){paused=false;step(180);paused=true;}
 };
 })();`);
 assert.notEqual(instrumented,game,'QA hook injected into transient HTTP response');
-const sources={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/game.js':'game.js'};
+const sources={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/game.js':'game.js','/scored-match.js':'scored-match.js'};
 const server=http.createServer((req,res)=>{
  const name=sources[new URL(req.url,'http://localhost').pathname];
  if(!name){res.writeHead(404);res.end();return}
@@ -125,6 +126,54 @@ try{
  assert.equal(await ffa.isChecked(),true,'FFA choice persists across fresh browser instance');
  assert.equal(await teams.isChecked(),true,'Team choice persists across fresh browser instance');
  result.steps.push('MAIN MENU works and playlist choices persist across reload');
+ // CQC is an explicitly separate score-tested playable mode; it MUST NOT
+ // pollute the saved Survival Quick Play playlist or masquerade as Survival.
+ await page.locator('button[data-action="settings-back"]').click();
+ assert.equal(await page.locator('.home-screen').isVisible(),true);
+ await page.locator('button[data-action="cqc"]').click();
+ await page.evaluate(()=>window.__flowQA.freeze());
+ const pilotStart=await page.evaluate(()=>{const s=window.__flowQA.state;return {seed:s.mazeSeed,matchId:s.matchId,mode:s.config.matchModeId,vehicles:s.vehicles.length,bots:s.config.botCount,allFoot:s.tanks.every(t=>t.onFoot),clock:s.scored.clockSeconds}});
+ assert.equal(pilotStart.mode,'cqc');
+ assert.equal(pilotStart.vehicles,0);
+ assert.equal(pilotStart.bots,3);
+ assert.equal(pilotStart.allFoot,true);
+ assert.equal(pilotStart.clock,180);
+ assert.equal((await page.locator('#score-clock').textContent()).trim(),'03:00');
+ assert.equal((await page.locator('#player0-label').textContent()).trim(),'YOU KOs');
+ assert.equal((await page.locator('#interact-btn').isVisible()),false);
+ const earned=await page.evaluate(()=>{
+  const qa=window.__flowQA,s=qa.state,hits=[];
+  for(let n=0;n<10;n++){
+   s.tanks[1].shield=0;
+   hits.push(qa.registerHit(0,1));
+   if(n<9){s.tanks[1].respawnWait=0;hits.push(qa.tryCqcRespawn(1));}
+  }
+  return {hits,result:s.finalResult,score:s.scored.operatorKOs[0],deaths:s.scored.deaths[1],vehicles:s.vehicles.length};
+ });
+ assert.ok(earned.hits.every(Boolean),'CQC pilot hits and actual safe respawns all valid');
+ assert.equal(earned.result.outcome,'victory');
+ assert.equal(earned.result.reason,'score_target');
+ assert.equal(earned.score,10);
+ assert.equal(earned.deaths,10);
+ assert.equal(earned.vehicles,0);
+ assert.equal((await page.locator('#aa-kos').textContent()).trim(),'10');
+ assert.equal((await page.locator('#aa-lives-label').textContent()).trim(),'KO TARGET');
+ assert.equal((await page.locator('#aa-outcome').textContent()).trim(),'VICTORY');
+ result.steps.push('real CQC score-to-10: pilots-only, exact KO credit and safe respawns, truthful live result');
+ await page.locator('#quick-rematch').click();
+ await page.evaluate(()=>window.__flowQA.freeze());
+ const another=await page.evaluate(()=>({seed:window.__flowQA.state.mazeSeed,matchId:window.__flowQA.state.matchId,mode:window.__flowQA.state.config.matchModeId,score:window.__flowQA.state.scored.operatorKOs[0]}));
+ assert.equal(another.mode,'cqc','CQC next match remains pilot-only, not rotated to survival');
+ assert.notEqual(another.seed,pilotStart.seed);
+ assert.notEqual(another.matchId,pilotStart.matchId);
+ assert.equal(another.score,0);
+ const timed=await page.evaluate(()=>{const qa=window.__flowQA;qa.expire();return qa.state.finalResult});
+ assert.equal(timed.outcome,'draw','real 3-minute time expiration results in a draw when no KOs');
+ assert.equal(timed.reason,'time_limit');
+ assert.equal((await page.locator('#aa-title').textContent()).trim(),'MATCH DRAW');
+ assert.equal((await page.locator('#aa-outcome').textContent()).trim(),'DRAW');
+ result.steps.push('CQC NEXT MATCH fresh maze and score reset; actual game-clock expiration produced DRAW');
+
  console.log('PASS live Chromium Quick Play: '+JSON.stringify(result));
 }finally{
  if(page)await page.close().catch(()=>{});
