@@ -30,11 +30,11 @@ No source change in those files is needed before testing; if a new bug is found,
 
 ## Automated gates
 
-- [ ] Fast CI validates 300-seed gameplay/AI/team/vehicle/camera and Web/Android parity.
-- [ ] Full real Chromium layout/visual/Quick Play results screenshots and true win→NEXT MATCH→defeat integration.
-- [ ] Android debug APK and unsigned AAB build on the **same PR source**.
-- [ ] Confirm latest PR is based cleanly on `main` and changes only 10 production/test/CI files + this QA document.
-- [ ] Archive exact run SHA, CI URLs, rollback and outstanding risks in PROJECT_STATUS.
+- [x] [Fast CI 40633223788 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40633223788): 300 seeded arenas, AI/team/survival regressions and identical Web/Android assets.
+- [x] [Full Chromium QA 40633223774 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40633223774): real responsive snapshots and live victory→NEXT MATCH→defeat/playlist persistence.
+- [x] [Android debug APK and unsigned AAB build 40633223774 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40633223774) on exact tested source SHA `eaff10f4a059dbbdf9c386c6459fbc1cc1accea7` (not Play signed).
+- [x] GitHub compare verified directly branched from `main`, exactly 11 changed review files, all six production assets exact Git blob equality with immutable v0.9.25, and PR mergeable. (Latest main documentation-only additions may cause a nonzero behind count; reconcile before merge.)
+- [x] Archived exact passing source SHA and CI URLs here and in [main project status](https://github.com/PlayerEden/Ricochet-Rumble/blob/main/docs/PROJECT_STATUS.md); immutable v0.9.25 release remains known-good rollback.
 
 ## Human/device gates still open
 
@@ -50,3 +50,10 @@ No source change in those files is needed before testing; if a new bug is found,
 1. Treat this branch as the **one review candidate** to bring accepted v0.9.25 functionality onto stable `main`; leave #24/#31/#32/#34/#35 and #39/#40 as historical/dependent draft references, not things to click-merge indiscriminately.
 2. Once human team-color check and production change review are satisfied, promote this candidate with explicit owner approval and a recorded exact source SHA; preserve known-good v0.9.21 and v0.9.25 tags.
 3. Build scored pilot-only CQC as a separate future PR branched from a known tested unified source, then reuse its scoring/respawn rules for FFA/TDM and Custom Match.
+
+## Actual automation outcome / exact source (2026-10-27 local)
+
+- **Fast CI [40633223788 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40633223788)**; **Full real Chromium + Android [40633223774 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40633223774)**. Both checked out code SHA `eaff10f4a059dbbdf9c386c6459fbc1cc1accea7` (subsequent document-only commits do not modify gameplay, tests, or build workflow).
+- Actual full QA run uploaded `sector-rebound-qa-40633223774-1` screenshots (~6.2MB), `debug-apk-40633223774` (~85.6KB), and `unsigned-aab-NOT-FOR-PLAY-40633223774` (~73.9KB). **These are Actions artifacts that expire, not an immutable new release**; existing v0.9.25 permanent release remains the preferred owner Android test. APKs can have different debug signing/metadata even with byte-identical bundled game assets.
+- **Remaining blocking manual checks:** owner phone verification of BLUE allied bot and RED opponents/vehicles and next match; Android reproducible signing/version migration; two-phone LAN protocol and user data continuity. **PR stays DRAFT**. Do not imply QA test actions amount to owner acceptance.
+- [Source-only scored rules PR #42](https://github.com/PlayerEden/Ricochet-Rumble/pull/42) is a separate follow-on with 20 passing tests but no live scored mode, and its base is this branch. [Playable pilot-only CQC issue #43](https://github.com/PlayerEden/Ricochet-Rumble/issues/43) is the next gameplay deliverable after acceptance.
