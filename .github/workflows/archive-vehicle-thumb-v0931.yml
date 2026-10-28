@@ -1,0 +1,69 @@
+name: Archive exact QA-passing Sector Rebound v0.9.31 vehicle thumb APK
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/archive-vehicle-thumb-v0931.yml']
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: archive-sector-vehicle-thumb-v0931
+  cancel-in-progress: false
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Download exact successful QA debug APK without rebuilding
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          PROOF="$(gh run view 40644655389 --repo "$REPO" --json conclusion,headSha --jq '.conclusion + " " + .headSha')"
+          test "$PROOF" = "success d7aab8330c3ff06ebf21fd402cee230a9620b05a"
+          gh run download 40644655389 --repo "$REPO" --name debug-apk-40644655389 --dir tested-apk
+          gh run download 40644655389 --repo "$REPO" --name sector-rebound-qa-40644655389-1 --dir qa-evidence
+          FILE="$(find tested-apk -type f -name 'app-debug.apk' -print -quit)"
+          test -s "$FILE"
+          cp "$FILE" sector-rebound-v0.9.31-vehicle-thumb-debug.apk
+          (cd qa-evidence && zip -q -r ../sector-rebound-v0.9.31-controls-qa.zip .)
+          sha256sum sector-rebound-v0.9.31-vehicle-thumb-debug.apk sector-rebound-v0.9.31-controls-qa.zip > vehicle-thumb-sha256.txt
+      - name: Archive immutable Android owner test candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TAG=v0.9.31-vehicle-thumb-test
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            echo "Release exists; refusing overwrite"; exit 1
+          fi
+          cat > notes.md <<'EOF'
+          # Sector Rebound v0.9.31 — Vehicle Thumb Comfort Test
+
+          **Experimental Android debug APK. Not merged into stable main, not Google Play production signed.**
+
+          ## Why this version
+          User physically played the prior v0.9.30 vehicle AIM build and liked the direction, but the AIM control felt cramped/out of place. Tank turning still felt too sensitive; tank travel perhaps slightly too fast.
+
+          ## Control changes (scored VEHICLE FFA only)
+          - **Large centered circular AIM thumb pad beside FIRE**, not a tiny AIM button above FIRE. Left MOVE joystick unchanged. Separate accessible FIRE button and ENTER/EXIT above FIRE.
+          - Aim from the **fixed pad center** with visible moving thumb knob and ~17% radial dead zone. AIM does not fire or consume a shell. Release retains aimed heading when stationary, resets visible knob; release-to-shoot is intentionally disabled.
+          - Vehicle maximum turning **5.5 -> 3.6 rad/s** (~315 -> 206 degrees/s), player tank movement **185 -> 178**, AI **152 -> 146** world units/s. Mech keeps relative 0.76 movement factor.
+          - Shell speeds/lifetimes/ricochet limit/4 active slots and scored KO rules **unchanged**. CQC pilot FIRE-drag and ordinary Survival/Team Survival/LAN controls untouched.
+          - Updated HOW TO PLAY with separate circular AIM and FIRE usage.
+
+          ## Verification and rollback
+          - [Fast regression including 300 seeded mazes, CQC, Survival, FFA, real fixed-center aim and no shell firing: PASS 40644655239](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40644655239).
+          - [Full real Chromium: AIM pad touch/knob/release, 740x360, 915x412 and 1280x720 thumb-zone spacing, CQC and FFA score/next-match flow; Android debug APK and unsigned AAB: PASS 40644655389](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40644655389).
+          - **Exact QA-passing source SHA:** `d7aab8330c3ff06ebf21fd402cee230a9620b05a`. Original passing Android APK is copied **byte for byte** without rebuilding/resigning. Attached screenshots/QA ZIP + SHA-256 checksums.
+          - [DRAFT ergonomic controls PR #49](https://github.com/PlayerEden/Ricochet-Rumble/pull/49) based on prior [DRAFT v0.9.30 stationary AIM PR #48](https://github.com/PlayerEden/Ricochet-Rumble/pull/48); stable main remains v0.9.21 gameplay.
+          - [Owner-tested v0.9.30 rollback APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.30-tactical-vehicle-aim-test), [owner-liked v0.9.28 CQC aiming rollback](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.28-cqc-aim-feel-test).
+
+          ## Physical phone feedback needed
+          Does AIM feel reachable rather than cramped? Can you line up a shot without losing the right thumb or accidentally firing? Are tank movement and turning controlled rather than sluggish? Try 740px-equivalent landscape and your usual phone orientation, including the moment a tank ejects you onto pilot controls. Is 10 genuine pilot KOs within four minutes a good match target?
+
+          **Known limits:** Full on-device input latency/comfort, actual long-run bot match pacing, physical two-phone LAN, Android debug update certificate continuity, and Play signing remain unverified. Debug APK internal version metadata may not be sequential; installing over a different debug signer can fail (uninstalling can erase local preferences).
+          EOF
+          gh release create "$TAG" sector-rebound-v0.9.31-vehicle-thumb-debug.apk sector-rebound-v0.9.31-controls-qa.zip vehicle-thumb-sha256.txt --repo "$REPO" --target d7aab8330c3ff06ebf21fd402cee230a9620b05a --title 'Sector Rebound v0.9.31 — Vehicle Thumb Comfort Android Test' --notes-file notes.md --prerelease
