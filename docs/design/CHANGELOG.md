@@ -1,5 +1,12 @@
 # FIELDGRID Design Archive — Decision Ledger
 
+## 2026-10-27 — Owner review of actual Lab D operator gameplay screenshot
+
+- Owner considers faceted strict-top-down Lab D pilot acceptable for now, **not the final cohesive art style**. It looks smoother/higher-detail than the vehicle art, which already resembles chunky old arcade-style tanks.
+- Preserve reviewed pilot pose, two-handed pistol, rotated actual muzzle and approved camera; later make operator/vehicle shapes share a blocky industrial pixel-arcade visual language.
+- Owner explicitly endorsed a **modular** approach for future team-safe color schemes and skins: reusable helmet, shoulder, armor and trim modules driven by stable role-based palettes rather than a separately redrawn sprite for every color.
+- Published [25 — Gameplay Unit Art & Modular Skins](25_GAMEPLAY_UNIT_ART_AND_MODULAR_SKINS_DRAFT.md), design only. Lab D gameplay, [real APK/screenshots](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.23-pilot-lab-d-fieldgrid-test) and rollback unchanged; no cosmetics implementation or skin picker now.
+
 ## 2026-10-27 — 1.0-draft
 - Created persistent GitHub archive and reusable bible template.
 - Locked working direction: fictional FIELDGRID operator dossier portraits; coherent industrial graphic illustration; restricted shapes, upper-left light, clean silhouette; no random pseudo-text or pasted AI-looking art.
