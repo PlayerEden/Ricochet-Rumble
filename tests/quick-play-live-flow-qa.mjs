@@ -19,7 +19,7 @@ const instrumented=game.replace(closing,`
 window.__flowQA={
  get state(){return state}, get mode(){return mode},
  get playlist(){return selectedPlaylistIds.slice()},
- freeze(){paused=true}, registerHit, ejectPilot, refreshHUD, tryCqcRespawn, resetAll,
+ freeze(){paused=true}, get aim(){return {...fireAim}}, get control(){return makeControl(true)}, registerHit, ejectPilot, refreshHUD, tryCqcRespawn, resetAll,
  expire(){paused=false;step(180);paused=true;}
 };
 })();`);
@@ -141,6 +141,22 @@ try{
  assert.equal((await page.locator('#score-clock').textContent()).trim(),'03:00');
  assert.equal((await page.locator('#player0-label').textContent()).trim(),'YOU KOs');
  assert.equal((await page.locator('#interact-btn').isVisible()),false);
+ assert.equal((await page.locator('#fire-mode').textContent()).trim(),'HOLD · DRAG TO AIM');
+ const fireBox=await page.locator('.fire-btn').boundingBox();
+ assert.ok(fireBox?.width>=35&&fireBox.height>=35,'right FIRE drag target has a mobile-sized hit area');
+ const pressX=fireBox.x+fireBox.width/2,pressY=fireBox.y+fireBox.height/2;
+ await page.mouse.move(pressX,pressY);await page.mouse.down();
+ const untouched=await page.evaluate(()=>window.__flowQA.aim);
+ assert.equal(untouched.active,false,'press and hold retains original fire action without instant swing');
+ await page.mouse.move(pressX,pressY-32,{steps:3});
+ const dragged=await page.evaluate(()=>({aim:window.__flowQA.aim,control:window.__flowQA.control}));
+ assert.equal(dragged.aim.active,true,'actual captured right-button pointermove enables CQC aim');
+ assert.ok(dragged.control.aimY<-.95,'independent right-thumb drag points the pistol up');
+ assert.equal(dragged.control.fire,true,'right drag does not interrupt firing');
+ await page.mouse.up();
+ assert.equal((await page.evaluate(()=>window.__flowQA.aim)).active,false,'actual pointerup clears aim state');
+ result.steps.push('real Chromium FIRE thumb drag independently aims while firing, with release reset');
+
  const earned=await page.evaluate(()=>{
   const qa=window.__flowQA,s=qa.state,hits=[];
   for(let n=0;n<10;n++){
