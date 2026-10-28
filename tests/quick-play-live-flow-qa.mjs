@@ -20,7 +20,7 @@ window.__flowQA={
  get state(){return state}, get mode(){return mode},
  get playlist(){return selectedPlaylistIds.slice()},
  freeze(){paused=true}, get aim(){return {...fireAim}}, get control(){return makeControl(true)}, registerHit, ejectPilot, refreshHUD, tryCqcRespawn, resetAll,
- expire(){paused=false;step(180);paused=true;}
+ expire(seconds=180){paused=false;step(seconds);paused=true;}
 };
 })();`);
 assert.notEqual(instrumented,game,'QA hook injected into transient HTTP response');
@@ -189,6 +189,65 @@ try{
  assert.equal((await page.locator('#aa-title').textContent()).trim(),'MATCH DRAW');
  assert.equal((await page.locator('#aa-outcome').textContent()).trim(),'DRAW');
  result.steps.push('CQC NEXT MATCH fresh maze and score reset; actual game-clock expiration produced DRAW');
+ // True scored vehicle FFA must never credit armor damage or ejection.
+ await page.locator('#results-menu').click();
+ assert.equal(await page.locator('.home-screen').isVisible(),true);
+ await page.locator('button[data-action="scored_ffa"]').click();
+ await page.evaluate(()=>window.__flowQA.freeze());
+ const ffaStart=await page.evaluate(()=>{const s=window.__flowQA.state;return {mode:s.config.matchModeId,seed:s.mazeSeed,matchId:s.matchId,bots:s.config.botCount,vehicles:s.vehicles.length,inTanks:s.tanks.every(t=>!t.onFoot),limit:s.scored.scoreTarget,clock:s.scored.clockSeconds,hasMech:s.vehicles.some(v=>v.type==='mech')}});
+ assert.equal(ffaStart.mode,'scored_ffa');
+ assert.equal(ffaStart.bots,3);
+ assert.equal(ffaStart.inTanks,true);
+ assert.ok(ffaStart.vehicles>=5);
+ assert.equal(ffaStart.hasMech,true);
+ assert.equal(ffaStart.limit,10);
+ assert.equal(ffaStart.clock,240);
+ assert.equal((await page.locator('#mode-label').textContent()).trim(),'SCORED FREE-FOR-ALL');
+ assert.equal((await page.locator('#score-clock').textContent()).trim(),'04:00');
+ const vehicleProof=await page.evaluate(()=>{
+  const qa=window.__flowQA,s=qa.state,t=s.tanks[1],v=s.vehicles[t.vehicleId],before=v.armor,hits=[];
+  for(let i=0;i<before;i++)hits.push(qa.registerHit(0,1));
+  return {hits,armor:v.armor,ejected:t.onFoot,lives:s.lives[1],kos:s.scored.operatorKOs[0],deaths:s.scored.deaths[1],shield:t.shield};
+ });
+ assert.ok(vehicleProof.hits.every(Boolean));
+ assert.equal(vehicleProof.armor,0);
+ assert.equal(vehicleProof.ejected,true);
+ assert.equal(vehicleProof.lives,1);
+ assert.equal(vehicleProof.kos,0,'armor and ejection are never operator KO');
+ assert.equal(vehicleProof.deaths,0);
+ assert.ok(vehicleProof.shield>0);
+ const ffaResult=await page.evaluate(()=>{
+  const qa=window.__flowQA,s=qa.state,t=s.tanks[1],hits=[];
+  t.shield=0;
+  for(let i=0;i<10;i++){
+   hits.push(qa.registerHit(0,1));
+   if(i<9){t.respawnWait=0;hits.push(qa.tryCqcRespawn(1));t.shield=0;}
+  }
+  return {hits,result:s.finalResult,score:s.scored.operatorKOs[0],vehicleCount:s.vehicles.length};
+ });
+ assert.ok(ffaResult.hits.every(Boolean),'shared live FFA scoring and respawns valid');
+ assert.equal(ffaResult.result.matchModeId,'scored_ffa');
+ assert.equal(ffaResult.result.outcome,'victory');
+ assert.equal(ffaResult.result.reason,'score_target');
+ assert.equal(ffaResult.score,10);
+ assert.ok(ffaResult.vehicleCount>0);
+ assert.equal((await page.locator('#aa-mode-label').textContent()).trim(),'SCORED FREE-FOR-ALL');
+ assert.equal((await page.locator('#aa-outcome').textContent()).trim(),'VICTORY');
+ result.steps.push('real scored vehicle FFA: armor/ejection not KO, actual pilot death to 10, honest winner');
+ await page.locator('#quick-rematch').click();
+ await page.evaluate(()=>window.__flowQA.freeze());
+ const ffaRestart=await page.evaluate(()=>({seed:window.__flowQA.state.mazeSeed,matchId:window.__flowQA.state.matchId,mode:window.__flowQA.state.config.matchModeId,score:window.__flowQA.state.scored.operatorKOs[0],vehicles:window.__flowQA.state.vehicles.length}));
+ assert.equal(ffaRestart.mode,'scored_ffa');
+ assert.notEqual(ffaRestart.seed,ffaStart.seed);
+ assert.notEqual(ffaRestart.matchId,ffaStart.matchId);
+ assert.equal(ffaRestart.score,0);
+ assert.ok(ffaRestart.vehicles>0);
+ const ffaTimeout=await page.evaluate(()=>{window.__flowQA.expire(240);return window.__flowQA.state.finalResult});
+ assert.equal(ffaTimeout.outcome,'draw');
+ assert.equal(ffaTimeout.reason,'time_limit');
+ assert.equal((await page.locator('#aa-title').textContent()).trim(),'MATCH DRAW');
+ result.steps.push('real 4-minute scored FFA time draw, fresh procedural rematch and score reset');
+
 
  console.log('PASS live Chromium Quick Play: '+JSON.stringify(result));
 }finally{
