@@ -842,17 +842,20 @@ function drawLobbyPreview(dt){
  c.fillRect(w*.12,h*.26,55,2);c.fillRect(w*.77,h*.66,47,2);
  c.globalAlpha=1;
 }
-function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0,skinId='fieldgrid.standard'){
+function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0,skinId='fieldgrid.standard',squadPaint=false){
  // LAB E: chunky, engineered arcade modules matching the TANK chassis/treads.
  // The pilot is strict 90-degree overhead, not a profile or an aerial drone.
  // Named paint roles are shared with tank/mech without touching their physics.
  const skin=resolveUnitMaterials('pilot',paint,skinId);
+ // TEAM SURVIVAL: color large armor panels BLUE or RED (not merely a trim pixel).
+ // Optional skin palettes retain their own neutral/base material identity.
+ const armorPaint=squadPaint&&skinId==='fieldgrid.standard'?paint:skin.armor;
  const sway=clamp(stride,-3,3)*.15;
  c.save();c.translate(-recoil*.15,bob*.25);
  c.lineJoin='miter';c.lineWidth=2;c.strokeStyle='#071923';
  // Upper back, blocky vest, collar: same dark silhouette + flat panels as tanks.
  c.fillStyle='#071923';c.fillRect(-17,-12,23,25);
- c.fillStyle=skin.armor;c.fillRect(-15,-10,19,21);
+ c.fillStyle=armorPaint;c.fillRect(-15,-10,19,21);
  c.fillStyle=skin.shadow;c.fillRect(-12,-8,5,16);
  c.fillStyle=skin.light;c.fillRect(-11,-6,2,10);
  c.fillStyle='#16323e';c.fillRect(-2,-11,6,3);
@@ -861,7 +864,7 @@ function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0,skinId='fie
  for(const side of [-1,1]){
   c.save();c.scale(1,side);c.translate(-sway*side,0);
   c.fillStyle='#071923';c.fillRect(-12,10,16,12);
-  c.fillStyle=skin.armor;c.fillRect(-10,12,12,8);
+  c.fillStyle=armorPaint;c.fillRect(-10,12,12,8);
   c.fillStyle=skin.light;c.fillRect(-9,12,9,2);
   c.fillStyle=skin.team;c.fillRect(-10,17,5,2);
   // One square elbow block, one bent diagonal forearm, no secondary appendage.
@@ -870,7 +873,7 @@ function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0,skinId='fie
   c.fillStyle='#071923';c.beginPath();
   c.moveTo(5,21);c.lineTo(10,20);c.lineTo(21,8);
   c.lineTo(21,3);c.lineTo(17,3);c.lineTo(7,15);c.closePath();c.fill();
-  c.fillStyle=skin.armor;c.beginPath();
+  c.fillStyle=armorPaint;c.beginPath();
   c.moveTo(8,18);c.lineTo(10,18);c.lineTo(19,7);
   c.lineTo(19,5);c.lineTo(17,5);c.lineTo(8,15);c.closePath();c.fill();
   c.fillStyle=skin.light;c.fillRect(16,7,3,3);
@@ -885,7 +888,7 @@ function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0,skinId='fie
  c.moveTo(-10,-9);c.lineTo(-6,-13);c.lineTo(7,-13);
  c.lineTo(13,-7);c.lineTo(13,7);c.lineTo(7,12);
  c.lineTo(-6,12);c.lineTo(-10,8);c.closePath();c.fill();
- c.fillStyle=skin.armor;c.fillRect(-8,-9,17,18);
+ c.fillStyle=armorPaint;c.fillRect(-8,-9,17,18);
  c.fillStyle=skin.shadow;c.fillRect(-8,4,17,5);
  c.fillStyle=skin.light;c.fillRect(-5,-9,10,3);
  c.fillStyle=skin.trim;c.fillRect(8,-5,3,10);
@@ -1002,7 +1005,7 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  if(t.onFoot){
    const stride=Math.sin(visualClock*15+i*1.7)*Math.min(3.5,Math.hypot(t.vx,t.vy)/65);
    // No permanent ring. Fixed world-space FIELDGRID brackets render behind the operator.
-   drawTopPilot(c,paint,t.flash>0,stride,t.recoil||0,Math.sin(visualClock*15+i*1.7)*Math.min(.45,Math.hypot(t.vx,t.vy)/400));
+   drawTopPilot(c,paint,t.flash>0,stride,t.recoil||0,Math.sin(visualClock*15+i*1.7)*Math.min(.45,Math.hypot(t.vx,t.vy)/400),'fieldgrid.standard',state.config?.teamMode!=='ffa');
    c.restore();
    if(t.ejectAnim>0){c.save();c.globalAlpha=Math.min(.7,t.ejectAnim/.62);c.strokeStyle='#e5faff';c.lineWidth=2;c.beginPath();c.arc(t.x,t.y,18+(1-t.ejectAnim/.62)*22,0,Math.PI*2);c.stroke();c.restore();}
  }else{
