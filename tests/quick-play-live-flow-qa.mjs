@@ -204,6 +204,27 @@ try{
  assert.equal(ffaStart.clock,240);
  assert.equal((await page.locator('#mode-label').textContent()).trim(),'SCORED FREE-FOR-ALL');
  assert.equal((await page.locator('#score-clock').textContent()).trim(),'04:00');
+ assert.equal(await page.locator('#vehicle-aim').isVisible(),true,'scored vehicle shows deliberate AIM button');
+ const aimBounds=await page.locator('#vehicle-aim').boundingBox();
+ assert.ok(aimBounds?.width>=70&&aimBounds?.height>=32,'mobile vehicle AIM touch pad is reachable');
+ const aimX=aimBounds.x+aimBounds.width/2,aimY=aimBounds.y+aimBounds.height/2;
+ const initialBullets=await page.evaluate(()=>window.__flowQA.state.bullets.length);
+ await page.mouse.move(aimX,aimY);await page.mouse.down();
+ const restingAim=await page.evaluate(()=>window.__flowQA.aim);
+ assert.equal(restingAim.source,'aim');
+ assert.equal(restingAim.active,false,'tap jitter never rotates a tank');
+ await page.mouse.move(aimX,aimY-34,{steps:3});
+ const activeAim=await page.evaluate(()=>({aim:window.__flowQA.aim,control:window.__flowQA.control,bullets:window.__flowQA.state.bullets.length}));
+ assert.equal(activeAim.aim.source,'aim');
+ assert.equal(activeAim.aim.active,true,'real AIM pad capture receives pointermove');
+ assert.ok(activeAim.control.aimY<-.95,'AIM points vehicle upward');
+ assert.equal(activeAim.control.fire,false,'independent vehicle AIM must never press FIRE');
+ assert.equal(activeAim.bullets,initialBullets,'AIM never consumes scarce projectiles');
+ await page.mouse.up();
+ assert.equal((await page.evaluate(()=>window.__flowQA.aim)).active,false,'AIM pointer release resets control');
+ assert.equal((await page.evaluate(()=>window.__flowQA.aim)).source,null);
+ result.steps.push('real scored FFA vehicle AIM pad touch drag: rotation vector without moving, shooting or losing shells');
+
  const vehicleProof=await page.evaluate(()=>{
   const qa=window.__flowQA,s=qa.state,t=s.tanks[1],v=s.vehicles[t.vehicleId],before=v.armor,hits=[];
   for(let i=0;i<before;i++)hits.push(qa.registerHit(0,1));
