@@ -62,6 +62,14 @@ Option B: vehicles also carry, but flag position is highly visible and mobility 
 
 Prototype and test one rule first. Two actual, reachable team flags; drop/return timer; score and UI; objective-aware bots; validated host/guest replication. No gimmicky extra systems until this works.
 
+## Core modes first — composable rules, no mode explosion (owner decision 2026-10-27)
+
+**Product direction:** Build a small set of excellent core game rules and let players mix supported settings in Custom Match. A 30-KO limit, tank-only variant, big maze, or a longer clock should normally be a **preset or modifier**, not a new standalone mode with duplicated combat logic. See [Custom Match #38](https://github.com/PlayerEden/Ricochet-Rumble/issues/38).
+
+**Intended rulesets:** Survival (finite-life, last-standing) and future scored Deathmatch (operator-KO race, unlimited safe respawns, clock), each selectable as FFA or teams. **Pilot-only Close Quarters should preferably be a polished Deathmatch preset** with vehicles disabled, smaller generated map and on-foot spawns, sharing its scoring and results pipeline. Add a truly separate objective ruleset like Capture the Flag only if its unique mechanics justify the complexity.
+
+A shared versioned validated match configuration should define ruleset, team topology, map size, participant count/bot skill, vehicle policy, life/respawn policy, score target, timer and compatible mutators. Reject combinations that are not implemented or tested rather than advertising them. Standard Quick Play curated presets, Custom Match saved rules, and eventually host-authoritative LAN should all use that same configuration. These are **architecture intentions, not currently shipped controls or scored modes**.
+
 ## Custom Match / configurable casual sessions (2026-10-27 owner direction)
 
 **Design request, NOT implemented:** Add **Custom Match** as a menu choice independent of Quick Play, so players can intentionally choose a released base mode, field/maze size, bots and skills, available life and shell settings, and (later, once actual scored modes exist) real score/time limits and respawns. [Dedicated feature issue #38](https://github.com/PlayerEden/Ricochet-Rumble/issues/38).
