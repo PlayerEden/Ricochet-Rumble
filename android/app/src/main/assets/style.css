@@ -555,3 +555,8 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 #panel .home-action-grid button.home-cqc{grid-column:1/-1;min-height:38px;border-color:#768b6d;background:#21382e}
 #panel .home-action-grid button.home-cqc strong{color:#e1edc2}
 @media(max-height:430px){.score-clock{font-size:11px;padding:2px 4px}#panel .home-action-grid button.home-cqc{min-height:33px}}
+
+/* Scored FFA remains a separately labeled experimental mode, not forced into Quick Play. */
+#panel .home-action-grid button.home-ffa{grid-column:1/-1;min-height:38px;border-color:#6b8998;background:#213441}
+#panel .home-action-grid button.home-ffa strong{color:#d8eefa}
+@media(max-height:430px){#panel .home-action-grid button.home-ffa{min-height:33px}}
