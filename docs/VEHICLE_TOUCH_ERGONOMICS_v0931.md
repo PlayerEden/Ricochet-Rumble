@@ -22,9 +22,9 @@
 
 ## Mandatory evidence before owner APK
 
-- [ ] Automated fast Node regression: unchanged 300 seeded maze checks, CQC/Survival, scoring, tank/mech/AI speed and turning, shooter/sidearm and shell stats, centered AIM pointer, releasing resets visual feedback, wrong pointer and jitter safety.
-- [ ] Chromium real GUI mode test with pointer down → direction drag → release; **AIM and FIRE rectangles must not overlap and must stay >=96px / >=64px at 740x360, 915x412, 1280x720**; HUD/top safe boundary, ENTER and reverse controls; no firing from AIM.
-- [ ] Full Chromium screenshots and Android debug APK + unsigned AAB both pass on one exact source SHA. Publish immutable test APK only when exact QA passes; no rebuild/resigning from source later, no manual phone QA assertion.
+- [x] Automated fast Node regression: unchanged 300 seeded maze checks, CQC/Survival, scoring, tank/mech/AI speed and turning, shooter/sidearm and shell stats, centered AIM pointer, releasing resets visual feedback, wrong pointer and jitter safety.
+- [x] Chromium real GUI mode test with pointer down → direction drag → release; **AIM and FIRE rectangles must not overlap and must stay >=96px / >=64px at 740x360, 915x412, 1280x720**; HUD/top safe boundary, ENTER and reverse controls; no firing from AIM.
+- [x] Full Chromium screenshots and Android debug APK + unsigned AAB both pass on one exact source SHA. Publish immutable test APK only when exact QA passes; no rebuild/resigning from source later, no manual phone QA assertion.
 - [ ] Owner physical Android verdict on rotation feel, thumb reach and finger layout, especially whether holding AIM and tapping FIRE is natural, plus FFA 10-pilot-KO/4-minute pacing and on-foot transitions.
 
 **Fallback:** [Original v0.9.30 tactical vehicle AIM Android APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.30-tactical-vehicle-aim-test), [v0.9.29 scored FFA](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.29-scored-vehicle-ffa-test), and [owner-approved v0.9.28 CQC](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.28-cqc-aim-feel-test) must remain available. DRAFT PR stack #41→#42→#44→#45→#46→#47→#48→this draft; do not merge out of sequence.
@@ -32,3 +32,11 @@
 ## Deferred questions
 
 Test optional `aim on release`, adjustable turn-speed settings, floating right stick, and customizable control positions only after this simple familiar layout's real-hand feel is known. Avoid expensive customization menus while basic vehicle controls remain unsettled. A slow hull may encourage boring timeouts unless the 10-KO/4m match is separately balanced from measured play.
+
+## Exact automated QA and Android owner test artifact — 2026-10-28
+
+- **[Fast regression 40644655239 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40644655239)** including all existing 300-seed, CQC/Survival, scored FFA and vehicle turning/aiming checks. Updated tests include new physical fixed-center AIM vector/knob behavior, wrong-pointer cancellation, shot-free aim, true pilot KO integration and preservation of original shell physics.
+- **[Full real Chromium + Android 40644655389 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40644655389)**: real mouse/touch AIM down→drag→release, visible knob, actual geometry at 740×360, 915×412, 1280×720, normal menu→real scored match→After Action→NEXT MATCH, paired Web/Android file parity, debug APK and unsigned AAB. **Exact gameplay/test SHA: `d7aab8330c3ff06ebf21fd402cee230a9620b05a`**. Subsequent documentation changes do not modify tested executable or QA source.
+- **[v0.9.31 Vehicle Thumb Comfort Android test release](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.31-vehicle-thumb-test)**, [direct original tested APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/download/v0.9.31-vehicle-thumb-test/sector-rebound-v0.9.31-vehicle-thumb-debug.apk), QA screenshot ZIP and SHA-256 manifest. Exact original debug APK copied **byte for byte** from passing CI; published without rebuild/resign via one-time [publisher 40645256585 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40645256585), followed by removal of one-use workflow.
+- [Draft PR #49](https://github.com/PlayerEden/Ricochet-Rumble/pull/49) correctly based on draft stationary AIM PR #48, ahead 13 / behind 0, 9 focused files. **Stable main runtime v0.9.21 unchanged.**
+- **Pending human verdict:** Owner has NOT tested v0.9.31 on a physical phone. Prior v0.9.30 verdict is source of proposed changes; do not mark v0.9.31 controls as user-approved until played. Confirm thumb comfort at real landscape dimensions, shell misfires, responsiveness, and vehicle KO/respawn pacing. No long-term 50+ natural match balance claim.
