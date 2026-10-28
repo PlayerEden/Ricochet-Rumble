@@ -1,7 +1,7 @@
 # Pilot Lab E — Arcade Unit Cohesion and Modular Paint Foundation
 
 **Date:** 2026-10-27  
-**Status:** CODED EXPERIMENT on isolated branch; QA and owner acceptance PENDING.  
+**Status:** CODED EXPERIMENT on isolated branch; **fast smoke, actual Chromium screenshots, Android debug APK & unsigned AAB QA PASSED** on exact source SHA `e01b5b1a4b335115f803e10ae3001de8d33aea5b`; **owner visual / physical Android acceptance pending**.  
 **Branch:** `prototype/pilot-lab-e-arcade-modular-v0924`  
 **Parent:** `prototype/pilot-fieldgrid-lab-d-v0923` (Lab D tested APK and debug rollback immutable).
 
@@ -33,3 +33,11 @@ See [mainline master gameplay art and skin architecture plan](https://github.com
 - Present 3 free sample palette swatches to the owner **only after this base sprite is judged coherent**; palette definitions alone are not gameplay-selectable.
 - Later optional helmet/shoulder modular *shape* variants and profile persistence; include stability/migration and LAN synchronization tests before enabling equip.
 - Existing dossier portraits in `game-data/cosmetics/pilot_icons.v1.json` remain separate. Their manifest is not a gameplay sprite skin.
+
+## Validated lab checkpoint — 2026-10-27
+
+- [Fast Node syntax, procedural combat regressions, true shared muzzle, 4 palette IDs and embedded asset parity PASS 40624575300](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40624575300).
+- [Full real Chromium before/after 740×360, 915×412, 1280×720, Android debug APK and unsigned AAB PASS 40624575272](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40624575272). QA compares to historical baseline visually; human should compare actual archived Lab D screenshots separately.
+- [**Permanent unmodified Lab E test APK, 915×412 idle/walking/aim/firing images, full QA ZIP and checksums**](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.24-pilot-lab-e-arcade-test). One-off release workflow passed 40625184715 and was removed from default branch after publication. Exact tested source SHA `e01b5b1a4b335115f803e10ae3001de8d33aea5b`; documentation-only commits do not change archived binary.
+- The normal gameplay pilot uses standard paint. Example palettes are **in code but not selectable by players**. Source changes do not change saved cosmetics or existing roster icon manifest.
+- **Owner acceptance still required**, including actual phone play, whether pilot now matches tanks aesthetically and whether shapes read at real 915×412 size. Do not merge PR #32 or superseded experiments yet. Android signing mismatch may prevent direct update; uninstalling erases locally stored data.
