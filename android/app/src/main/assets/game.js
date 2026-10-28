@@ -446,7 +446,10 @@ function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=c
  // drags FIRE, the right thumb independently controls facing. Bots and all
  // existing tank/mech/Survival controls keep their previous 12rad/s behavior.
  const cqcHuman=isScoredMatch()&&t.onFoot&&i===0&&!inp.bot;
- const aimed=cqcHuman&&Number.isFinite(inp.aimX)&&Number.isFinite(inp.aimY)&&Math.hypot(inp.aimX,inp.aimY)>.6;
+ // In scored vehicle FFA, dragging FIRE independently aims the whole hull
+ // even when the left movement stick is at rest. CQC behavior is unchanged.
+ const independentAim=cqcHuman||(tacticalVehicle&&i===0&&!inp.bot);
+ const aimed=independentAim&&Number.isFinite(inp.aimX)&&Number.isFinite(inp.aimY)&&Math.hypot(inp.aimX,inp.aimY)>.6;
  if(mag||aimed){const target=aimed?Math.atan2(inp.aimY,inp.aimX):Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a)),maxTurn=dt*(cqcHuman?CQC_HUMAN_TURN_RATE:tacticalVehicle?SCORED_FFA_VEHICLE_PACE.turnRate:12);t.a+=clamp(diff,-maxTurn,maxTurn)}
  const nx=t.x+t.vx*dt,ny=t.y+t.vy*dt;
  const radius=t.onFoot?10:21;
