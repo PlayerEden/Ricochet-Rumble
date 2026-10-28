@@ -572,3 +572,56 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
    restore events on this new button just as the existing FIRE button does. */
 .battlefield .touch-right .vehicle-aim-btn{pointer-events:auto}
 @media(max-height:430px){.touch-right .vehicle-aim-btn{min-height:34px;font-size:11px}.touch-right:has(.vehicle-aim-btn:not(.hidden)){gap:2px;padding-bottom:4px}}
+
+
+/* v0.9.31: scored vehicle FFA only. Side-by-side large thumb AIM and independent
+   FIRE, with ENTER above FIRE. Original pilot/Survival/LAN layouts untouched. */
+.battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)){
+ display:grid!important;grid-template-columns:clamp(98px,14vw,112px) clamp(64px,9vw,76px);
+ grid-template-rows:46px clamp(98px,14vw,112px) 14px;
+ column-gap:12px;row-gap:6px;width:max-content;align-items:center;
+ justify-content:end;justify-items:center;padding:0;
+ bottom:max(9px,calc(env(safe-area-inset-bottom) + 9px));
+}
+.battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)) .vehicle-aim-btn{
+ grid-column:1;grid-row:2;position:relative;display:block;overflow:hidden;
+ box-sizing:border-box;width:100%;height:100%;min-width:0;min-height:0;
+ margin:0;padding:0;border:2px solid #78b8c9;border-radius:50%;
+ background:radial-gradient(circle,#1c4555ed,#112d3bdc 72%,#0a202be6);
+ box-shadow:0 0 0 4px #1b536242,inset 0 0 11px #051621d0;
+ pointer-events:auto;touch-action:none;user-select:none;transform:none;
+}
+.battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)) .vehicle-aim-btn.active{
+ background:#245465;border-color:#b8e6ef;transform:none;
+ box-shadow:0 0 0 4px #439ba457,inset 0 0 12px #051621b3;
+}
+.vehicle-aim-ring{position:absolute;inset:13%;display:block;border:1px solid #8ac0cc70;
+ border-radius:50%;pointer-events:none;
+ background:linear-gradient(90deg,transparent 49%,#8ac0cc30 50%,transparent 51%),
+ linear-gradient(0deg,transparent 49%,#8ac0cc30 50%,transparent 51%);}
+.vehicle-aim-knob{display:flex;align-items:center;justify-content:center;
+ position:absolute;left:50%;top:50%;width:30%;aspect-ratio:1;
+ border-radius:50%;border:2px solid #b6e9f1a8;background:#3a798dbb;
+ box-shadow:0 2px 4px #03172399;transform:translate(-50%, -50%);
+ pointer-events:none;}
+.vehicle-aim-dot{width:6px;height:6px;border-radius:50%;background:#e5fcff}
+.vehicle-aim-label{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);
+ font:850 10px/1 ui-monospace,monospace;letter-spacing:1px;color:#d5f4fc;pointer-events:none}
+.battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)) .fire-btn{
+ grid-column:2;grid-row:2;align-self:center;box-sizing:border-box;margin:0;
+ width:100%;height:auto;aspect-ratio:1;min-width:64px;min-height:64px;
+ max-width:76px;max-height:76px;border-width:2px;border-radius:50%;
+ font-size:clamp(10px,1.25vw,12px);}
+.battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)) .fire-icon{font-size:20px}
+.battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)) .interact-btn{
+ grid-column:2;grid-row:1;width:100%;min-width:64px;max-width:none;
+ height:46px;min-height:46px;max-height:46px;margin:0;padding:0 3px;
+ line-height:1.1;font-size:clamp(9px,1.12vw,11px);box-sizing:border-box;white-space:normal;}
+.battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)) .control-caption{
+ grid-column:2;grid-row:3;margin:0;display:block;white-space:nowrap;font-size:9px;letter-spacing:0}
+.battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)) .shell-meter{
+ grid-column:1;grid-row:3;margin:0;display:block;white-space:nowrap;font-size:10px}
+@media(max-height:350px){
+ .battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)){grid-template-rows:42px 92px 12px;column-gap:10px;row-gap:4px}
+ .battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)) .interact-btn{height:42px;min-height:42px;max-height:42px}
+}
