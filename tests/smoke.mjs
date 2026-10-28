@@ -1634,3 +1634,55 @@ console.log('PASS CQC aim polish: dual-thumb independent FIRE aim, no tap jitter
  assert.equal(st().scored,null,'finite-life Survival unaffected by scored presets');
 }
 console.log('PASS scored vehicle FFA: tank armor not KO, real ejection, safe pilot respawn, vehicle re-entry, real 10-KO finish, 4m draw, next maze, CQC/Survival isolation.');
+
+
+// 2026-10-28: Owner wants deliberate Tank Trouble-like ricochet combat instead of
+// sprinting around active shells. Validate an ISOLATED scored-vehicle-FFA
+// movement experiment; CQC, Survival, bots' relative pace, projectile lifetime
+// and ricochet danger must not accidentally change.
+{
+ const api=win.__test,dt=1/60;
+ api.newMatch('scored_ffa');
+ const m=st(),human=m.tanks[0],bot=m.tanks[1],humanVehicle=m.vehicles[human.vehicleId],botVehicle=m.vehicles[bot.vehicleId];
+ const close=(got,want,label)=>assert.ok(Math.abs(got-want)<1e-6,label+': '+got+' vs '+want);
+ human.a=0;human.vx=0;human.vy=0;human.powerTimer=0;humanVehicle.type='tank';
+ api.tankMove(human,{moveX:1,moveY:0,bot:false},dt,0);
+ close(human.vx,185*9*dt,'scored FFA human hull movement has lower target speed');
+ assert.ok(185<222,'normal Survival tank is faster than the experimental scored tank');
+ human.a=0;human.vx=0;human.vy=0;
+ api.tankMove(human,{moveX:0,moveY:1,bot:false},dt,0);
+ close(human.a,5.5*dt,'scored FFA human hull rotates deliberately');
+ bot.a=0;bot.vx=0;bot.vy=0;botVehicle.type='tank';
+ api.tankMove(bot,{moveX:1,moveY:0,bot:true},dt,1);
+ close(bot.vx,152*9*dt,'AI in scored vehicle FFA also slows; no unfair human-only nerf');
+ bot.a=0;bot.vx=0;bot.vy=0;
+ api.tankMove(bot,{moveX:0,moveY:1,bot:true},dt,1);
+ close(bot.a,5.5*dt,'AI rotation also slows');
+ humanVehicle.type='mech';human.a=0;human.vx=0;human.vy=0;
+ api.tankMove(human,{moveX:1,moveY:0,bot:false},dt,0);
+ close(human.vx,185*.76*9*dt,'mech retains its original .76 relative movement factor');
+ humanVehicle.type='tank';human.a=0;human.vx=0;human.vy=0;
+ assert.equal(api.shoot(0),true,'shot remains available with tactical hull speed');
+ const shell=m.bullets.at(-1);
+ close(Math.hypot(shell.vx,shell.vy),415,'tank shell flies at old unchanged 415 speed');
+ close(shell.life,2.55,'tank shell lifetime unchanged');
+ assert.equal(shell.kind,'shell');
+ assert.equal(api.activeBulletCap(human),4,'four shells in flight remains the default');
+ assert.equal(api.fireInterval(human),.36,'fire cooldown still forces deliberate timing');
+ assert.ok(415/185>2.2,'shell outruns scored FFA player tank >2.2x');
+ assert.ok(415/222<1.9,'previous shell-to-hull pace was below 1.9x');
+ assert.ok(fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8').includes('b.age>.38&&b.bounces>0'),'returning owner ricochet can still hit the original shooter');
+
+ api.newMatch('solo');
+ const old=st().tanks[0];old.a=0;old.vx=0;old.vy=0;
+ api.tankMove(old,{moveX:1,moveY:0,bot:false},dt,0);
+ close(old.vx,222*9*dt,'legacy Survival player tank movement preserved');
+ old.a=0;old.vx=0;old.vy=0;
+ api.tankMove(old,{moveX:0,moveY:1,bot:false},dt,0);
+ close(old.a,12*dt,'legacy Survival player tank turn preserved');
+ api.newMatch('cqc');
+ const pilot=st().tanks[0];pilot.a=0;pilot.vx=0;pilot.vy=0;
+ api.tankMove(pilot,{moveX:0,moveY:1,bot:false},dt,0);
+ close(pilot.a,6.5*dt,'owner-approved CQC pilot turning unchanged');
+}
+console.log('PASS scored vehicle FFA tactical pacing: 185/152 movement and 5.5rad turns; 415 shell and 2.55s lifetime/4-cap unchanged; original CQC and Survival intact.');
