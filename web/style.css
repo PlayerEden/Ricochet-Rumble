@@ -625,3 +625,6 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  .battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)){grid-template-rows:42px 92px 12px;column-gap:10px;row-gap:4px}
  .battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)) .interact-btn{height:42px;min-height:42px;max-height:42px}
 }
+
+/* The old AIM button styled all child spans as glyphs; remove padding from the new pad's thumb/ring. */
+.battlefield .touch-right .vehicle-aim-btn span{padding-left:0;font-size:inherit}
