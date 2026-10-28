@@ -1,0 +1,64 @@
+name: Archive exactly tested Sector Rebound v0.9.32 precision APK
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/archive-vehicle-precision-v0932.yml']
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: sector-v0932-archive
+  cancel-in-progress: false
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Verify exact successful source and retrieve unmodified Android APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          PROOF="$(gh run view 40647176929 --repo "$REPO" --json conclusion,headSha --jq '.conclusion + " " + .headSha')"
+          test "$PROOF" = "success dce596d16ac0eeefd847ba564a0fdfd49718f3f8"
+          gh run download 40647176929 --repo "$REPO" --name debug-apk-40647176929 --dir qa-apk
+          gh run download 40647176929 --repo "$REPO" --name sector-rebound-qa-40647176929-1 --dir qa-evidence
+          FILE="$(find qa-apk -type f -name 'app-debug.apk' -print -quit)"
+          test -s "$FILE"
+          cp "$FILE" sector-rebound-v0.9.32-vehicle-precision-debug.apk
+          (cd qa-evidence && zip -q -r ../sector-rebound-v0.9.32-precision-qa.zip .)
+          sha256sum sector-rebound-v0.9.32-vehicle-precision-debug.apk sector-rebound-v0.9.32-precision-qa.zip > precision-sha256.txt
+      - name: Publish experimental owner phone test with backed-up QA evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TAG=v0.9.32-vehicle-precision-test
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then echo "Release already exists: refusing overwrite"; exit 1; fi
+          cat > notes.md <<'EOF'
+          # Sector Rebound v0.9.32 — Precision Vehicle Aiming (Android Test)
+
+          **Experimental QA-passing Android debug APK. Stable main gameplay is unchanged. No owner phone approval of v0.9.32 yet.**
+
+          ## What changed compared with v0.9.31
+          - Separate centered AIM + FIRE thumb layout is preserved, no buttons moved.
+          - In **scored vehicle Free-for-All only**, human tank movement 178→166 units/s, AI tank 146→136; mechs retain 0.76× speed.
+          - Hull turns at **2.6 rad/s (~149°/s)** when steering with MOVE; **1.8 rad/s (~103°/s)** while holding the right AIM pad for careful bank-shot alignment, including while stationary.
+          - Vehicle FIRE no longer steals the AIM pointer: you can touch either first. AIM does not shoot. Firing remains deliberate.
+          - Shell velocity, 2.55s life, four in-flight tank bullets, bounce/self-hazard rules, 10 pilot-KO/4-min scored FFA timer, AI, tank armor and ejection scoring unchanged.
+          - **Owner-positive CQC and scored-FFA on-foot pilot 268 units/s / 6.5rad/s with FIRE-drag remain untouched.** Original Solo/Team Survival and two-phone LAN unaffected. A separate pilot consistency review identified old Survival on-foot 12rad/s turn with no FIRE-drag; [tracked as issue #51](https://github.com/PlayerEden/Ricochet-Rumble/issues/51), not silently changed here.
+
+          ## Verified evidence and rollback
+          - [Fast full smoke/300 maze seed, scoring/vehicle pointer, CQC/Survival regression: PASS 40647176849](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40647176849).
+          - [Full real Chromium and Android APK+unsigned AAB: PASS 40647176929](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40647176929), tested gameplay/test SHA `dce596d16ac0eeefd847ba564a0fdfd49718f3f8`.
+          - This APK was copied BYTE-FOR-BYTE from that exact successful Android CI run without rebuilding or resigning; QA screenshot ZIP and SHA256 manifest included.
+          - [Draft PR #50](https://github.com/PlayerEden/Ricochet-Rumble/pull/50) and [source design/pilot audit](https://github.com/PlayerEden/Ricochet-Rumble/blob/tuning/vehicle-precision-v0932/docs/VEHICLE_PRECISION_AND_PILOT_AUDIT_v0932.md).
+          - [v0.9.31 thumb-comfort rollback](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.31-vehicle-thumb-test), [owner-positive CQC v0.9.28](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.28-cqc-aim-feel-test) remain available.
+          - Debug signing and internal Android version label may differ from release name; an incompatible install over an earlier debug version might require removing the old package, which can erase local preferences.
+
+          ## Physical handset experiment
+          Compare actual **v0.9.31 versus v0.9.32**: comfortable 90°/180° turn, fine 5°-15° final angle corrections, hold AIM then FIRE, press FIRE first then AIM, collision and escape around narrow corridors, bot pacing, and changing from tank to on-foot controls after ejection. Do 10-KO scored FFA rounds naturally if possible; **50+ full bot match balance evidence not yet established**. No claim of production Play signing, ranked online PvP, or two-phone scored LAN support.
+          EOF
+          gh release create "$TAG" sector-rebound-v0.9.32-vehicle-precision-debug.apk sector-rebound-v0.9.32-precision-qa.zip precision-sha256.txt --repo "$REPO" --target dce596d16ac0eeefd847ba564a0fdfd49718f3f8 --title 'Sector Rebound v0.9.32 — Precision Vehicle Aiming Android Test' --notes-file notes.md --prerelease
