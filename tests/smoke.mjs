@@ -85,16 +85,53 @@ assert.equal(node('player1-label').textContent,'RED','HUD clearly shows the oppo
 const shooter=st().tanks[0];shooter.shield=0;
 assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),false,'shell cap');
 assert.equal(win.__test.botInput(1,1/60).bot,true);
-// Large mazes remain navigable and spare vehicles never appear inside walls.
-for(const size of ['small','standard','large'])for(let seed=1;seed<=60;seed++){
- const generated=win.__test.initialState(0,{pilotMode:true,mapSize:size,botCount:4,teamMode:'ffa'},seed);
- assert.equal(generated.config.pilotMode,true);assert.equal(generated.config.mapSize,size);
- const maze=win.__test.maze;const visited=new Set([0]),queue=[0];for(let n=0;n<queue.length;n++)for(const nxt of maze.open[queue[n]])if(!visited.has(nxt)){visited.add(nxt);queue.push(nxt)}
- assert.equal(visited.size,maze.cols*maze.rows,'all maze cells reachable');assert.ok(generated.vehicles.some(v=>v.type==='mech'));assert.ok(generated.vehicles.every(v=>v.type==='tank'||v.type==='mech'));
- for(const v of generated.vehicles){assert.equal(win.__test.blocked(v.x,v.y,24),false,'vehicle clear of maze wall')}
- const free=generated.vehicles.filter(v=>v.occupant===-1&&v.armor>0);
- assert.ok(free.length,'spare vehicle');
+// Independent procedural audit: 300 repeatable arena seeds across ALL 3 sizes.
+// Each family is checked for walkable connected topology and honest team
+// assignments, and initial vehicles cannot be inside maze walls.
+// Map generation is deterministic: fingerprints also guard against accidental
+// same-layout reuse on every NEXT MATCH.
+const topologyCoverage={};
+for(const size of ['small','standard','large']){
+ const fingerprints=new Set();
+ for(let seed=1;seed<=100;seed++){
+  const rules=seed%2?'ffa':'teams';
+  const generated=win.__test.initialState(0,{pilotMode:true,mapSize:size,botCount:4,teamMode:rules},seed);
+  assert.equal(generated.config.pilotMode,true);assert.equal(generated.config.mapSize,size);
+  assert.equal(generated.tanks.length,5,'one human and four AI remain in supported actor budget');
+  assert.equal(generated.lives.length,generated.tanks.length,'one stock-life row per actor');
+  assert.equal(generated.kos.length,generated.tanks.length,'one KO counter per actor');
+  const maze=win.__test.maze,cellCount=maze.cols*maze.rows;
+  assert.equal(maze.open.length,cellCount,'cell adjacency data length matches geometry');
+  const visited=new Set([0]),queue=[0];
+  for(let n=0;n<queue.length;n++)for(const nxt of maze.open[queue[n]]){
+   assert.ok(Number.isInteger(nxt)&&nxt>=0&&nxt<cellCount,'all maze exits target valid cells');
+   assert.ok(maze.open[nxt].includes(queue[n]),'maze adjacency links are bidirectional');
+   if(!visited.has(nxt)){visited.add(nxt);queue.push(nxt);}
+  }
+  assert.equal(visited.size,cellCount,'every generated maze cell must be reachable');
+  const fingerprint=maze.open.map(neighbors=>neighbors.slice().sort((a,b)=>a-b).join('.')).join('|');
+  fingerprints.add(fingerprint);
+  assert.ok(generated.vehicles.some(v=>v.type==='mech'),'every run provides a mech');
+  assert.ok(generated.vehicles.every(v=>v.type==='tank'||v.type==='mech'),'only approved vehicle types spawn');
+  for(const v of generated.vehicles)assert.equal(win.__test.blocked(v.x,v.y,24),false,'no vehicle inside maze wall');
+  for(const [i,t] of generated.tanks.entries()){
+   assert.equal(win.__test.blocked(t.x,t.y,t.onFoot?10:21),false,'spawn clear of walls for actor '+i);
+   assert.ok(Number.isFinite(t.x)&&Number.isFinite(t.y),'actor coordinates finite');
+  }
+  const free=generated.vehicles.filter(v=>v.occupant===-1&&v.armor>0);
+  assert.ok(free.length,'at least one recoverable parked vehicle in each seed');
+  if(rules==='teams'){
+   assert.deepEqual([0,1,2,3,4].map(i=>win.__test.teamOf(i,generated)),[0,1,0,1,0],'BLUE allied AI and RED opposition are deterministic');
+   assert.equal(win.__test.combatColor(2,generated),'#46d2f5','AI ally visibly Blue');
+   assert.equal(win.__test.combatColor(1,generated),'#fc856e','enemy AI visibly Red');
+  }else{
+   assert.deepEqual([0,1,2,3,4].map(i=>win.__test.teamOf(i,generated)),[0,1,2,3,4],'FFA participants remain independent');
+  }
+ }
+ assert.ok(fingerprints.size>=95,'procedural topology should vary over 100 deterministic seeds');
+ topologyCoverage[size]={seeds:100,uniqueTopologies:fingerprints.size};
 }
+console.log('PASS Foundation audit: 300 seeded maze connectivity/reciprocity, per-actor spawn clearance, vehicle availability, team coloring and procedural variety '+JSON.stringify(topologyCoverage));
 // Timed mid-match deployments are host-authoritative and never overlap an active actor.
 click('solo');const beforeDrop=st().vehicles.length;st().vehicleDropTimer=1/120;
 win.__test.step(1/60);assert.ok(st().vehicles.length>=beforeDrop,'deployment not destructive');
