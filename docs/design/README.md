@@ -17,6 +17,10 @@ The documents in this archive remain **design authorities**, not evidence of fea
 
 **Still drafts only:** new pilot silhouette, scored CQC/FFA/TDM, CTF/Elimination, procedural fairness validators, music tracks, cosmetic save/ownership and Google Play purchase/backend features. Earlier prose saying all of 23/24 are unimplemented is a **historical state snapshot**; read the [updated handoff](../PROJECT_STATUS.md) and [plan gap audit](../DEVELOPMENT_PLAN_COVERAGE_AUDIT_2026-10-27.md) for current distinction.
 
+## Gameplay pilot art and future modular skins — 2026-10-27
+
+**New [25 — Gameplay Unit Art & Modular Skins](25_GAMEPLAY_UNIT_ART_AND_MODULAR_SKINS_DRAFT.md)** captures actual owner Android review of the **QA-passed but still experimental Lab D operator**: workable today, yet more detailed/faceted than the chunky retro-arcade tank. Future art should use the same simple rectangular modules, restricted highlights and consistent outline across operator/tank/mech, with reusable armor material roles for color schemes and future cosmetic skin parts. The pilot's proven top-down two-handed aim and muzzle must remain intact. **No Lab E, new palette resolver, selectable skin UI or purchase exists.** Earlier descriptions in this archive saying no pilot art has been created refer to the original mainline design state, not the isolated Lab D prototype.
+
 ## Current discussion drafts (not implemented)
 
 - [20 — Match Modes & Playlist Bible](20_MATCH_MODES_BIBLE_DRAFT.md): pilot-only close combat, FFA, team deathmatch, capture the flag, elimination, respawns, generated Forward Bays and safe Quick Play selection.
