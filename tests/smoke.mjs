@@ -238,7 +238,7 @@ assert.equal(win.__test.tryInteract(0),true,'voluntary ejection is always availa
 assert.equal(footP.onFoot,true);assert.equal(footP.vehicleId,null);
 assert.ok(script.includes('inp.bot?194:268'),'human pilot keeps its faster movement');
 assert.ok(script.includes('const radius=t.onFoot?10:21'),'pilot can use narrower passages');
-assert.ok(script.includes('(t.onFoot?14:26)'),'pilot remains a smaller projectile target');
+assert.equal(win.__test.projectileHitRadius(footP,{kind:'sidearm'}),14,'original Survival pilot retains the smaller 14-unit sidearm hit radius');
 assert.equal(win.__test.shoot(0),true);assert.equal(st().bullets.at(-1).kind,'sidearm');
 opponent.shield=0;
 for(let a=2;a>=0;a--){assert.equal(win.__test.registerHit(0,1),true);assert.equal(enemyArmor.armor,a)}
