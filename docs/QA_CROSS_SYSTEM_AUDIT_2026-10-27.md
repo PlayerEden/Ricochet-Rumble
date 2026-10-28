@@ -3,7 +3,7 @@
 **Audit date:** 2026-10-27 (GitHub Actions run UTC early 2026-10-28).  
 **Review candidate:** [draft audit PR #40](https://github.com/PlayerEden/Ricochet-Rumble/pull/40), from [draft scored rules PR #39](https://github.com/PlayerEden/Ricochet-Rumble/pull/39) → inherited [v0.9.25 Team Survival release source](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.25-team-survival-allies-test), source SHA `96be4c0540419d909a5ca20b444a1841d7354834`.  
 **Stable branch:** `main` playable gameplay still v0.9.21 (several documentary commits since).  
-**Auditor's scope:** source inspection, existing CI/history, new deterministic maps/units/team audit, previously built Chromium/Android evidence, currently running full QA; **NO physical phone, LAN peer, Play Console, production signing, runtime profiling, security penetration test, or user behavior analytics** performed.  
+**Auditor's scope:** source inspection, existing CI/history, new deterministic maps/units/team audit, previously built Chromium/Android evidence, verified successful full Chromium/Android QA; **NO physical phone, LAN peer, Play Console, production signing, runtime profiling, security penetration test, or user behavior analytics** performed.  
 **Finding confidence labels:** **VERIFIED SOURCE** (direct source file or CI result), **TESTED** (passing CI for exact code), **OPEN MANUAL** (no evidence), **DESIGN ONLY** (not yet in game).  
 **Acceptance:** This is **not** a wholesale certification and **not a green light to merge six stacked draft PRs**.
 
@@ -67,7 +67,7 @@
 
 - [x] Added 300 deterministic seed assertions: 100 for each map size, **100 unique fingerprints in each**, all reciprocal connected topology, all initial actors and parking vehicle positions clear of walls, team Blue/Red consistency, FFA independence and valid config counters, and at least one recoverable vehicle.
 - [x] Existing AI stress / Quick Play / cosmetics, material and scored module tests still run in fast CI. [run 40632360269 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40632360269) on initial audit test commit `0cd81554ad358bca233750b9d8ab60095f03152f`.
-- [ ] Full Chromium screenshot, live Quick Play and Android debug/AAB on audit candidate [run 40632360217](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40632360217): **PENDING until checked**.
+- [x] Full real Chromium screenshots (multi-resolution), true Quick Play live win/loss/NEXT MATCH, exact Android/web asset parity, debug APK and unsigned Android AAB on audit code SHA `0cd81554ad358bca233750b9d8ab60095f03152f`: [**run 40632360217 COMPLETED SUCCESS**](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40632360217). Recorded outputs: `debug-apk-40632360217` (85,649 bytes), `sector-rebound-qa-40632360217-1` (6,188,721 bytes), `unsigned-aab-NOT-FOR-PLAY-40632360217` (73,931 bytes); these are temporary CI artifacts and **not a newly approved APK or Play signing**.
 - [ ] Owner phone Team Survival ally/Blue-Red paint verdict, LAN peer, scored modes, Android update/signer migration: **NOT COMPLETED**.
 
 **No shipped JS, game art, HTML/CSS, Android manifest, Gradle config or physical APK has been modified by the audit test.** The only runtime-adjacent code change is expanded **test assertions**. Avoid marking all P0/P1 blockers fixed because tests passed.
@@ -89,4 +89,4 @@
 - `android/app/build.gradle`, `android/app/src/main/AndroidManifest.xml`, `android/app/src/main/java/com/playereden/ricochetrumble/MainActivity.java`, `.github/workflows/build-apk.yml`, `publish-preview-apk.yml`, `ci-smoke.yml`.
 - [GitHub project status (always update after QA)](https://github.com/PlayerEden/Ricochet-Rumble/blob/main/docs/PROJECT_STATUS.md), [release v0.9.25 and rollback](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.25-team-survival-allies-test), and [unmerged scored kernel PR #39](https://github.com/PlayerEden/Ricochet-Rumble/pull/39).
 
-**Audit verdict:** strong tested foundation for development; **not a current assertion of Play production readiness**. Record the exact full QA run after completion, and preserve open manual evidence until a real device provides it.
+**Audit verdict:** strong tested foundation for development; **not a current assertion of Play production readiness**. Full QA **passed on the exact tested audit code**; preserve open manual evidence until real devices provide it. Do not assume test-only docs commits change the already-tested game binary.
