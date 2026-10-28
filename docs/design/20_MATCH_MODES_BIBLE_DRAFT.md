@@ -10,6 +10,10 @@
 - Camera scale is a **readability/pacing policy**, not a replacement for mode logic. CQC must explicitly disable vehicle spawns and boarding, create close-quarters pilot-only objectives/respawn rules, and receive its own QA gate before appearing in Quick Play.
 - Review pilot-only sightlines, target readability, spawn fairness, arrows, walls and joystick area on physical Android before making any CQC-specific camera changes. Do not port vehicle view settings to foot mode by accident.
 
+## Research-based score target refinement (2026-10-27)
+
+Read [**Deathmatch Benchmarks and Balance v1**](../research/DEATHMATCH_BENCHMARKS_AND_BALANCE_V1_2026-10-27.md) before implementing scored modes. The earlier **CQC 12/3, FFA 15/5 and TDM 25/5** values below remain *original design discussion hypotheses*, NOT mandatory or already balanced. The first measured mobile QA should start with CQC **10 KOs / 3 min**, FFA **10 KOs / 4 min** with 1+3 bots, and **honest 2v2 TDM 15 combined team KOs / 5 min** (1 human + 1 Blue ally vs 2 Red bots, no unfair 3v2 label); stage 3v3 20–25 / 6 min only after extending four-bot cap and verifying Android load. 30 KOs could be an optional longer setting if measured KO/min supports it. Model score targets and clocks as mode presets so retuning is not a rewrite; separate from saved playlists until QA-approved. This research updates *design priority* only, not the live build.
+
 ## Vision
 
 Build a compact, polished mobile combat experience where different modes reuse the same ricochet weapons, pilot ejection, tanks, mechs, bot opponents and procedural connected mazes. Let players choose which modes enter their offline Quick Play rotation; never force a login or claim network matchmaking exists.
