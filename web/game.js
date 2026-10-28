@@ -387,7 +387,10 @@ function resetAll(advancePlaylist=false){
  let options={...state.config};
  if(advancePlaylist&&mode==='solo'){
   const id=nextPlaylistMode();if(!id){notice('SELECT A QUICK PLAY MODE IN MATCH SETTINGS',2300);return false;}
-  options=soloOptionsFor(id,options);
+  // Derive the next preset from the SAVED user settings, not the prior
+  // mode's effective bot count (Team Survival may need an extra ally).
+  // Prevent a 1-bot FFA silently becoming 2 bots after Team Survival.
+  options=soloOptionsFor(id,selectedRules);
  }
  state=initialState(0,options,freshSectorSeed(previousSeed));
  if(mode==='solo')document.getElementById('mode-label').textContent=options.botCount===0?'PRACTICE FIELD':soloModeLabel(options);
