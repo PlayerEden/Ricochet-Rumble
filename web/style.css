@@ -568,4 +568,7 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 .touch-right .vehicle-aim-btn span{font-size:1.25em;padding-left:5px}
 .touch-right .vehicle-aim-btn.active{background:#346477;border-color:#c3f5fb;transform:translateY(2px);box-shadow:0 1px 0 #081c27}
 .touch-right .vehicle-aim-btn.hidden{display:none}
+/* Fullscreen arcade has pointer-events:none on control-zone containers; explicitly
+   restore events on this new button just as the existing FIRE button does. */
+.battlefield .touch-right .vehicle-aim-btn{pointer-events:auto}
 @media(max-height:430px){.touch-right .vehicle-aim-btn{min-height:34px;font-size:11px}.touch-right:has(.vehicle-aim-btn:not(.hidden)){gap:2px;padding-bottom:4px}}
