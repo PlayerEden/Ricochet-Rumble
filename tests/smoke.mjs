@@ -1193,9 +1193,13 @@ console.log('PASS v0.9.22-dev5 small vehicle-only pullback, pilot preserved and 
  const sequence=[];
  for(let n=0;n<4;n++){
   const game=st();sequence.push(game.config.matchModeId);
-  game.tanks[1].onFoot=true;game.tanks[1].shield=0;game.lives[1]=1;
-  assert.equal(api.registerHit(0,1),true);
-  assert.equal(game.finalResult.matchId,game.matchId);
+  // In team games one bot may be an ally; eliminate only real hostiles.
+  for(let victim=1;victim<game.tanks.length;victim++){
+   if(api.teamOf(victim)===api.teamOf(0))continue;
+   game.tanks[victim].onFoot=true;game.tanks[victim].shield=0;game.lives[victim]=1;
+   assert.equal(api.registerHit(0,victim),true,'can eliminate each enemy');
+  }
+  assert.equal(game.finalResult?.matchId,game.matchId,'last enemy ends a real team or FFA match');
   for(const fn of handlers['quick-rematch:click'])fn();
  }
  for(let n=1;n<sequence.length;n++)assert.notEqual(sequence[n],sequence[n-1],'two-mode playlist should not repeat consecutively');
