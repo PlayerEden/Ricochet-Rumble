@@ -1647,20 +1647,20 @@ console.log('PASS scored vehicle FFA: tank armor not KO, real ejection, safe pil
  const close=(got,want,label)=>assert.ok(Math.abs(got-want)<1e-6,label+': '+got+' vs '+want);
  human.a=0;human.vx=0;human.vy=0;human.powerTimer=0;humanVehicle.type='tank';
  api.tankMove(human,{moveX:1,moveY:0,bot:false},dt,0);
- close(human.vx,178*9*dt,'scored FFA human hull movement has lower target speed');
- assert.ok(178<222,'normal Survival tank is faster than the experimental scored tank');
+ close(human.vx,166*9*dt,'scored FFA human hull movement has lower target speed');
+ assert.ok(166<222,'normal Survival tank is faster than the experimental scored tank');
  human.a=0;human.vx=0;human.vy=0;
  api.tankMove(human,{moveX:0,moveY:1,bot:false},dt,0);
- close(human.a,3.6*dt,'scored FFA human hull rotates deliberately');
+ close(human.a,2.6*dt,'scored FFA human hull rotates deliberately');
  bot.a=0;bot.vx=0;bot.vy=0;botVehicle.type='tank';
  api.tankMove(bot,{moveX:1,moveY:0,bot:true},dt,1);
- close(bot.vx,146*9*dt,'AI in scored vehicle FFA also slows; no unfair human-only nerf');
+ close(bot.vx,136*9*dt,'AI in scored vehicle FFA also slows; no unfair human-only nerf');
  bot.a=0;bot.vx=0;bot.vy=0;
  api.tankMove(bot,{moveX:0,moveY:1,bot:true},dt,1);
- close(bot.a,3.6*dt,'AI rotation also slows');
+ close(bot.a,2.6*dt,'AI rotation also slows');
  humanVehicle.type='mech';human.a=0;human.vx=0;human.vy=0;
  api.tankMove(human,{moveX:1,moveY:0,bot:false},dt,0);
- close(human.vx,178*.76*9*dt,'mech retains its original .76 relative movement factor');
+ close(human.vx,166*.76*9*dt,'mech retains its original .76 relative movement factor');
  humanVehicle.type='tank';human.a=0;human.vx=0;human.vy=0;
  assert.equal(api.shoot(0),true,'shot remains available with tactical hull speed');
  const shell=m.bullets.at(-1);
@@ -1669,7 +1669,7 @@ console.log('PASS scored vehicle FFA: tank armor not KO, real ejection, safe pil
  assert.equal(shell.kind,'shell');
  assert.equal(api.activeBulletCap(human),4,'four shells in flight remains the default');
  assert.equal(api.fireInterval(human),.36,'fire cooldown still forces deliberate timing');
- assert.ok(415/178>2.3,'shell outruns scored FFA player tank >2.3x');
+ assert.ok(415/166>2.49,'shell outruns scored FFA player tank >2.3x');
  assert.ok(415/222<1.9,'previous shell-to-hull pace was below 1.9x');
  assert.ok(fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8').includes('b.age>.38&&b.bounces>0'),'returning owner ricochet can still hit the original shooter');
 
@@ -1685,7 +1685,7 @@ console.log('PASS scored vehicle FFA: tank armor not KO, real ejection, safe pil
  api.tankMove(pilot,{moveX:0,moveY:1,bot:false},dt,0);
  close(pilot.a,6.5*dt,'owner-approved CQC pilot turning unchanged');
 }
-console.log('PASS scored vehicle FFA tactical pacing: 178/146 movement and 3.6rad turns; 415 shell and 2.55s lifetime/4-cap unchanged; original CQC and Survival intact.');
+console.log('PASS scored vehicle FFA tactical pacing: 166/136 movement and 2.6rad steering, 1.8rad precision AIM; 415 shell and 2.55s lifetime/4-cap unchanged; original CQC and Survival intact.');
 
 
 // Scored FFA station-keeping design: a dedicated AIM pointer turns the hull
@@ -1697,6 +1697,11 @@ console.log('PASS scored vehicle FFA tactical pacing: 178/146 movement and 3.6ra
  api.newMatch('scored_ffa');
  const g=st(),pilot=g.tanks[0];
  assert.equal(node('vehicle-aim').classList.contains('hidden'),false,'vehicle AIM shown only in scored vehicle FFA');
+ // When driving, FIRE never occupies the dedicated AIM thumb pointer.
+ api.touch.add('fire');
+ api.beginFireAim({pointerId:90,clientX:80,clientY:80},'fire');
+ assert.equal(api.fireAim.pointerId,null,'vehicle FIRE cannot steal the precision AIM pointer');
+ api.touch.delete('fire');
  pilot.a=0;pilot.vx=0;pilot.vy=0;
  const count=g.bullets.length;
  api.beginFireAim({pointerId:42,clientX:74,clientY:74},'aim');
@@ -1718,7 +1723,7 @@ console.log('PASS scored vehicle FFA tactical pacing: 178/146 movement and 3.6ra
  api.touch.delete('fire');
  assert.ok(target.aimY>.95&&Math.abs(target.aimX)<.01,'AIM vectors point in chosen direction');
  api.tankMove(pilot,target,dt,0);
- assert.ok(Math.abs(pilot.a-3.6*dt)<.000001,'stationary hull pivots at new deliberate 3.6 rad/s cap');
+ assert.ok(Math.abs(pilot.a-1.8*dt)<.000001,'stationary hull pivots at new fine precision 1.8 rad/s cap');
  assert.equal(pilot.x,g.tanks[0].x,'position is stable when not using movement stick');
  assert.equal(g.bullets.length,count,'hull pivot has no side-effect shot');
  const rotated=pilot.a;
@@ -1736,12 +1741,17 @@ console.log('PASS scored vehicle FFA tactical pacing: 178/146 movement and 3.6ra
  api.beginFireAim({pointerId:43,clientX:74,clientY:74},'aim');
  api.updateFireAim({pointerId:43,clientX:74,clientY:134});
  api.tankMove(localTank,api.makeControl(true),dt,0);
- assert.ok(Math.abs(localTank.a-3.6*dt)<.000001,'same stationary pivot works when occupying a mech');
+ assert.ok(Math.abs(localTank.a-1.8*dt)<.000001,'same stationary pivot works when occupying a mech');
  api.releaseControls();
  assert.equal(api.fireAim.active,false);
  assert.equal(api.fireAim.source,null);
  api.newMatch('cqc');
  assert.equal(node('vehicle-aim').classList.contains('hidden'),true,'vehicle AIM hidden in CQC');
+ api.beginFireAim({pointerId:47,clientX:280,clientY:180},'fire');
+ assert.equal(api.fireAim.pointerId,47,'CQC pilot FIRE drag capture remains available');
+ api.updateFireAim({pointerId:47,clientX:280,clientY:210});
+ assert.equal(api.fireAim.active,true,'CQC pilot precision aim still responds to FIRE drag');
+ api.clearFireAim();
  api.beginFireAim({pointerId:44,clientX:300,clientY:190},'aim');
  assert.equal(api.fireAim.pointerId,null,'AIM-only gesture prohibited in pilot-only CQC');
  api.newMatch('solo');
@@ -1749,4 +1759,26 @@ console.log('PASS scored vehicle FFA tactical pacing: 178/146 movement and 3.6ra
  api.beginFireAim({pointerId:45,clientX:300,clientY:190},'aim');
  assert.equal(api.fireAim.pointerId,null,'Survival cannot enter experimental aim state');
 }
-console.log('PASS vehicle tactical stationary AIM: held right AIM rotates hull/mech at 3.6rad/s without shots; FIRE shoots in the chosen direction; modes isolated.');
+console.log('PASS vehicle tactical stationary AIM: held right AIM rotates hull/mech at 1.8rad/s without shots; FIRE shoots in the chosen direction; modes isolated.');
+
+// A/B test note: CQC pilot feel was already owner-positive. The pilot remains
+// quick; vehicle precision mode is a separate handling family.
+{
+ const a=win.__test,dt=1/60;
+ a.newMatch('scored_ffa');
+ const v=st().tanks[0];v.a=0;v.vx=v.vy=0;
+ a.tankMove(v,{moveX:0,moveY:1,bot:false,aimX:1,aimY:0},dt,0);
+ assert.equal(v.a,0,'held vehicle AIM overrides movement while aiming exactly east');
+ v.a=0;v.vx=v.vy=0;
+ a.tankMove(v,{moveX:0,moveY:1,bot:false,aimX:0,aimY:-1},dt,0);
+ assert.ok(Math.abs(v.a+1.8*dt)<1e-6,'vehicle AIM+MOVE rotates at the slower 1.8rad/s precision cap');
+ a.newMatch('cqc');
+ const p=st().tanks[0];p.vx=p.vy=0;
+ a.tankMove(p,{moveX:1,moveY:0,bot:false},dt,0);
+ assert.ok(Math.abs(p.vx-268*9*dt)<1e-6,'approved CQC pilot sprint speed 268 remains unchanged');
+ a.newMatch('solo');
+ const survival=st().tanks[0];survival.onFoot=true;survival.vehicleId=null;survival.a=0;
+ a.tankMove(survival,{moveX:0,moveY:1,bot:false},dt,0);
+ assert.ok(Math.abs(survival.a-12*dt)<1e-6,'Survival on-foot turn remains at old rate pending a pilot-consistency pass');
+}
+console.log('PASS v0.9.32 precision handling: independent 1.8rad/s AIM versus 2.6rad/s steer; FIRE pointer never steals AIM; accepted CQC pilot and legacy Survival isolated.');
