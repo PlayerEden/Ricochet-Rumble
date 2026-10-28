@@ -12,18 +12,18 @@ The owner accepts the pilot Lab E block-arcade artwork for now and wants to adva
 
 The new **`tests/quick-play-live-flow-qa.mjs`** serves *unmodified compiled game source except for one transient browser-only read/trigger hook* from a local test-only HTTP server. The hook is never committed into production `web/game.js` or Android. All original UI, listeners, match logic, camera, rendering and assets execute unchanged. It uses actual `ejectPilot` and `registerHit` to create real engine victories/losses without waiting for nondeterministic AI.
 
-## Browser integration assertions
+## Browser integration assertions — **ALL PASSED**
 
-- [ ] Start real Chromium at phone landscape 915×412; home lobby visible, Settings UI works.
-- [ ] Uncheck both mode choices; disabled START and persisted empty selection. Re-enable one and then both.
-- [ ] Set bot count to one in actual settings, start a real solo match and verify supported active mode.
-- [ ] Trigger real combat: an ejected bot loses two pilot lives; observe **genuine** engine win, KO/death totals, result panel and NEXT MATCH button (not injected static text).
-- [ ] Click actual NEXT MATCH; fresh maze seed and match ID, shuffled different mode with both selected, live results hidden and controls active.
-- [ ] Simulate actual local defeat, observe outcome, lives/death/KOs in results screen; MAIN MENU works.
-- [ ] Reload browser and inspect persisted two selected modes.
-- [ ] Existing smoke/real Chrome screenshots/Android build/embedded asset parity must still pass.
+- [x] Start real Chromium at 915×412, game loaded and home screen visible.
+- [x] Uncheck both mode choices; disabled START and persisted empty selection; re-enable one and both.
+- [x] Choose one real bot and begin a real solo match with a supported mode.
+- [x] Engine-driven ejection, two actual pilot hits, real match finalization; **VICTORY**, operator KO/death counts and NEXT MATCH appear in the live UI. The test does NOT inject fabricated scoreboard text.
+- [x] Click actual NEXT MATCH; verify fresh map seed and match ID, non-repeating mode when both modes enabled, cleared old result and current match active.
+- [x] Cause actual player defeat; results show **DEFEAT**, 2 deaths, 0 lives, true KO value; MAIN MENU returns to lobby.
+- [x] Reload the real browser; two chosen mode checkboxes remain selected.
+- [x] Existing procedural combat smoke, **68** real Chromium layout/gameplay screenshots, embedded asset parity, Android debug APK and unsigned AAB build passed.
 
-This test verifies real game UI/data connection, **not** unaided touchscreen player skill, fair enemy AI, live LAN replication, Play signing or real device memory preservation.
+**Evidence:** [integration full QA run 40626315482 — SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40626315482), test/CI code commit `e1040bfa72565e0bfe79847b800887ded4f14309`; [fast regression 40626315451 — SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40626315451). The integration candidate's shipped browser game, Android bundled game, HTML and CSS blobs were independently verified **byte-identical to the accepted Lab E source**. New changes are only extra tests, workflow step, and documentation. Original prior [QA-passed Lab E APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.24-pilot-lab-e-arcade-test) therefore remains a valid Android acceptance build, without redundant APK republication.
 
 ## Exact human phone acceptance still required (short)
 
