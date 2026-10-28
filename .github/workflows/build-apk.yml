@@ -23,8 +23,8 @@ permissions:
 jobs:
   full-qa:
     # Full Android QA is automatic only for mainline integration branches.
-    # Other PRs use lightweight CI; developers dispatch this manually as needed.
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'integration/')
+    # Other PRs use lightweight CI unless their body explicitly opts into [full-qa].
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'integration/') || contains(github.event.pull_request.body, '[full-qa]')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -63,6 +63,7 @@ jobs:
           test -n "$CHROME_BIN"
           npm install --no-save --ignore-scripts playwright-core@1.56.1
           node tests/visual-qa.mjs
+          node tests/quick-play-live-flow-qa.mjs
           node tests/pilot-art-review.mjs
       - name: Upload visual and simulation evidence
         if: always()
