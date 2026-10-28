@@ -16,6 +16,7 @@
         <span id="round" class="middle" aria-label="Vehicle armor: 3 of 3">TANK · 3/3</span>
         <span class="pink-tag"><strong id="score1">1</strong> <span id="player1-label">ENEMIES</span></span>
       </div>
+      <span id="score-clock" class="score-clock hidden" aria-label="Time remaining">03:00</span>
       <span id="power-status" class="power-status hidden" aria-live="off"></span>
       <button class="hud-menu" id="menu-button" aria-label="Pause or open game menu"><span aria-hidden="true">☰</span> MENU</button>
     </header>
@@ -39,7 +40,7 @@
               <div><span>OPERATOR KOs</span><strong id="aa-kos">0</strong></div>
               <div><span>DEATHS</span><strong id="aa-deaths">0</strong></div>
               <div><span>MATCH TIME</span><strong id="aa-duration">00:00</strong></div>
-              <div><span>LIVES LEFT</span><strong id="aa-lives">0</strong></div>
+              <div><span id="aa-lives-label">LIVES LEFT</span><strong id="aa-lives">0</strong></div>
             </div>
             <div class="aa-actions">
               <button id="quick-rematch" class="quick-rematch hidden" type="button" aria-label="Start a new match in a newly generated maze">↻ NEXT MATCH</button>
@@ -78,6 +79,7 @@
               <div class="home-action-grid">
                 <button data-action="nearby"><strong>PLAY TOGETHER</strong><small>LOCAL WI-FI</small></button>
                 <button data-action="settings"><strong>MATCH SETTINGS</strong><small>RULES &amp; CONTROLS</small></button>
+                <button data-action="cqc" class="home-cqc"><strong>CLOSE QUARTERS</strong><small>PILOT-ONLY · SCORE TEST</small></button>
               </div>
             </section>
           </div>
@@ -110,6 +112,7 @@
   <div class="comfort-grid settings-comfort"><label><input type="checkbox" id="pref-autoFire"> AUTO FIRE</label><label><input type="checkbox" id="pref-sound"> SOUND FX</label><label><input type="checkbox" id="pref-music"> MUSIC</label><label><input type="checkbox" id="pref-shake"> SCREEN SHAKE</label><label><input type="checkbox" id="pref-leftHanded"> SWAP CONTROLS</label></div>
   <div class="settings-actions"><button data-action="settings-back">BACK</button><button class="primary" data-action="settings-play">START MATCH</button></div>
 </template>
+  <script src="scored-match.js"></script>
   <script src="game.js"></script>
 </body>
 </html>
