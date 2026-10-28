@@ -38,10 +38,18 @@ The source is **not unified across modes**:
 
 ## Quality gates
 
-- [ ] Fast Node smoke + 300 seeded maze and old-mode regressions, exact new 166/136 hull movement, 2.6 steering and 1.8 precision AIM, separate FIRE pointer capture and CQC/Survival pilot regression.
-- [ ] Real Chromium input+aim tests and layouts on three landscape phone/tablet sizes; Web/Android parity; Android debug APK/unsigned AAB build.
-- [ ] Keep draft PR and a reversible APK only after full QA passes; **do not merge stable `main`** or mark v0.9.31 superseded on owner's phone until tested.
+- [x] [Fast Node smoke + 300 seeded maze/old-modes/regressions 40647176849 **SUCCESS**](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40647176849), exact 166/136 movement, 2.6 steer, 1.8 AIM, FIRE pointer isolation, CQC/Survival pilot parity evidence.
+- [x] [Full real Chromium/AIM+landscape layout & Android debug APK/unsigned AAB 40647176929 **SUCCESS**](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40647176929) on exact gameplay+test SHA `dce596d16ac0eeefd847ba564a0fdfd49718f3f8`. This does **not** constitute owner physical device acceptance.
+- [x] Archived [**original QA-tested v0.9.32 APK**](https://github.com/PlayerEden/Ricochet-Rumble/releases/download/v0.9.32-vehicle-precision-test/sector-rebound-v0.9.32-vehicle-precision-debug.apk) byte-for-byte in [immutable v0.9.32 test prerelease](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.32-vehicle-precision-test), including QA ZIP/SHA256, [single-use publisher 40647814414 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40647814414) cleaned up afterward. Stable game runtime `main` remains v0.9.21; v0.9.31 still an owner-positive comparison baseline.
 - [ ] Owner Android comparison: v0.9.31 versus new candidate, small aim changes, half-circle turning, tank/robot navigation around 132-unit corridor cells, fire-then-aim and aim-then-fire, on-foot ejection/return, 10-KO/4-min match pacing.
 - [ ] Future natural AI telemetry across at least 50 scored rounds to check contact and KO rates; no claim that speed changes improve match length yet.
 
 Original [v0.9.31 APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.31-vehicle-thumb-test), [v0.9.30](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.30-tactical-vehicle-aim-test) and owner-positive [v0.9.28 CQC](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.28-cqc-aim-feel-test) are immutable fallbacks.
+
+## Exact QA & release checkpoint — 2026-10-28
+
+- **[APK v0.9.32 precision vehicle feel test](https://github.com/PlayerEden/Ricochet-Rumble/releases/download/v0.9.32-vehicle-precision-test/sector-rebound-v0.9.32-vehicle-precision-debug.apk)**, [full prerelease/screenshots/checksum manifest](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.32-vehicle-precision-test). Source, executable and screenshots were built/tested at exact code SHA `dce596d16ac0eeefd847ba564a0fdfd49718f3f8`; APK downloaded from successful CI run and reuploaded **without recompiling/resigning**. One-off publisher workflow deleted after verified success.
+- [Fast 40647176849 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40647176849); [full Chromium & Android 40647176929 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40647176929), [archive publisher 40647814414 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40647814414).
+- [Draft **PR #50**](https://github.com/PlayerEden/Ricochet-Rumble/pull/50) reviewed against its direct parent `polish/vehicle-twin-thumb-controls-v0931` **ahead 4 commits, 4 files only** (paired Web/Android JS, updated smoke regression, this document). It remains DRAFT, and no stable runtime has merged.
+- [**Pilot controls follow-up issue #51**](https://github.com/PlayerEden/Ricochet-Rumble/issues/51) scoped separately. Do not conflate accepted CQC aiming with untested legacy Survival mobile pilot handling.
+- **Owner v0.9.32 physical phone test STILL OPEN**. Target: ease of 5°–15° alignment, reasonable 180° turn, low-speed navigation, AIM+FIRE finger order, shooting while stationary, survival after ejection. 50+ natural bot matches for KO pacing remain unmeasured. Android debug build internally may use inherited version and debug signing, not production Play signature.
