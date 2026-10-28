@@ -20,3 +20,6 @@ Owner judged Lab B head-and-shoulders camera as the right concept but requested 
 
 ## Acceptance
 Actual phone screenshot and moving/firing clip must show *person from directly overhead gripping pistol with both hands*, rather than a vehicle turret or low-crawl. Confirm bullets visually emerge at barrel tip, no shooting through corners, no FPS/controls regression. Owner chooses whether to approve two-handed pistol direction or commission a separate rifle variant. Do not merge onto `main` or draft PR #24 until source branch acceptance.
+
+## Phone-size screenshot refinement (Lab C revision 2)
+First Lab C screenshot at 915×412 revealed that the two new arms were still largely hidden by the helmet; the right-side weapon read as another turret protrusion. Before making any APK for user review, widen both shoulder arcs from local y±12 to **±14**, bend elbows clearly outward to **±20**, brighten outer forearms, and move both connected gloves to x17. Sidearm muzzle moves a small additional step to **local (28,2)**, shared by rendering AND projectile origin (four-direction test updated). This is the same strict-overhead pistol, not a rifle or viewpoint change. Keep collision trace through walls and all damage/speed/lifetime unchanged. Original Lab B and early Lab C commits remain available as rollback/reference.

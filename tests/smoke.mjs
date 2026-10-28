@@ -1208,13 +1208,14 @@ console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real r
  },{get(obj,key){return obj[key]},set(obj,key,val){obj[key]=val;return true}});
  api.drawTopPilot(painter,'#46d2f5',false,1,0,0);
  assert.ok(calls.some(x=>x[0]==='arc'&&x[1]===2&&x[2]===0&&x[3]===11.1),'dominant helmet top remains');
- assert.equal(calls.filter(x=>x[0]==='arc'&&x[1]===-5&&x[2]===12).length,4,'both shoulder caps visibly separate');
- assert.equal(calls.filter(x=>x[0]==='rect'&&x[1]===13&&x[2]===3&&x[3]===4).length,2,'two visible hands brace the sidearm');
- assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===14&&x[2]===0&&x[3]===11),'pistol projects FORWARD beyond helmet');
- assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===23&&x[2]===1),'pistol muzzle anchor drawn exactly at 24,2');
+ assert.equal(calls.filter(x=>x[0]==='arc'&&x[1]===-5&&x[2]===14).length,4,'both shoulder caps visibly separate');
+ assert.equal(calls.filter(x=>x[0]==='rect'&&x[1]===17&&x[2]===3&&x[3]===5).length,2,'two visible hands brace the sidearm');
+ assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===17&&x[2]===0&&x[3]===11),'pistol projects FORWARD beyond helmet');
+ assert.ok(calls.some(x=>x[0]==='line'&&x[1]===3&&x[2]===20),'visible outward elbow extends beyond helmet, not low-crawl');
+ assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===27&&x[2]===1),'pistol muzzle anchor drawn exactly at 24,2');
  assert.ok(!calls.some(x=>x[0]==='rect'&&x[3]>17),'no long crawling legs or fake 2.5D body');
  api.drawTopPilot(painter,'#fc856e',true,0,.2,0);
- assert.ok(calls.some(x=>x[0]==='arc'&&x[1]===26&&x[2]===2),'muzzle flash remains aligned with tip');
+ assert.ok(calls.some(x=>x[0]==='arc'&&x[1]===30&&x[2]===2),'muzzle flash remains aligned with tip');
  assert.equal(calls.filter(x=>x[0]==='save').length,calls.filter(x=>x[0]==='restore').length,'canvas transform balance');
  // Test true gun-origin fire on four rotations from an obstacle-free point.
  api.setPlaylistModes(['survival_ffa']);
@@ -1225,8 +1226,8 @@ console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real r
  for(let y=90;y<hh-90&&!clear;y+=40)for(let x=90;x<ww-90&&!clear;x+=40)
    if([0,Math.PI/2,Math.PI,Math.PI*1.5].every(a=>{
      for(let k=0;k<=12;k++){
-      const bx=x+(Math.cos(a)*24-Math.sin(a)*2)*k/12;
-      const by=y+(Math.sin(a)*24+Math.cos(a)*2)*k/12;
+      const bx=x+(Math.cos(a)*28-Math.sin(a)*2)*k/12;
+      const by=y+(Math.sin(a)*28+Math.cos(a)*2)*k/12;
       if(api.blocked(bx,by,4))return false;
      }
      return true;
@@ -1236,10 +1237,10 @@ console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real r
  for(const angle of [0,Math.PI/2,Math.PI,3*Math.PI/2]){
   st().bullets.length=0;shooter.a=angle;
   assert.equal(api.shoot(0),true,'every compass direction can shoot');
-  const b=st().bullets.at(-1),mx=clear.x+Math.cos(angle)*24-Math.sin(angle)*2,
-   my=clear.y+Math.sin(angle)*24+Math.cos(angle)*2;
+  const b=st().bullets.at(-1),mx=clear.x+Math.cos(angle)*28-Math.sin(angle)*2,
+   my=clear.y+Math.sin(angle)*28+Math.cos(angle)*2;
   assert.ok(Math.hypot(b.x-mx,b.y-my)<1e-7,'bullet starts at rotated hand-held muzzle, NOT head center');
-  assert.ok(Math.hypot(b.x-shooter.x,b.y-shooter.y)>22,'round never starts inside helmet');
+  assert.ok(Math.hypot(b.x-shooter.x,b.y-shooter.y)>26,'round never starts inside helmet');
   assert.ok(Math.abs(b.vx-Math.cos(angle)*475)<1e-7&&Math.abs(b.vy-Math.sin(angle)*475)<1e-7,'direction and speed unchanged');
  }
  assert.equal(api.unitTargetZoom({onFoot:true}),1.07,'approved pilot camera fixed');

@@ -496,7 +496,7 @@ function botInput(i,dt){
 }
 // One shared local-space pistol muzzle anchor, used by BOTH art and physics.
 // +X is actor facing; +Y is the tiny visual hand offset in top-down view.
-const PILOT_MUZZLE_X=24,PILOT_MUZZLE_Y=2;
+const PILOT_MUZZLE_X=28,PILOT_MUZZLE_Y=2;
 function pilotMuzzlePoint(t){
  const forward=Math.cos(t.a),side=Math.sin(t.a);
  return {x:t.x+forward*PILOT_MUZZLE_X-side*PILOT_MUZZLE_Y,
@@ -791,46 +791,42 @@ function drawLobbyPreview(dt){
  c.globalAlpha=1;
 }
 function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
- // LAB C: STRICT 90-DEGREE OVERHEAD TWO-HAND PISTOL STANCE.
- // Hands connect visibly to weapon, with helmet TOP hiding the chest.
- // No front-facing torso, dangling legs, tilted camera or center-spawned shot.
+ // LAB C REV2 -- truly overhead helmet + OPEN V-shaped TWO-HAND sidearm brace.
+ // Raise elbows beyond helmet sides; no low-crawling legs or profile view.
  const sway=clamp(stride,-3,3)*.15;
  c.save();c.translate(-recoil*.15,bob*.25);
- // Small, compact back beneath a dominant helmet.
  c.fillStyle='#071b25';c.beginPath();c.arc(-2,0,14,0,Math.PI*2);c.fill();
  c.fillStyle='#263f49';c.fillRect(-11,-8,13,16);
  c.fillStyle='#6d8790';c.fillRect(-10,-5,3,10);
- // Two shoulder caps and both forearms form a recognizable braced V.
+ // Render both upper arms/forearms from the shoulders toward one pistol.
+ // Elbows bend OUT to y=+/-19, staying clearly visible around the head.
  for(const side of [-1,1]){
-  c.save();c.scale(1,side);
-  c.translate(-sway*side,0);
-  c.fillStyle='#0a202c';c.beginPath();c.arc(-5,12,6,0,Math.PI*2);c.fill();
-  c.fillStyle='#607983';c.beginPath();c.arc(-5,12,4.8,0,Math.PI*2);c.fill();
-  c.fillStyle=paint;c.fillRect(-9,10,4,3);
-  // Upper arm bends outward before coming inward to the pistol grip.
-  c.fillStyle='#142f39';
-  c.beginPath();c.moveTo(-3,10);c.lineTo(2,14);c.lineTo(11,8);
-  c.lineTo(17,4);c.lineTo(13,1);c.lineTo(7,5);
-  c.lineTo(-2,8);c.closePath();c.fill();
-  c.fillStyle='#729096';
-  c.beginPath();c.moveTo(1,11);c.lineTo(4,11);
-  c.lineTo(13,5);c.lineTo(13,7);c.lineTo(5,13);c.closePath();c.fill();
-  c.fillStyle='#a1b9b5';c.fillRect(13,3,4,3); // both gloves contact the gun
+  c.save();c.scale(1,side);c.translate(-sway*side,0);
+  c.fillStyle='#0a202c';c.beginPath();c.arc(-5,14,6.5,0,Math.PI*2);c.fill();
+  c.fillStyle='#738e98';c.beginPath();c.arc(-5,14,5.2,0,Math.PI*2);c.fill();
+  c.fillStyle=paint;c.fillRect(-9,12,4,3);
+  c.fillStyle='#0e2933';
+  c.beginPath();c.moveTo(-4,13);c.lineTo(3,20);c.lineTo(11,16);
+  c.lineTo(21,6);c.lineTo(18,2);c.lineTo(10,10);
+  c.lineTo(3,14);c.lineTo(-4,10);c.closePath();c.fill();
+  // A bright outer forearm edge makes the grip legible at phone size.
+  c.fillStyle='#819fa5';
+  c.beginPath();c.moveTo(2,17);c.lineTo(4,17);c.lineTo(17,6);
+  c.lineTo(18,8);c.lineTo(7,18);c.closePath();c.fill();
+  c.fillStyle='#b2c7c2';c.fillRect(17,3,5,4); // glove meets pistol
   c.restore();
  }
- // Head from the top, on top of arm roots. No front/profile face.
+ // The single round helmet is viewed from directly ABOVE (no face/visor).
  c.fillStyle='#071b26';c.beginPath();c.arc(2,0,11.1,0,Math.PI*2);c.fill();
  c.fillStyle='#6b858d';c.beginPath();c.arc(2,0,9.2,0,Math.PI*2);c.fill();
  c.fillStyle='#93aaad';c.beginPath();c.arc(-1,-3,4,0,Math.PI*2);c.fill();
- c.fillStyle='#345461';c.fillRect(8,-3,2,6); // directional helmet notch
- // Compact actual sidearm. Muzzle equals physics anchor exactly.
- c.fillStyle='#081f2b';c.fillRect(14,0,11,4);
- c.fillStyle='#8cb1b3';c.fillRect(17,0,6,1.5);
- c.fillStyle='#1d3944';c.fillRect(16,4,4,3);
+ c.fillStyle='#345461';c.fillRect(8,-3,2,6);
+ // Compact pistol extends beyond helmet but never becomes a rifle/turret.
+ c.fillStyle='#081f2b';c.fillRect(17,0,11,4);
+ c.fillStyle='#a0c3c5';c.fillRect(19,0,7,1.5);
+ c.fillStyle='#23434d';c.fillRect(19,4,4,3);
  c.fillStyle='#e1f3d8';c.fillRect(PILOT_MUZZLE_X-1,PILOT_MUZZLE_Y-1,2,2);
- if(shooting){
-  c.fillStyle='#ffdaa0';c.beginPath();c.arc(PILOT_MUZZLE_X+2,PILOT_MUZZLE_Y,2.1,0,Math.PI*2);c.fill();
- }
+ if(shooting){c.fillStyle='#ffdaa0';c.beginPath();c.arc(PILOT_MUZZLE_X+2,PILOT_MUZZLE_Y,2.1,0,Math.PI*2);c.fill();}
  c.restore();
 }
 // v0.9.22-dev5: final small vehicle-only pullback after owner phone feedback.
