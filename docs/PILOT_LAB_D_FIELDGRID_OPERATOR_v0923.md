@@ -3,7 +3,7 @@
 **Date:** 2026-10-27  
 **Branch:** `prototype/pilot-fieldgrid-lab-d-v0923`  
 **Base:** `prototype/pilot-two-hand-muzzle-v0923` (Lab C2 exact tested predecessor)  
-**Status:** CODED PROTOTYPE; **automated QA / physical Android acceptance PENDING**. Not merged to `main` or Quick Play PR #24.
+**Status:** CODED PROTOTYPE; **automated smoke, Chromium visuals and Android packaging PASSED on exact code SHA `b6d143cd752b3d5019571429e247ea5f01cf6cc5`**. Human visual/Android acceptance PENDING. Not merged to `main` or Quick Play PR #24.
 
 ## Why
 
@@ -23,11 +23,11 @@ Locked camera pilot **1.07** / tank **0.82** / mech **0.77**, apron **420**; com
 
 ## Evidence and acceptance gates
 
-- [ ] Node syntax, seeded gameplay, four-rotation barrel-origin test and FIELDGRID cosmetic validation.
-- [ ] Byte-identical web/Android assets.
-- [ ] Real Chromium before/after **at 740×360, 915×412, 1280×720** using Lab C2 as before (record any tooling limitations).
+- [x] Node syntax, seeded gameplay, four-rotation barrel-origin test and FIELDGRID cosmetic validation. [Fast CI PASS 40621728359](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40621728359).
+- [x] Byte-identical web/Android assets.
+- [x] Real Chromium scenes captured at **740×360, 915×412, 1280×720**, [full QA PASS 40621728355](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40621728355). **Caution:** automatic workflow baseline is historical v0.9.20, not C2; Lab C2 screenshot release is separately retained for owner visual comparison.
 - [ ] Actual standing, aiming, firing, moving and ejected pilot screenshots: helmet/shoulders visible at regular landscape phone scale; no arm overlap, shield/locator ambiguity or wrong-handed rotations.
-- [ ] Debug Android APK and unsigned AAB compile (not signed Play release). Permanent dated screenshot/APK archive only after QA passes.
+- [x] Debug Android APK and unsigned AAB compiled, and exact debug APK + original phone-size screenshots permanently archived in [immutable Lab D prerelease](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.23-pilot-lab-d-fieldgrid-test). Not signed for Play.
 - [ ] Owner physical device playtest and visual approval. **Do not merge based on automated assertions alone.**
 
 ## Rollback and branch discipline
@@ -37,3 +37,11 @@ Lab C2 [permanent test release](https://github.com/PlayerEden/Ricochet-Rumble/re
 ## Next visual review
 
 Review the real gameplay screenshots at **natural scale first**. If a helmet silhouette is too busy, simplify polygon facets rather than increasing character size or adding decoration. Do not spend time on rifle variations until this pistol silhouette is approved.
+
+## Verified checkpoint — 2026-10-27
+
+- [Full Android, actual Chromium screenshots and gameplay run 40621728355 PASSED](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40621728355) on exact source SHA `b6d143cd752b3d5019571429e247ea5f01cf6cc5` after older tests were updated from circular Lab C assertions.
+- [Fast Node smoke/catalog/Android parity run 40621728359 PASSED](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40621728359) on that same source.
+- [Permanent debug test APK and original screenshots](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.23-pilot-lab-d-fieldgrid-test), released *without rebuilding* the passing APK. Screenshots include 915×412 on-foot idle, aiming east, and firing, plus full multi-viewport ZIP and hashes.
+- No manual human visual conclusion is implied: assess FIELDGRID proportions at normal device size, rotated facings, shield overlap and visible muzzle vs actual shot. **Owner approval still pending.**
+- Release tag points at tested source SHA; subsequent documentation-only commits on this branch do not replace the released code or update its APK.
