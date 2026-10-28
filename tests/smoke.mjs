@@ -1254,16 +1254,16 @@ console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real r
  }
  assert.equal(api.unitTargetZoom({onFoot:true}),1.07,'approved pilot camera fixed');
 }
-console.log('PASS pilot Lab C: both hands brace pistol, 4-axis muzzle-origin shots, no false-depth body.');
-// Prototype A field audit: human silhouette must not be occluded by the
+console.log('PASS pilot Lab D: angular two-hand sprite, 4 tactical locator brackets and 4-axis muzzle-origin shots.');
+// Operator field audit: human silhouette must not be occluded by the
 // previous oversized pilot locator, P1 label and selected-player triangle.
 {
  const src=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
  const android=fs.readFileSync(new URL('../android/app/src/main/assets/game.js',import.meta.url),'utf8');
  assert.equal(src,android,'actual Android pilot art/indicator source mirrors web');
  assert.ok(src.includes("t.x+(t.onFoot?42:0),t.y+(t.onFoot?-18:-38)"),'on-foot P1 label clears the head');
- assert.ok(src.includes('c.moveTo(t.x-30,t.y);c.lineTo(t.x-40,t.y-6)'), 'pilot arrow clears the counter-moving boots');
- assert.ok(src.includes('c.globalAlpha=.28;c.lineWidth=1.2'),'foot locator remains subtle behind anatomy');
+ assert.ok(src.includes('c.moveTo(t.x-30,t.y);c.lineTo(t.x-40,t.y-6)'), 'pilot arrow clears the overhead operator and nearby armor');
+ assert.ok(src.includes('drawPilotLocator(c,t.x,t.y'),'foot locator uses a single quartet of tactical brackets');
  assert.ok(src.includes("t.onFoot?.42:.8"),'on-foot shield retains readable cue without a massive outline');
 }
 console.log('PASS pilot prototype visibility: label, arrow, shield and locator clear the operator shape.');
