@@ -1650,6 +1650,11 @@ console.log('PASS scored vehicle FFA: tank armor not KO, real ejection, safe pil
  close(human.vx,185*9*dt,'scored FFA human hull movement has lower target speed');
  assert.ok(185<222,'normal Survival tank is faster than the experimental scored tank');
  human.a=0;human.vx=0;human.vy=0;
+ api.tankMove(human,{moveX:0,moveY:0,aimX:0,aimY:1,bot:false},dt,0);
+ close(human.a,5.5*dt,'scored FFA tank rotates in place when FIRE is dragged');
+ close(human.vx,0,'stationary tank aim creates no sideways motion');
+ close(human.vy,0,'stationary tank aim creates no forward motion');
+ human.a=0;human.vx=0;human.vy=0;
  api.tankMove(human,{moveX:0,moveY:1,bot:false},dt,0);
  close(human.a,5.5*dt,'scored FFA human hull rotates deliberately');
  bot.a=0;bot.vx=0;bot.vy=0;botVehicle.type='tank';
