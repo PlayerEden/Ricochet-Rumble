@@ -344,7 +344,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  const botLives=mode==='solo'?opposingCount(me):state.lives.slice(state.humanCount||2).filter(v=>v>0).length,active=state.bullets.filter(b=>b.owner===me).length;
  const phase=document.getElementById('round'),localPilot=state.tanks[me],localVehicle=currentVehicle(localPilot),foot=!!localPilot?.onFoot,hostPaused=mode==='guest'&&state.hostPaused;
  const armor=localVehicle?.armor??0,maxArmor=vehicleDef(localVehicle).armor;
- phase.textContent=hostPaused?'HOST PAUSED':state.winner>=0?'MATCH OVER':foot?'PILOT · ON FOOT':`${vehicleDef(localVehicle).name} · ${armor}/${maxArmor}`;
+ phase.textContent=hostPaused?'HOST PAUSED':state.winner>=0?'MATCH OVER':isScoredMatch()?(state.lives[me]===0?'RESPAWNING · '+Math.max(0,state.tanks[me].respawnWait||0).toFixed(1)+'s':'PILOT · CQC'):foot?'PILOT · ON FOOT':`${vehicleDef(localVehicle).name} · ${armor}/${maxArmor}`;
  phase.classList.toggle('on-foot',foot&&state.winner<0&&!hostPaused);
  phase.classList.toggle('damaged',!foot&&armor<=1&&state.winner<0&&!hostPaused);
  phase.classList.toggle('match-ended',state.winner>=0);
@@ -369,26 +369,38 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  // Solo results are captured once from combat state. LAN guest uses the existing
  // replicated winner/KO fields until a host-authoritative result packet exists.
  const soloResult=ended&&mode==='solo'?finalizeRound():null;
+ const scoredDraw=!!soloResult&&soloResult.outcome==='draw';
  const localWon=ended&&(soloResult?soloResult.outcome==='victory':state.lives[me]>0&&teamOf(me)===state.winnerTeam);
  if(!ended)resultCuePlayed=false;
  else if(!resultCuePlayed){resultCuePlayed=true;audioCue(localWon?'victory':'defeat');}
  if(report){
    report.classList.toggle('hidden',!ended);
-   report.classList.toggle('lost',ended&&!localWon);
+   report.classList.toggle('lost',ended&&!localWon&&!scoredDraw);
    if(ended){
      const modeTitle=document.getElementById('aa-mode-label');if(modeTitle&&mode==='solo')modeTitle.textContent=soloModeLabel(state.config);
-     document.getElementById('aa-title').textContent=localWon?'SECTOR CLEARED':'SECTOR LOST';
+     document.getElementById('aa-title').textContent=scoredDraw?'MATCH DRAW':localWon?'SECTOR CLEARED':'SECTOR LOST';
      document.getElementById('aa-event').textContent=soloResult?.event??String(state.event||'EXERCISE COMPLETE');
      document.getElementById('aa-kos').textContent=String(soloResult?.operatorKOs??state.kos[me]??0);
      document.getElementById('aa-deaths').textContent=soloResult?String(soloResult.deaths):'—';
      document.getElementById('aa-duration').textContent=soloResult?durationLabel(soloResult.durationSeconds):'—';
-     document.getElementById('aa-lives').textContent=String(soloResult?.livesRemaining??state.lives[me]??0);
-     document.getElementById('aa-outcome').textContent=localWon?'VICTORY':'DEFEAT';
+     document.getElementById('aa-lives').textContent=String(isScoredMatch()?state.scored.scoreTarget:soloResult?.livesRemaining??state.lives[me]??0);
+     const metric=document.getElementById('aa-lives-label');if(metric)metric.textContent=isScoredMatch()?'KO TARGET':'LIVES LEFT';
+     document.getElementById('aa-outcome').textContent=scoredDraw?'DRAW':localWon?'VICTORY':'DEFEAT';
      document.getElementById('aa-note').textContent=mode==='guest'?'AWAIT HOST REDEPLOYMENT':'NEW PROCEDURAL SECTOR READY';
    }
  }
  const replay=document.getElementById('quick-rematch');if(replay){replay.textContent=mode==='solo'?'↻ NEXT MATCH':'↻ NEW SECTOR';replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));}
- const label0=document.getElementById('player0-label');if(label0)label0.textContent='YOU';const label1=document.getElementById('player1-label');if(label1)label1.textContent=mode==='solo'&&state.config?.teamMode==='teams'?'RED':mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';if(mode==='solo')document.getElementById('score1').textContent=botLives;}
+ const label0=document.getElementById('player0-label');if(label0)label0.textContent=isScoredMatch()?'YOU KOs':'YOU';
+ const label1=document.getElementById('player1-label');if(label1)label1.textContent=isScoredMatch()?'LEADER':mode==='solo'&&state.config?.teamMode==='teams'?'RED':mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';
+ if(mode==='solo')document.getElementById('score1').textContent=botLives;
+ const clock=document.getElementById('score-clock'),life=document.querySelector('.scorestrip .hud-life');
+ if(clock){clock.classList.toggle('hidden',!isScoredMatch());if(isScoredMatch())clock.textContent=durationLabel(Math.ceil(Math.max(0,state.scored.clockSeconds-state.scored.elapsedSeconds)));}
+ if(life)life.classList.toggle('hidden',isScoredMatch());
+ if(isScoredMatch()){
+   document.getElementById('score0').textContent=state.scored.operatorKOs[me];
+   document.getElementById('score1').textContent=Math.max(0,...state.scored.operatorKOs.filter((_,i)=>i!==me));
+ }
+}
 function newMatch(which){
  savePrefs();
  const cqcLaunch=which==='cqc';
