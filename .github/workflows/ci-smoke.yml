@@ -38,5 +38,7 @@ jobs:
           cmp web/style.css android/app/src/main/assets/style.css
       - name: Game regression and seeded combat tests
         run: node tests/smoke.mjs
+      - name: Verify pure scored KO, team timeouts and spawn ranking contract
+        run: node tests/scored-match-kernel.mjs
       - name: Validate FIELDGRID cosmetic manifest
         run: node tools/validate-cosmetic-catalog.mjs
