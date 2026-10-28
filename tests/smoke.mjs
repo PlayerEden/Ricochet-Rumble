@@ -20,8 +20,9 @@ let simRand=null;
 const testMath=Object.create(Math);testMath.random=()=>simRand?simRand():Math.random();
 function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5;return(z>>>0)/4294967296;};}
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math:testMath,Number,Set,JSON,String};
+vm.runInNewContext(fs.readFileSync(new URL('../web/scored-match.js',import.meta.url),'utf8'),env,{filename:'scored-match.js'});
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -1411,3 +1412,71 @@ console.log('PASS pilot prototype visibility: label, arrow, shield and locator c
 }
 console.log('PASS Team Survival: real BLUE allies, RED opponents, mirrored tank/pilot material IDs, enemy-only HUD and team-win results.');
 
+
+// Score-mode integration must be tested through the real game IIFE, not only
+// via the imported pure rules unit tests. Existing survival tests above remain.
+{
+ const api=win.__test;
+ assert.ok(menuHtml.includes('data-action="cqc"'),'real, separately marked CQC button exists');
+ assert.ok(menuHtml.includes('scored-match.js'),'score engine is actually loaded ahead of gameplay');
+ api.newMatch('cqc');
+ const g=st();
+ assert.equal(g.config.matchModeId,'cqc');
+ assert.equal(g.config.mapSize,'small');
+ assert.equal(g.config.botCount,3);
+ assert.equal(g.tanks.length,4);
+ assert.equal(g.vehicles.length,0,'CQC has no vehicle spawns');
+ assert.ok(g.tanks.every(t=>t.onFoot&&t.vehicleId===null));
+ assert.equal(api.tryInteract(0),false,'vehicle boarding disabled in CQC');
+ assert.equal(g.scored.scoreTarget,10);assert.equal(g.scored.clockSeconds,180);
+ assert.equal(node('player0-label').textContent,'YOU KOs');
+ assert.equal(node('player1-label').textContent,'LEADER');
+ assert.equal(node('score0').textContent,0);
+ assert.equal(node('score-clock').textContent,'03:00');
+ g.tanks[1].shield=0;
+ assert.equal(api.registerHit(0,1),true,'pilot hit credited as score');
+ assert.equal(g.kos[0],1);
+ assert.equal(g.scored.operatorKOs[0],1);
+ assert.equal(g.deaths[1],1);
+ assert.equal(g.lives[1],0,'victim waiting for safe pilot respawn');
+ assert.ok(g.tanks[1].respawnWait>0);
+ assert.equal(node('score0').textContent,1);
+ g.tanks[1].respawnWait=0;
+ assert.equal(api.tryCqcRespawn(1),true,'safe respawn finds a tested connected cell');
+ assert.equal(g.lives[1],1);
+ assert.equal(g.respawns[1],1);
+ assert.ok(g.tanks[1].shield>0);
+ for(let n=1;n<10;n++){
+  g.tanks[1].shield=0;
+  assert.equal(api.registerHit(0,1),true,'live pilot KO '+(n+1));
+  if(n<9){g.tanks[1].respawnWait=0;assert.equal(api.tryCqcRespawn(1),true);}
+ }
+ assert.equal(g.winner,0);
+ assert.equal(g.finalResult.outcome,'victory');
+ assert.equal(g.finalResult.objective,'operator_ko_target');
+ assert.equal(g.finalResult.operatorKOs,10);
+ assert.equal(g.finalResult.scoreTarget,10);
+ assert.equal(g.finalResult.reason,'score_target');
+ assert.equal(node('aa-title').textContent,'SECTOR CLEARED');
+ assert.equal(node('aa-outcome').textContent,'VICTORY');
+ assert.equal(node('aa-lives-label').textContent,'KO TARGET');
+ assert.equal(node('aa-lives').textContent,'10');
+ assert.equal(api.registerHit(0,1),false,'results frozen after win');
+ const prevSeed=g.mazeSeed,prevId=g.matchId;
+ api.resetAll(true);
+ assert.equal(st().config.matchModeId,'cqc','next CQC battle does not rotate the survival playlist');
+ assert.notEqual(st().mazeSeed,prevSeed,'CQC NEXT MATCH regenerates sector');
+ assert.notEqual(st().matchId,prevId);
+ assert.equal(st().scored.operatorKOs[0],0,'CQC result is not carried into new round');
+ const g2=st();
+ api.step(180);
+ assert.equal(g2.finalResult.outcome,'draw','no-kill time expiration is a genuine DRAW');
+ assert.equal(g2.finalResult.reason,'time_limit');
+ assert.equal(node('aa-title').textContent,'MATCH DRAW');
+ assert.equal(node('aa-outcome').textContent,'DRAW');
+ api.newMatch('solo');
+ assert.equal(st().scored,null,'ordinary finite-life survival is not scored');
+ assert.ok(st().vehicles.length,'original vehicle survival still has spawned vehicles');
+ assert.equal(node('score-clock').classList.contains('hidden'),true,'no score clock shown in survival');
+}
+console.log('PASS playable CQC contract: real 10 pilot KOs, protected safe respawns, clock draw, next sector and survival isolation.');
