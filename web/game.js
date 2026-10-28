@@ -87,6 +87,10 @@ const menu=document.getElementById('menu'),panel=document.getElementById('panel'
 let wallSet=[],bumpers=[];
 const colors=PALETTE,pressed=new Set(),touch=new Set();
 const stick={x:0,y:0,pointerId:null};
+// CQC mobile: right FIRE thumb can drag to aim while left thumb steers.
+const fireAim={pointerId:null,startX:0,startY:0,x:0,y:0,active:false};
+const CQC_HUMAN_TURN_RATE=6.5; // original movement-driven 12rad/s was too twitchy on phones
+const CQC_PILOT_HIT_RADIUS=17.5; // modestly forgiving for ALL CQC pilots, not homing
 let mode='idle',connected=false,paused=true,lastTime=performance.now(),sendTimer=0,snapshotTimer=0,toastTimer=0,botTimer=0,hudTimer=0;
 const botBrains=new Map();
 let state=null;let guestInput={moveX:0,moveY:0,fire:false};
@@ -112,7 +116,7 @@ function applyPlaylistUI(){
 }
 function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){const st=p.settings||{};selectedRules={mapSize:MAP_SIZES[st.mapSize]?st.mapSize:'small',botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:2,bulletCap:[1,2,3,4,5,8].includes(st.bulletCap)?st.bulletCap:4,startLives:[2,3,5].includes(st.startLives)?st.startLives:2,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key];if(p.playlist?.version===1&&Array.isArray(p.playlist.enabled))setPlaylistModes(p.playlist.enabled)}}catch(_){}applyPrefsToUI()}
 function applyPrefsToUI(){const picks={mapSize:selectedRules.mapSize,botCount:selectedRules.botCount,bulletCap:selectedRules.bulletCap,startLives:selectedRules.startLives,teamMode:selectedRules.teamMode,botSkill:selectedRules.botSkill};const ids={mapSize:'map-size',botCount:'bot-count',bulletCap:'bullet-cap',startLives:'lives-choice',teamMode:'team-choice',botSkill:'bot-skill'};for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(el&&el.options&&[...el.options].some(o=>o.value===String(picks[key])))el.value=String(picks[key])}for(const key of Object.keys(comfort)){const el=document.getElementById('pref-'+key);if(el)el.checked=comfort[key]}const el=document.getElementById('fire-mode');if(el)el.textContent=comfort.autoFire?'AUTO ON':'HOLD TO FIRE';document.querySelector('.battlefield')?.classList.toggle('swap-controls',comfort.leftHanded);applyPlaylistUI();}
-function releaseControls(){touch.clear();pressed.clear();clearStick();for(const el of document.querySelectorAll('[data-key]'))el.classList.remove('active')}
+function releaseControls(){touch.clear();pressed.clear();clearStick();clearFireAim();for(const el of document.querySelectorAll('[data-key]'))el.classList.remove('active')}
 
 function mazeRandom(seed){let x=(seed>>>0)||1;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296};}
 function createMaze(def,seed){const {cols,rows,cell}=def,rng=mazeRandom(seed),open=Array.from({length:cols*rows},()=>[]),visited=new Set([0]),stack=[0];
@@ -336,7 +340,8 @@ function exitMenu(){menu.classList.add('hidden');refreshHUD()}
 function inputFrom(keys,isLocal){const down=k=>menu.classList.contains('hidden')&&(pressed.has(keys[k])||(isLocal&&touch.has(k)));let moveX=Number(down('right'))-Number(down('left')),moveY=Number(down('down'))-Number(down('up'));
  if(isLocal&&stick.pointerId!==null){moveX=stick.x;moveY=stick.y}
  const length=Math.hypot(moveX,moveY);if(length>1){moveX/=length;moveY/=length}
- return {moveX,moveY,fire:down('fire')||(isLocal&&comfort.autoFire&&mode!=='idle'&&menu.classList.contains('hidden')&&!paused)};}
+ const fineAim=isLocal&&isScoredMatch()&&fireAim.active&&touch.has('fire');
+ return {moveX,moveY,aimX:fineAim?fireAim.x:undefined,aimY:fineAim?fireAim.y:undefined,fire:down('fire')||(isLocal&&comfort.autoFire&&mode!=='idle'&&menu.classList.contains('hidden')&&!paused)};}
 function makeControl(isPlayer1){return isPlayer1?inputFrom(keys1,true):inputFrom(keys2,false)}
 function serializeState(){return {tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,vehicleDropTimer:state.vehicleDropTimer,dropIndex:state.dropIndex,vehicleBeacon:state.vehicleBeacon?{...state.vehicleBeacon}:null,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,hostPaused:mode==='host'&&paused};}
 function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
@@ -393,6 +398,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  const label0=document.getElementById('player0-label');if(label0)label0.textContent=isScoredMatch()?'YOU KOs':'YOU';
  const label1=document.getElementById('player1-label');if(label1)label1.textContent=isScoredMatch()?'LEADER':mode==='solo'&&state.config?.teamMode==='teams'?'RED':mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';
  if(mode==='solo')document.getElementById('score1').textContent=botLives;
+ const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=isScoredMatch()?'HOLD · DRAG TO AIM':comfort.autoFire?'AUTO ON':'HOLD TO FIRE';
  const clock=document.getElementById('score-clock'),life=document.querySelector('.scorestrip .hud-life');
  if(clock){clock.classList.toggle('hidden',!isScoredMatch());if(isScoredMatch())clock.textContent=durationLabel(Math.ceil(Math.max(0,state.scored.clockSeconds-state.scored.elapsedSeconds)));}
  if(life)life.classList.toggle('hidden',isScoredMatch());
@@ -428,7 +434,12 @@ function blocked(x,y,r=21){return x<r+13||x>worldW-r-13||y<r+13||y>worldH-r-13||
 function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=clamp(Number(inp.moveX)||0,-1,1),my=clamp(Number(inp.moveY)||0,-1,1);let mag=Math.hypot(mx,my);
  if(mag>1){mx/=mag;my/=mag;mag=1}if(mag<.09){mx=0;my=0;mag=0}
  const speed=(t.onFoot?(inp.bot?194:268):(inp.bot?178:222)*vehicleDef(currentVehicle(t)).speed)*(t.powerType==='turbo'&&t.powerTimer>0?1.48:1),blend=Math.min(1,dt*(mag?9:13));t.vx+=(mx*speed-t.vx)*blend;t.vy+=(my*speed-t.vy)*blend;
- if(mag){const target=Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a));t.a+=clamp(diff,-dt*12,dt*12)}
+ // CQC pilot controls: move and face together by default; when the player
+ // drags FIRE, the right thumb independently controls facing. Bots and all
+ // existing tank/mech/Survival controls keep their previous 12rad/s behavior.
+ const cqcHuman=isScoredMatch()&&t.onFoot&&i===0&&!inp.bot;
+ const aimed=cqcHuman&&Number.isFinite(inp.aimX)&&Number.isFinite(inp.aimY)&&Math.hypot(inp.aimX,inp.aimY)>.6;
+ if(mag||aimed){const target=aimed?Math.atan2(inp.aimY,inp.aimX):Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a)),maxTurn=dt*(cqcHuman?CQC_HUMAN_TURN_RATE:12);t.a+=clamp(diff,-maxTurn,maxTurn)}
  const nx=t.x+t.vx*dt,ny=t.y+t.vy*dt;
  const radius=t.onFoot?10:21;
  const collides=(x,y)=>blocked(x,y,radius)||state.tanks.some((other,j)=>{
@@ -552,6 +563,11 @@ function pilotMuzzlePoint(t){
  const forward=Math.cos(t.a),side=Math.sin(t.a);
  return {x:t.x+forward*PILOT_MUZZLE_X-side*PILOT_MUZZLE_Y,
          y:t.y+side*PILOT_MUZZLE_X+forward*PILOT_MUZZLE_Y};
+}
+function projectileHitRadius(target,bullet){
+ // Only CQC sidearms get the slightly larger impact tolerance. Wall/collision
+ // geometry, cover checks, shields and the other modes are unchanged.
+ return (target.onFoot?(isScoredMatch()&&bullet.kind==='sidearm'?CQC_PILOT_HIT_RADIUS:14):26)+(bullet.kind==='mech'?5:0);
 }
 function shoot(owner){if(state.lives[owner]<=0)return false;
  const isFoot=isPilotMatch()&&state.tanks[owner].onFoot;
@@ -686,7 +702,7 @@ function step(dt){if(paused||state.winner>=0)return;
  // Unoccupied vehicle bays are non-solid training projections. Projectiles
  // pass through as well; only a piloted vehicle has physical armor.
  if(b.life<=0)break;
- for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]>0&&(i===b.owner?(b.age>.38&&b.bounces>0):!friendly(i,b.owner))&&t.shield<=0&&(t.x-b.x)**2+(t.y-b.y)**2<((t.onFoot?14:26)+(b.kind==='mech'?5:0))**2){b.life=0;registerHit(b.owner,i);break}}}}
+ for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]>0&&(i===b.owner?(b.age>.38&&b.bounces>0):!friendly(i,b.owner))&&t.shield<=0&&(t.x-b.x)**2+(t.y-b.y)**2<projectileHitRadius(t,b)**2){b.life=0;registerHit(b.owner,i);break}}}}
  state.bullets=state.bullets.filter(b=>b.life>0);}
 // Offline synthesized FIELDGRID audio. No downloaded samples or backing music.
 // One shared AudioContext, short tails and a ricochet throttle protect phone CPU.
@@ -1199,7 +1215,7 @@ panel.addEventListener('change',e=>{const el=e.target;if(el.id?.startsWith('pref
 loadPrefs();
 
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
- if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right; only a few shells can be active.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
+ if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. In CLOSE QUARTERS, drag your right thumb while firing to aim independently. Small drags will not swing your pilot.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
  const s=document.getElementById('lan-address').value.trim(),m=s.match(/^([\da-fA-F:.]+):(\d{1,5})$/);
  if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';window.AndroidBridge.joinGame(m[1],Number(m[2]));}});
 function showPauseMenu(){releaseControls();if(mode==='idle')return;
@@ -1215,10 +1231,24 @@ menu.addEventListener('click',e=>{const a=e.target?.dataset?.action;
  else if(a==='restart'&&mode!=='guest'){resetAll();exitMenu()}});
 window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if([...Object.values(keys1),...Object.values(keys2)].includes(e.code))e.preventDefault();pressed.add(e.code);if(e.code==='KeyR'&&state.winner>=0&&mode!=='guest')resetAll(mode==='solo');if(e.code==='KeyE'&&!e.repeat&&menu.classList.contains('hidden')){if(mode==='guest'&&connected&&!state.hostPaused)nativePacket({type:'interact'});else if(mode==='solo'||mode==='host'||mode==='duel')tryInteract(0)}});
 window.addEventListener('keyup',e=>pressed.delete(e.code));window.addEventListener('blur',releaseControls);
-for(const b of document.querySelectorAll('[data-key]')){const k=b.dataset.key;const release=e=>{touch.delete(k);b.classList.remove('active');try{b.releasePointerCapture(e.pointerId)}catch(_){}};
- b.addEventListener('pointerdown',e=>{e.preventDefault();touch.add(k);b.classList.add('active');b.setPointerCapture(e.pointerId)});b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);b.addEventListener('lostpointercapture',()=>{touch.delete(k);b.classList.remove('active')})}
+for(const b of document.querySelectorAll('[data-key]')){const k=b.dataset.key;const release=e=>{touch.delete(k);b.classList.remove('active');if(k==='fire'&&fireAim.pointerId===e.pointerId)clearFireAim();try{b.releasePointerCapture(e.pointerId)}catch(_){}};
+ b.addEventListener('pointerdown',e=>{e.preventDefault();touch.add(k);b.classList.add('active');if(k==='fire')beginFireAim(e);b.setPointerCapture(e.pointerId)});
+ if(k==='fire')b.addEventListener('pointermove',e=>{if(fireAim.pointerId===e.pointerId){e.preventDefault();updateFireAim(e)}});
+ b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);b.addEventListener('lostpointercapture',e=>{touch.delete(k);b.classList.remove('active');if(k==='fire'&&fireAim.pointerId===e.pointerId)clearFireAim()})}
 const joystick=document.getElementById('joystick'),knob=document.getElementById('stick-knob');
 function clearStick(){stick.x=stick.y=0;stick.pointerId=null;knob.style.transform='translate(-50%, -50%)';joystick.classList.remove('active')}
+function clearFireAim(){fireAim.pointerId=null;fireAim.x=0;fireAim.y=0;fireAim.active=false;}
+function beginFireAim(e){if(!isScoredMatch()||fireAim.pointerId!==null)return;
+ fireAim.pointerId=e.pointerId;fireAim.startX=Number(e.clientX)||0;fireAim.startY=Number(e.clientY)||0;
+ fireAim.x=0;fireAim.y=0;fireAim.active=false;
+}
+function updateFireAim(e){
+ if(fireAim.pointerId!==e.pointerId||!isScoredMatch())return;
+ const dx=(Number(e.clientX)||0)-fireAim.startX,dy=(Number(e.clientY)||0)-fireAim.startY,d=Math.hypot(dx,dy);
+ // 14px dead zone prevents a jittery tap from swinging the entire operator.
+ if(d<14)return;
+ fireAim.x=dx/d;fireAim.y=dy/d;fireAim.active=true;
+}
 function updateStick(e){const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,rad=Math.max(1,r.width*.32);
  const dx=e.clientX-cx,dy=e.clientY-cy,d=Math.hypot(dx,dy),factor=Math.min(1,rad/Math.max(1,d));stick.x=dx*factor/rad;stick.y=dy*factor/rad;
  if(Math.hypot(stick.x,stick.y)<.12){stick.x=stick.y=0}
