@@ -41,3 +41,7 @@ Ratio shell:tank increases **1.87× → 2.24×**. Approximate full-speed tank 13
 - The new unit test checks AI and player movement rate, turn cap, shell speed/life/cap/cooldown, owner-bounce danger code and unchanged Survival/CQC behavior. Node and Chromium/Android full CI required for actual APK.
 
 **Next step if physical play feels better:** use the same consistent vehicle movement design across Survival/FFA/TDM after explicit signoff, then separately evaluate shell lifespan/cap and optional "hold to turn in place" aiming controls. Keep originals for rollback. Do **not** declare v0.9.29 itself broken based on a design hypothesis.
+
+## Scored shell self-hit clarification
+
+The canonical scoring rules count a ricochet self-kill as a **death with no awarded opponent KO**, not a free point. Live projectile collision still requires the shooter's own bullet to have bounced at least once and aged more than 0.38 seconds. This preserves the tactical danger while preventing self-kills from farming a score. Future A/B balance should record self-hit deaths separately from opponent KOs.
