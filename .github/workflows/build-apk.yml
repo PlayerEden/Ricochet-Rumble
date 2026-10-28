@@ -46,10 +46,13 @@ jobs:
         run: |
           set -euo pipefail
           node tests/smoke.mjs
+          node tests/scored-match-kernel.mjs
           node tools/validate-cosmetic-catalog.mjs
           cmp web/game.js android/app/src/main/assets/game.js
           cmp web/index.html android/app/src/main/assets/index.html
           cmp web/style.css android/app/src/main/assets/style.css
+          cmp web/scored-match.js android/app/src/main/assets/scored-match.js
+          node tests/scored-browser-parity.mjs
       - name: Checkout screenshot comparison baseline
         uses: actions/checkout@v4
         with:
