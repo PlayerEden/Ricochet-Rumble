@@ -1,6 +1,12 @@
 # 12 — FIELDGRID Cosmetic Extension Bible
 **Version:** 1.0-draft | **Status:** Future art/system specification, not implemented
 
+## 2026-10-27 owner gameplay-art direction update
+
+The actual QA-passed [Lab D on-foot pilot](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.23-pilot-lab-d-fieldgrid-test) is **playable as a provisional art candidate**, but owner feedback identified a mismatch with the tank's chunky old-school arcade shapes: the pilot's finer faceted surfaces look like a different rendering family. The next *optional* visual pass should harmonize all three in-game units with block-built, flat three-value industrial modules and support simple palette/skin choices **through named material roles**, not hard-coded one-off sprite variants.
+
+See [25 — Gameplay Unit Art & Modular Skins](25_GAMEPLAY_UNIT_ART_AND_MODULAR_SKINS_DRAFT.md) for the scoped silhouette/geometry recipe, modular armor/weapon/team-identity layers, implementation sequence and phone-sized approval tests. This is a design handoff, **not a claim that gameplay skins, a picker, entitlement logic or billing work today**. Playable top-down operators and dossier portrait icons are different assets.
+
 ## Principle
 Sector Rebound's 2D hardware benefits from **parametric skins**, not hundreds of separate hand-drawn sprites. Keep one solid tank/mech/pilot geometry foundation and expose safe, deliberately designed visual layers. Premium effects must never alter combat stats, hitboxes, projectile collision, aim or readability.
 
