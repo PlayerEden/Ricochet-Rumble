@@ -96,7 +96,10 @@ const fireAim={pointerId:null,source:null,startX:0,startY:0,x:0,y:0,active:false
 // Other modes and all shell speeds, bounce rules and caps remain untouched.
 // Thumb-comfort experiment: modestly slower hull, much calmer maximum slew.
 // Keep CQC pilot, shells, normal Survival and LAN on their accepted rules.
-const SCORED_FFA_VEHICLE_PACE=Object.freeze({human:178,bot:146,turnRate:3.6});
+// This pass deliberately slows FFA hulls a little, but aims more than it moves:
+// with the right AIM stick active, use a calmer precision-turn rate so small
+// finger adjustments can settle exact ricochet angles. Old modes stay intact.
+const SCORED_FFA_VEHICLE_PACE=Object.freeze({human:166,bot:136,turnRate:2.6,aimTurnRate:1.8});
 const CQC_HUMAN_TURN_RATE=6.5; // original movement-driven 12rad/s was too twitchy on phones
 const CQC_PILOT_HIT_RADIUS=17.5; // modestly forgiving for ALL CQC pilots, not homing
 let mode='idle',connected=false,paused=true,lastTime=performance.now(),sendTimer=0,snapshotTimer=0,toastTimer=0,botTimer=0,hudTimer=0;
@@ -454,7 +457,7 @@ function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=c
  // The separate AIM pad NEVER shoots; FIRE remains independently usable.
  const independentAim=isScoredMatch()&&i===0&&!inp.bot&&(t.onFoot||tacticalVehicle);
  const aimed=independentAim&&Number.isFinite(inp.aimX)&&Number.isFinite(inp.aimY)&&Math.hypot(inp.aimX,inp.aimY)>.6;
- if(mag||aimed){const target=aimed?Math.atan2(inp.aimY,inp.aimX):Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a)),maxTurn=dt*(cqcHuman?CQC_HUMAN_TURN_RATE:tacticalVehicle?SCORED_FFA_VEHICLE_PACE.turnRate:12);t.a+=clamp(diff,-maxTurn,maxTurn)}
+ if(mag||aimed){const target=aimed?Math.atan2(inp.aimY,inp.aimX):Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a)),maxTurn=dt*(cqcHuman?CQC_HUMAN_TURN_RATE:tacticalVehicle?(aimed?SCORED_FFA_VEHICLE_PACE.aimTurnRate:SCORED_FFA_VEHICLE_PACE.turnRate):12);t.a+=clamp(diff,-maxTurn,maxTurn)}
  const nx=t.x+t.vx*dt,ny=t.y+t.vy*dt;
  const radius=t.onFoot?10:21;
  const collides=(x,y)=>blocked(x,y,radius)||state.tanks.some((other,j)=>{
@@ -1280,6 +1283,10 @@ function clearStick(){stick.x=stick.y=0;stick.pointerId=null;knob.style.transfor
 function clearFireAim(){fireAim.pointerId=null;fireAim.source=null;fireAim.x=0;fireAim.y=0;fireAim.active=false;const knob=document.getElementById('vehicle-aim-knob');if(knob)knob.style.transform='translate(-50%, -50%)';}
 function beginFireAim(e,source='fire'){
  if(!isScoredMatch()||fireAim.pointerId!==null||!['fire','aim'].includes(source))return;
+ // In vehicles, FIRE is a pure shot action. Do not let a FIRE touch steal the
+ // single active aim pointer before the separate precision AIM thumb can land.
+ // On foot, preserve the already owner-positive FIRE-drag independent aim.
+ if(source==='fire'&&state?.config?.matchModeId==='scored_ffa'&&!state?.tanks?.[0]?.onFoot)return;
  if(source==='aim'&&!(state?.config?.matchModeId==='scored_ffa'&&!state?.tanks?.[0]?.onFoot))return;
  fireAim.pointerId=e.pointerId;fireAim.source=source;fireAim.startX=Number(e.clientX)||0;fireAim.startY=Number(e.clientY)||0;
  fireAim.x=0;fireAim.y=0;fireAim.active=false;
