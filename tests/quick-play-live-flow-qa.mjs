@@ -371,6 +371,18 @@ try{
  await page.locator('#custom-mode').selectOption('scored_tdm');
  assert.equal(await page.locator('#custom-size').isDisabled(),true);
  assert.equal(await page.locator('#custom-bots').isDisabled(),true);
+ assert.equal(await page.locator('#custom-size').inputValue(),'standard','scored preset shows actual enforced map');
+ assert.equal(await page.locator('#custom-bots').inputValue(),'3','scored preset shows actual enforced bot count');
+ assert.equal(await page.locator('#custom-lives').inputValue(),'2');
+ assert.equal(await page.locator('#custom-shells').inputValue(),'4');
+ for(const [vw,vh] of [[740,360],[915,412],[1280,720]]){
+  await page.setViewportSize({width:vw,height:vh});
+  const geometry=await page.locator('#panel').evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth,scrollHeight:el.scrollHeight,clientHeight:el.clientHeight}));
+  assert.ok(geometry.scrollWidth<=geometry.width+3,'Custom editor must not scroll horizontally at '+vw);
+  await page.locator('button[data-action="custom-play"]').scrollIntoViewIfNeeded();
+  assert.equal(await page.locator('button[data-action="custom-play"]').isVisible(),true,'Custom deploy remains reachable at '+vw);
+ }
+ await page.setViewportSize({width:915,height:412});
  assert.ok((await page.locator('#custom-preview').textContent()).includes('SCORE 15 KOs / 5 MIN'));
  await page.locator('button[data-action="custom-play"]').click();
  await page.evaluate(()=>window.__flowQA.freeze());
