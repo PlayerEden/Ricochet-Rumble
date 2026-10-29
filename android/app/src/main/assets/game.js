@@ -1,6 +1,7 @@
 (()=>{'use strict';
 let W=960,H=600;const START_LIVES=5,STEP=1/60;
 const PREF_KEY='rr-options-v06'; // Preserve existing options across this patch.
+const CUSTOM_PREF_KEY='rr-custom-v1';
 let comfort={sound:true,music:true,shake:false,autoFire:false,leftHanded:false},fixedAccumulator=0;
 let selectedRules={botCount:2,bulletCap:4,startLives:2,teamMode:'ffa',botSkill:'normal',mapSize:'small'};
 // v0.9.22 / Slice A: stable solo presets backed by CURRENT survival combat, not proposed score modes.
@@ -15,6 +16,48 @@ const VEHICLE_FFA_RULES=Object.freeze({mode:'ffa',scoreTarget:10,clockSeconds:24
 const VEHICLE_TDM_RULES=Object.freeze({mode:'teams',scoreTarget:15,clockSeconds:300,vehiclePolicy:'standard'});
 const SCORED_MATCH_RULES=Object.freeze({cqc:CQC_RULES,scored_ffa:VEHICLE_FFA_RULES,scored_tdm:VEHICLE_TDM_RULES});
 let selectedPlaylistIds=RELEASED_MATCH_MODES.slice(),playlistBag=[],lastSoloModeId=null,matchSerial=0;
+
+const CUSTOM_MODE_IDS=Object.freeze(['survival_ffa','survival_teams','cqc','scored_ffa','scored_tdm']);
+const CUSTOM_DEFAULT=Object.freeze({modeId:'survival_ffa',mapSize:'standard',botCount:2,botSkill:'normal',startLives:2,bulletCap:4});
+let customDraft={...CUSTOM_DEFAULT};
+function normalizeCustomDraft(raw){
+ const p=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{};
+ const choose=(key,values)=>values.includes(p[key])?p[key]:CUSTOM_DEFAULT[key];
+ return {modeId:choose('modeId',CUSTOM_MODE_IDS),mapSize:choose('mapSize',['small','standard','large']),
+ botCount:choose('botCount',[0,1,2,3,4]),botSkill:choose('botSkill',['casual','normal','spicy']),
+ startLives:choose('startLives',[2,3,5]),bulletCap:choose('bulletCap',[1,2,3,4,5,8])};
+}
+function saveCustomDraft(){try{window.localStorage?.setItem(CUSTOM_PREF_KEY,JSON.stringify({version:1,rules:customDraft}))}catch(_){}return {...customDraft}}
+function loadCustomDraft(){try{const p=JSON.parse(window.localStorage?.getItem(CUSTOM_PREF_KEY)||'null');if(p?.version===1)customDraft=normalizeCustomDraft(p.rules)}catch(_){}return {...customDraft}}
+function setCustomDraft(patch){customDraft=normalizeCustomDraft({...customDraft,...patch});return saveCustomDraft()}
+function customOptionsFor(raw=customDraft){
+ const d=normalizeCustomDraft(raw),scored=SCORED_MATCH_RULES[d.modeId];
+ if(scored)return {...selectedRules,matchModeId:d.modeId,customMatch:true,pilotMode:true,
+  mapSize:d.modeId==='cqc'?'small':'standard',botCount:3,botSkill:d.botSkill,
+  bulletCap:4,startLives:2,teamMode:scored.mode==='teams'?'teams':'ffa'};
+ const base={...selectedRules,mapSize:d.mapSize,botCount:d.botCount,botSkill:d.botSkill,
+  bulletCap:d.bulletCap,startLives:d.startLives,teamMode:d.modeId==='survival_teams'?'teams':'ffa'};
+ return {...soloOptionsFor(d.modeId,base),customMatch:true};
+}
+function refreshCustomUI(){
+ const root=document.getElementById('custom-match');if(!root)return;
+ const ids={modeId:'custom-mode',mapSize:'custom-size',botCount:'custom-bots',botSkill:'custom-skill',startLives:'custom-lives',bulletCap:'custom-shells'};
+ for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(el)el.value=String(customDraft[key])}
+ const scored=!!SCORED_MATCH_RULES[customDraft.modeId];
+ for(const id of ['custom-size','custom-bots','custom-lives','custom-shells']){const el=document.getElementById(id);if(el)el.disabled=scored}
+ const options=customOptionsFor(),count=options.botCount,p=document.getElementById('custom-preview');
+ if(p)p.textContent=soloModeLabel(options)+' · '+options.mapSize.toUpperCase()+' · '+(count?count+1+' COMBATANTS':'PRACTICE · NO OPPONENTS')+' · '+(scored?'SCORE '+SCORED_MATCH_RULES[customDraft.modeId].scoreTarget+' KOs / '+SCORED_MATCH_RULES[customDraft.modeId].clockSeconds/60+' MIN':'LAST SIDE STANDING');
+ const note=document.getElementById('custom-rule-note');
+ if(note)note.textContent=scored?'SCORED TEST PRESET: MAP, BOTS, LIVES AND SHELLS LOCKED; AI SKILL ADJUSTABLE.':customDraft.modeId==='survival_teams'&&customDraft.botCount===1?'TEAM SURVIVAL: 1 BOT SETTING DEPLOYS 2 (ALLY + ENEMY).':'CASUAL · SAVED SEPARATELY FROM QUICK PLAY';
+}
+function readCustomScreen(){
+ if(!document.getElementById('custom-match'))return {...customDraft};
+ const ids={modeId:'custom-mode',mapSize:'custom-size',botCount:'custom-bots',botSkill:'custom-skill',startLives:'custom-lives',bulletCap:'custom-shells'},patch={};
+ for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(!el||el.disabled)continue;patch[key]=['botCount','startLives','bulletCap'].includes(key)?Number(el.value):el.value}
+ return setCustomDraft(patch);
+}
+function openCustomScreen(){setPanel(document.getElementById('custom-template').innerHTML);refreshCustomUI();}
+
 function normalizePlaylistModes(ids){
  if(!Array.isArray(ids))return RELEASED_MATCH_MODES.slice();
  return RELEASED_MATCH_MODES.filter(id=>ids.includes(id));
@@ -127,7 +170,7 @@ function applyPlaylistUI(){
  const status=document.getElementById('playlist-status');
  if(status)status.textContent=selectedPlaylistIds.length?selectedPlaylistIds.length+' selected · last side standing':'SELECT AT LEAST ONE MODE';
 }
-function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){const st=p.settings||{};selectedRules={mapSize:MAP_SIZES[st.mapSize]?st.mapSize:'small',botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:2,bulletCap:[1,2,3,4,5,8].includes(st.bulletCap)?st.bulletCap:4,startLives:[2,3,5].includes(st.startLives)?st.startLives:2,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key];if(p.playlist?.version===1&&Array.isArray(p.playlist.enabled))setPlaylistModes(p.playlist.enabled)}}catch(_){}applyPrefsToUI()}
+function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){const st=p.settings||{};selectedRules={mapSize:MAP_SIZES[st.mapSize]?st.mapSize:'small',botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:2,bulletCap:[1,2,3,4,5,8].includes(st.bulletCap)?st.bulletCap:4,startLives:[2,3,5].includes(st.startLives)?st.startLives:2,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key];if(p.playlist?.version===1&&Array.isArray(p.playlist.enabled))setPlaylistModes(p.playlist.enabled)}}catch(_){}loadCustomDraft();applyPrefsToUI()}
 function applyPrefsToUI(){const picks={mapSize:selectedRules.mapSize,botCount:selectedRules.botCount,bulletCap:selectedRules.bulletCap,startLives:selectedRules.startLives,teamMode:selectedRules.teamMode,botSkill:selectedRules.botSkill};const ids={mapSize:'map-size',botCount:'bot-count',bulletCap:'bullet-cap',startLives:'lives-choice',teamMode:'team-choice',botSkill:'bot-skill'};for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(el&&el.options&&[...el.options].some(o=>o.value===String(picks[key])))el.value=String(picks[key])}for(const key of Object.keys(comfort)){const el=document.getElementById('pref-'+key);if(el)el.checked=comfort[key]}const el=document.getElementById('fire-mode');if(el)el.textContent=comfort.autoFire?'AUTO ON':'HOLD TO FIRE';document.querySelector('.battlefield')?.classList.toggle('swap-controls',comfort.leftHanded);applyPlaylistUI();}
 function releaseControls(){touch.clear();pressed.clear();clearStick();clearFireAim();vehicleAimButton?.classList.remove('active');for(const el of document.querySelectorAll('[data-key]'))el.classList.remove('active')}
 
@@ -403,7 +446,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
    report.classList.toggle('hidden',!ended);
    report.classList.toggle('lost',ended&&!localWon&&!scoredDraw);
    if(ended){
-     const modeTitle=document.getElementById('aa-mode-label');if(modeTitle&&mode==='solo')modeTitle.textContent=soloModeLabel(state.config);
+     const modeTitle=document.getElementById('aa-mode-label');if(modeTitle&&mode==='solo')modeTitle.textContent=(state.config?.customMatch?'CUSTOM · ':'')+soloModeLabel(state.config);
      document.getElementById('aa-title').textContent=scoredDraw?'MATCH DRAW':localWon?'SECTOR CLEARED':'SECTOR LOST';
      document.getElementById('aa-event').textContent=soloResult?.event??String(state.event||'EXERCISE COMPLETE');
      document.getElementById('aa-kos').textContent=String(soloResult?.operatorKOs??state.kos[me]??0);
@@ -412,11 +455,12 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
      document.getElementById('aa-lives').textContent=String(isScoredMatch()?state.scored.scoreTarget:soloResult?.livesRemaining??state.lives[me]??0);
      const metric=document.getElementById('aa-lives-label');if(metric)metric.textContent=isScoredMatch()?(state.scored.mode==='teams'?'TEAM KO TARGET':'KO TARGET'):'LIVES LEFT';
      document.getElementById('aa-outcome').textContent=scoredDraw?'DRAW':localWon?'VICTORY':'DEFEAT';
-     document.getElementById('aa-note').textContent=mode==='guest'?'AWAIT HOST REDEPLOYMENT':'NEW PROCEDURAL SECTOR READY';
+     document.getElementById('aa-note').textContent=mode==='guest'?'AWAIT HOST REDEPLOYMENT':state.config?.customMatch?'CUSTOM RULES · NEW SECTOR READY':'NEW PROCEDURAL SECTOR READY';
    }
  }
- const replay=document.getElementById('quick-rematch');if(replay){replay.textContent=mode==='solo'?'↻ NEXT MATCH':'↻ NEW SECTOR';replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));}
+ const replay=document.getElementById('quick-rematch');if(replay){replay.textContent=state.config?.customMatch?'↻ SAME RULES · NEW SECTOR':mode==='solo'?'↻ NEXT MATCH':'↻ NEW SECTOR';replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));}
  const tdm=isScoredMatch()&&state.scored.mode==='teams';
+ const editRules=document.getElementById('custom-edit');if(editRules)editRules.classList.toggle('hidden',!(ended&&mode==='solo'&&!!state.config?.customMatch));
  const label0=document.getElementById('player0-label');if(label0)label0.textContent=tdm?'BLUE':isScoredMatch()?'YOU KOs':'YOU';
  const label1=document.getElementById('player1-label');if(label1)label1.textContent=tdm?'RED':isScoredMatch()?'LEADER':mode==='solo'&&state.config?.teamMode==='teams'?'RED':mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';
  if(mode==='solo')document.getElementById('score1').textContent=botLives;
@@ -432,16 +476,16 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
 }
 function newMatch(which){
  savePrefs();
- const scoredLaunch=!!SCORED_MATCH_RULES[which],cqcLaunch=which==='cqc';
+ const scoredLaunch=!!SCORED_MATCH_RULES[which],customLaunch=which==='custom',cqcLaunch=which==='cqc';
  if(which==='solo'&&!selectedPlaylistIds.length){notice('SELECT A QUICK PLAY MODE IN MATCH SETTINGS',2300);return false;}
  const playlistId=which==='solo'?nextPlaylistMode():null;
- if(bridgeReady())window.AndroidBridge.stopNetwork();mode=scoredLaunch?'solo':which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;
- const arena=selectArena(),options=scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:which==='scored_tdm'?'teams':'ffa',matchModeId:which,pilotMode:true}:playlistId?soloOptionsFor(playlistId):{...selectedRules,pilotMode:true};
- state=initialState(arena,options,freshSectorSeed(state?.mazeSeed));camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch)?(state.config.botCount===0?'PRACTICE FIELD':soloModeLabel(state.config)):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch){exitMenu();if(which==='solo')firstMatchHint();}}
+ if(bridgeReady())window.AndroidBridge.stopNetwork();mode=scoredLaunch||customLaunch?'solo':which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;
+ const arena=selectArena(),options=customLaunch?customOptionsFor():scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:which==='scored_tdm'?'teams':'ffa',matchModeId:which,pilotMode:true}:playlistId?soloOptionsFor(playlistId):{...selectedRules,pilotMode:true};
+ state=initialState(arena,options,freshSectorSeed(state?.mazeSeed));camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config)):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch){exitMenu();if(which==='solo')firstMatchHint();}}
 function resetAll(advancePlaylist=false){
  const previousSeed=state.mazeSeed;
  let options={...state.config};
- if(advancePlaylist&&mode==='solo'&&!isScoredMatch()){
+ if(advancePlaylist&&mode==='solo'&&!state.config?.customMatch&&!isScoredMatch()){
   const id=nextPlaylistMode();if(!id){notice('SELECT A QUICK PLAY MODE IN MATCH SETTINGS',2300);return false;}
   // Derive the next preset from the SAVED user settings, not the prior
   // mode's effective bot count (Team Survival may need an extra ally).
@@ -449,7 +493,7 @@ function resetAll(advancePlaylist=false){
   options=soloOptionsFor(id,selectedRules);
  }
  state=initialState(0,options,freshSectorSeed(previousSeed));
- if(mode==='solo')document.getElementById('mode-label').textContent=options.botCount===0?'PRACTICE FIELD':soloModeLabel(options);
+ if(mode==='solo')document.getElementById('mode-label').textContent=options.botCount===0?'PRACTICE FIELD':(options.customMatch?'CUSTOM · ':'')+soloModeLabel(options);
  camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachRemaining=0;document.getElementById('field-coach')?.classList.add('hidden');fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();clearFireAim();paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();if(mode!=='guest')notice('NEW FIELD GENERATED — GO!');}
 function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
 function circlesRect(x,y,r,w){const nx=clamp(x,w.x,w.x+w.w),ny=clamp(y,w.y,w.y+w.h);return (x-nx)**2+(y-ny)**2<r*r}
@@ -1241,11 +1285,11 @@ function find(){if(!bridgeReady()){notice('Nearby mode requires the Android APK'
 function manual(){if(!bridgeReady()){notice('Manual LAN join requires the Android APK');return}newMatch('guest');setPanel('<div class="eyebrow">FALLBACK</div><h2>JOIN BY ADDRESS</h2><p>Enter the IP:port shown on the host screen, such as 192.168.1.25:47321</p><input id="lan-address" placeholder="192.168.1.25:47321" inputmode="url" autocapitalize="off"><button data-action="ip-join">CONNECT</button><button data-action="find">FIND NEARBY</button>')}
 function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;mode='idle';playlistBag=[];lastSoloModeId=null;releaseControls();document.getElementById('mode-label').textContent='NO GAME ACTIVE';panel.innerHTML=originalPanel;applyPrefsToUI();menu.classList.remove('hidden')}
 const originalPanel=panel.innerHTML;
-panel.addEventListener('change',e=>{const el=e.target;if(el.id?.startsWith('pref-')){const key=el.id.slice(5);if(key in comfort)comfort[key]=el.checked;applyPrefsToUI()}savePrefs()});
+panel.addEventListener('change',e=>{const el=e.target;if(el.id?.startsWith('custom-')){readCustomScreen();refreshCustomUI();return;}if(el.id?.startsWith('pref-')){const key=el.id.slice(5);if(key in comfort)comfort[key]=el.checked;applyPrefsToUI()}savePrefs()});
 loadPrefs();
 
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
- if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, drag the large circular AIM pad to turn the hull without firing, then tap FIRE when lined up. The centered AIM thumbstick has a dead zone to ignore jitter.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
+ if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, drag the large circular AIM pad to turn the hull without firing, then tap FIRE when lined up. The centered AIM thumbstick has a dead zone to ignore jitter.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){panel.innerHTML=originalPanel;applyPrefsToUI();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
  const s=document.getElementById('lan-address').value.trim(),m=s.match(/^([\da-fA-F:.]+):(\d{1,5})$/);
  if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';window.AndroidBridge.joinGame(m[1],Number(m[2]));}});
 function showPauseMenu(){releaseControls();if(mode==='idle')return;
@@ -1253,13 +1297,14 @@ function showPauseMenu(){releaseControls();if(mode==='idle')return;
  else if(mode==='host'){paused=true;guestInput={moveX:0,moveY:0,fire:false};setPanel('<div class="eyebrow">FIELDGRID / HOST PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">Both players are paused.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">NEW FIELD</button><button data-action="close">DISCONNECT</button></div>')}
  else if(mode==='guest'){if(connected)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}});setPanel('<div class="eyebrow">FIELDGRID / PLAYER MENU</div><h2>SECTOR <span>MENU</span></h2><p class="pause-hint">The host controls rematches.</p><div class="pause-actions"><button class="primary" data-action="resume">BACK TO ARENA</button><button data-action="close">DISCONNECT</button></div>')}}
 document.getElementById('menu-button').addEventListener('click',showPauseMenu);
-document.getElementById('quick-rematch')?.addEventListener('click',()=>{if(state.winner>=0&&mode!=='guest'&&mode!=='idle'){if(resetAll(mode==='solo')!==false)notice('NEW FIELD · NEW FIGHT',1400)}});
+document.getElementById('quick-rematch')?.addEventListener('click',()=>{if(state.winner>=0&&mode!=='guest'&&mode!=='idle'){if(resetAll(mode==='solo'&&!state.config?.customMatch)!==false)notice('NEW FIELD · NEW FIGHT',1400)}});
  document.getElementById('results-menu')?.addEventListener('click',()=>{if(state.winner>=0&&mode!=='idle')stop()});
+ document.getElementById('custom-edit')?.addEventListener('click',()=>{if(state.winner>=0&&mode==='solo'&&state.config?.customMatch){stop();openCustomScreen();}});
 document.getElementById('interact-btn')?.addEventListener('pointerdown',e=>{e.preventDefault();if(mode==='guest'){if(connected&&!paused&&menu.classList.contains('hidden')&&!state.hostPaused)nativePacket({type:'interact'});}else tryInteract(0)});
 menu.addEventListener('click',e=>{const a=e.target?.dataset?.action;
  if(a==='resume'){if(mode==='solo'||mode==='duel'||mode==='host')paused=false;exitMenu()}
  else if(a==='restart'&&mode!=='guest'){resetAll();exitMenu()}});
-window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if([...Object.values(keys1),...Object.values(keys2)].includes(e.code))e.preventDefault();pressed.add(e.code);if(e.code==='KeyR'&&state.winner>=0&&mode!=='guest')resetAll(mode==='solo');if(e.code==='KeyE'&&!e.repeat&&menu.classList.contains('hidden')){if(mode==='guest'&&connected&&!state.hostPaused)nativePacket({type:'interact'});else if(mode==='solo'||mode==='host'||mode==='duel')tryInteract(0)}});
+window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if([...Object.values(keys1),...Object.values(keys2)].includes(e.code))e.preventDefault();pressed.add(e.code);if(e.code==='KeyR'&&state.winner>=0&&mode!=='guest')resetAll(mode==='solo'&&!state.config?.customMatch);if(e.code==='KeyE'&&!e.repeat&&menu.classList.contains('hidden')){if(mode==='guest'&&connected&&!state.hostPaused)nativePacket({type:'interact'});else if(mode==='solo'||mode==='host'||mode==='duel')tryInteract(0)}});
 window.addEventListener('keyup',e=>pressed.delete(e.code));window.addEventListener('blur',releaseControls);
 for(const b of document.querySelectorAll('[data-key]')){const k=b.dataset.key;const release=e=>{touch.delete(k);b.classList.remove('active');if(k==='fire'&&fireAim.pointerId===e.pointerId)clearFireAim();try{b.releasePointerCapture(e.pointerId)}catch(_){}};
  b.addEventListener('pointerdown',e=>{e.preventDefault();touch.add(k);b.classList.add('active');if(k==='fire')beginFireAim(e);b.setPointerCapture(e.pointerId)});
