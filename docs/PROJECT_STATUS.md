@@ -1,3 +1,11 @@
+# v0.9.38 — procedural and natural AI balance evidence (2026-10-29)
+
+New **QA-only** branch `qa/natural-bot-maze-audit-v0938` stacked on v0.9.37 scored Quick Play PR #56. This pass adds deterministic headless simulation of existing exact game mechanics, a one-off 150-bout (50 each scored mode) bot tournament and 900-seed procedural connectivity/diversity checks, with per-seed JSON saved by [natural balance workflow](https://github.com/PlayerEden/Ricochet-Rumble/actions/workflows/natural-bot-audit-v0938.yml). **No gameplay, Android sources, scoring, controls, or stable main changes**, therefore no new APK is necessary for this measurement-only slice. Crucial methodology: seat-0 human input is replaced with identical AI input **only in the test VM**, 30 Hz instead of normal interactive 60 Hz. These samples measure AI-versus-AI engagements, not player experience. [Full scope and provisional audit checklist](QA_NATURAL_BOTS_AND_MAZES_v0938.md).
+
+**Run and numerical findings not yet verified at this checkpoint.** Record actual results, outliers, limitations, and actionable follow-up once CI completes. Owner phone acceptance, signed Play app, two-phone LAN and 50+ real human sessions remain pending.
+
+---
+
 # v0.9.37 opt-in scored Quick Play — automated milestone QA PASS, APK archived (2026-10-29)
 
 - **Latest experimental draft:** [PR #56](https://github.com/PlayerEden/Ricochet-Rumble/pull/56), `feature/quick-play-scored-opt-in-v0937`, child of unapproved v0.9.36 presets PR #55. No stable `main` merge or owner handset acceptance.
