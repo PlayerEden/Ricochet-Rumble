@@ -44,6 +44,7 @@
             </div>
             <div class="aa-actions">
               <button id="quick-rematch" class="quick-rematch hidden" type="button" aria-label="Start a new match in a newly generated maze">↻ NEXT MATCH</button>
+              <button id="custom-edit" class="hidden" type="button">EDIT RULES</button>
               <button id="results-menu" type="button">MAIN MENU</button>
             </div>
             <p id="aa-note" class="aa-note">NEW PROCEDURAL SECTOR AVAILABLE</p>
@@ -83,6 +84,7 @@
                 <button data-action="cqc" class="home-cqc"><strong>CLOSE QUARTERS</strong><small>PILOT-ONLY · SCORE TEST</small></button>
                 <button data-action="scored_ffa" class="home-ffa"><strong>SCORED FREE-FOR-ALL</strong><small>VEHICLES · KO TARGET · TEST</small></button>
                 <button data-action="scored_tdm" class="home-tdm"><strong>TEAM DEATHMATCH</strong><small>2v2 · TEAM KOs · TEST</small></button>
+                <button data-action="custom" class="home-custom"><strong>CUSTOM MATCH</strong><small>OFFLINE · CHOOSE RULES</small></button>
               </div>
             </section>
           </div>
@@ -114,6 +116,22 @@
   </details>
   <div class="comfort-grid settings-comfort"><label><input type="checkbox" id="pref-autoFire"> AUTO FIRE</label><label><input type="checkbox" id="pref-sound"> SOUND FX</label><label><input type="checkbox" id="pref-music"> MUSIC</label><label><input type="checkbox" id="pref-shake"> SCREEN SHAKE</label><label><input type="checkbox" id="pref-leftHanded"> SWAP CONTROLS</label></div>
   <div class="settings-actions"><button data-action="settings-back">BACK</button><button class="primary" data-action="settings-play">START MATCH</button></div>
+</template>
+<template id="custom-template">
+ <section id="custom-match" class="custom-screen" aria-label="Custom Match">
+  <header class="custom-head"><div class="eyebrow">FIELDGRID / CASUAL OPERATIONS</div><h2>CUSTOM <span>MATCH</span></h2><p>Choose a real mode and deploy into a fresh procedural sector.</p></header>
+  <div class="custom-grid">
+   <label>MODE<select id="custom-mode"><option value="survival_ffa">SOLO SURVIVAL</option><option value="survival_teams">TEAM SURVIVAL</option><option value="cqc">CLOSE QUARTERS · SCORED</option><option value="scored_ffa">VEHICLE FFA · SCORED</option><option value="scored_tdm">TEAM DEATHMATCH · SCORED</option></select></label>
+   <label>MAZE SIZE<select id="custom-size"><option value="small">SMALL</option><option value="standard">STANDARD</option><option value="large">LARGE</option></select></label>
+   <label>BOTS<select id="custom-bots"><option value="0">0 · PRACTICE</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>
+   <label>BOT SKILL<select id="custom-skill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>
+   <label>PILOT LIVES<select id="custom-lives"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>
+   <label>TANK SHELLS<select id="custom-shells"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="8">8</option></select></label>
+  </div>
+  <p id="custom-preview" class="custom-preview" role="status" aria-live="polite"></p>
+  <p id="custom-rule-note" class="custom-note">CASUAL · SAVED SEPARATELY FROM QUICK PLAY</p>
+  <div class="custom-actions"><button type="button" data-action="custom-back">BACK</button><button class="primary" type="button" data-action="custom-play">DEPLOY MATCH</button></div>
+ </section>
 </template>
   <script src="scored-match.js"></script>
   <script src="game.js"></script>
