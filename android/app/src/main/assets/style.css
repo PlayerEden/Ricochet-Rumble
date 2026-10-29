@@ -634,3 +634,22 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 #panel .home-action-grid button.home-tdm{grid-column:1/-1;min-height:38px;border-color:#6d9fa5;background:#1b3a3f}
 #panel .home-action-grid button.home-tdm strong{color:#c9f2f3}
 @media(max-height:430px){#panel .home-action-grid button.home-cqc,#panel .home-action-grid button.home-ffa{min-height:36px}#panel .home-action-grid button.home-tdm{min-height:33px}}
+
+/* Custom Match: compact tactical rule editor, phone landscape first. */
+#panel:has(.custom-screen){width:min(850px,calc(100vw - 16px));max-height:calc(100dvh - 14px);overflow-y:auto;padding:clamp(8px,2dvh,18px) clamp(11px,2vw,24px)}
+.custom-screen{display:flex;flex-direction:column;gap:clamp(4px,1.4dvh,10px)}
+.custom-head h2{font:900 clamp(21px,5dvh,35px)/1 'sans-serif-condensed',Arial,sans-serif;margin:1px 0 3px}.custom-head h2 span{color:#77d6df}
+.custom-head p{font-size:clamp(10px,1.35vw,13px);margin:0;color:#a7c4cc}
+.custom-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(5px,1.1dvh,9px) 10px}
+.custom-grid label{display:flex;flex-direction:column;gap:4px;min-width:0;font:750 clamp(10px,1.25vw,12px)/1.15 monospace;color:#b3d7df}
+.custom-grid select{width:100%;min-width:0;min-height:clamp(33px,8dvh,44px);border:1px solid #557d8a;border-radius:4px;background:#0e2734;color:#e4f4f4;padding:4px 7px;font:750 clamp(10px,1.3vw,14px)/1.2 sans-serif;touch-action:manipulation}
+.custom-grid select:disabled{opacity:.48;color:#8eaaae}
+.custom-preview{margin:1px 0 0!important;padding:clamp(5px,1.2dvh,8px) 9px;border-left:3px solid #76d8d6;background:#15333d;color:#ebf6f1!important;font:800 clamp(10px,1.25vw,13px)/1.25 monospace!important}
+.custom-note{margin:0!important;color:#a6bdc5!important;font:700 clamp(9px,1.15vw,12px)/1.2 monospace!important}
+.custom-actions{display:grid;grid-template-columns:1fr 1.7fr;gap:12px}
+#panel .custom-actions button{margin:0;min-height:clamp(36px,9dvh,46px)}
+@media(max-height:390px){.custom-screen{gap:4px}.custom-head p{display:none}.custom-grid{gap:4px 7px}.custom-grid select{min-height:32px}}
+@media(max-width:620px){.custom-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#panel .home-action-grid button.home-custom{grid-column:1/-1;min-height:36px;border-color:#497e78;background:#19372f}
+#panel .home-action-grid button.home-custom strong{color:#b8efdf}
+.after-action #custom-edit{min-height:40px}
