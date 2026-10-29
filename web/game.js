@@ -359,7 +359,7 @@ function inputFrom(keys,isLocal){const down=k=>menu.classList.contains('hidden')
  // Only offline Solo foot pilots gain the accepted FIRE-drag. Scored vehicle
  // AIM keeps its own pointer; LAN input must not gain unreplicated aim axes.
  const localFoot=isLocal&&mode==='solo'&&!!state?.tanks?.[0]?.onFoot;
- const vehicleAim=isLocal&&isScoredMatch()&&state?.config?.matchModeId==='scored_ffa'&&!state?.tanks?.[0]?.onFoot;
+ const vehicleAim=isLocal&&isScoredVehicleMatch()&&!state?.tanks?.[0]?.onFoot;
  const fineAim=fireAim.active&&((localFoot&&fireAim.source==='fire'&&touch.has('fire'))||(vehicleAim&&fireAim.source==='aim'));
  // AIM never adds a FIRE action; one deliberate shot still uses the FIRE button.
  return {moveX,moveY,aimX:fineAim?fireAim.x:undefined,aimY:fineAim?fireAim.y:undefined,fire:down('fire')||(isLocal&&comfort.autoFire&&mode!=='idle'&&menu.classList.contains('hidden')&&!paused)};}
@@ -420,8 +420,8 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  const label0=document.getElementById('player0-label');if(label0)label0.textContent=tdm?'BLUE':isScoredMatch()?'YOU KOs':'YOU';
  const label1=document.getElementById('player1-label');if(label1)label1.textContent=tdm?'RED':isScoredMatch()?'LEADER':mode==='solo'&&state.config?.teamMode==='teams'?'RED':mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';
  if(mode==='solo')document.getElementById('score1').textContent=botLives;
- const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=state?.config?.matchModeId==='scored_ffa'&&!foot?'AIM / FIRE':mode==='solo'&&foot?'HOLD · DRAG TO AIM':comfort.autoFire?'AUTO ON':'HOLD TO FIRE';
- const aimPad=document.getElementById('vehicle-aim');if(aimPad)aimPad.classList.toggle('hidden',!(state?.config?.matchModeId==='scored_ffa'&&!foot&&state.lives[me]>0&&state.winner<0));
+ const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=isScoredVehicleMatch()&&!foot?'AIM / FIRE':mode==='solo'&&foot?'HOLD · DRAG TO AIM':comfort.autoFire?'AUTO ON':'HOLD TO FIRE';
+ const aimPad=document.getElementById('vehicle-aim');if(aimPad)aimPad.classList.toggle('hidden',!(isScoredVehicleMatch()&&!foot&&state.lives[me]>0&&state.winner<0));
  const clock=document.getElementById('score-clock'),life=document.querySelector('.scorestrip .hud-life');
  if(clock){clock.classList.toggle('hidden',!isScoredMatch());if(isScoredMatch())clock.textContent=durationLabel(Math.ceil(Math.max(0,state.scored.clockSeconds-state.scored.elapsedSeconds)));}
  if(life)life.classList.toggle('hidden',isScoredMatch());
@@ -456,7 +456,7 @@ function circlesRect(x,y,r,w){const nx=clamp(x,w.x,w.x+w.w),ny=clamp(y,w.y,w.y+w
 function blocked(x,y,r=21){return x<r+13||x>worldW-r-13||y<r+13||y>worldH-r-13||nearWall(x,y,r)}
 function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=clamp(Number(inp.moveX)||0,-1,1),my=clamp(Number(inp.moveY)||0,-1,1);let mag=Math.hypot(mx,my);
  if(mag>1){mx/=mag;my/=mag;mag=1}if(mag<.09){mx=0;my=0;mag=0}
- const tacticalVehicle=state?.config?.matchModeId==='scored_ffa'&&!t.onFoot;
+ const tacticalVehicle=isScoredVehicleMatch()&&!t.onFoot;
  const baseVehicleSpeed=tacticalVehicle?(inp.bot?SCORED_FFA_VEHICLE_PACE.bot:SCORED_FFA_VEHICLE_PACE.human):(inp.bot?178:222);
  const speed=(t.onFoot?(inp.bot?194:268):baseVehicleSpeed*vehicleDef(currentVehicle(t)).speed)*(t.powerType==='turbo'&&t.powerTimer>0?1.48:1),blend=Math.min(1,dt*(mag?9:13));t.vx+=(mx*speed-t.vx)*blend;t.vy+=(my*speed-t.vy)*blend;
  // Apply CQC's accepted 6.5rad/s aim to the local Solo Survival pilot too.
@@ -1245,7 +1245,7 @@ panel.addEventListener('change',e=>{const el=e.target;if(el.id?.startsWith('pref
 loadPrefs();
 
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
- if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA, drag the large circular AIM pad to turn the hull without firing, then tap FIRE when lined up. The centered AIM thumbstick has a dead zone to ignore jitter.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
+ if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, drag the large circular AIM pad to turn the hull without firing, then tap FIRE when lined up. The centered AIM thumbstick has a dead zone to ignore jitter.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
  const s=document.getElementById('lan-address').value.trim(),m=s.match(/^([\da-fA-F:.]+):(\d{1,5})$/);
  if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';window.AndroidBridge.joinGame(m[1],Number(m[2]));}});
 function showPauseMenu(){releaseControls();if(mode==='idle')return;
@@ -1270,7 +1270,7 @@ for(const b of document.querySelectorAll('[data-key]')){const k=b.dataset.key;co
 const vehicleAimButton=document.getElementById('vehicle-aim');
 if(vehicleAimButton){
  vehicleAimButton.addEventListener('pointerdown',e=>{
-  if(!isScoredMatch()||state.config.matchModeId!=='scored_ffa'||state.tanks[0].onFoot||fireAim.pointerId!==null)return;
+  if(!isScoredVehicleMatch()||state.tanks[0].onFoot||fireAim.pointerId!==null)return;
   e.preventDefault();beginFireAim(e,'aim');vehicleAimButton.classList.add('active');
   vehicleAimButton.setPointerCapture(e.pointerId);updateVehicleAimPad(e);
  });
@@ -1294,7 +1294,7 @@ function beginFireAim(e,source='fire'){
  // FIRE drag belongs only to the local Solo foot pilot, scored or Survival.
  // Separate vehicle AIM remains scored FFA only; LAN/duel stay unchanged.
  if(source==='fire'&&!(mode==='solo'&&state?.tanks?.[0]?.onFoot))return;
- if(source==='aim'&&!(mode==='solo'&&isScoredMatch()&&state?.config?.matchModeId==='scored_ffa'&&!state?.tanks?.[0]?.onFoot))return;
+ if(source==='aim'&&!(mode==='solo'&&isScoredVehicleMatch()&&!state?.tanks?.[0]?.onFoot))return;
  fireAim.pointerId=e.pointerId;fireAim.source=source;fireAim.startX=Number(e.clientX)||0;fireAim.startY=Number(e.clientY)||0;
  fireAim.x=0;fireAim.y=0;fireAim.active=false;
 }
@@ -1303,7 +1303,7 @@ function beginFireAim(e,source='fire'){
 // Keeping the last vector inside the center zone prevents twitching back to
 // movement-facing while the AIM thumb is still held.
 function updateVehicleAimPad(e){
- if(fireAim.source!=='aim'||fireAim.pointerId!==e.pointerId||!isScoredMatch()||state.config.matchModeId!=='scored_ffa')return;
+ if(fireAim.source!=='aim'||fireAim.pointerId!==e.pointerId||!isScoredVehicleMatch())return;
  const pad=document.getElementById('vehicle-aim');
  if(!pad||pad.classList.contains('hidden'))return;
  const rect=pad.getBoundingClientRect();
@@ -1317,7 +1317,7 @@ function updateVehicleAimPad(e){
 function updateFireAim(e){
  if(fireAim.pointerId!==e.pointerId)return;
  if(fireAim.source==='aim'){
-  if(!(mode==='solo'&&isScoredMatch()&&state?.config?.matchModeId==='scored_ffa'&&!state?.tanks?.[0]?.onFoot)){clearFireAim();return;}
+  if(!(mode==='solo'&&isScoredVehicleMatch()&&!state?.tanks?.[0]?.onFoot)){clearFireAim();return;}
   updateVehicleAimPad(e);return;
  }
  if(!(mode==='solo'&&state?.tanks?.[0]?.onFoot)){clearFireAim();return;}
