@@ -42,10 +42,13 @@ function customOptionsFor(raw=customDraft){
 function refreshCustomUI(){
  const root=document.getElementById('custom-match');if(!root)return;
  const ids={modeId:'custom-mode',mapSize:'custom-size',botCount:'custom-bots',botSkill:'custom-skill',startLives:'custom-lives',bulletCap:'custom-shells'};
- for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(el)el.value=String(customDraft[key])}
- const scored=!!SCORED_MATCH_RULES[customDraft.modeId];
+ const scored=!!SCORED_MATCH_RULES[customDraft.modeId],options=customOptionsFor();
+ for(const [key,id] of Object.entries(ids)){
+  const el=document.getElementById(id);
+  if(el)el.value=String(scored&&['mapSize','botCount','startLives','bulletCap'].includes(key)?options[key]:customDraft[key]);
+ }
  for(const id of ['custom-size','custom-bots','custom-lives','custom-shells']){const el=document.getElementById(id);if(el)el.disabled=scored}
- const options=customOptionsFor(),count=options.botCount,p=document.getElementById('custom-preview');
+ const count=options.botCount,p=document.getElementById('custom-preview');
  if(p)p.textContent=soloModeLabel(options)+' · '+options.mapSize.toUpperCase()+' · '+(count?count+1+' COMBATANTS':'PRACTICE · NO OPPONENTS')+' · '+(scored?'SCORE '+SCORED_MATCH_RULES[customDraft.modeId].scoreTarget+' KOs / '+SCORED_MATCH_RULES[customDraft.modeId].clockSeconds/60+' MIN':'LAST SIDE STANDING');
  const note=document.getElementById('custom-rule-note');
  if(note)note.textContent=scored?'SCORED TEST PRESET: MAP, BOTS, LIVES AND SHELLS LOCKED; AI SKILL ADJUSTABLE.':customDraft.modeId==='survival_teams'&&customDraft.botCount===1?'TEAM SURVIVAL: 1 BOT SETTING DEPLOYS 2 (ALLY + ENEMY).':'CASUAL · SAVED SEPARATELY FROM QUICK PLAY';
