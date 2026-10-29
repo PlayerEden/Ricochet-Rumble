@@ -28,6 +28,25 @@ jobs:
         run: node tests/natural-bot-audit.mjs --seeds=2 --maze-seeds=30 --out=artifacts/bot-balance-probe.json
       - name: Audit 50 natural full scored matches per mode and 300 maps per size
         run: node tests/natural-bot-audit.mjs --seeds=50 --maze-seeds=300 --out=artifacts/natural-scored-balance-v0938.json
+      - name: Cross-check full 50x3 round tournament using native 60 Hz physics
+        run: node tests/natural-bot-audit.mjs --seeds=50 --maze-seeds=300 --hz=60 --out=artifacts/natural-scored-balance-60hz-v0938.json
+      - name: Compare identical seeds between 30 Hz and 60 Hz and check probe reproducibility
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';import assert from 'node:assert/strict';
+          const load=(path)=>JSON.parse(fs.readFileSync(path,'utf8'));
+          const lo=load('artifacts/bot-balance-probe.json');
+          const a=load('artifacts/natural-scored-balance-v0938.json');
+          const b=load('artifacts/natural-scored-balance-60hz-v0938.json');
+          assert.equal(a.rounds.length,150);assert.equal(b.rounds.length,150);
+          for(const row of lo.rounds)assert.deepEqual(row,a.rounds.find(x=>x.mode===row.mode&&x.seed===row.seed),'30Hz probe must reproduce EXACT SAME per-seed result from full trial');
+          for(const m of ['cqc','scored_ffa','scored_tdm']){
+            const aa=a.rounds.filter(x=>x.mode===m),bb=b.rounds.filter(x=>x.mode===m);
+            assert.deepEqual(aa.map(x=>x.seed),bb.map(x=>x.seed),'compare identical seeds and order');
+            const noHits=q=>q.filter(x=>x.armorAndPilotHitEvents===0).map(x=>x.seed);
+            console.log('CROSS_RATE '+JSON.stringify({mode:m,thirtyHz:{noHitSeeds:noHits(aa),timeouts:aa.filter(x=>x.reason==='time_limit').length},sixtyHz:{noHitSeeds:noHits(bb),timeouts:bb.filter(x=>x.reason==='time_limit').length}}));
+          }
+          JS
       - name: Preserve inspectable raw evidence and seed-specific samples
         if: always()
         uses: actions/upload-artifact@v4
