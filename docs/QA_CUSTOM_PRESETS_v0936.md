@@ -1,3 +1,16 @@
+# v0.9.36 automated milestone verdict — PASS (2026-10-29)
+
+**Exact verified source SHA** `03064a905d77c0cf4b2c33a306b29ef0cfe5b04e` successfully completed:
+- [Fast source mirrored-assets/syntax, 300-seed/mode regression, named preset corruption/version/capacity/duplicate/reset/delete/load and Quick Play isolation 40832553494](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40832553494) — PASS.
+- [Full real Chromium named presets Save→reject duplicate→Reset→app reload→Load→two-tap Delete, real Custom Survival/TDM flow, 740x360/915x412/1280x720 visual and Android debug APK/unsigned AAB 40832553495](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40832553495) — PASS.
+- [Permanent original exact APK, QA evidence ZIP and checksum](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.36-custom-presets-test). Released without recompiling/resigning by [single-use workflow 40833144334 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40833144334), workflow subsequently deleted.
+
+**Issue repaired during audit:** first fast run [40832459881](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40832459881) exposed invalid regex escaping in preset-name sanitizer. Corrected in mirrored Web and Android code and regression suite reran cleanly; no failed build was archived.
+
+**Manual gates remain OPEN:** on-phone touch readability; app upgrade/storage migration/data lifecycle (uninstall may erase local settings); 50+ natural bot matches; two-phone LAN and production signing. Source is experimental and must not be merged into stable main without explicit owner acceptance.
+
+---
+
 # v0.9.36 Custom Match local presets — milestone QA
 
 **Candidate, not yet QA-accepted.** Source branch `feature/custom-presets-v0936` depends on v0.9.35 Custom Match; review as draft. Stable main unmodified.
