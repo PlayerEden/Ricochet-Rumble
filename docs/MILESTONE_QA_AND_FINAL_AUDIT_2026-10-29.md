@@ -22,7 +22,7 @@ Use states **Automated PASS / Automated FAIL / Manual PASS / Manual PENDING / Bl
 | Gate 3 — Close Quarters | Scored pilot-only 10 KOs/3 min built; v0.9.28 aim was owner-positive |
 | Gate 3 — vehicle FFA | Scored 10 KOs/4 min built, v0.9.32 precision controls automated PASS; phone verdict pending |
 | Gate 3 — pilot parity | v0.9.33 Survival on-foot controls automated PASS; owner phone verdict pending |
-| **Gate 3 — true Team Deathmatch** | v0.9.34 proposed playable 2v2 draft. Implement, test and record audit; phone verdict pending |
+| **Gate 3 — true Team Deathmatch** | v0.9.34 implemented on draft PR #53; fast CI 40825788956 + full real Chromium/Android QA 40825789109 **Automated PASS**, exact APK prerelease available; 50+ natural bot matches and real phone acceptance **PENDING** |
 | Gate 4A — Custom Match | Separate casual configurable mode #38 not yet playable |
 | Gate 4B — scored Quick Play integration | Only genuinely validated and selected modes rotate; preserve old Survival |
 | Gate 4C — procedural uniqueness and bot fairness | 300-seed connectivity QA exists; natural-match balance and topology dedup incomplete |
@@ -46,8 +46,10 @@ Use states **Automated PASS / Automated FAIL / Manual PASS / Manual PENDING / Bl
 - [ ] Shared team rules, 1 Blue player + 1 Blue ally vs 2 Red bots and distinct mode entry
 - [ ] Genuine pilot KOs only, Blue/Red aggregate score, no team damage, win at 15 / draw after 5 active minutes
 - [ ] Safe respawn, vehicle recovery, After Action personal/team attribution, fresh-sector NEXT MATCH
-- [ ] Fast 300-seed + scoring + legacy Survival/CQC/FFA regressions
-- [ ] Real Chromium menu/touch/results at three landscape sizes
-- [ ] Android APK and unsigned AAB from validated gameplay SHA, preserved QA evidence
+- [x] Fast 300-seed + scoring + legacy Survival/CQC/FFA regressions — run 40825788956
+- [x] Real Chromium menu/touch/results at three landscape sizes — run 40825789109
+- [x] Android debug APK + unsigned AAB and original APK/QA/checksum prerelease — run 40825789109 and v0.9.34-scored-tdm-test
 - [ ] At least 50 natural bot-match telemetry samples when harness is available
 - [ ] User device confirmation deferred; stable main unmodified
+
+**2026-10-29 milestone checkpoint:** [Detailed v0.9.34 audit](QA_SCORED_TDM_v0934.md) — automated implementation gate passed; phone/50+ organic bot fairness gates remain open. Do not merge into stable main or label Google Play-ready.
