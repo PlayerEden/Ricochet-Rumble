@@ -1,3 +1,13 @@
+# v0.9.33 exact Android QA archive — 2026-10-29
+
+**Fast regression:** [run 40823197628 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40823197628) on game/test SHA `d4f4145f03f175d2b4717f3dd494815177c0d0f0`. Includes 300 seeded arenas, existing CQC/FFA/Survival/LAN rule checks, new local Solo FIRE-drag/ejection isolation, score kernel and Web/Android parity.
+
+**Full Chromium visual/input + Android debug APK and unsigned AAB:** [run 40823197639 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40823197639) on the **same game/test SHA**. Original QA APK copied **byte-for-byte without recompiling/resigning** into [immutable v0.9.33 pilot parity prerelease](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.33-pilot-parity-test) with [installable debug APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/download/v0.9.33-pilot-parity-test/sector-rebound-v0.9.33-pilot-parity-debug.apk), screenshot/QA ZIP and SHA256 manifest. [Single-use publisher 40823842700 PASSED](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40823842700), temporary workflow removed afterward.
+
+**Draft [PR #52](https://github.com/PlayerEden/Ricochet-Rumble/pull/52)** is stacked directly on v0.9.32 (PR #50), **NOT merged into stable main**. Neither v0.9.32 vehicle handling nor v0.9.33 pilot parity has owner phone acceptance yet. This debug APK does not establish release signing, save migration, stable LAN, or Google Play readiness. Next: owner compares v0.9.32 bank-shot feel first and v0.9.33 on-foot handling, ejection/entry, and CQC parity. Keep v0.9.31/0.9.28 owner-positive release rollbacks intact. Do not merge before explicit acceptance.
+
+---
+
 # Draft v0.9.33 — Solo Survival pilot controls parity (2026-10-29)
 
 **Unmerged experimental development branch:** `tuning/pilot-survival-parity-v0933`, based on latest v0.9.32 experimental vehicle branch, NOT approval of the vehicle feel. The independently tested v0.9.32 APK stays an unchanged comparison baseline; this draft has no physical-phone validation yet. Tracks [pilot issue #51](https://github.com/PlayerEden/Ricochet-Rumble/issues/51).
