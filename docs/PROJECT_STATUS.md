@@ -1,3 +1,15 @@
+# v0.9.37 scored Quick Play opt-in — implementation under QA (2026-10-29)
+
+**Experimental draft:** `feature/quick-play-scored-opt-in-v0937` based directly on unmerged v0.9.36 Custom Presets PR #55. Main stays at accepted development v0.9.21; owner device approvals v0.9.32–36 and true 2-phone LAN remain PENDING.
+
+**New candidate:** Match Settings' existing Quick Play checkbox list now exposes CQC, scored vehicle FFA and 2v2 scored TDM as **explicit unchecked opt-in trials**. Existing Survival FFA and Team Survival remain the only defaults, including for missing/legacy version-1 saved playlists. Only allowlisted entries persist in the existing `rr-options-v06` versioned Quick Play selection. A source-scoped `quickPlayMatch` marker distinguishes real playlist launches from standalone test buttons and saved Custom Match setups.
+
+**Correct match behavior:** CQC 10 genuine pilot KOs/3 minutes/Small/no vehicles, scored FFA 10 KOs/4 minutes/Standard, scored 2v2 TDM 15 aggregate team KOs/5 minutes/Standard; 3 AI and constrained scored physics, actual immutable scoring engine, matching display/After Action, fresh procedural seed each round. The existing shuffle bag still exhausts all selected modes without immediate repeats. NEXT MATCH and keyboard replay can now legitimately rotate from a scored Quick Play round to any other user-selected scored or Survival mode, but standalone CQC/FFA/TDM and Custom scored modes *never* rotate into playlist modes.
+
+**Automated QA:** source/HTML/Android mirror and new smoke + real Chromium opt-in/score-clock/rematch tests staged; **no passing CI claim until GitHub checks finish**. Physical owner feel, 50+ natural scored bot rounds, actual install/update, signing and LAN remain open. See [specific audit](QA_QUICK_PLAY_SCORED_v0937.md) and [overall milestone ledger](MILESTONE_QA_AND_FINAL_AUDIT_2026-10-29.md).
+
+---
+
 # v0.9.36 named local Custom presets — automated QA passed, exact test APK archived (2026-10-29)
 
 - **Latest draft:** v0.9.36 `feature/custom-presets-v0936` on [draft PR #55](https://github.com/PlayerEden/Ricochet-Rumble/pull/55), dependent on v0.9.35 PR #54 and unapproved prior TDM/control drafts. Stable `main` is unchanged. No owner phone acceptance inferred.
