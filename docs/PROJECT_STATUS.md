@@ -1,3 +1,13 @@
+# v0.9.34 true scored Team Deathmatch — 2026-10-29 implementation QA checkpoint
+
+**Latest experimental branch:** `feature/scored-team-deathmatch-v0934` (direct parent: v0.9.33 pilot parity PR #52). Stable `main` stays v0.9.21. First development phase follows the owner's [milestone QA and final audit ledger](MILESTONE_QA_AND_FINAL_AUDIT_2026-10-29.md). **No main merge or phone acceptance implied.**
+
+**New gameplay candidate:** explicit test-only **TEAM DEATHMATCH 2v2** with one Blue human + Blue AI versus two Red AI. Shared immutable `SectorScored` engine scores **15 actual pilot KOs per TEAM** or 300 active seconds (draw on tie), no teammate fire, Blue/Red shared HUD totals, team-colored tanks/mechs and pilots, armor/ejection before genuine KOs, safe respawns, real solo/AI outcome and personal-KO After Action, fresh procedural sector on NEXT MATCH. TDM trial uses experimental v0.9.32 vehicle precision controls. Existing CQC, FFA, Survival and LAN source semantics preserved.
+
+**QA state:** gameplay and targeted regression code committed; automated **fast and full QA not yet verified** at this checkpoint. 50+ natural bot matches, real phone visual/control acceptance, two-phone LAN and signed Play bundle remain OPEN. Parent v0.9.32/v0.9.33 phone approval still outstanding. No claims of playable release until Android build and exact QA provenance verified.
+
+---
+
 # v0.9.33 exact Android QA archive — 2026-10-29
 
 **Fast regression:** [run 40823197628 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40823197628) on game/test SHA `d4f4145f03f175d2b4717f3dd494815177c0d0f0`. Includes 300 seeded arenas, existing CQC/FFA/Survival/LAN rule checks, new local Solo FIRE-drag/ejection isolation, score kernel and Web/Android parity.
