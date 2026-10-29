@@ -51,7 +51,7 @@ function loadCustomPresets(){
  pendingPresetDelete='';return customPresets.map(p=>({name:p.name,rules:{...p.rules}}));
 }
 function persistCustomPresets(entries){
- try{window.localStorage?.setItem(CUSTOM_PRESETS_KEY,JSON.stringify({version:1,entries}));return true}catch(_){return false}
+ try{if(!window.localStorage?.setItem)return false;window.localStorage.setItem(CUSTOM_PRESETS_KEY,JSON.stringify({version:1,entries}));return true}catch(_){return false}
 }
 function saveNamedCustomPreset(rawName){
  const name=cleanPresetName(rawName);
@@ -100,7 +100,7 @@ function normalizeCustomDraft(raw){
 }
 function saveCustomDraft(){try{window.localStorage?.setItem(CUSTOM_PREF_KEY,JSON.stringify({version:1,rules:customDraft}))}catch(_){}return {...customDraft}}
 function loadCustomDraft(){try{const p=JSON.parse(window.localStorage?.getItem(CUSTOM_PREF_KEY)||'null');if(p?.version===1)customDraft=normalizeCustomDraft(p.rules)}catch(_){}return {...customDraft}}
-function setCustomDraft(patch){customDraft=normalizeCustomDraft({...customDraft,...patch});return saveCustomDraft()}
+function setCustomDraft(patch){customDraft=normalizeCustomDraft({...customDraft,...patch});pendingPresetDelete='';return saveCustomDraft()}
 function customOptionsFor(raw=customDraft){
  const d=normalizeCustomDraft(raw),scored=SCORED_MATCH_RULES[d.modeId];
  if(scored)return {...selectedRules,matchModeId:d.modeId,customMatch:true,pilotMode:true,
