@@ -1,3 +1,15 @@
+# v0.9.38 FINAL QA verdict — PASS, with measured caveats (2026-10-29)
+
+**Latest exact test/workflow SHA:** `1041f1b52185bde5acdbb620c2d62c532f94463a`. [Final completed green GitHub Actions run 40840318936](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40840318936) contains the downloadable **`scored-bot-and-map-audit-v0938`** JSON bundle with per-round original seeds and 30/60 Hz comparisons, including **200 separate fresh-seed TDM rounds**. All workflow steps succeeded: source mirror/syntax, two-probe validation, 50 natural games per scored mode at both 30 Hz and 60 Hz, exact seeded-replay comparison, 300 connected/unique procedural layouts per size, 200 independent TDM games, and complete JSON upload. No unsafe scored-respawn centers were observed; no game/Android code changed.
+
+**500 main complete natural AI-vs-AI games measured** (150 each at 30 and 60 Hz, plus 200 independent 60 Hz TDM), besides short probes. At normal **60 Hz**: CQC **50/50** KO-target finishes, 0 no-impact, 0 timeouts, mean 70.8 s; vehicle FFA **44/50** KO-target finishes, 6 timeouts, no zero-hit, mean 173.2 s; TDM **48/50** KO-target, 2 timeouts, no zero-hit, 34 Blue / 16 Red. However, **the larger independent TDM 200-game set** was **102 Blue / 96 Red / 2 draws**, 194 KO-target finishes, 6 timeouts, mean 170.7 s, zero no-hit or unsafe-spawn samples. This strongly cautions against tuning TDM based on the small initial 34–16 sample.
+
+**Crucial physics-rate finding:** 30 Hz produced three CQC zero-contact 180-second games (seeds `1001167`, `1002719`, `1003301`) and 15/50 timeouts; *the same seeds at 60 Hz* produced **0 zero-contact and 0 timeout** across all 50 CQC samples. Treat this as timestep sensitivity of the 30 Hz synthetic benchmark, NOT a validated 60 Hz CQC gameplay defect; use normal 60 Hz results for any gameplay tuning proposals.
+
+**Next action:** retain current gameplay/vehicle/pilot physics and scored team rules; no evidence-backed emergency tuning. Future per-seed 60 Hz regression for pathological wall/corner cases, collision precision QA and timed human device sessions are valuable, with natural AI benchmarks rerun following *any* later navigation physics change. TDM team/roster side fairness and fun still require real users and two devices; reproducible all-AI findings cannot certify Play readiness. The benchmark is QA-only and **does not require a newly built APK**; [unchanged previous v0.9.37 test APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.37-scored-quick-play-test) is the latest gameplay release.
+
+---
+
 # v0.9.38 — natural bot and procedural-map balance audit
 
 **Experimental QA-only branch:** `qa/natural-bot-maze-audit-v0938` directly extends the v0.9.37 scored Quick Play experiment, without changing `web/game.js`, the Android application, or player tuning. Stable `main` remains unchanged.
