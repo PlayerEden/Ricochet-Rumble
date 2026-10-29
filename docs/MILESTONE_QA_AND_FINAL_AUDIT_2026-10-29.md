@@ -25,7 +25,7 @@ Use states **Automated PASS / Automated FAIL / Manual PASS / Manual PENDING / Bl
 | **Gate 3 — true Team Deathmatch** | v0.9.34 implemented on draft PR #53; fast CI 40825788956 + full real Chromium/Android QA 40825789109 **Automated PASS**, exact APK prerelease available; 50+ natural bot matches and real phone acceptance **PENDING** |
 | Gate 4A — Custom Match | v0.9.35 Custom editor + v0.9.36 named local presets/default reset **automated QA PASS** (40830083479, 40832553495); owner phone acceptance, natural bot balance and upgrade persistence PENDING |
 | Gate 4B — scored Quick Play integration | Only genuinely validated and selected modes rotate; preserve old Survival |
-| Gate 4C — procedural uniqueness and bot fairness | 300-seed connectivity QA exists; natural-match balance and topology dedup incomplete |
+| Gate 4C — procedural uniqueness and bot fairness | v0.9.38 full audit **PASS**: 500 naturally simulated all-bot scored games (30/60Hz plus 200 independent TDM), 300 unique connected maps each size, 0 observed unsafe respawns. Physics-rate sensitivity in CQC; native 60Hz TDM 200 rounds Blue 102/Red 96/draw 2. Physical user testing still OPEN. [Evidence run 40840318936](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40840318936) |
 | Gate 5 — Dossier, saves and optional cosmetics | Planned; never invent progress/currency or purchase entitlement |
 | Gate 6 — sound, release identity, privacy and Play readiness | Android debug/unsigned baseline exists; production release not ready |
 
