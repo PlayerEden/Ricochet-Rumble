@@ -2035,3 +2035,64 @@ console.log('PASS v0.9.35 Custom Match: separate versioned rules, Survival/team/
 
 }
 console.log('PASS v0.9.36 local Custom presets: validated names, duplicate safety, 5 maximum, corrupted version recovery, two-step deletion, default reset, reload and Quick Play isolation.');
+
+// v0.9.37: opt-in scored Quick Play MUST rotate using the existing truthful scored kernel.
+{
+ const api=win.__test;
+ assert.ok(menuHtml.includes('data-playlist-mode="cqc"'));
+ assert.ok(menuHtml.includes('data-playlist-mode="scored_ffa"'));
+ assert.ok(menuHtml.includes('data-playlist-mode="scored_tdm"'));
+ for(const id of ['cqc','scored_ffa','scored_tdm']){
+  assert.ok(!menuHtml.match(new RegExp('data-playlist-mode="'+id+'"\\s+checked')),'experimental '+id+' OFF by default');
+ }
+ assert.deepEqual([...api.normalizePlaylistModes(null)],['survival_ffa','survival_teams'],'legacy/default playlists remain Survival-only');
+ assert.deepEqual([...api.normalizePlaylistModes(['not_real','scored_tdm','cqc','cqc'])],['cqc','scored_tdm'],'unknown choices discarded, no duplicates');
+ api.setPlaylistModes(['cqc','scored_ffa','scored_tdm']);
+ const seen=new Set();
+ api.newMatch('solo');
+ for(let i=0;i<3;i++){
+  const m=st(),id=m.config.matchModeId;
+  assert.ok(['cqc','scored_ffa','scored_tdm'].includes(id),'only selected scored game modes');
+  assert.equal(seen.has(id),false,'shuffle bag avoids repeats until every choice played');
+  seen.add(id);
+  assert.equal(m.config.quickPlayMatch,true,'round has explicit Quick Play provenance');
+  assert.equal(m.config.customMatch,undefined);
+  assert.ok(m.scored,'actual scored kernel instantiated');
+  assert.equal(m.config.botCount,3,'score modes enforce 3 bots');
+  assert.equal(m.config.bulletCap,4,'score modes enforce known shell physics');
+  assert.equal(m.config.mapSize,id==='cqc'?'small':'standard','CQC gets small arena, scored vehicles standard');
+  assert.equal(m.config.teamMode,id==='scored_tdm'?'teams':'ffa');
+  assert.equal(m.scored.scoreTarget,id==='scored_tdm'?15:10);
+  assert.equal(m.scored.clockSeconds,id==='cqc'?180:id==='scored_tdm'?300:240);
+  const seed=m.mazeSeed,matchId=m.matchId;
+  api.step(300);
+  assert.equal(m.finalResult.outcome,'draw','real paused-aware score-mode timeout');
+  assert.equal(m.finalResult.reason,'time_limit');
+  api.resetAll(true);
+  assert.notEqual(st().mazeSeed,seed);assert.notEqual(st().matchId,matchId);
+ }
+ assert.equal(seen.size,3,'all selected scored modes actually playable in Quick Play');
+ api.setPlaylistModes(['survival_ffa','scored_ffa']);
+ const one=api.nextPlaylistMode(()=>0),two=api.nextPlaylistMode(()=>0);
+ assert.notEqual(one,two,'Survival + scored play equally in mixed bag');
+ api.newMatch('solo');
+ const start=st().config.matchModeId;
+ api.resetAll(true);
+ assert.notEqual(st().config.matchModeId,start,'mixed Survival/scored playlist rotates without being trapped');
+ assert.equal(st().config.quickPlayMatch,true);
+ api.newMatch('cqc');
+ assert.equal(st().config.quickPlayMatch,undefined,'standalone scored button is not Quick Play');
+ api.resetAll(true);
+ assert.equal(st().config.matchModeId,'cqc','standalone CQC rematch never rotates playlist');
+ api.setCustomDraft({modeId:'scored_tdm'});
+ api.newMatch('custom');
+ assert.equal(st().config.quickPlayMatch,undefined,'Custom match stays independent');
+ assert.equal(st().config.customMatch,true);
+ api.resetAll(true);
+ assert.equal(st().config.matchModeId,'scored_tdm','Custom scored rematch keeps rules');
+ api.setPlaylistModes(['survival_ffa','survival_teams']);
+ api.newMatch('solo');
+ assert.equal(st().scored,null,'original Survival-only defaults still launch unscored');
+ assert.equal(st().config.quickPlayMatch,true);
+}
+console.log('PASS v0.9.37 opt-in Quick Play: 3 scored rotations, mixed-mode shuffle, truthful score rules, standalone/Custom isolation, old Survival defaults.');

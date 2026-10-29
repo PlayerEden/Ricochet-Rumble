@@ -1,3 +1,26 @@
+# v0.9.37 opt-in scored Quick Play — automated milestone QA PASS, APK archived (2026-10-29)
+
+- **Latest experimental draft:** [PR #56](https://github.com/PlayerEden/Ricochet-Rumble/pull/56), `feature/quick-play-scored-opt-in-v0937`, child of unapproved v0.9.36 presets PR #55. No stable `main` merge or owner handset acceptance.
+- **Implemented:** Existing Survival FFA/Team Survival remain Quick Play defaults, including legacy/missing saved v1 playlist. Scored CQC, vehicle FFA and 2v2 TDM are unchecked opt-in choices in Match Settings. All choices use one validated versioned playlist/shuffle bag, actual score rules, fixed scored maps/roster/timers, procedural new maze each NEXT MATCH. `quickPlayMatch` provenance rotates only true Quick Play rounds, never standalone scored buttons or Custom Match. Zero selection still blocks Quick Play.
+- **Automated PASS:** [fast CI 40837545823](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40837545823) plus [full real Chromium option persistence, three scored rounds, timer draws, standalone/nonrotation, landscape visual QA and Android debug APK/unsigned AAB 40837545844](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40837545844), both on exact gameplay/test SHA `fcea799b905dc4e4ce8191bd3c11e4cc788c59b3`.
+- **Permanent release:** [v0.9.37 scored Quick Play experimental test APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.37-scored-quick-play-test) is the original byte-identical QA artifact; screenshot/QA ZIP and SHA256 included. [Single-use publisher 40838171910 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40838171910) was removed after publication. See [detailed v0.9.37 QA](QA_QUICK_PLAY_SCORED_v0937.md).
+- **Still OPEN:** owner Android thumb handling and mode quality verdict v0.9.32–37, 50+ naturally played scored matches/2v2 fairness, respawn/topology dedup, progression/saves cosmetics, live LAN 2-phone test, safe app upgrade/Play signing. Prior v0.9.35/36 APK releases remain rollback candidates. Do not silently promote scored to default.
+- **Next planned independent milestone:** instrument deterministic natural-bot match telemetry and procedural/respawn fairness, then progression save/schema and cosmetic foundations; each audited separately. **The end-of-first-plan comprehensive audit is not yet complete.**
+
+---
+
+# v0.9.37 scored Quick Play opt-in — implementation under QA (2026-10-29)
+
+**Experimental draft:** `feature/quick-play-scored-opt-in-v0937` based directly on unmerged v0.9.36 Custom Presets PR #55. Main stays at accepted development v0.9.21; owner device approvals v0.9.32–36 and true 2-phone LAN remain PENDING.
+
+**New candidate:** Match Settings' existing Quick Play checkbox list now exposes CQC, scored vehicle FFA and 2v2 scored TDM as **explicit unchecked opt-in trials**. Existing Survival FFA and Team Survival remain the only defaults, including for missing/legacy version-1 saved playlists. Only allowlisted entries persist in the existing `rr-options-v06` versioned Quick Play selection. A source-scoped `quickPlayMatch` marker distinguishes real playlist launches from standalone test buttons and saved Custom Match setups.
+
+**Correct match behavior:** CQC 10 genuine pilot KOs/3 minutes/Small/no vehicles, scored FFA 10 KOs/4 minutes/Standard, scored 2v2 TDM 15 aggregate team KOs/5 minutes/Standard; 3 AI and constrained scored physics, actual immutable scoring engine, matching display/After Action, fresh procedural seed each round. The existing shuffle bag still exhausts all selected modes without immediate repeats. NEXT MATCH and keyboard replay can now legitimately rotate from a scored Quick Play round to any other user-selected scored or Survival mode, but standalone CQC/FFA/TDM and Custom scored modes *never* rotate into playlist modes.
+
+**Automated QA:** source/HTML/Android mirror and new smoke + real Chromium opt-in/score-clock/rematch tests staged; **no passing CI claim until GitHub checks finish**. Physical owner feel, 50+ natural scored bot rounds, actual install/update, signing and LAN remain open. See [specific audit](QA_QUICK_PLAY_SCORED_v0937.md) and [overall milestone ledger](MILESTONE_QA_AND_FINAL_AUDIT_2026-10-29.md).
+
+---
+
 # v0.9.36 named local Custom presets — automated QA passed, exact test APK archived (2026-10-29)
 
 - **Latest draft:** v0.9.36 `feature/custom-presets-v0936` on [draft PR #55](https://github.com/PlayerEden/Ricochet-Rumble/pull/55), dependent on v0.9.35 PR #54 and unapproved prior TDM/control drafts. Stable `main` is unchanged. No owner phone acceptance inferred.

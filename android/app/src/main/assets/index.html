@@ -101,13 +101,19 @@
     <label>BOTS<select id="bot-count"><option value="0">0 · PRACTICE</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>
     <label>NEARBY SIDES<select id="team-choice"><option value="ffa">FREE FOR ALL</option><option value="coop">HUMANS VS BOTS</option><option value="teams">TWO TEAMS</option></select></label>
   </div>
-  <details class="extra-rules"><summary>QUICK PLAY MODES + ADVANCED <span>Choose your survival modes</span></summary>
+  <details class="extra-rules"><summary>QUICK PLAY MODES + ADVANCED <span>Survival defaults · scoring trials opt-in</span></summary>
     <div class="settings-grid settings-page">
       <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="survival_ffa" checked> FREE-FOR-ALL SURVIVAL</label>
       <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="survival_teams" checked> TEAM SURVIVAL (BLUE + AI VS RED)</label>
     </div>
-    <p id="playlist-status" class="settings-mode-status">2 selected · last side standing</p>
-    <p class="settings-mode-status">TEAM SURVIVAL: Blue has AI allies with 2+ bots. Setting 1 bot adds a second; 0 bots stays practice. No respawn score limit yet.</p>
+    <p class="settings-mode-status">OPTIONAL SCORING TRIALS · OFF BY DEFAULT</p>
+    <div class="settings-grid settings-page quick-scored-modes">
+      <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="cqc"> CLOSE QUARTERS · 10 KOs / 3 MIN</label>
+      <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="scored_ffa"> SCORED VEHICLE FFA · 10 KOs / 4 MIN</label>
+      <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="scored_tdm"> TEAM DEATHMATCH · 15 KOs / 5 MIN</label>
+    </div>
+    <p id="playlist-status" class="settings-mode-status">2 SELECTED · SURVIVAL MODES ONLY</p>
+    <p class="settings-mode-status">SCORED TRIALS USE LOCKED MAPS, BOTS AND KO/TIMER RULES. SURVIVAL USES YOUR ADVANCED SETTINGS. EACH MATCH CREATES A NEW MAZE.</p>
     <div class="settings-grid settings-page">
       <label>PILOT LIVES<select id="lives-choice"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>
       <label>TANK SHELL LIMIT<select id="bullet-cap"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4 · STANDARD</option><option value="5">5</option><option value="8">8</option></select></label>
