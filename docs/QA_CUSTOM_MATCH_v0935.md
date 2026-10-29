@@ -16,3 +16,5 @@
 - [ ] >=50 naturally completed bot matches per scored mode and physical phone touch/UX acceptance, **manual pending**
 
 Previous accepted/working release remains v0.9.34 experimental, v0.9.21 is stable main.
+
+**CI trigger note (2026-10-29):** Temporary PR base to main is solely for GitHub's main-only CI dispatch; restore draft PR #54 to its direct v0.9.34 parent after checks. No merge authority or phone acceptance.
