@@ -1,0 +1,69 @@
+name: Sector Rebound - archive exact v0.9.34 TDM Android test once
+on:
+  push:
+    branches:
+      - feature/scored-team-deathmatch-v0934
+    paths:
+      - .github/workflows/publish-v0934-exact-qa-once.yml
+permissions:
+  contents: write
+  actions: read
+jobs:
+  archive-original-passing-artifact:
+    if: github.repository == 'PlayerEden/Ricochet-Rumble'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      QA_RUN: '40825789109'
+      SOURCE_SHA: '0c5bc1d13e46f053c8264e7cf60060b9b4e9ca89'
+      TAG: 'v0.9.34-scored-tdm-test'
+      APK: 'sector-rebound-v0.9.34-scored-tdm-debug.apk'
+    steps:
+      - name: Check exact prior full QA and immutable tag
+        run: |
+          set -euo pipefail
+          details="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$QA_RUN")"
+          test "$(jq -r '.status' <<< "$details")" = "completed"
+          test "$(jq -r '.conclusion' <<< "$details")" = "success"
+          test "$(jq -r '.head_sha' <<< "$details")" = "$SOURCE_SHA"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "Existing tag must never be replaced" >&2
+            exit 1
+          fi
+      - name: Download original APK and actual Chromium QA without rebuilding
+        run: |
+          set -euo pipefail
+          mkdir -p original qa
+          gh run download "$QA_RUN" --repo "$GITHUB_REPOSITORY" --name "debug-apk-$QA_RUN" --dir original
+          gh run download "$QA_RUN" --repo "$GITHUB_REPOSITORY" --name "sector-rebound-qa-$QA_RUN-1" --dir qa
+          test -s original/app-debug.apk
+          mv original/app-debug.apk "$APK"
+          zip -qr "sector-rebound-v0.9.34-tdm-qa.zip" qa
+          sha256sum "$APK" "sector-rebound-v0.9.34-tdm-qa.zip" > "v0.9.34-sha256.txt"
+      - name: Publish original QA-passing debug APK as experimental prerelease
+        run: |
+          set -euo pipefail
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag already exists" >&2
+            exit 1
+          fi
+          {
+            echo '# Sector Rebound v0.9.34 — Scored Team Deathmatch Android Test'
+            echo
+            echo '**Experimental Android debug APK. Automated QA PASS; owner physical phone approval PENDING; stable main UNCHANGED.**'
+            echo
+            echo '- New test-only 2v2 scored TDM: one Blue human + Blue AI vs two Red AI, 15 true team operator KOs / 300 active seconds.'
+            echo '- Canonical scoring, no friendly fire, armor/ejection not KOs, safe respawns, Blue/Red HUD, truthful After Action and new maze rematches.'
+            echo '- TDM uses experimental v0.9.32 precision vehicle controls. Original Survival/CQC/FFA and LAN are preserved.'
+            echo '- Self-ricochet death is not awarded a team KO or a misleading KO message.'
+            echo "- Original QA source: \`$SOURCE_SHA\`"
+            echo "- Fast regression 40825788956: https://github.com/$GITHUB_REPOSITORY/actions/runs/40825788956"
+            echo "- Full real Chromium TDM and Android APK/unsigned AAB 40825789109: https://github.com/$GITHUB_REPOSITORY/actions/runs/$QA_RUN"
+            echo "- Draft PR #53: https://github.com/$GITHUB_REPOSITORY/pull/53"
+            echo "- Exact original debug APK SHA256: $(sha256sum "$APK" | awk '{print $1}')"
+            echo
+            echo 'PENDING: owner phone touch/control/graphics and TDM pace acceptance, >=50 natural bot rounds, two-phone LAN and production signing.'
+            echo 'Debug certificate differences may prevent updating in place; uninstalling may erase local preferences.'
+          } > release-notes.md
+          gh release create "$TAG" "$APK" "sector-rebound-v0.9.34-tdm-qa.zip" "v0.9.34-sha256.txt" --repo "$GITHUB_REPOSITORY" --target "$SOURCE_SHA" --prerelease --title "Sector Rebound v0.9.34 — Scored TDM Android Test" --notes-file release-notes.md
