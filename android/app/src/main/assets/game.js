@@ -2,6 +2,7 @@
 let W=960,H=600;const START_LIVES=5,STEP=1/60;
 const PREF_KEY='rr-options-v06'; // Preserve existing options across this patch.
 const CUSTOM_PREF_KEY='rr-custom-v1';
+const CUSTOM_PRESETS_KEY='rr-custom-presets-v1';
 let comfort={sound:true,music:true,shake:false,autoFire:false,leftHanded:false},fixedAccumulator=0;
 let selectedRules={botCount:2,bulletCap:4,startLives:2,teamMode:'ffa',botSkill:'normal',mapSize:'small'};
 // v0.9.22 / Slice A: stable solo presets backed by CURRENT survival combat, not proposed score modes.
@@ -20,6 +21,76 @@ let selectedPlaylistIds=RELEASED_MATCH_MODES.slice(),playlistBag=[],lastSoloMode
 const CUSTOM_MODE_IDS=Object.freeze(['survival_ffa','survival_teams','cqc','scored_ffa','scored_tdm']);
 const CUSTOM_DEFAULT=Object.freeze({modeId:'survival_ffa',mapSize:'standard',botCount:2,botSkill:'normal',startLives:2,bulletCap:4});
 let customDraft={...CUSTOM_DEFAULT};
+
+const CUSTOM_PRESET_LIMIT=5,CUSTOM_PRESET_NAME_LIMIT=24;
+let customPresets=[],pendingPresetDelete='';
+function cleanPresetName(raw){
+ if(typeof raw!=='string')return '';
+ const name=raw.replace(/[\\u0000-\\u001f\\u007f-\\u009f]/g,'').replace(/\\s+/g,' ').trim();
+ return [...name].length<=CUSTOM_PRESET_NAME_LIMIT?name:'';
+}
+function normalizeCustomPresets(raw){
+ if(!Array.isArray(raw))return [];
+ const safe=[],seen=new Set();
+ for(const entry of raw){
+  if(!entry||typeof entry!=='object'||Array.isArray(entry))continue;
+  const name=cleanPresetName(entry.name),key=name.toLocaleLowerCase();
+  if(!name||seen.has(key)||!entry.rules||typeof entry.rules!=='object'||Array.isArray(entry.rules))continue;
+  // Explicitly require a supported mode ID; other stale/invalid fields fall back
+  // to the existing bounded custom rule validator on load.
+  if(!CUSTOM_MODE_IDS.includes(entry.rules.modeId))continue;
+  safe.push({name,rules:normalizeCustomDraft(entry.rules)});seen.add(key);
+  if(safe.length===CUSTOM_PRESET_LIMIT)break;
+ }
+ return safe;
+}
+function loadCustomPresets(){
+ try{const saved=JSON.parse(window.localStorage?.getItem(CUSTOM_PRESETS_KEY)||'null');
+  customPresets=saved?.version===1?normalizeCustomPresets(saved.entries):[];
+ }catch(_){customPresets=[]}
+ pendingPresetDelete='';return customPresets.map(p=>({name:p.name,rules:{...p.rules}}));
+}
+function persistCustomPresets(entries){
+ try{window.localStorage?.setItem(CUSTOM_PRESETS_KEY,JSON.stringify({version:1,entries}));return true}catch(_){return false}
+}
+function saveNamedCustomPreset(rawName){
+ const name=cleanPresetName(rawName);
+ if(!name)return {ok:false,message:'ENTER A NAME (1–24 CHARACTERS)'};
+ const key=name.toLocaleLowerCase();
+ if(customPresets.some(p=>p.name.toLocaleLowerCase()===key))return {ok:false,message:'NAME ALREADY SAVED · CHOOSE ANOTHER'};
+ if(customPresets.length>=CUSTOM_PRESET_LIMIT)return {ok:false,message:'FIVE PRESETS MAX · DELETE ONE FIRST'};
+ const next=[...customPresets,{name,rules:normalizeCustomDraft(customDraft)}];
+ if(!persistCustomPresets(next))return {ok:false,message:'SAVE FAILED · DEVICE STORAGE UNAVAILABLE'};
+ customPresets=next;pendingPresetDelete='';return {ok:true,message:'SAVED · '+name};
+}
+function loadNamedCustomPreset(name){
+ const item=customPresets.find(p=>p.name===name);
+ if(!item)return {ok:false,message:'CHOOSE A SAVED PRESET'};
+ setCustomDraft(item.rules);pendingPresetDelete='';
+ return {ok:true,message:'LOADED · '+item.name};
+}
+function deleteNamedCustomPreset(name){
+ const item=customPresets.find(p=>p.name===name);
+ if(!item)return {ok:false,message:'CHOOSE A SAVED PRESET'};
+ if(pendingPresetDelete!==name){pendingPresetDelete=name;return {ok:false,message:'TAP DELETE AGAIN TO REMOVE · '+name};}
+ const next=customPresets.filter(p=>p.name!==name);
+ if(!persistCustomPresets(next))return {ok:false,message:'DELETE FAILED · DEVICE STORAGE UNAVAILABLE'};
+ customPresets=next;pendingPresetDelete='';return {ok:true,message:'DELETED · '+name};
+}
+function resetCustomDraft(){pendingPresetDelete='';return setCustomDraft({...CUSTOM_DEFAULT})}
+function customPresetStatus(message){const el=document.getElementById('custom-preset-status');if(el)el.textContent=message;}
+function refreshCustomPresetUI(preferredName){
+ const select=document.getElementById('custom-preset-select');if(!select)return;
+ const current=preferredName??select.value;
+ select.replaceChildren();
+ const empty=document.createElement('option');empty.value='';empty.textContent=customPresets.length?'CHOOSE SAVED PRESET':'NO PRESETS SAVED';select.appendChild(empty);
+ for(const p of customPresets){const opt=document.createElement('option');opt.value=p.name;opt.textContent=p.name;select.appendChild(opt)}
+ select.value=customPresets.some(p=>p.name===current)?current:'';
+ const chosen=!!select.value;
+ for(const id of ['custom-preset-load','custom-preset-delete']){const button=document.getElementById(id);if(button)button.disabled=!chosen}
+ const count=document.getElementById('custom-preset-count');if(count)count.textContent=customPresets.length+'/'+CUSTOM_PRESET_LIMIT+' SAVED ON THIS DEVICE';
+}
+
 function normalizeCustomDraft(raw){
  const p=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{};
  const choose=(key,values)=>values.includes(p[key])?p[key]:CUSTOM_DEFAULT[key];
@@ -59,7 +130,7 @@ function readCustomScreen(){
  for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(!el||el.disabled)continue;patch[key]=['botCount','startLives','bulletCap'].includes(key)?Number(el.value):el.value}
  return setCustomDraft(patch);
 }
-function openCustomScreen(){setPanel(document.getElementById('custom-template').innerHTML);refreshCustomUI();}
+function openCustomScreen(){setPanel(document.getElementById('custom-template').innerHTML);refreshCustomUI();refreshCustomPresetUI();}
 
 function normalizePlaylistModes(ids){
  if(!Array.isArray(ids))return RELEASED_MATCH_MODES.slice();
@@ -173,7 +244,7 @@ function applyPlaylistUI(){
  const status=document.getElementById('playlist-status');
  if(status)status.textContent=selectedPlaylistIds.length?selectedPlaylistIds.length+' selected · last side standing':'SELECT AT LEAST ONE MODE';
 }
-function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){const st=p.settings||{};selectedRules={mapSize:MAP_SIZES[st.mapSize]?st.mapSize:'small',botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:2,bulletCap:[1,2,3,4,5,8].includes(st.bulletCap)?st.bulletCap:4,startLives:[2,3,5].includes(st.startLives)?st.startLives:2,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key];if(p.playlist?.version===1&&Array.isArray(p.playlist.enabled))setPlaylistModes(p.playlist.enabled)}}catch(_){}loadCustomDraft();applyPrefsToUI()}
+function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){const st=p.settings||{};selectedRules={mapSize:MAP_SIZES[st.mapSize]?st.mapSize:'small',botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:2,bulletCap:[1,2,3,4,5,8].includes(st.bulletCap)?st.bulletCap:4,startLives:[2,3,5].includes(st.startLives)?st.startLives:2,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key];if(p.playlist?.version===1&&Array.isArray(p.playlist.enabled))setPlaylistModes(p.playlist.enabled)}}catch(_){}loadCustomDraft();loadCustomPresets();applyPrefsToUI()}
 function applyPrefsToUI(){const picks={mapSize:selectedRules.mapSize,botCount:selectedRules.botCount,bulletCap:selectedRules.bulletCap,startLives:selectedRules.startLives,teamMode:selectedRules.teamMode,botSkill:selectedRules.botSkill};const ids={mapSize:'map-size',botCount:'bot-count',bulletCap:'bullet-cap',startLives:'lives-choice',teamMode:'team-choice',botSkill:'bot-skill'};for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(el&&el.options&&[...el.options].some(o=>o.value===String(picks[key])))el.value=String(picks[key])}for(const key of Object.keys(comfort)){const el=document.getElementById('pref-'+key);if(el)el.checked=comfort[key]}const el=document.getElementById('fire-mode');if(el)el.textContent=comfort.autoFire?'AUTO ON':'HOLD TO FIRE';document.querySelector('.battlefield')?.classList.toggle('swap-controls',comfort.leftHanded);applyPlaylistUI();}
 function releaseControls(){touch.clear();pressed.clear();clearStick();clearFireAim();vehicleAimButton?.classList.remove('active');for(const el of document.querySelectorAll('[data-key]'))el.classList.remove('active')}
 
@@ -1288,11 +1359,27 @@ function find(){if(!bridgeReady()){notice('Nearby mode requires the Android APK'
 function manual(){if(!bridgeReady()){notice('Manual LAN join requires the Android APK');return}newMatch('guest');setPanel('<div class="eyebrow">FALLBACK</div><h2>JOIN BY ADDRESS</h2><p>Enter the IP:port shown on the host screen, such as 192.168.1.25:47321</p><input id="lan-address" placeholder="192.168.1.25:47321" inputmode="url" autocapitalize="off"><button data-action="ip-join">CONNECT</button><button data-action="find">FIND NEARBY</button>')}
 function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;mode='idle';playlistBag=[];lastSoloModeId=null;releaseControls();document.getElementById('mode-label').textContent='NO GAME ACTIVE';panel.innerHTML=originalPanel;applyPrefsToUI();menu.classList.remove('hidden')}
 const originalPanel=panel.innerHTML;
-panel.addEventListener('change',e=>{const el=e.target;if(el.id?.startsWith('custom-')){readCustomScreen();refreshCustomUI();return;}if(el.id?.startsWith('pref-')){const key=el.id.slice(5);if(key in comfort)comfort[key]=el.checked;applyPrefsToUI()}savePrefs()});
+panel.addEventListener('change',e=>{const el=e.target;if(el.id==='custom-preset-select'){pendingPresetDelete='';refreshCustomPresetUI();customPresetStatus('SELECT LOAD TO APPLY SAVED RULES');return;}if(el.id?.startsWith('custom-')){readCustomScreen();refreshCustomUI();return;}if(el.id?.startsWith('pref-')){const key=el.id.slice(5);if(key in comfort)comfort[key]=el.checked;applyPrefsToUI()}savePrefs()});
 loadPrefs();
 
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
- if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, drag the large circular AIM pad to turn the hull without firing, then tap FIRE when lined up. The centered AIM thumbstick has a dead zone to ignore jitter.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){panel.innerHTML=originalPanel;applyPrefsToUI();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
+ if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, drag the large circular AIM pad to turn the hull without firing, then tap FIRE when lined up. The centered AIM thumbstick has a dead zone to ignore jitter.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){panel.innerHTML=originalPanel;applyPrefsToUI();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
+ else if(a==='custom-reset'){resetCustomDraft();refreshCustomUI();customPresetStatus('DEFAULT RULES RESTORED · SAVED PRESETS KEPT');}
+ else if(a==='custom-preset-save'){
+  readCustomScreen();const input=document.getElementById('custom-preset-name'),name=cleanPresetName(input?.value);
+  const outcome=saveNamedCustomPreset(name);customPresetStatus(outcome.message);
+  if(outcome.ok){if(input)input.value='';refreshCustomPresetUI(name);}
+ }
+ else if(a==='custom-preset-load'){
+  const outcome=loadNamedCustomPreset(document.getElementById('custom-preset-select')?.value);
+  customPresetStatus(outcome.message);if(outcome.ok)refreshCustomUI();
+ }
+ else if(a==='custom-preset-delete'){
+  const name=document.getElementById('custom-preset-select')?.value;
+  const outcome=deleteNamedCustomPreset(name);customPresetStatus(outcome.message);
+  if(outcome.ok)refreshCustomPresetUI();
+ }
+ else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
  const s=document.getElementById('lan-address').value.trim(),m=s.match(/^([\da-fA-F:.]+):(\d{1,5})$/);
  if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';window.AndroidBridge.joinGame(m[1],Number(m[2]));}});
 function showPauseMenu(){releaseControls();if(mode==='idle')return;
