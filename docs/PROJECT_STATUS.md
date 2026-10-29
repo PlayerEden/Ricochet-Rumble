@@ -1,3 +1,14 @@
+# v0.9.36 named local Custom presets — automated QA passed, exact test APK archived (2026-10-29)
+
+- **Latest draft:** v0.9.36 `feature/custom-presets-v0936` on [draft PR #55](https://github.com/PlayerEden/Ricochet-Rumble/pull/55), dependent on v0.9.35 PR #54 and unapproved prior TDM/control drafts. Stable `main` is unchanged. No owner phone acceptance inferred.
+- **Implementation:** collapsed Local Presets editor; max five 1–24-character clean named custom setups; save without overwrite, explicit load, two-tap confirmed delete, Reset to Default preserving named saves, defensive versioned `rr-custom-presets-v1` parsing. On-device only, separate from Custom draft and Quick Play. Uses existing validated match rules, not a second scoring/AI engine.
+- **Automated QA PASS:** [fast 40832553494](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40832553494) and [full real Chromium preset save→reset→reload→load→delete, existing match flows, Android debug APK/unsigned AAB 40832553495](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40832553495) on exact code/test SHA `03064a905d77c0cf4b2c33a306b29ef0cfe5b04e`. First attempt failed sanitizer regex syntax; repaired and reran successfully.
+- **Immutable original APK:** [v0.9.36 Custom Presets test prerelease](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.36-custom-presets-test) retains **byte-identical QA-passing debug APK**, Chromium screenshots/QA ZIP and SHA256. One-time archival [run 40833144334 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40833144334), publisher workflow removed after success. [Detailed audit](QA_CUSTOM_PRESETS_v0936.md).
+- **OPEN:** physical owner device usability and save persistence across upgrades/uninstalls, >=50 natural bot-scored matches, procedural topology/spawn fairness, signed Play release, two-device LAN, and selected polished score-based Quick Play integration. Keep stable main and all known-good rollback releases intact.
+- **Next development:** separate audited scored Quick Play opt-in integration on a new draft branch (do NOT silently include unaccepted scored modes by default), then procedural balance and progression/storage foundations. All drafts remain independent and manual acceptance pending.
+
+---
+
 # v0.9.36 — named Custom Match local presets + reset (2026-10-29)
 
 **New experimental branch:** `feature/custom-presets-v0936`, stacked directly on [v0.9.35 Custom Match PR #54](https://github.com/PlayerEden/Ricochet-Rumble/pull/54), which is a dependent unapproved draft. Stable main still v0.9.21. No owner phone approval, no main merge.
