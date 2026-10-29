@@ -168,3 +168,12 @@ const report={schemaVersion:1,scope:'Actual offline simulation, test-only player
 fs.mkdirSync(outPath.split('/').slice(0,-1).join('/')||'.',{recursive:true});
 fs.writeFileSync(outPath,JSON.stringify(report,null,2)+'\n');
 console.log('BALANCE_AUDIT_SUMMARY '+JSON.stringify({elapsedWallMs:report.elapsedWallMs,topology,overview}));
+
+// Keep a compact, reproducible seed-level diagnostic in CI logs, in addition
+// to all records preserved in the JSON artifact.
+const outliers=roundRows.filter(r=>r.armorAndPilotHitEvents===0||r.reason==='time_limit'||r.unsafeRespawns>0||r.closeExposedRespawns>0)
+ .map(r=>({mode:r.mode,seed:r.seed,reason:r.reason,draw:r.draw,seconds:r.seconds,
+ shots:r.shots,hits:r.armorAndPilotHitEvents,kos:r.kos,respawns:r.respawns,
+ firstImpactSeconds:r.firstImpactSeconds,closeExposedRespawns:r.closeExposedRespawns}));
+console.log('BALANCE_AUDIT_OUTLIERS '+JSON.stringify(outliers));
+
