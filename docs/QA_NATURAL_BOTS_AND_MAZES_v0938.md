@@ -10,6 +10,26 @@ The audit uses a fixed 30 Hz simulation step, 50 deterministic 4-participant ful
 
 The raw JSON evidence saves every seed, winner/reason, pilot-KO vector, team score, participant respawns, first shot/impact/KO time, shot/ricochet counts, initial enemy distance, active clock, unsafe and close-exposed respawn counts. Summary dimensions include winner/timeout/score-target split, no-contact and no-KO matches, Blue/Red TDM asymmetry, match pace, and coverage gaps. Unsafe actual respawns and disconnected or duplicate seeded layouts are test failures; unexpectedly weak bot combat is an *observed balance risk*, not a manufactured pass.
 
+## Normal 60 Hz cross-check — vital correction
+
+[Full independent 30/60 Hz run 40839803650 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40839803650) covers **50 organically played AI-vs-AI bouts per scored mode at each 30 Hz and 60 Hz**, 900 connected/deduplicated map signatures per run, and **exact replay equality of the first two seeds per mode between the short probe and full 30 Hz run**.
+
+| Measure | CQC 30 / 60 Hz | Scored FFA 30 / 60 Hz | TDM 30 / 60 Hz |
+| --- | --- | --- | --- |
+| KO-target finish | 35 / **50** | 44 / 44 | 48 / 48 |
+| Timeouts | 15 / **0** | 6 / 6 | 2 / 2 |
+| Zero-hit games | 3 / **0** | 0 / 0 | 0 / 0 |
+| Mean seconds | 110.2 / **70.8** | 165.8 / 173.2 | 170.4 / 164.7 |
+| Unsafe respawn centers | 0 / 0 | 0 / 0 | 0 / 0 |
+
+**DO NOT TUNE CQC on the basis of the 30 Hz timeouts.** The three zero-contact seeds `1001167`, `1002719`, `1003301` and all other CQC trials reached the pilot KO target at 60 Hz. This is a **simulation step-size sensitivity**, not evidence of a repeatable CQC defect at the game's 60 Hz update. Note that 60 Hz emulator comparisons still cannot replace real device sessions.
+
+**TDM caution:** at 30 Hz, Blue 27 / Red 22 / draw 1. At native 60 Hz, **Blue 34 / Red 16 / draw 0** on the exact same 50 seeds. One 50-match sample does not establish unfair rules, but a 68% Blue win fraction merits a fresh-seed stress test. [A separate 200-match independent 60 Hz TDM check](https://github.com/PlayerEden/Ricochet-Rumble/actions/workflows/natural-bot-audit-v0938.yml) is queued/running under the same QA-only branch. **Do not claim its outcome until logged.**
+
+All score/maze/physics runtime code and Android assets are unchanged. The two-rate comparison is test-only.
+
+---
+
 ## First measured baseline: 30 Hz, 50 games each (PASS)
 
 [Full natural AI run 40839155850](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40839155850) and [seed-level diagnostic rerun 40839511581](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40839511581) both completed successfully. Both run the same 30 Hz game logic, as described above.
