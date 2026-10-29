@@ -658,3 +658,20 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
    A fourth full-width row pushed home content over HELP at 740x360. */
 #panel .home-action-grid button.home-tdm,#panel .home-action-grid button.home-custom{grid-column:auto;min-height:clamp(36px,8dvh,51px)}
 @media(max-height:440px){#panel .home-action-grid button.home-tdm,#panel .home-action-grid button.home-custom{min-height:36px;padding:5px 8px}}
+
+/* v0.9.36: collapsed by default to retain the approved compact landscape editor. */
+.custom-preset-fold{border:1px solid #376c72;border-radius:5px;background:#0d2831;padding:0 8px 7px;margin:0}
+.custom-preset-fold:not([open]){padding-bottom:0}
+.custom-preset-fold summary{cursor:pointer;min-height:34px;display:flex;align-items:center;justify-content:space-between;gap:8px;color:#a4e2d9;font:850 clamp(10px,1.25vw,13px)/1.2 monospace;touch-action:manipulation}
+.custom-preset-fold summary span{font:650 clamp(9px,1.1vw,11px)/1.2 monospace;color:#97b6bd;text-align:right}
+.custom-preset-save,.custom-preset-manage{display:grid;gap:8px;align-items:end;margin:6px 0}
+.custom-preset-save{grid-template-columns:minmax(0,1fr) minmax(110px,.55fr)}
+.custom-preset-manage{grid-template-columns:minmax(0,1fr) minmax(70px,.35fr) minmax(75px,.4fr)}
+.custom-preset-fold label{display:flex;flex-direction:column;gap:4px;min-width:0;font:750 10px/1.2 monospace;color:#accbd0}
+.custom-preset-fold input,.custom-preset-fold select{width:100%;min-width:0;min-height:40px;padding:5px 8px;border:1px solid #517b86;border-radius:4px;background:#0a202b;color:#eef8f5;font:750 13px/1.1 system-ui,sans-serif}
+#panel .custom-preset-fold button{margin:0;min-width:0;min-height:40px;padding:6px 8px;font:800 clamp(10px,1.15vw,13px)/1.15 monospace}
+.custom-preset-foot{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-top:5px}
+.custom-preset-foot button{flex:0 0 auto}
+#panel .custom-preset-foot p{margin:0;font:700 10px/1.2 monospace;color:#a8ccd1}
+@media(max-width:620px){.custom-preset-save{grid-template-columns:minmax(0,1fr) auto}.custom-preset-manage{grid-template-columns:minmax(0,1fr) 70px 77px}.custom-preset-foot{align-items:flex-start;flex-direction:column}}
+@media(max-height:390px){.custom-preset-fold summary{min-height:34px}.custom-preset-save,.custom-preset-manage{margin:4px 0}}

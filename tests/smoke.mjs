@@ -15,14 +15,14 @@ node('bot-skill').value='normal';
 node('bot-count').value='1';node('bullet-cap').value='3';node('lives-choice').value='5';node('team-choice').value='ffa';node('map-size').value='standard';
 let frame=null,tick=0,hostCalled=false,discoverCalled=false,packets=[];
 const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},joinGame(){},stopNetwork(){},sendPacket(p){packets.push(JSON.parse(p))}};
-const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(key){return ['rr-options-v06','rr-custom-v1'].includes(key)?savedStorage.get(key)??null:null},setItem(key,value){if(['rr-options-v06','rr-custom-v1'].includes(key))savedStorage.set(key,String(value))}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(sel){if(sel==='input[data-playlist-mode]')return acceptancePlaylistInputs||[];if(sel==='[data-action="solo"],[data-action="settings-play"]')return acceptancePlayButtons||[];return []}};
+const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(key){return ['rr-options-v06','rr-custom-v1','rr-custom-presets-v1'].includes(key)?savedStorage.get(key)??null:null},setItem(key,value){if(['rr-options-v06','rr-custom-v1','rr-custom-presets-v1'].includes(key))savedStorage.set(key,String(value))}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(sel){if(sel==='input[data-playlist-mode]')return acceptancePlaylistInputs||[];if(sel==='[data-action="solo"],[data-action="settings-play"]')return acceptancePlayButtons||[];return []}};
 let simRand=null;
 const testMath=Object.create(Math);testMath.random=()=>simRand?simRand():Math.random();
 function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5;return(z>>>0)/4294967296;};}
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math:testMath,Number,Set,JSON,String};
 vm.runInNewContext(fs.readFileSync(new URL('../web/scored-match.js',import.meta.url),'utf8'),env,{filename:'scored-match.js'});
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,get customDraft(){return {...customDraft}},normalizeCustomDraft,customOptionsFor,setCustomDraft,loadCustomDraft,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,projectileHitRadius,beginFireAim,updateFireAim,clearFireAim,get fireAim(){return {...fireAim}},get touch(){return touch},tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,get customDraft(){return {...customDraft}},normalizeCustomDraft,customOptionsFor,setCustomDraft,loadCustomDraft,cleanPresetName,normalizeCustomPresets,loadCustomPresets,saveNamedCustomPreset,loadNamedCustomPreset,deleteNamedCustomPreset,resetCustomDraft,get customPresets(){return customPresets.map(p=>({name:p.name,rules:{...p.rules}}))},freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,projectileHitRadius,beginFireAim,updateFireAim,clearFireAim,get fireAim(){return {...fireAim}},get touch(){return touch},tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -1981,3 +1981,57 @@ console.log('PASS TDM ricochet self-death audit: death counted, neither team sco
  assert.deepEqual([...a.selectedPlaylistIds],playlist,'Custom Match never changes Quick Play playlist');
 }
 console.log('PASS v0.9.35 Custom Match: separate versioned rules, Survival/team/practice, locked scored modes, same-rules new sector and playlist isolation.');
+
+// v0.9.36 named local preset lifecycle: validation, persistence, duplicate safety and delete confirm.
+{
+ const a=win.__test,baselinePlaylist=[...a.selectedPlaylistIds],quickPrefs=savedStorage.get('rr-options-v06');
+ assert.ok(menuHtml.includes('id="custom-preset-name"'),'Custom editor has real named preset input');
+ assert.ok(menuHtml.includes('data-action="custom-preset-save"'),'Save control exists');
+ assert.ok(menuHtml.includes('data-action="custom-preset-load"'),'Load control exists');
+ assert.ok(menuHtml.includes('data-action="custom-preset-delete"'),'Delete control exists');
+ assert.ok(menuHtml.includes('data-action="custom-reset"'),'Reset to Default exists');
+ const bad=a.normalizeCustomPresets([{name:'Broken',rules:{modeId:'hacked'}},{name:'Valid',rules:{modeId:'survival_ffa',botCount:999}}, {name:'valid',rules:{modeId:'survival_teams'}}]);
+ assert.equal(bad.length,1,'unknown-mode and duplicate names removed during recovery');
+ assert.equal(bad[0].name,'Valid');
+ assert.equal(bad[0].rules.botCount,2,'stale values bounded by same Custom Match schema');
+ assert.equal(a.cleanPresetName('  Maze\n   Duel '),'Maze Duel','names have clean whitespace');
+ assert.equal(a.cleanPresetName('a'.repeat(25)),'','names longer than 24 are rejected');
+ savedStorage.set('rr-custom-presets-v1','{malformed');
+ assert.equal(a.loadCustomPresets().length,0,'corrupt storage never crashes game');
+ savedStorage.set('rr-custom-presets-v1',JSON.stringify({version:99,entries:[{name:'Old',rules:{modeId:'survival_ffa'}}]}));
+ assert.equal(a.loadCustomPresets().length,0,'unknown schema version ignored without unsafe migration');
+ a.setCustomDraft({modeId:'survival_teams',botCount:3,mapSize:'large',bulletCap:1,startLives:5});
+ assert.equal(a.saveNamedCustomPreset('Maze Duel').ok,true);
+ assert.equal(a.saveNamedCustomPreset('maze duel').ok,false,'case-insensitive collision never silently overwrites');
+ assert.equal(a.saveNamedCustomPreset('   ').ok,false);
+ assert.equal(a.loadCustomPresets().length,1,'saved presets survive local reload');
+ a.resetCustomDraft();
+ assert.equal(a.customDraft.modeId,'survival_ffa','reset changes draft to game default');
+ assert.equal(a.customDraft.mapSize,'standard');
+ assert.equal(a.customPresets.length,1,'reset preserves saved setups');
+ assert.equal(a.loadNamedCustomPreset('Maze Duel').ok,true);
+ assert.equal(a.customDraft.modeId,'survival_teams');
+ assert.equal(a.customDraft.botCount,3);
+ assert.equal(a.customDraft.bulletCap,1);
+ assert.equal(a.customOptionsFor().teamMode,'teams','loaded preset uses actual game mode');
+ assert.equal(a.deleteNamedCustomPreset('Maze Duel').ok,false,'first Delete is a confirmation, no mutation');
+ assert.equal(a.customPresets.length,1);
+ assert.equal(a.deleteNamedCustomPreset('Maze Duel').ok,true,'second Delete removes selected');
+ assert.equal(a.customPresets.length,0);
+ assert.equal(a.loadNamedCustomPreset('Maze Duel').ok,false);
+ for(let i=1;i<=5;i++)assert.equal(a.saveNamedCustomPreset('Setup '+i).ok,true);
+ assert.equal(a.saveNamedCustomPreset('Setup 6').ok,false,'maximum 5 presets enforced');
+ assert.equal(a.loadCustomPresets().length,5,'versioned preset store survives reload');
+ assert.equal(a.deleteNamedCustomPreset('Setup 2').ok,false);
+ assert.equal(a.deleteNamedCustomPreset('Setup 2').ok,true);
+ assert.equal(a.saveNamedCustomPreset('Replacement').ok,true,'deleted slot reusable');
+ assert.equal(a.customPresets.length,5);
+ a.resetCustomDraft();
+ assert.equal(savedStorage.get('rr-options-v06'),quickPrefs,'preset operations never overwrite Quick Play prefs');
+ a.newMatch('custom');
+ assert.equal(st().config.customMatch,true);
+ assert.equal(st().config.matchModeId,'survival_ffa','reset draft launches actual default');
+ assert.deepEqual([...a.selectedPlaylistIds],baselinePlaylist,'presets never mutate Quick Play playlist');
+
+}
+console.log('PASS v0.9.36 local Custom presets: validated names, duplicate safety, 5 maximum, corrupted version recovery, two-step deletion, default reset, reload and Quick Play isolation.');

@@ -129,6 +129,22 @@
    <label>TANK SHELLS<select id="custom-shells"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="8">8</option></select></label>
   </div>
   <p id="custom-preview" class="custom-preview" role="status" aria-live="polite"></p>
+  <details class="custom-preset-fold">
+   <summary>LOCAL PRESETS <span id="custom-preset-count">0/5 SAVED ON THIS DEVICE</span></summary>
+   <div class="custom-preset-save">
+    <label for="custom-preset-name">NAME THIS SETUP<input type="text" id="custom-preset-name" maxlength="24" autocomplete="off" spellcheck="false" placeholder="e.g. Maze Duel"></label>
+    <button type="button" data-action="custom-preset-save">SAVE PRESET</button>
+   </div>
+   <div class="custom-preset-manage">
+    <label for="custom-preset-select">SAVED SETUPS<select id="custom-preset-select" aria-label="Saved Custom Match presets"></select></label>
+    <button type="button" id="custom-preset-load" data-action="custom-preset-load">LOAD</button>
+    <button type="button" id="custom-preset-delete" data-action="custom-preset-delete">DELETE</button>
+   </div>
+   <div class="custom-preset-foot">
+    <button type="button" id="custom-reset" data-action="custom-reset">RESET TO DEFAULT</button>
+    <p id="custom-preset-status" role="status" aria-live="polite">PRESETS STAY ON THIS DEVICE · DELETE REQUIRES TWO TAPS</p>
+   </div>
+  </details>
   <p id="custom-rule-note" class="custom-note">CASUAL · SAVED SEPARATELY FROM QUICK PLAY</p>
   <div class="custom-actions"><button type="button" data-action="custom-back">BACK</button><button class="primary" type="button" data-action="custom-play">DEPLOY MATCH</button></div>
  </section>
