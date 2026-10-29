@@ -1,4 +1,16 @@
-# v0.9.34 — True scored 2v2 TDM: first milestone quality audit
+# v0.9.34 — True scored 2v2 TDM: milestone quality audit
+
+## Final v0.9.34 automated QA checkpoint — 2026-10-29
+
+**Code and QA gates PASSED; real-phone and balance gates remain OPEN.** Final tested gameplay/test source commit `0c5bc1d13e46f053c8264e7cf60060b9b4e9ca89` passed [fast regression 40825788956](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40825788956) and [full real Chromium live TDM end-to-end + Android debug APK/unsigned AAB 40825789109](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40825789109). The Chromium scenario clicks the actual TDM menu, registers armor/ejection without KO, verifies independent Blue ally operator KO/aggregated Blue score, 15-KO winner, After Action, NEXT MATCH and timeout draw, in addition to general landscape QA.
+
+**Permanent immutable prerelease:** [v0.9.34 scored TDM test](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.34-scored-tdm-test) with [original byte-identical QA-passing APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/download/v0.9.34-scored-tdm-test/sector-rebound-v0.9.34-scored-tdm-debug.apk), actual screenshot/QA ZIP and SHA256 manifest; [single-use archive workflow 40826329885 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40826329885), removed after publication. No independent rebuild or resigning. **Latest draft PR #53 remains unmerged** and stacked on v0.9.33. No v0.9.32/33/34 real physical phone acceptance, no 50+ naturally simulated 2v2 rounds, no Play signing and no two-phone LAN test; those are separate explicit exit gates.
+
+The initial table below captures the earlier gate while full QA was running; **this final checkpoint supersedes its PENDING automated statuses.**
+
+---
+
+
 
 **Date:** 2026-10-29  
 **Review:** [Draft PR #53](https://github.com/PlayerEden/Ricochet-Rumble/pull/53), originally branched from v0.9.33 pilot parity. Do **not merge**. Stable `main` remains the accepted v0.9.21 development baseline.
