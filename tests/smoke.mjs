@@ -1535,10 +1535,10 @@ console.log('PASS playable CQC contract: real 10 pilot KOs, protected safe respa
  assert.equal(api.projectileHitRadius(st().tanks[0],{kind:'sidearm'}),14,'Survival sidearm hitbox unaffected');
  st().tanks[0].a=0;
  api.tankMove(st().tanks[0],{moveX:0,moveY:1,aimX:1,aimY:0,bot:false},dt,0);
- assert.ok(Math.abs(st().tanks[0].a-12*dt)<.000001,'Survival ignores CQC FIRE aim and keeps old turn speed');
+ assert.equal(st().tanks[0].a,0,'Solo Survival FIRE aim can face east while the player moves south');
  api.clearFireAim();
 }
-console.log('PASS CQC aim polish: dual-thumb independent FIRE aim, no tap jitter, slower player turn, all-player fair sidearm radius; survival/tank/bot unchanged.');
+console.log('PASS CQC aim polish: dual-thumb FIRE aim, no tap jitter, fair scored sidearms; Survival foot now shares CQC turn and its hitboxes remain unchanged.');
 
 
 // Scored vehicle FFA reuses the EXACT CQC scoring kernel, but pilots must
