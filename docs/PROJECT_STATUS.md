@@ -1,3 +1,14 @@
+# v0.9.37 opt-in scored Quick Play — automated milestone QA PASS, APK archived (2026-10-29)
+
+- **Latest experimental draft:** [PR #56](https://github.com/PlayerEden/Ricochet-Rumble/pull/56), `feature/quick-play-scored-opt-in-v0937`, child of unapproved v0.9.36 presets PR #55. No stable `main` merge or owner handset acceptance.
+- **Implemented:** Existing Survival FFA/Team Survival remain Quick Play defaults, including legacy/missing saved v1 playlist. Scored CQC, vehicle FFA and 2v2 TDM are unchecked opt-in choices in Match Settings. All choices use one validated versioned playlist/shuffle bag, actual score rules, fixed scored maps/roster/timers, procedural new maze each NEXT MATCH. `quickPlayMatch` provenance rotates only true Quick Play rounds, never standalone scored buttons or Custom Match. Zero selection still blocks Quick Play.
+- **Automated PASS:** [fast CI 40837545823](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40837545823) plus [full real Chromium option persistence, three scored rounds, timer draws, standalone/nonrotation, landscape visual QA and Android debug APK/unsigned AAB 40837545844](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40837545844), both on exact gameplay/test SHA `fcea799b905dc4e4ce8191bd3c11e4cc788c59b3`.
+- **Permanent release:** [v0.9.37 scored Quick Play experimental test APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.37-scored-quick-play-test) is the original byte-identical QA artifact; screenshot/QA ZIP and SHA256 included. [Single-use publisher 40838171910 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40838171910) was removed after publication. See [detailed v0.9.37 QA](QA_QUICK_PLAY_SCORED_v0937.md).
+- **Still OPEN:** owner Android thumb handling and mode quality verdict v0.9.32–37, 50+ naturally played scored matches/2v2 fairness, respawn/topology dedup, progression/saves cosmetics, live LAN 2-phone test, safe app upgrade/Play signing. Prior v0.9.35/36 APK releases remain rollback candidates. Do not silently promote scored to default.
+- **Next planned independent milestone:** instrument deterministic natural-bot match telemetry and procedural/respawn fairness, then progression save/schema and cosmetic foundations; each audited separately. **The end-of-first-plan comprehensive audit is not yet complete.**
+
+---
+
 # v0.9.37 scored Quick Play opt-in — implementation under QA (2026-10-29)
 
 **Experimental draft:** `feature/quick-play-scored-opt-in-v0937` based directly on unmerged v0.9.36 Custom Presets PR #55. Main stays at accepted development v0.9.21; owner device approvals v0.9.32–36 and true 2-phone LAN remain PENDING.
