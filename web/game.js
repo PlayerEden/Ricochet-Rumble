@@ -26,7 +26,7 @@ const CUSTOM_PRESET_LIMIT=5,CUSTOM_PRESET_NAME_LIMIT=24;
 let customPresets=[],pendingPresetDelete='';
 function cleanPresetName(raw){
  if(typeof raw!=='string')return '';
- const name=raw.replace(/[\\u0000-\\u001f\\u007f-\\u009f]/g,'').replace(/\\s+/g,' ').trim();
+ const name=raw.replace(/[\u0000-\u001f\u007f-\u009f]/g,'').replace(/\s+/g,' ').trim();
  return [...name].length<=CUSTOM_PRESET_NAME_LIMIT?name:'';
 }
 function normalizeCustomPresets(raw){
