@@ -55,9 +55,9 @@ assert.ok(engine&&frame,"Actual gameplay engine loaded via unmodified production
 
 const args=process.argv.slice(2);
 const getFlag=(name,fallback)=>{const p=args.find(x=>x.startsWith('--'+name+'='));return p?p.split('=').slice(1).join('='):fallback;};
-const seeds=Number(getFlag('seeds','50')),mazeSeeds=Number(getFlag('maze-seeds','300'));
-if(!Number.isInteger(seeds)||seeds<1||seeds>200||!Number.isInteger(mazeSeeds)||mazeSeeds<1||mazeSeeds>2000)throw Error('Invalid bounded seed count');
-const outPath=getFlag('out','artifacts/natural-bot-audit.json'),dt=1/30;
+const seeds=Number(getFlag('seeds','50')),mazeSeeds=Number(getFlag('maze-seeds','300')),hz=Number(getFlag('hz','30'));
+if(!Number.isInteger(seeds)||seeds<1||seeds>200||!Number.isInteger(mazeSeeds)||mazeSeeds<1||mazeSeeds>2000||![30,60].includes(hz))throw Error('Invalid bounded seed count or unsupported simulation rate');
+const outPath=getFlag('out','artifacts/natural-bot-audit.json'),dt=1/hz;
 const modes=[
  {id:'cqc',clock:180,target:10,size:'small'},
  {id:'scored_ffa',clock:240,target:10,size:'standard'},
@@ -163,7 +163,7 @@ for(const modeDef of modes){
 }
 const report={schemaVersion:1,scope:'Actual offline simulation, test-only player slot 0 controlled by existing botInput, not a human/device/LAN test',
  source:'web/game.js and web/scored-match.js from current checkout',
- simulatedPhysicsHz:30,seedsPerScoredMode:seeds,mazeSeedsPerSize:mazeSeeds,elapsedWallMs:Date.now()-start,
+ simulatedPhysicsHz:hz,seedsPerScoredMode:seeds,mazeSeedsPerSize:mazeSeeds,elapsedWallMs:Date.now()-start,
  topology,overview,rounds:roundRows};
 fs.mkdirSync(outPath.split('/').slice(0,-1).join('/')||'.',{recursive:true});
 fs.writeFileSync(outPath,JSON.stringify(report,null,2)+'\n');
