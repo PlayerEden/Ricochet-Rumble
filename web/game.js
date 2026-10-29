@@ -661,7 +661,7 @@ function creditScoredPilotKO(attacker,victim){
  emitFx('hit',t.x,t.y,combatColor(victim),attacker,victim);
  if(victim===0){screenKick=comfort.shake?3.2:0;damagePulse=.58;}
  audioCue('pilot-hit',t.x,t.y);const teamScore=next.mode==='teams'?next.operatorKOs.reduce((sum,k,i)=>sum+(next.teamIds[i]===next.teamIds[attacker]?k:0),0):null;
-  state.event=next.mode==='teams'?(next.teamIds[attacker]===0?'BLUE':'RED')+' TEAM KO · '+teamScore+'/'+next.scoreTarget:label(attacker)+' KO · '+state.kos[attacker]+'/'+next.scoreTarget;state.eventTimer=.9;
+  state.event=attacker===victim?'SELF RICOCHET · NO KO':next.mode==='teams'?(next.teamIds[attacker]===0?'BLUE':'RED')+' TEAM KO · '+teamScore+'/'+next.scoreTarget:label(attacker)+' KO · '+state.kos[attacker]+'/'+next.scoreTarget;state.eventTimer=.9;
  finishScoredMatch();refreshHUD();return true;
 }
 // Shared scored delayed spawn: pilots recover on foot; surviving empty vehicles
