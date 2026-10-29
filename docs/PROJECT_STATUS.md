@@ -1,3 +1,27 @@
+# v0.9.33 exact Android QA archive — 2026-10-29
+
+**Fast regression:** [run 40823197628 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40823197628) on game/test SHA `d4f4145f03f175d2b4717f3dd494815177c0d0f0`. Includes 300 seeded arenas, existing CQC/FFA/Survival/LAN rule checks, new local Solo FIRE-drag/ejection isolation, score kernel and Web/Android parity.
+
+**Full Chromium visual/input + Android debug APK and unsigned AAB:** [run 40823197639 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40823197639) on the **same game/test SHA**. Original QA APK copied **byte-for-byte without recompiling/resigning** into [immutable v0.9.33 pilot parity prerelease](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.33-pilot-parity-test) with [installable debug APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/download/v0.9.33-pilot-parity-test/sector-rebound-v0.9.33-pilot-parity-debug.apk), screenshot/QA ZIP and SHA256 manifest. [Single-use publisher 40823842700 PASSED](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40823842700), temporary workflow removed afterward.
+
+**Draft [PR #52](https://github.com/PlayerEden/Ricochet-Rumble/pull/52)** is stacked directly on v0.9.32 (PR #50), **NOT merged into stable main**. Neither v0.9.32 vehicle handling nor v0.9.33 pilot parity has owner phone acceptance yet. This debug APK does not establish release signing, save migration, stable LAN, or Google Play readiness. Next: owner compares v0.9.32 bank-shot feel first and v0.9.33 on-foot handling, ejection/entry, and CQC parity. Keep v0.9.31/0.9.28 owner-positive release rollbacks intact. Do not merge before explicit acceptance.
+
+---
+
+# Draft v0.9.33 — Solo Survival pilot controls parity (2026-10-29)
+
+**Unmerged experimental development branch:** `tuning/pilot-survival-parity-v0933`, based on latest v0.9.32 experimental vehicle branch, NOT approval of the vehicle feel. The independently tested v0.9.32 APK stays an unchanged comparison baseline; this draft has no physical-phone validation yet. Tracks [pilot issue #51](https://github.com/PlayerEden/Ricochet-Rumble/issues/51).
+
+**Player-visible delta:** Offline Solo Survival on-foot (including Team Survival, after manual exit or ejection) now uses the owner-positive CQC **6.5 rad/s local pilot rotation** and FIRE drag for independent heading. CQC/FFA foot already had those controls and should remain identical. Solo HUD and help explain the affordance. AIM/FIRE gestures are cleared on solo vehicle exit/entry/ejection and both new match and rematch. No new aim assists.
+
+**Strict non-changes:** The v0.9.32 vehicle pace/AIM/FIRE and shell rules, tank/mech steering, 268 foot movement, Survival hit radius 14, scored CQC hit radius 17.5, bot behavior, scoring, new maze seeding, LAN host/guest input protocol and legacy 12rad/s LAN pilot handling remain unchanged. No stable `main` changes, no Android production release.
+
+**QA gates:** New headless regression exercises Survival ejection→FIRE drag, aim/move separation, speed, hitboxes, vehicle AIM clearing, scored FFA and CQC, and LAN isolation. Mirror and syntax/parity must be checked by CI; do not claim a pass until run finishes. Handset acceptance remains pending: compare v0.9.32 vehicle feel first; then Survival pilot turns, diagonal thumb reach, EXIT→foot→ENTER, ejections, CQC parity, rematch and focus-loss, and multiple screen sizes. Two-phone LAN remains untested.
+
+**Rollback:** v0.9.32 source `c1f95a949bbb` / [APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.32-vehicle-precision-test); [owner-positive v0.9.31](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.31-vehicle-thumb-test); [owner-positive v0.9.28 CQC](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.28-cqc-aim-feel-test). If owner rejects v0.9.32, port this small pilot-only slice onto the accepted vehicle baseline rather than merging stacked drafts.
+
+---
+
 # Sector Rebound — Project Status & Chat Handoff
 
 **Last checked:** 2026-10-27 (300-seed source audit and full Chromium/Android QA PASS; P0 release/branch integration and P1 LAN/save/gameplay manual gates open; stable main runtime v0.9.21)
