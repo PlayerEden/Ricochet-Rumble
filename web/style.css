@@ -653,3 +653,8 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 #panel .home-action-grid button.home-custom{grid-column:1/-1;min-height:36px;border-color:#497e78;background:#19372f}
 #panel .home-action-grid button.home-custom strong{color:#b8efdf}
 .after-action #custom-edit{min-height:40px}
+
+/* v0.9.35 audit repair: new Custom button shares TDM's final row.
+   A fourth full-width row pushed home content over HELP at 740x360. */
+#panel .home-action-grid button.home-tdm,#panel .home-action-grid button.home-custom{grid-column:auto;min-height:clamp(36px,8dvh,51px)}
+@media(max-height:440px){#panel .home-action-grid button.home-tdm,#panel .home-action-grid button.home-custom{min-height:36px;padding:5px 8px}}
