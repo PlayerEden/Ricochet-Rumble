@@ -31,7 +31,7 @@ const playerSeat="i===0?makeControl(true):i===1";
 assert.equal(script.split(playerSeat).length,2,"exact single local human input adapter to replace");
 script=script.replace(playerSeat,"i===0?botInput(i,dt):i===1");
 assert.ok(/\}\)\(\);\s*$/.test(script),"expected source trailer");
-const auditHook=String.raw\`window.__balance={
+const auditHook=String.raw`window.__balance={
  start(id,seed,skill='normal'){
   const rule=SCORED_MATCH_RULES[id];if(!rule)throw Error('Unknown scored mode '+id);
   mode='solo';paused=false;connected=false;
@@ -47,7 +47,7 @@ const auditHook=String.raw\`window.__balance={
  topology(seed,size){return createMaze(MAP_SIZES[size],seed)},
  startingPosition(i){return startingPosition(i)},
  get world(){return [worldW,worldH]}
-};})();\`;
+};})();`;
 script=script.replace(/\}\)\(\);\s*$/,auditHook);
 vm.runInNewContext(script,env,{filename:'natural-all-ai-game.js'});
 const engine=win.__balance;
@@ -109,7 +109,7 @@ for(const modeDef of modes){
    maxProjectiles=Math.max(maxProjectiles,a.bullets.length);
    for(let i=0;i<4;i++)if(a.scored.respawns[i]>respawnsSeen[i]){
     respawnsSeen[i]=a.scored.respawns[i];
-    const t=a.tanks[i],enemies=a.tanks.filter((_,j)=>j!==i&&j%2!==i%2||modeDef.id!=='scored_tdm'&&j!==i).filter(x=>x!==t);
+    const t=a.tanks[i];
     const eligible=a.tanks.filter((_,j)=>j!==i&&(modeDef.id!=='scored_tdm'||j%2!==i%2)&&a.lives[j]>0);
     const min=eligible.length?Math.min(...eligible.map(x=>Math.hypot(x.x-t.x,x.y-t.y))):Infinity;
     minimumSpawnDistance=Math.min(minimumSpawnDistance,min);
