@@ -1997,9 +1997,9 @@ console.log('PASS v0.9.35 Custom Match: separate versioned rules, Survival/team/
  assert.equal(a.cleanPresetName('  Maze\n   Duel '),'Maze Duel','names have clean whitespace');
  assert.equal(a.cleanPresetName('a'.repeat(25)),'','names longer than 24 are rejected');
  savedStorage.set('rr-custom-presets-v1','{malformed');
- assert.deepEqual(a.loadCustomPresets(),[],'corrupt storage never crashes game');
+ assert.equal(a.loadCustomPresets().length,0,'corrupt storage never crashes game');
  savedStorage.set('rr-custom-presets-v1',JSON.stringify({version:99,entries:[{name:'Old',rules:{modeId:'survival_ffa'}}]}));
- assert.deepEqual(a.loadCustomPresets(),[],'unknown schema version ignored without unsafe migration');
+ assert.equal(a.loadCustomPresets().length,0,'unknown schema version ignored without unsafe migration');
  a.setCustomDraft({modeId:'survival_teams',botCount:3,mapSize:'large',bulletCap:1,startLives:5});
  assert.equal(a.saveNamedCustomPreset('Maze Duel').ok,true);
  assert.equal(a.saveNamedCustomPreset('maze duel').ok,false,'case-insensitive collision never silently overwrites');
@@ -2027,10 +2027,11 @@ console.log('PASS v0.9.35 Custom Match: separate versioned rules, Survival/team/
  assert.equal(a.saveNamedCustomPreset('Replacement').ok,true,'deleted slot reusable');
  assert.equal(a.customPresets.length,5);
  a.resetCustomDraft();
+ assert.equal(savedStorage.get('rr-options-v06'),quickPrefs,'preset operations never overwrite Quick Play prefs');
  a.newMatch('custom');
  assert.equal(st().config.customMatch,true);
  assert.equal(st().config.matchModeId,'survival_ffa','reset draft launches actual default');
  assert.deepEqual([...a.selectedPlaylistIds],baselinePlaylist,'presets never mutate Quick Play playlist');
- assert.equal(savedStorage.get('rr-options-v06'),quickPrefs,'presets never overwrite old options store');
+
 }
 console.log('PASS v0.9.36 local Custom presets: validated names, duplicate safety, 5 maximum, corrupted version recovery, two-step deletion, default reset, reload and Quick Play isolation.');
