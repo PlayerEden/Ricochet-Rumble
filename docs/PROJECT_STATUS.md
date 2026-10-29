@@ -1,3 +1,14 @@
+# v0.9.35 Custom Match — automated QA passed, original APK archived (2026-10-29)
+
+- **Latest draft:** [PR #54](https://github.com/PlayerEden/Ricochet-Rumble/pull/54) `feature/custom-match-v0935` directly based on experimental v0.9.34 PR #53. Stable `main` remains v0.9.21; no physical owner approval or production signing.
+- **New playable offline Custom Match:** dedicated rule editor for Survival FFA/Team Survival with maze sizes, 0–4 bots, three bot skills, pilot lives and shell caps. Score-based CQC/FFA/TDM are fixed trial presets with honest locked fields. Custom rules persist separately from Quick Play. After Action: Same Rules/New Sector, Edit Rules, Main Menu. No gameplay engine/scoring/LAN rewrite.
+- **Automated milestone PASS:** fast [40830083491](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40830083491) and full actual Chromium/Android debug APK + unsigned AAB [40830083479](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40830083479). Tested source SHA `8d7f8c7b42804f87a9203d5b8cc4055c408560c3`. Chromium caught and helped fix a real small-screen home Help-button overlay (see [QA report](QA_CUSTOM_MATCH_v0935.md)).
+- **Permanent test APK:** [v0.9.35 Custom Match immutable prerelease](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.35-custom-match-test) holds original byte-identical QA APK, screenshot/QA ZIP and checksums. Publisher [40830719720](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40830719720) succeeded; one-off workflow deleted.
+- **Still OPEN:** user phone acceptance v0.9.32–35, >=50 natural bot matches, named custom presets and Reset to Default, follow-up scored mode/playlist integration, procedural topology dedup/fair spawns, versioned saves, two-phone LAN and signed Play release. Preserve prior v0.9.28/31/32/33/34 releases for rollback.
+- **Next independent development slice:** Complete Custom Match named local saved presets + Reset to Default with strict validation and a quality gate; after that, scored Quick Play integration and mode-balancing audit. Never promote experimental scored modes without evidence and owner acceptance.
+
+---
+
 # v0.9.35 Custom Match — experimental candidate (2026-10-29)
 
 **Draft branch:** `feature/custom-match-v0935` stacked on the v0.9.34 Team Deathmatch draft PR #53. No stable `main` merge; current v0.9.32/33/34 control and mode acceptance remains pending owner handset testing.
