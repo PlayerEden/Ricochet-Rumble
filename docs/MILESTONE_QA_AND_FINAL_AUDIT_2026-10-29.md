@@ -23,7 +23,7 @@ Use states **Automated PASS / Automated FAIL / Manual PASS / Manual PENDING / Bl
 | Gate 3 — vehicle FFA | Scored 10 KOs/4 min built, v0.9.32 precision controls automated PASS; phone verdict pending |
 | Gate 3 — pilot parity | v0.9.33 Survival on-foot controls automated PASS; owner phone verdict pending |
 | **Gate 3 — true Team Deathmatch** | v0.9.34 implemented on draft PR #53; fast CI 40825788956 + full real Chromium/Android QA 40825789109 **Automated PASS**, exact APK prerelease available; 50+ natural bot matches and real phone acceptance **PENDING** |
-| Gate 4A — Custom Match | v0.9.35 offline editor + same-rules loop, full Chromium/Android automated QA PASS (40830083479); named presets/default reset, natural bot-match fairness and owner phone acceptance OPEN |
+| Gate 4A — Custom Match | v0.9.35 core automated PASS; v0.9.36 local named presets and Reset to Default implemented on dependent draft; dedicated CI and phone acceptance PENDING |
 | Gate 4B — scored Quick Play integration | Only genuinely validated and selected modes rotate; preserve old Survival |
 | Gate 4C — procedural uniqueness and bot fairness | 300-seed connectivity QA exists; natural-match balance and topology dedup incomplete |
 | Gate 5 — Dossier, saves and optional cosmetics | Planned; never invent progress/currency or purchase entitlement |
