@@ -1,0 +1,71 @@
+name: Sector Rebound - archive exact v0.9.37 scored Quick Play Android test once
+on:
+  push:
+    branches:
+      - feature/quick-play-scored-opt-in-v0937
+    paths:
+      - .github/workflows/publish-v0937-exact-qa-once.yml
+permissions:
+  contents: write
+  actions: read
+jobs:
+  archive-original-passing-artifact:
+    if: github.repository == 'PlayerEden/Ricochet-Rumble'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      QA_RUN: '40837545844'
+      SOURCE_SHA: 'fcea799b905dc4e4ce8191bd3c11e4cc788c59b3'
+      TAG: 'v0.9.37-scored-quick-play-test'
+      APK: 'sector-rebound-v0.9.37-scored-quick-play-debug.apk'
+    steps:
+      - name: Enforce exact full QA result and immutable tag
+        run: |
+          set -euo pipefail
+          details="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$QA_RUN")"
+          test "$(jq -r '.status' <<< "$details")" = "completed"
+          test "$(jq -r '.conclusion' <<< "$details")" = "success"
+          test "$(jq -r '.head_sha' <<< "$details")" = "$SOURCE_SHA"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo 'Test tag already exists: never overwrite' >&2
+            exit 1
+          fi
+      - name: Recover byte-identical QA-tested APK and actual Chromium screenshots
+        run: |
+          set -euo pipefail
+          mkdir -p original qa
+          gh run download "$QA_RUN" --repo "$GITHUB_REPOSITORY" --name "debug-apk-$QA_RUN" --dir original
+          gh run download "$QA_RUN" --repo "$GITHUB_REPOSITORY" --name "sector-rebound-qa-$QA_RUN-1" --dir qa
+          test -s original/app-debug.apk
+          mv original/app-debug.apk "$APK"
+          zip -qr sector-rebound-v0.9.37-scored-quick-play-qa.zip qa
+          sha256sum "$APK" sector-rebound-v0.9.37-scored-quick-play-qa.zip > v0.9.37-sha256.txt
+      - name: Publish byte-identical build as experimental immutable prerelease
+        run: |
+          set -euo pipefail
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo 'Existing tag: refusing overwrite' >&2
+            exit 1
+          fi
+          {
+            echo '# Sector Rebound v0.9.37 — Scored Quick Play Opt-in Android Test'
+            echo
+            echo '**Experimental Android debug APK only. Automated QA PASS; owner handset verdict PENDING. Not Google Play signed.**'
+            echo
+            echo '- Quick Play defaults remain Survival FFA and Team Survival only. Scored CQC, vehicle FFA and 2v2 TDM require explicit opt-in checkboxes in Match Settings.'
+            echo '- Existing versioned playlist saves remain compatible; selected modes shuffle without immediate repeats.'
+            echo '- Real scored rules used for each opt-in match: CQC 10/3min, FFA 10/4min, team TDM 15/5min.'
+            echo '- NEXT MATCH rotates only real Quick Play rounds, including scored-to-scored or scored-to-Survival; standalone mode buttons and Custom Match never rotate.'
+            echo '- Prior controls, maze generation, LAN and save presets preserved; no scored modes promoted to defaults.'
+            echo '- Original debug APK copied byte-for-byte from successful QA. Never rebuilt or resigned.'
+            echo "- Tested game/test source SHA: $SOURCE_SHA"
+            echo "- Fast CI PASS: https://github.com/$GITHUB_REPOSITORY/actions/runs/40837545823"
+            echo "- Full actual Chromium + Android QA PASS: https://github.com/$GITHUB_REPOSITORY/actions/runs/$QA_RUN"
+            echo "- Draft PR #56: https://github.com/$GITHUB_REPOSITORY/pull/56"
+            echo "- APK SHA256: $(sha256sum "$APK" | awk '{print $1}')"
+            echo
+            echo 'Still pending: owner Android controls/pace review, >=50 real natural bot rounds, topology dedup/respawn fairness, two-phone LAN, Play signing and upgrade continuity.'
+            echo 'Debug certificate differences can block in-place update. Uninstalling may erase local preferences.'
+          } > release-notes.md
+          gh release create "$TAG" "$APK" sector-rebound-v0.9.37-scored-quick-play-qa.zip v0.9.37-sha256.txt --repo "$GITHUB_REPOSITORY" --target "$SOURCE_SHA" --prerelease --title "Sector Rebound v0.9.37 — Scored Quick Play Opt-in Test" --notes-file release-notes.md
