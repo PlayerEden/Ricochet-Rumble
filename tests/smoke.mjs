@@ -1903,3 +1903,21 @@ console.log('PASS local Solo pilot FIRE-drag parity, independent heading, ejecti
  api.newMatch('solo');assert.equal(st().scored,null,'finite-life Survival rules unchanged');
 }
 console.log('PASS v0.9.34: 2v2 scored Team Deathmatch, real ally+enemy pilot KOs, 15/300, no friendly fire, respawn, draw, result, new sector.');
+
+// v0.9.34 audit: genuine self-ricochet death is a death, never a team KO.
+{
+ const api=win.__test;
+ api.newMatch('scored_tdm');
+ const m=st(),p=m.tanks[0],vehicle=m.vehicles[p.vehicleId];
+ p.shield=0;
+ for(let n=0;n<vehicle.armor;n++)assert.equal(api.registerHit(0,0),true,'self shell hits tank armor');
+ assert.equal(p.onFoot,true);
+ p.shield=0;
+ assert.equal(api.registerHit(0,0),true,'real self-ricochet pilot death');
+ assert.equal(m.scored.deaths[0],1);
+ assert.deepEqual([...m.scored.operatorKOs],[0,0,0,0],'no team gets points for self-death');
+ assert.equal(node('score0').textContent,0);
+ assert.equal(node('score1').textContent,0);
+ assert.ok(m.event.includes('NO KO'),'self-hit event never falsely awards KO');
+}
+console.log('PASS TDM ricochet self-death audit: death counted, neither team scored, no fake KO message.');
