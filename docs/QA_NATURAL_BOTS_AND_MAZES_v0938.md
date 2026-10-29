@@ -10,6 +10,27 @@ The audit uses a fixed 30 Hz simulation step, 50 deterministic 4-participant ful
 
 The raw JSON evidence saves every seed, winner/reason, pilot-KO vector, team score, participant respawns, first shot/impact/KO time, shot/ricochet counts, initial enemy distance, active clock, unsafe and close-exposed respawn counts. Summary dimensions include winner/timeout/score-target split, no-contact and no-KO matches, Blue/Red TDM asymmetry, match pace, and coverage gaps. Unsafe actual respawns and disconnected or duplicate seeded layouts are test failures; unexpectedly weak bot combat is an *observed balance risk*, not a manufactured pass.
 
+## First measured baseline: 30 Hz, 50 games each (PASS)
+
+[Full natural AI run 40839155850](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40839155850) and [seed-level diagnostic rerun 40839511581](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40839511581) both completed successfully. Both run the same 30 Hz game logic, as described above.
+
+| Measure | CQC | Vehicle FFA | Team Deathmatch |
+| --- | ---: | ---: | ---: |
+| Full natural AI bouts | 50 | 50 | 50 |
+| KO-target finishes | 35 | 44 | 48 |
+| Time-limit finishes | 15 | 6 | 2 |
+| Draws | 6 | 1 | 1 |
+| No-hit rounds | 3 | 0 | 0 |
+| Mean elapsed seconds | 110.2 | 165.8 | 170.4 |
+| Mean pilot KOs across all seats | 22.3 | 24.3 | 23.7 |
+| Unsafe respawns observed | 0 | 0 | 0 |
+
+TDM outcomes were **27 Blue / 22 Red / 1 draw**. **All 300 generated maps per size were connected and unique within the tested seed set**; their average navigable graph edge counts were Small 59.4, Standard 131.3 and Large 245. This establishes *topological* diversity, not necessarily visual or tactical uniqueness.
+
+**CQC critical non-contact seeds:** `1001167` (6 shots, 0 hits), `1002719` (1 shot, 0 hits), `1003301` (10 shots, 0 hits). All lasted the entire 180-second limit without a pilot KO. The diagnostic run also identified CQC seed `1000682` (326 shots but only one hit), which warrants pathfinding/cover inspection. None is fixed by this measurement-only PR. The upcoming 60 Hz run must determine whether these seeds remain problematic at the live simulation rate.
+
+---
+
 **Artifacts:** [GitHub full natural simulation workflow](https://github.com/PlayerEden/Ricochet-Rumble/actions/workflows/natural-bot-audit-v0938.yml) uploads named `scored-bot-and-map-audit-v0938` JSON receipts. The exact successful run ID, SHA, numeric findings and any failed seed must be appended **after the tool reports it**.
 
 ## Caveats and follow-up gates
