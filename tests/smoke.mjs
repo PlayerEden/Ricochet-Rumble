@@ -1779,6 +1779,62 @@ console.log('PASS vehicle tactical stationary AIM: held right AIM rotates hull/m
  a.newMatch('solo');
  const survival=st().tanks[0];survival.onFoot=true;survival.vehicleId=null;survival.a=0;
  a.tankMove(survival,{moveX:0,moveY:1,bot:false},dt,0);
- assert.ok(Math.abs(survival.a-12*dt)<1e-6,'Survival on-foot turn remains at old rate pending a pilot-consistency pass');
+ assert.ok(Math.abs(survival.a-6.5*dt)<1e-6,'Solo Survival foot turn now matches accepted CQC');
 }
 console.log('PASS v0.9.32 precision handling: independent 1.8rad/s AIM versus 2.6rad/s steer; FIRE pointer never steals AIM; accepted CQC pilot and legacy Survival isolated.');
+
+// 2026-10-29: experimental pilot-only parity, explicitly NOT a LAN change.
+{
+ const a=win.__test,dt=1/60;
+ a.newMatch('solo');
+ const s=st(),p=s.tanks[0];
+ a.beginFireAim({pointerId:600,clientX:200,clientY:200},'fire');
+ assert.equal(a.fireAim.pointerId,null,'Solo vehicle FIRE does not claim pilot aim pointer');
+ a.ejectPilot(0);
+ assert.equal(p.onFoot,true,'real Solo vehicle ejection returns to pilot');
+ a.touch.add('fire');
+ a.beginFireAim({pointerId:601,clientX:200,clientY:200},'fire');
+ a.updateFireAim({pointerId:601,clientX:200,clientY:240});
+ assert.equal(a.fireAim.active,true,'Solo Survival pilot FIRE-drag is enabled');
+ const input=a.makeControl(true);
+ assert.ok(Math.abs(input.aimX)<.01&&input.aimY>.99,'on-foot Survival independent aim vector');
+ assert.equal(input.fire,true,'dragging FIRE still fires');
+ p.a=0;p.vx=p.vy=0;
+ a.tankMove(p,{moveX:1,moveY:0,aimX:0,aimY:1},dt,0);
+ assert.ok(Math.abs(p.a-6.5*dt)<1e-6,'Solo Survival pilot turns 6.5rad/s with independent aim');
+ p.a=0;p.vx=p.vy=0;
+ a.tankMove(p,{moveX:1,moveY:0},dt,0);
+ assert.ok(Math.abs(p.vx-268*9*dt)<1e-6,'pilot speed unaffected');
+ assert.equal(a.projectileHitRadius(p,{kind:'sidearm'}),14,'Survival sidearm collision unchanged');
+ a.clearFireAim();a.touch.delete('fire');
+ a.beginFireAim({pointerId:602,clientX:200,clientY:200},'aim');
+ assert.equal(a.fireAim.pointerId,null,'vehicle AIM is unavailable on foot');
+ a.newMatch('scored_ffa');
+ const q=st().tanks[0];
+ a.beginFireAim({pointerId:603,clientX:74,clientY:74},'aim');
+ assert.equal(a.fireAim.source,'aim','FFA vehicle AIM still works');
+ a.ejectPilot(0);
+ assert.equal(q.onFoot,true,'scored FFA pilot ejection works');
+ assert.equal(a.fireAim.pointerId,null,'ejection clears old vehicle AIM pointer');
+ a.touch.add('fire');
+ a.beginFireAim({pointerId:604,clientX:200,clientY:200},'fire');
+ a.updateFireAim({pointerId:604,clientX:245,clientY:200});
+ assert.ok(a.makeControl(true).aimX>.99,'scored FFA pilot still FIRE-drags');
+ a.newMatch('solo');
+ assert.equal(a.fireAim.pointerId,null,'new match clears old FIRE pointer');
+ a.touch.delete('fire');
+ a.newMatch('host');
+ const host=st().tanks[0];host.onFoot=true;host.vehicleId=null;host.a=0;
+ a.beginFireAim({pointerId:605,clientX:200,clientY:200},'fire');
+ assert.equal(a.fireAim.pointerId,null,'LAN host has no unreplicated independent aim');
+ a.tankMove(host,{moveX:0,moveY:1,bot:false},dt,0);
+ assert.ok(Math.abs(host.a-12*dt)<1e-6,'LAN host pilot steering unchanged');
+ a.newMatch('guest');
+ a.beginFireAim({pointerId:606,clientX:200,clientY:200},'fire');
+ assert.equal(a.fireAim.pointerId,null,'LAN guest aim remains unchanged');
+ a.newMatch('cqc');
+ const cqc=st().tanks[0];cqc.a=0;
+ a.tankMove(cqc,{moveX:0,moveY:1,bot:false},dt,0);
+ assert.ok(Math.abs(cqc.a-6.5*dt)<1e-6,'owner-positive CQC aiming preserved');
+}
+console.log('PASS local Solo pilot FIRE-drag parity, independent heading, ejection reset, LAN isolation, CQC baseline.');
