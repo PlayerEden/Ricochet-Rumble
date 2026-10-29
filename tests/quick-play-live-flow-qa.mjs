@@ -292,6 +292,46 @@ try{
  result.steps.push('real 4-minute scored FFA time draw, fresh procedural rematch and score reset');
 
 
+ // New v0.9.34 real Chromium scored 2v2 Team Deathmatch audit.
+ await page.locator('#results-menu').click();
+ await page.locator('#menu button[data-action="scored_tdm"]').click();
+ await page.evaluate(()=>window.__flowQA.freeze());
+ const tdmStart=await page.evaluate(()=>{const s=window.__flowQA.state;return {mode:s.config.matchModeId,teams:[...s.scored.teamIds],target:s.scored.scoreTarget,clock:s.scored.clockSeconds,seed:s.mazeSeed};});
+ assert.equal(tdmStart.mode,'scored_tdm');
+ assert.deepEqual(tdmStart.teams,[0,1,0,1]);
+ assert.equal(tdmStart.target,15);assert.equal(tdmStart.clock,300);
+ assert.equal((await page.locator('#player0-label').textContent()).trim(),'BLUE');
+ assert.equal((await page.locator('#player1-label').textContent()).trim(),'RED');
+ assert.equal(await page.locator('#vehicle-aim').isVisible(),true);
+ const tdmResult=await page.evaluate(()=>{
+  const qa=window.__flowQA,s=qa.state,enemy=s.tanks[1],v=s.vehicles[enemy.vehicleId],hits=[];
+  const friendly=qa.registerHit(0,2);
+  const armor=v.armor;for(let i=0;i<armor;i++)hits.push(qa.registerHit(0,1));
+  const pointsAfterArmor=s.scored.operatorKOs[0];enemy.shield=0;hits.push(qa.registerHit(0,1));
+  enemy.respawnWait=0;hits.push(qa.tryCqcRespawn(1));enemy.shield=0;
+  hits.push(qa.registerHit(2,1));const allyPoints=s.scored.operatorKOs[2];
+  for(let i=2;i<15;i++){enemy.respawnWait=0;hits.push(qa.tryCqcRespawn(1));enemy.shield=0;hits.push(qa.registerHit(i%2===0?0:2,1));}
+  return {friendly,hits,pointsAfterArmor,allyPoints,result:s.finalResult};
+ });
+ assert.equal(tdmResult.friendly,false);
+ assert.ok(tdmResult.hits.every(Boolean),'TDM actual operator events and safe spawn');
+ assert.equal(tdmResult.pointsAfterArmor,0);
+ assert.equal(tdmResult.allyPoints,1);
+ assert.equal(tdmResult.result.outcome,'victory');
+ assert.equal(tdmResult.result.teamMode,'teams');
+ assert.deepEqual([...tdmResult.result.scoreboard],[15,0]);
+ assert.equal((await page.locator('#aa-lives-label').textContent()).trim(),'TEAM KO TARGET');
+ assert.equal((await page.locator('#aa-mode-label').textContent()).trim(),'TEAM DEATHMATCH');
+ result.steps.push('true live Chromium TDM: Blue ally+Red opponents, armor not KO, 15 shared KOs and truthful team victory');
+ await page.locator('#quick-rematch').click();
+ await page.evaluate(()=>window.__flowQA.freeze());
+ const tdmNext=await page.evaluate(()=>({mode:window.__flowQA.state.config.matchModeId,seed:window.__flowQA.state.mazeSeed}));
+ assert.equal(tdmNext.mode,'scored_tdm');assert.notEqual(tdmNext.seed,tdmStart.seed);
+ const tdmDraw=await page.evaluate(()=>{window.__flowQA.expire(300);return window.__flowQA.state.finalResult;});
+ assert.equal(tdmDraw.outcome,'draw');
+ assert.equal(tdmDraw.winnerTeam,-1);
+ result.steps.push('TDM NEXT MATCH regenerated sector, retained mode and respected score-clock draw');
+ 
  console.log('PASS live Chromium Quick Play: '+JSON.stringify(result));
 }finally{
  if(page)await page.close().catch(()=>{});
