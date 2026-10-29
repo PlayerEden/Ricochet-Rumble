@@ -55,14 +55,15 @@ assert.ok(engine&&frame,"Actual gameplay engine loaded via unmodified production
 
 const args=process.argv.slice(2);
 const getFlag=(name,fallback)=>{const p=args.find(x=>x.startsWith('--'+name+'='));return p?p.split('=').slice(1).join('='):fallback;};
-const seeds=Number(getFlag('seeds','50')),mazeSeeds=Number(getFlag('maze-seeds','300')),hz=Number(getFlag('hz','30'));
-if(!Number.isInteger(seeds)||seeds<1||seeds>200||!Number.isInteger(mazeSeeds)||mazeSeeds<1||mazeSeeds>2000||![30,60].includes(hz))throw Error('Invalid bounded seed count or unsupported simulation rate');
+const seeds=Number(getFlag('seeds','50')),mazeSeeds=Number(getFlag('maze-seeds','300')),hz=Number(getFlag('hz','30')),seedOffset=Number(getFlag('seed-offset','0'));
+if(!Number.isInteger(seeds)||seeds<1||seeds>200||!Number.isInteger(mazeSeeds)||mazeSeeds<1||mazeSeeds>2000||![30,60].includes(hz)||!Number.isInteger(seedOffset)||seedOffset<0||seedOffset>10000)throw Error('Invalid bounded seed count or unsupported simulation rate');
 const outPath=getFlag('out','artifacts/natural-bot-audit.json'),dt=1/hz;
 const modes=[
  {id:'cqc',clock:180,target:10,size:'small'},
  {id:'scored_ffa',clock:240,target:10,size:'standard'},
  {id:'scored_tdm',clock:300,target:15,size:'standard'}
-];
+].filter(x=>getFlag('modes','cqc,scored_ffa,scored_tdm').split(',').includes(x.id));
+if(!modes.length)throw Error('No valid scored modes selected');
 const cells=(maze)=>{
  const n=maze.open.length,seen=new Set([0]),queue=[0];
  for(let i=0;i<queue.length;i++)for(const j of maze.open[queue[i]])if(!seen.has(j)){seen.add(j);queue.push(j);}
@@ -85,7 +86,7 @@ for(const size of ['small','standard','large']){
 const roundRows=[],start=Date.now();
 for(const modeDef of modes){
  for(let seed=1;seed<=seeds;seed++){
-  const seedId=1000003+seed*97;
+  const seedId=1000003+(seed+seedOffset)*97;
   seedRandom(seedId+2718);
   const s=engine.start(modeDef.id,seedId);
   assert.equal(s.scored.scoreTarget,modeDef.target);
@@ -163,7 +164,7 @@ for(const modeDef of modes){
 }
 const report={schemaVersion:1,scope:'Actual offline simulation, test-only player slot 0 controlled by existing botInput, not a human/device/LAN test',
  source:'web/game.js and web/scored-match.js from current checkout',
- simulatedPhysicsHz:hz,seedsPerScoredMode:seeds,mazeSeedsPerSize:mazeSeeds,elapsedWallMs:Date.now()-start,
+ simulatedPhysicsHz:hz,seedsPerScoredMode:seeds,seedOffset,modeIds:modes.map(x=>x.id),mazeSeedsPerSize:mazeSeeds,elapsedWallMs:Date.now()-start,
  topology,overview,rounds:roundRows};
 fs.mkdirSync(outPath.split('/').slice(0,-1).join('/')||'.',{recursive:true});
 fs.writeFileSync(outPath,JSON.stringify(report,null,2)+'\n');
