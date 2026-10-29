@@ -1,3 +1,13 @@
+# v0.9.36 — named Custom Match local presets + reset (2026-10-29)
+
+**New experimental branch:** `feature/custom-presets-v0936`, stacked directly on [v0.9.35 Custom Match PR #54](https://github.com/PlayerEden/Ricochet-Rumble/pull/54), which is a dependent unapproved draft. Stable main still v0.9.21. No owner phone approval, no main merge.
+
+**Candidate:** collapsible LOCAL PRESETS section in real offline Custom Match editor (5 maximum per device, 1–24 Unicode codepoint clean names), explicit SAVE / LOAD / DELETE; case-insensitive name conflict refuses overwrite; two-tap DELETE requires same selected preset and cancels upon editing/selection. RESET TO DEFAULT restores default casual rule draft without deleting saved named presets. Data lives in separate versioned `rr-custom-presets-v1`, leaving `rr-custom-v1` draft and `rr-options-v06` Quick Play unchanged. Defensive parsing of missing/corrupt/unknown-version data; stored rules normalized through the existing allowlist (old unsupported mode entries dropped). All named presets remain **local to this device**, no sync or networking claims. Collapsed by default to protect small landscape UI.
+
+**QA now:** new feature smoke tests and real Chromium Save → duplicate guard → Reset → reload → Load → double-confirm Delete → independent Quick Play and existing Custom match launch staged. Full Chromium, Android debug/AAB, natural bot telemetry, phone acceptance **not yet verified**. Preserve [v0.9.35 verified experimental rollback APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.35-custom-match-test). See [new v0.9.36 audit](QA_CUSTOM_PRESETS_v0936.md) and [phase QA ledger](MILESTONE_QA_AND_FINAL_AUDIT_2026-10-29.md).
+
+---
+
 # v0.9.35 Custom Match — automated QA passed, original APK archived (2026-10-29)
 
 - **Latest draft:** [PR #54](https://github.com/PlayerEden/Ricochet-Rumble/pull/54) `feature/custom-match-v0935` directly based on experimental v0.9.34 PR #53. Stable `main` remains v0.9.21; no physical owner approval or production signing.
