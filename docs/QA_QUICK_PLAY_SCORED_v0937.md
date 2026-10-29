@@ -1,3 +1,14 @@
+# v0.9.37 final automated QA verdict — PASS (2026-10-29)
+
+**Gameplay/test SHA `fcea799b905dc4e4ce8191bd3c11e4cc788c59b3` passed both independent gates:**
+- [Fast 300-seed/Survival/CQC/FFA/TDM/LAN regression, real opted-in scored/mixed shuffle and timeout/standalone/Custom isolation 40837545823 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40837545823).
+- [Full Chromium settings unchecked default → explicit select → v1 playlist persistence → all 3 scored matches/draw/After Action → NEXT MATCH rotation → standalone CQC fixed rematch; mobile landscape visual QA; Android debug APK & unsigned AAB 40837545844 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40837545844).
+- [Immutable v0.9.37 prerelease with original QA APK, real screenshots/QA ZIP, SHA256 manifest](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.37-scored-quick-play-test) copied byte-for-byte, without recompilation or re-signing. [Single-use publisher 40838171910 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40838171910); temporary workflow deleted.
+
+**No user handset approval, real 50+ organically played bot matches, two-phone LAN, store signing or saved-data migration tests were performed.** This is a functioning experimental test build, not owner-approved production.
+
+---
+
 # v0.9.37 scored Quick Play opt-in — independent milestone QA
 
 **Status:** Under test; new dependent experimental branch `feature/quick-play-scored-opt-in-v0937`, parent unapproved v0.9.36 custom presets. No stable main merge.
