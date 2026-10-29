@@ -1,0 +1,71 @@
+name: Sector Rebound - archive exact v0.9.33 QA Android test once
+on:
+  push:
+    branches:
+      - tuning/pilot-survival-parity-v0933
+    paths:
+      - .github/workflows/publish-v0933-exact-qa-once.yml
+permissions:
+  contents: write
+  actions: read
+jobs:
+  archive-original-passing-artifact:
+    if: github.repository == 'PlayerEden/Ricochet-Rumble'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      QA_RUN: '40823197639'
+      SOURCE_SHA: 'd4f4145f03f175d2b4717f3dd494815177c0d0f0'
+      TAG: 'v0.9.33-pilot-parity-test'
+      APK: 'sector-rebound-v0.9.33-pilot-parity-debug.apk'
+    steps:
+      - name: Refuse failed QA, wrong source, or existing tag
+        run: |
+          set -euo pipefail
+          details="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$QA_RUN")"
+          test "$(jq -r '.status' <<< "$details")" = "completed"
+          test "$(jq -r '.conclusion' <<< "$details")" = "success"
+          test "$(jq -r '.head_sha' <<< "$details")" = "$SOURCE_SHA"
+          test "$(jq -r '.event' <<< "$details")" = "pull_request"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "Immutable tag exists; refusing overwrite" >&2
+            exit 1
+          fi
+      - name: Recover EXACT already-tested Android APK and screenshot evidence
+        run: |
+          set -euo pipefail
+          mkdir -p original qa
+          gh run download "$QA_RUN" --repo "$GITHUB_REPOSITORY" --name "debug-apk-$QA_RUN" --dir original
+          gh run download "$QA_RUN" --repo "$GITHUB_REPOSITORY" --name "sector-rebound-qa-$QA_RUN-1" --dir qa
+          test -s original/app-debug.apk
+          mv original/app-debug.apk "$APK"
+          zip -qr "sector-rebound-v0.9.33-qa.zip" qa
+          sha256sum "$APK" "sector-rebound-v0.9.33-qa.zip" > "v0.9.33-sha256.txt"
+      - name: Publish original bytes as permanent experimental GitHub prerelease
+        run: |
+          set -euo pipefail
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag already exists; refusing overwrite" >&2
+            exit 1
+          fi
+          {
+            echo '# Sector Rebound v0.9.33 — Solo Survival pilot aiming parity (experimental Android test)'
+            echo
+            echo '**QA-passing debug APK, NOT Play-signed; no physical-phone owner approval; do not merge into main.**'
+            echo
+            echo '- Offline solo Survival foot pilots now use accepted CQC 6.5 rad/s turn and FIRE-drag independent aim.'
+            echo '- Solo ejection, vehicle enter/exit and new match clear previous aim pointer state.'
+            echo '- CQC, scored FFA and v0.9.32 vehicle precision, shell rules, bot AI, LAN packets, and hitboxes unchanged.'
+            echo '- Original Android APK copied byte-for-byte from successful full QA (NOT rebuilt or resigned).'
+            echo "- Tested game source: \`$SOURCE_SHA\`"
+            echo "- Fast regression: https://github.com/$GITHUB_REPOSITORY/actions/runs/40823197628"
+            echo "- Full Chromium + Android QA: https://github.com/$GITHUB_REPOSITORY/actions/runs/$QA_RUN"
+            echo "- Draft PR #52: https://github.com/$GITHUB_REPOSITORY/pull/52"
+            echo "- APK SHA-256: $(sha256sum "$APK" | awk '{print $1}')"
+            echo
+            echo 'Still needs physical phone comparison against v0.9.32, which itself is not yet phone-approved.'
+            echo 'Debug signature mismatch may block update installation; uninstalling may erase local preferences.'
+            echo 'Two-device LAN and Google Play production signing remain untested.'
+          } > release-notes.md
+          gh release create "$TAG" "$APK" "sector-rebound-v0.9.33-qa.zip" "v0.9.33-sha256.txt" --repo "$GITHUB_REPOSITORY" --target "$SOURCE_SHA" --prerelease --title "Sector Rebound v0.9.33 — Pilot Parity Android Test" --notes-file release-notes.md
