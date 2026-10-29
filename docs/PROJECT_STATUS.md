@@ -1,3 +1,24 @@
+# v0.9.34 scored TDM — automation-passed Android QA checkpoint (2026-10-29)
+
+- **Latest milestone:** [DRAFT PR #53](https://github.com/PlayerEden/Ricochet-Rumble/pull/53) on `feature/scored-team-deathmatch-v0934`, based directly on v0.9.33 pilot parity PR #52, which depends on v0.9.32 precision PR #50. **Stable `main` remains v0.9.21.** No user acceptance or merge was assumed.
+- **Implemented true TDM:** independent 2v2 Blue player+Blue AI vs two Red AI, 15 real team pilot KOs or 5 active minutes, shared immutable score engine, team-colored UI/actors, friendly fire blocked, armor/ejection never score, scored respawns, tank/mech recovery, truthful personal/team After Action and fresh-sector rematch. TDM uses experimental v0.9.32 precise AIM while piloting. Self-ricochet deaths correctly award no KO/message.
+- **Automated QA PASS:** [fast regression 40825788956](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40825788956) and [full real Chromium TDM match-flow + Android debug APK/unsigned AAB 40825789109](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40825789109) on the same tested game/test SHA `0c5bc1d13e46f053c8264e7cf60060b9b4e9ca89`.
+- **APK/QA archive:** [immutable v0.9.34 TDM prerelease](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.34-scored-tdm-test), original QA-passing APK copied byte-identically, QA ZIP and checksum. [One-use publisher 40826329885 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40826329885), workflow deleted after successful publication. [Detailed milestone audit](QA_SCORED_TDM_v0934.md).
+- **Still OPEN:** user actual phone acceptance of v0.9.32/33/34, natural 50+ bot-match TDM pace/fairness telemetry, repeat topology dedup, procedural dynamic respawn QA, two-phone LAN, Android production signing/save continuity, custom match and scored playlists. Existing accepted CQC/vehicle APK rollback releases preserved.
+- **Next code milestone:** Custom Match around genuine existing Solo/Team Survival and validated scored modes with honest rule selection, not a second scoring engine; run [per-feature QA](MILESTONE_QA_AND_FINAL_AUDIT_2026-10-29.md), including an end-of-first-plan comprehensive audit later. Do not promote this draft to stable main until owner explicitly accepts.
+
+---
+
+# v0.9.34 true scored Team Deathmatch — 2026-10-29 implementation QA checkpoint
+
+**Latest experimental branch:** `feature/scored-team-deathmatch-v0934` (direct parent: v0.9.33 pilot parity PR #52). Stable `main` stays v0.9.21. First development phase follows the owner's [milestone QA and final audit ledger](MILESTONE_QA_AND_FINAL_AUDIT_2026-10-29.md). **No main merge or phone acceptance implied.**
+
+**New gameplay candidate:** explicit test-only **TEAM DEATHMATCH 2v2** with one Blue human + Blue AI versus two Red AI. Shared immutable `SectorScored` engine scores **15 actual pilot KOs per TEAM** or 300 active seconds (draw on tie), no teammate fire, Blue/Red shared HUD totals, team-colored tanks/mechs and pilots, armor/ejection before genuine KOs, safe respawns, real solo/AI outcome and personal-KO After Action, fresh procedural sector on NEXT MATCH. TDM trial uses experimental v0.9.32 vehicle precision controls. Existing CQC, FFA, Survival and LAN source semantics preserved.
+
+**QA state:** gameplay and targeted regression code committed; automated **fast and full QA not yet verified** at this checkpoint. 50+ natural bot matches, real phone visual/control acceptance, two-phone LAN and signed Play bundle remain OPEN. Parent v0.9.32/v0.9.33 phone approval still outstanding. No claims of playable release until Android build and exact QA provenance verified.
+
+---
+
 # v0.9.33 exact Android QA archive — 2026-10-29
 
 **Fast regression:** [run 40823197628 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40823197628) on game/test SHA `d4f4145f03f175d2b4717f3dd494815177c0d0f0`. Includes 300 seeded arenas, existing CQC/FFA/Survival/LAN rule checks, new local Solo FIRE-drag/ejection isolation, score kernel and Web/Android parity.

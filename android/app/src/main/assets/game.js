@@ -12,7 +12,8 @@ const RELEASED_MATCH_MODES=Object.freeze(Object.keys(MATCH_MODE_PRESETS));
 // CQC is an EXPLICIT test button, NOT silently added to approved survival playlists.
 const CQC_RULES=Object.freeze({mode:'ffa',scoreTarget:10,clockSeconds:180,vehiclePolicy:'none'});
 const VEHICLE_FFA_RULES=Object.freeze({mode:'ffa',scoreTarget:10,clockSeconds:240,vehiclePolicy:'standard'});
-const SCORED_FFA_MODES=Object.freeze({cqc:CQC_RULES,scored_ffa:VEHICLE_FFA_RULES});
+const VEHICLE_TDM_RULES=Object.freeze({mode:'teams',scoreTarget:15,clockSeconds:300,vehiclePolicy:'standard'});
+const SCORED_MATCH_RULES=Object.freeze({cqc:CQC_RULES,scored_ffa:VEHICLE_FFA_RULES,scored_tdm:VEHICLE_TDM_RULES});
 let selectedPlaylistIds=RELEASED_MATCH_MODES.slice(),playlistBag=[],lastSoloModeId=null,matchSerial=0;
 function normalizePlaylistModes(ids){
  if(!Array.isArray(ids))return RELEASED_MATCH_MODES.slice();
@@ -53,9 +54,10 @@ function freshSectorSeed(previous=0){
  if(s===previous)s=s===0x7ffffffe?1:s+1;
  return s;
 }
-function soloModeLabel(config){return config?.matchModeId==='cqc'?'CLOSE QUARTERS':config?.matchModeId==='scored_ffa'?'SCORED FREE-FOR-ALL':MATCH_MODE_PRESETS[config?.matchModeId]?.label||'SURVIVAL';}
-function isScoredMatch(){return !!state?.scored&&!!SCORED_FFA_MODES[state?.config?.matchModeId];}
+function soloModeLabel(config){return config?.matchModeId==='cqc'?'CLOSE QUARTERS':config?.matchModeId==='scored_ffa'?'SCORED FREE-FOR-ALL':config?.matchModeId==='scored_tdm'?'TEAM DEATHMATCH':MATCH_MODE_PRESETS[config?.matchModeId]?.label||'SURVIVAL';}
+function isScoredMatch(){return !!state?.scored&&!!SCORED_MATCH_RULES[state?.config?.matchModeId];}
 function isCqcMatch(){return state?.config?.matchModeId==='cqc'&&isScoredMatch();}
+function isScoredVehicleMatch(){return isScoredMatch()&&(state.config.matchModeId==='scored_ffa'||state.config.matchModeId==='scored_tdm');}
 
 // W/H are the camera canvas resolution. Mazes have much larger world coordinates.
 let worldW=W,worldH=H,mazeGrid=null,currentArena=-1,currentSeed=0,currentMapSize='';const camera={x:0,y:0,zoom:null};
@@ -261,12 +263,12 @@ function initialState(arena=0,options=null,seed=null){const config={...readSetti
  // Zero bots is a legitimate free-roam practice setting; don't silently add an enemy.
  const mazeSeed=seed||Math.floor(Math.random()*0x7fffffff)||1,id=setArena(0,mazeSeed,config.mapSize);
  const numBots=config.botCount,humans=count,total=humans+numBots,tanks=Array.from({length:total},(_,i)=>freshTank(i));
- const cqc=config.matchModeId==='cqc',scoredRules=SCORED_FFA_MODES[config.matchModeId]||null;
+ const cqc=config.matchModeId==='cqc',scoredRules=SCORED_MATCH_RULES[config.matchModeId]||null;
  const vehicles=cqc?[]:config.pilotMode?spawnVehicles(tanks,humans,mazeSeed):[];
  if(cqc)for(const t of tanks){t.onFoot=true;t.vehicleId=null;t.shield=1.5;t.respawnWait=0;}
  const matchId=++matchSerial;
  // Shared real scoring system for both on-foot CQC and tank/mech Free-for-All.
- const scored=scoredRules?window.SectorScored.createScoredMatch({mode:'ffa',playerCount:total,scoreTarget:scoredRules.scoreTarget,clockSeconds:scoredRules.clockSeconds,matchId}):null;
+ const scored=scoredRules?window.SectorScored.createScoredMatch({mode:scoredRules.mode,playerCount:total,teamIds:scoredRules.mode==='teams'?Array.from({length:total},(_,i)=>i%2):null,scoreTarget:scoredRules.scoreTarget,clockSeconds:scoredRules.clockSeconds,matchId}):null;
  camera.x=0;camera.y=0;botBrains.clear();return {tanks,vehicles,vehicleDropTimer:28,dropIndex:0,vehicleBeacon:null,bullets:[],pickups:[],pickupTimer:5.5,arenaId:id,mazeSeed,config,humanCount:humans,fxEvents:[],lives:Array(total).fill(scoredRules?1:config.startLives),kos:Array(total).fill(0),winner:-1,winnerTeam:-1,event:'',eventTimer:0,matchId,elapsedSeconds:0,deaths:Array(total).fill(0),respawns:Array(total).fill(0),scored,scoreSerial:0,finalResult:null};}
 state=initialState();
 function teamOf(i,st=state){
@@ -293,7 +295,8 @@ function finalizeRound(){
  if(isScoredMatch()){
   const scored=state.scored,local=mode==='guest'?1:0;
   const outcome=window.SectorScored.scoredOutcomeFor(scored,local);
-  const summary={version:1,matchId:state.matchId,mazeSeed:state.mazeSeed,matchModeId:state.config.matchModeId,teamMode:'ffa',mapSize:state.config.mapSize,objective:'operator_ko_target',outcome,winner:scored.result.winningSide,winnerTeam:-1,operatorKOs:scored.operatorKOs[local],deaths:scored.deaths[local],respawns:scored.respawns[local],livesRemaining:0,scoreTarget:scored.scoreTarget,scoreboard:scored.result.scores,reason:scored.result.reason,durationSeconds:scored.elapsedSeconds,event:scored.result.isDraw?'DRAW · TIME LIMIT':scored.result.reason==='time_limit'?'TIME LIMIT · '+label(scored.result.winningSide)+' LEADS':label(scored.result.winningSide)+' REACHED '+scored.scoreTarget+' KOs'};
+  const teams=scored.mode==='teams',winnerLabel=teams?(scored.result.winningSide===0?'BLUE':'RED'):label(scored.result.winningSide);
+   const summary={version:1,matchId:state.matchId,mazeSeed:state.mazeSeed,matchModeId:state.config.matchModeId,teamMode:teams?'teams':'ffa',mapSize:state.config.mapSize,objective:teams?'team_operator_ko_target':'operator_ko_target',outcome,winner:scored.result.winningSide,winnerTeam:teams?(scored.result.winningSide??-1):-1,operatorKOs:scored.operatorKOs[local],deaths:scored.deaths[local],respawns:scored.respawns[local],livesRemaining:0,scoreTarget:scored.scoreTarget,scoreboard:scored.result.scores,reason:scored.result.reason,durationSeconds:scored.elapsedSeconds,event:scored.result.isDraw?'DRAW · TIME LIMIT':scored.result.reason==='time_limit'?'TIME LIMIT · '+winnerLabel+' LEADS':winnerLabel+(teams?' TEAM':'')+' REACHED '+scored.scoreTarget+' KOs'};
   state.finalResult=Object.freeze(summary);return state.finalResult;
  }
  const local=mode==='guest'?1:0,winningTeam=state.winnerTeam,playerAlive=(state.lives[local]||0)>0;
@@ -356,7 +359,7 @@ function inputFrom(keys,isLocal){const down=k=>menu.classList.contains('hidden')
  // Only offline Solo foot pilots gain the accepted FIRE-drag. Scored vehicle
  // AIM keeps its own pointer; LAN input must not gain unreplicated aim axes.
  const localFoot=isLocal&&mode==='solo'&&!!state?.tanks?.[0]?.onFoot;
- const vehicleAim=isLocal&&isScoredMatch()&&state?.config?.matchModeId==='scored_ffa'&&!state?.tanks?.[0]?.onFoot;
+ const vehicleAim=isLocal&&isScoredVehicleMatch()&&!state?.tanks?.[0]?.onFoot;
  const fineAim=fireAim.active&&((localFoot&&fireAim.source==='fire'&&touch.has('fire'))||(vehicleAim&&fireAim.source==='aim'));
  // AIM never adds a FIRE action; one deliberate shot still uses the FIRE button.
  return {moveX,moveY,aimX:fineAim?fireAim.x:undefined,aimY:fineAim?fireAim.y:undefined,fire:down('fire')||(isLocal&&comfort.autoFire&&mode!=='idle'&&menu.classList.contains('hidden')&&!paused)};}
@@ -407,32 +410,33 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
      document.getElementById('aa-deaths').textContent=soloResult?String(soloResult.deaths):'—';
      document.getElementById('aa-duration').textContent=soloResult?durationLabel(soloResult.durationSeconds):'—';
      document.getElementById('aa-lives').textContent=String(isScoredMatch()?state.scored.scoreTarget:soloResult?.livesRemaining??state.lives[me]??0);
-     const metric=document.getElementById('aa-lives-label');if(metric)metric.textContent=isScoredMatch()?'KO TARGET':'LIVES LEFT';
+     const metric=document.getElementById('aa-lives-label');if(metric)metric.textContent=isScoredMatch()?(state.scored.mode==='teams'?'TEAM KO TARGET':'KO TARGET'):'LIVES LEFT';
      document.getElementById('aa-outcome').textContent=scoredDraw?'DRAW':localWon?'VICTORY':'DEFEAT';
      document.getElementById('aa-note').textContent=mode==='guest'?'AWAIT HOST REDEPLOYMENT':'NEW PROCEDURAL SECTOR READY';
    }
  }
  const replay=document.getElementById('quick-rematch');if(replay){replay.textContent=mode==='solo'?'↻ NEXT MATCH':'↻ NEW SECTOR';replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));}
- const label0=document.getElementById('player0-label');if(label0)label0.textContent=isScoredMatch()?'YOU KOs':'YOU';
- const label1=document.getElementById('player1-label');if(label1)label1.textContent=isScoredMatch()?'LEADER':mode==='solo'&&state.config?.teamMode==='teams'?'RED':mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';
+ const tdm=isScoredMatch()&&state.scored.mode==='teams';
+ const label0=document.getElementById('player0-label');if(label0)label0.textContent=tdm?'BLUE':isScoredMatch()?'YOU KOs':'YOU';
+ const label1=document.getElementById('player1-label');if(label1)label1.textContent=tdm?'RED':isScoredMatch()?'LEADER':mode==='solo'&&state.config?.teamMode==='teams'?'RED':mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';
  if(mode==='solo')document.getElementById('score1').textContent=botLives;
- const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=state?.config?.matchModeId==='scored_ffa'&&!foot?'AIM / FIRE':mode==='solo'&&foot?'HOLD · DRAG TO AIM':comfort.autoFire?'AUTO ON':'HOLD TO FIRE';
- const aimPad=document.getElementById('vehicle-aim');if(aimPad)aimPad.classList.toggle('hidden',!(state?.config?.matchModeId==='scored_ffa'&&!foot&&state.lives[me]>0&&state.winner<0));
+ const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=isScoredVehicleMatch()&&!foot?'AIM / FIRE':mode==='solo'&&foot?'HOLD · DRAG TO AIM':comfort.autoFire?'AUTO ON':'HOLD TO FIRE';
+ const aimPad=document.getElementById('vehicle-aim');if(aimPad)aimPad.classList.toggle('hidden',!(isScoredVehicleMatch()&&!foot&&state.lives[me]>0&&state.winner<0));
  const clock=document.getElementById('score-clock'),life=document.querySelector('.scorestrip .hud-life');
  if(clock){clock.classList.toggle('hidden',!isScoredMatch());if(isScoredMatch())clock.textContent=durationLabel(Math.ceil(Math.max(0,state.scored.clockSeconds-state.scored.elapsedSeconds)));}
  if(life)life.classList.toggle('hidden',isScoredMatch());
  if(isScoredMatch()){
-   document.getElementById('score0').textContent=state.scored.operatorKOs[me];
-   document.getElementById('score1').textContent=Math.max(0,...state.scored.operatorKOs);
+   const scores=state.scored.operatorKOs;document.getElementById('score0').textContent=tdm?scores.reduce((sum,k,i)=>sum+(state.scored.teamIds[i]===0?k:0),0):scores[me];
+   document.getElementById('score1').textContent=tdm?scores.reduce((sum,k,i)=>sum+(state.scored.teamIds[i]===1?k:0),0):Math.max(0,...scores);
  }
 }
 function newMatch(which){
  savePrefs();
- const scoredLaunch=!!SCORED_FFA_MODES[which],cqcLaunch=which==='cqc';
+ const scoredLaunch=!!SCORED_MATCH_RULES[which],cqcLaunch=which==='cqc';
  if(which==='solo'&&!selectedPlaylistIds.length){notice('SELECT A QUICK PLAY MODE IN MATCH SETTINGS',2300);return false;}
  const playlistId=which==='solo'?nextPlaylistMode():null;
  if(bridgeReady())window.AndroidBridge.stopNetwork();mode=scoredLaunch?'solo':which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;
- const arena=selectArena(),options=scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:'ffa',matchModeId:which,pilotMode:true}:playlistId?soloOptionsFor(playlistId):{...selectedRules,pilotMode:true};
+ const arena=selectArena(),options=scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:which==='scored_tdm'?'teams':'ffa',matchModeId:which,pilotMode:true}:playlistId?soloOptionsFor(playlistId):{...selectedRules,pilotMode:true};
  state=initialState(arena,options,freshSectorSeed(state?.mazeSeed));camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch)?(state.config.botCount===0?'PRACTICE FIELD':soloModeLabel(state.config)):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch){exitMenu();if(which==='solo')firstMatchHint();}}
 function resetAll(advancePlaylist=false){
  const previousSeed=state.mazeSeed;
@@ -452,7 +456,7 @@ function circlesRect(x,y,r,w){const nx=clamp(x,w.x,w.x+w.w),ny=clamp(y,w.y,w.y+w
 function blocked(x,y,r=21){return x<r+13||x>worldW-r-13||y<r+13||y>worldH-r-13||nearWall(x,y,r)}
 function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=clamp(Number(inp.moveX)||0,-1,1),my=clamp(Number(inp.moveY)||0,-1,1);let mag=Math.hypot(mx,my);
  if(mag>1){mx/=mag;my/=mag;mag=1}if(mag<.09){mx=0;my=0;mag=0}
- const tacticalVehicle=state?.config?.matchModeId==='scored_ffa'&&!t.onFoot;
+ const tacticalVehicle=isScoredVehicleMatch()&&!t.onFoot;
  const baseVehicleSpeed=tacticalVehicle?(inp.bot?SCORED_FFA_VEHICLE_PACE.bot:SCORED_FFA_VEHICLE_PACE.human):(inp.bot?178:222);
  const speed=(t.onFoot?(inp.bot?194:268):baseVehicleSpeed*vehicleDef(currentVehicle(t)).speed)*(t.powerType==='turbo'&&t.powerTimer>0?1.48:1),blend=Math.min(1,dt*(mag?9:13));t.vx+=(mx*speed-t.vx)*blend;t.vy+=(my*speed-t.vy)*blend;
  // Apply CQC's accepted 6.5rad/s aim to the local Solo Survival pilot too.
@@ -641,7 +645,7 @@ function registerHit(attacker,victim){if(state.winner>=0||state.lives[victim]<=0
 function finishScoredMatch(){
  if(!isScoredMatch()||!state.scored.finished||state.winner>=0)return;
  state.winner=state.scored.result.winningSide??state.tanks.length; // draw sentinel
- state.winnerTeam=-1;
+ state.winnerTeam=state.scored.mode==='teams'?(state.scored.result.winningSide??-1):-1;
  state.event=state.scored.result.isDraw?soloModeLabel(state.config)+' · DRAW':state.scored.result.reason==='time_limit'?'TIME LIMIT':'KO TARGET REACHED';
  state.eventTimer=0;
  finalizeRound();
@@ -656,7 +660,8 @@ function creditScoredPilotKO(attacker,victim){
  state.bullets=state.bullets.filter(b=>b.owner!==victim);
  emitFx('hit',t.x,t.y,combatColor(victim),attacker,victim);
  if(victim===0){screenKick=comfort.shake?3.2:0;damagePulse=.58;}
- audioCue('pilot-hit',t.x,t.y);state.event=label(attacker)+' KO · '+state.kos[attacker]+'/'+next.scoreTarget;state.eventTimer=.9;
+ audioCue('pilot-hit',t.x,t.y);const teamScore=next.mode==='teams'?next.operatorKOs.reduce((sum,k,i)=>sum+(next.teamIds[i]===next.teamIds[attacker]?k:0),0):null;
+  state.event=attacker===victim?'SELF RICOCHET · NO KO':next.mode==='teams'?(next.teamIds[attacker]===0?'BLUE':'RED')+' TEAM KO · '+teamScore+'/'+next.scoreTarget:label(attacker)+' KO · '+state.kos[attacker]+'/'+next.scoreTarget;state.eventTimer=.9;
  finishScoredMatch();refreshHUD();return true;
 }
 // Shared scored delayed spawn: pilots recover on foot; surviving empty vehicles
@@ -668,7 +673,7 @@ function tryCqcRespawn(victim){
  if(mazeGrid)for(let r=0;r<mazeGrid.rows;r++)for(let c=0;c<mazeGrid.cols;c++)
   candidates.push({x:(c+.5)*mazeGrid.cell,y:(r+.5)*mazeGrid.cell});
  const site=window.SectorScored.chooseSafeScoreSpawn(candidates,{
-  blocked:(x,y)=>blocked(x,y,12),enemies:alive.map(o=>o.t),
+  blocked:(x,y)=>blocked(x,y,12),enemies:alive.filter(o=>!friendly(victim,o.i)).map(o=>o.t),
   actors:alive.map(o=>o.t),bullets:state.bullets,
   lineOfSight:hasLineOfSight,recentDeaths:state.recentDeaths||[]
  });
@@ -1240,7 +1245,7 @@ panel.addEventListener('change',e=>{const el=e.target;if(el.id?.startsWith('pref
 loadPrefs();
 
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
- if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA, drag the large circular AIM pad to turn the hull without firing, then tap FIRE when lined up. The centered AIM thumbstick has a dead zone to ignore jitter.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
+ if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, drag the large circular AIM pad to turn the hull without firing, then tap FIRE when lined up. The centered AIM thumbstick has a dead zone to ignore jitter.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
  const s=document.getElementById('lan-address').value.trim(),m=s.match(/^([\da-fA-F:.]+):(\d{1,5})$/);
  if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';window.AndroidBridge.joinGame(m[1],Number(m[2]));}});
 function showPauseMenu(){releaseControls();if(mode==='idle')return;
@@ -1265,7 +1270,7 @@ for(const b of document.querySelectorAll('[data-key]')){const k=b.dataset.key;co
 const vehicleAimButton=document.getElementById('vehicle-aim');
 if(vehicleAimButton){
  vehicleAimButton.addEventListener('pointerdown',e=>{
-  if(!isScoredMatch()||state.config.matchModeId!=='scored_ffa'||state.tanks[0].onFoot||fireAim.pointerId!==null)return;
+  if(!isScoredVehicleMatch()||state.tanks[0].onFoot||fireAim.pointerId!==null)return;
   e.preventDefault();beginFireAim(e,'aim');vehicleAimButton.classList.add('active');
   vehicleAimButton.setPointerCapture(e.pointerId);updateVehicleAimPad(e);
  });
@@ -1289,7 +1294,7 @@ function beginFireAim(e,source='fire'){
  // FIRE drag belongs only to the local Solo foot pilot, scored or Survival.
  // Separate vehicle AIM remains scored FFA only; LAN/duel stay unchanged.
  if(source==='fire'&&!(mode==='solo'&&state?.tanks?.[0]?.onFoot))return;
- if(source==='aim'&&!(mode==='solo'&&isScoredMatch()&&state?.config?.matchModeId==='scored_ffa'&&!state?.tanks?.[0]?.onFoot))return;
+ if(source==='aim'&&!(mode==='solo'&&isScoredVehicleMatch()&&!state?.tanks?.[0]?.onFoot))return;
  fireAim.pointerId=e.pointerId;fireAim.source=source;fireAim.startX=Number(e.clientX)||0;fireAim.startY=Number(e.clientY)||0;
  fireAim.x=0;fireAim.y=0;fireAim.active=false;
 }
@@ -1298,7 +1303,7 @@ function beginFireAim(e,source='fire'){
 // Keeping the last vector inside the center zone prevents twitching back to
 // movement-facing while the AIM thumb is still held.
 function updateVehicleAimPad(e){
- if(fireAim.source!=='aim'||fireAim.pointerId!==e.pointerId||!isScoredMatch()||state.config.matchModeId!=='scored_ffa')return;
+ if(fireAim.source!=='aim'||fireAim.pointerId!==e.pointerId||!isScoredVehicleMatch())return;
  const pad=document.getElementById('vehicle-aim');
  if(!pad||pad.classList.contains('hidden'))return;
  const rect=pad.getBoundingClientRect();
@@ -1312,7 +1317,7 @@ function updateVehicleAimPad(e){
 function updateFireAim(e){
  if(fireAim.pointerId!==e.pointerId)return;
  if(fireAim.source==='aim'){
-  if(!(mode==='solo'&&isScoredMatch()&&state?.config?.matchModeId==='scored_ffa'&&!state?.tanks?.[0]?.onFoot)){clearFireAim();return;}
+  if(!(mode==='solo'&&isScoredVehicleMatch()&&!state?.tanks?.[0]?.onFoot)){clearFireAim();return;}
   updateVehicleAimPad(e);return;
  }
  if(!(mode==='solo'&&state?.tanks?.[0]?.onFoot)){clearFireAim();return;}

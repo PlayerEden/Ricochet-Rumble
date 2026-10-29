@@ -628,3 +628,9 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 
 /* The old AIM button styled all child spans as glyphs; remove padding from the new pad's thumb/ring. */
 .battlefield .touch-right .vehicle-aim-btn span{padding-left:0;font-size:inherit}
+
+/* v0.9.34: compact experimental modes while protecting phone landscape menu. */
+#panel .home-action-grid button.home-cqc,#panel .home-action-grid button.home-ffa{grid-column:auto;min-height:clamp(43px,8dvh,58px)}
+#panel .home-action-grid button.home-tdm{grid-column:1/-1;min-height:38px;border-color:#6d9fa5;background:#1b3a3f}
+#panel .home-action-grid button.home-tdm strong{color:#c9f2f3}
+@media(max-height:430px){#panel .home-action-grid button.home-cqc,#panel .home-action-grid button.home-ffa{min-height:36px}#panel .home-action-grid button.home-tdm{min-height:33px}}

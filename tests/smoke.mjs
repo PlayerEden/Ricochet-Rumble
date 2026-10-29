@@ -1838,3 +1838,87 @@ console.log('PASS v0.9.32 precision handling: independent 1.8rad/s AIM versus 2.
  assert.ok(Math.abs(cqc.a-6.5*dt)<1e-6,'owner-positive CQC aiming preserved');
 }
 console.log('PASS local Solo pilot FIRE-drag parity, independent heading, ejection reset, LAN isolation, CQC baseline.');
+
+// v0.9.34: true 2v2 team scoring is not renamed last-side-standing survival.
+{
+ const api=win.__test;
+ assert.ok(menuHtml.includes('data-action="scored_tdm"'),'explicit TDM trial in main menu');
+ api.newMatch('scored_tdm');
+ const m=st(),red=m.tanks[1],redVehicle=m.vehicles[red.vehicleId];
+ assert.equal(m.config.matchModeId,'scored_tdm');
+ assert.equal(m.config.teamMode,'teams');assert.equal(m.config.mapSize,'standard');
+ assert.equal(m.config.botCount,3);assert.equal(m.tanks.length,4);
+ assert.deepEqual([...m.scored.teamIds],[0,1,0,1],'balanced Blue/Red teams');
+ assert.equal(m.scored.mode,'teams','canonical immutable team-scoring kernel');
+ assert.equal(m.scored.scoreTarget,15);assert.equal(m.scored.clockSeconds,300);
+ assert.ok(m.tanks.every(t=>!t.onFoot),'all TDM players start in vehicles');
+ assert.ok(m.vehicles.some(v=>v.type==='mech'),'mech recovery is preserved');
+ assert.equal(api.teamOf(2),0);assert.equal(api.teamOf(3),1);
+ assert.equal(api.combatColor(2),'#46d2f5');assert.equal(api.combatColor(3),'#fc856e');
+ assert.equal(node('player0-label').textContent,'BLUE');
+ assert.equal(node('player1-label').textContent,'RED');
+ assert.equal(node('score0').textContent,0);assert.equal(node('score1').textContent,0);
+ assert.equal(node('score-clock').textContent,'05:00');
+ assert.equal(node('vehicle-aim').classList.contains('hidden'),false,'same experimental vehicle AIM as scored FFA');
+ assert.equal(api.registerHit(0,2),false,'friendly fire does not hurt Blue ally');
+ for(let n=0;n<3;n++)assert.equal(api.registerHit(0,1),true,'scored TDM tank armor damage');
+ assert.equal(redVehicle.armor,0);
+ assert.equal(m.scored.operatorKOs[0],0,'armor and ejection never count as pilot KOs');
+ assert.equal(red.onFoot,true,'vehicle ejection leaves a real pilot');
+ red.shield=0;
+ assert.equal(api.registerHit(0,1),true,'real red pilot death awards Blue KO');
+ assert.equal(m.scored.operatorKOs[0],1);
+ assert.equal(node('score0').textContent,1);
+ assert.equal(m.lives[1],0);
+ red.respawnWait=0;
+ assert.equal(api.tryCqcRespawn(1),true,'safe scored TDM respawn');
+ assert.equal(red.onFoot,true);red.shield=0;
+ assert.equal(api.creditScoredPilotKO(2,1),true,'Blue bot ally can earn a genuine enemy pilot KO');
+ assert.equal(m.scored.operatorKOs[2],1);
+ assert.equal(node('score0').textContent,2,'team scoreboard aggregates both Blue participants');
+ for(let n=2;n<15;n++){
+  red.respawnWait=0;assert.equal(api.tryCqcRespawn(1),true);
+  red.shield=0;assert.equal(api.creditScoredPilotKO(n%2===0?0:2,1),true);
+ }
+ assert.equal(m.scored.finished,true);
+ assert.equal(m.scored.result.winningSide,0);
+ assert.deepEqual([...m.scored.result.scores],[15,0]);
+ assert.equal(m.finalResult.outcome,'victory');
+ assert.equal(m.finalResult.winnerTeam,0);
+ assert.equal(m.finalResult.teamMode,'teams');
+ assert.equal(m.finalResult.objective,'team_operator_ko_target');
+ assert.equal(m.finalResult.operatorKOs,m.scored.operatorKOs[0],'After Action keeps personal operator KOs');
+ assert.equal(m.finalResult.scoreboard[0],15,'After Action records genuine shared team score');
+ assert.equal(node('aa-lives-label').textContent,'TEAM KO TARGET');
+ const frozen=m.finalResult;api.step(1/60);assert.equal(m.finalResult,frozen,'result finalized exactly once');
+ const oldSeed=m.mazeSeed,oldId=m.matchId;api.resetAll(true);
+ assert.equal(st().config.matchModeId,'scored_tdm','NEXT MATCH stays scored TDM');
+ assert.notEqual(st().mazeSeed,oldSeed,'new sector on rematch');
+ assert.notEqual(st().matchId,oldId,'fresh match identifier');
+ assert.ok(st().scored.operatorKOs.every(x=>x===0),'reset all team scores');
+ api.step(300);
+ assert.equal(st().finalResult.outcome,'draw','equal-team-score timeout is DRAW');
+ assert.equal(st().finalResult.reason,'time_limit');
+ assert.equal(st().finalResult.winnerTeam,-1);
+ api.newMatch('solo');assert.equal(st().scored,null,'finite-life Survival rules unchanged');
+}
+console.log('PASS v0.9.34: 2v2 scored Team Deathmatch, real ally+enemy pilot KOs, 15/300, no friendly fire, respawn, draw, result, new sector.');
+
+// v0.9.34 audit: genuine self-ricochet death is a death, never a team KO.
+{
+ const api=win.__test;
+ api.newMatch('scored_tdm');
+ const m=st(),p=m.tanks[0],vehicle=m.vehicles[p.vehicleId];
+ p.shield=0;
+ const startingArmor=vehicle.armor;
+ for(let n=0;n<startingArmor;n++)assert.equal(api.registerHit(0,0),true,'self shell hits tank armor');
+ assert.equal(p.onFoot,true);
+ p.shield=0;
+ assert.equal(api.registerHit(0,0),true,'real self-ricochet pilot death');
+ assert.equal(m.scored.deaths[0],1);
+ assert.deepEqual([...m.scored.operatorKOs],[0,0,0,0],'no team gets points for self-death');
+ assert.equal(node('score0').textContent,0);
+ assert.equal(node('score1').textContent,0);
+ assert.ok(m.event.includes('NO KO'),'self-hit event never falsely awards KO');
+}
+console.log('PASS TDM ricochet self-death audit: death counted, neither team scored, no fake KO message.');
