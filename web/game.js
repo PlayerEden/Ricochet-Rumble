@@ -295,7 +295,8 @@ function finalizeRound(){
  if(isScoredMatch()){
   const scored=state.scored,local=mode==='guest'?1:0;
   const outcome=window.SectorScored.scoredOutcomeFor(scored,local);
-  const summary={version:1,matchId:state.matchId,mazeSeed:state.mazeSeed,matchModeId:state.config.matchModeId,teamMode:'ffa',mapSize:state.config.mapSize,objective:'operator_ko_target',outcome,winner:scored.result.winningSide,winnerTeam:-1,operatorKOs:scored.operatorKOs[local],deaths:scored.deaths[local],respawns:scored.respawns[local],livesRemaining:0,scoreTarget:scored.scoreTarget,scoreboard:scored.result.scores,reason:scored.result.reason,durationSeconds:scored.elapsedSeconds,event:scored.result.isDraw?'DRAW · TIME LIMIT':scored.result.reason==='time_limit'?'TIME LIMIT · '+label(scored.result.winningSide)+' LEADS':label(scored.result.winningSide)+' REACHED '+scored.scoreTarget+' KOs'};
+  const teams=scored.mode==='teams',winnerLabel=teams?(scored.result.winningSide===0?'BLUE':'RED'):label(scored.result.winningSide);
+   const summary={version:1,matchId:state.matchId,mazeSeed:state.mazeSeed,matchModeId:state.config.matchModeId,teamMode:teams?'teams':'ffa',mapSize:state.config.mapSize,objective:teams?'team_operator_ko_target':'operator_ko_target',outcome,winner:scored.result.winningSide,winnerTeam:teams?(scored.result.winningSide??-1):-1,operatorKOs:scored.operatorKOs[local],deaths:scored.deaths[local],respawns:scored.respawns[local],livesRemaining:0,scoreTarget:scored.scoreTarget,scoreboard:scored.result.scores,reason:scored.result.reason,durationSeconds:scored.elapsedSeconds,event:scored.result.isDraw?'DRAW · TIME LIMIT':scored.result.reason==='time_limit'?'TIME LIMIT · '+winnerLabel+' LEADS':winnerLabel+(teams?' TEAM':'')+' REACHED '+scored.scoreTarget+' KOs'};
   state.finalResult=Object.freeze(summary);return state.finalResult;
  }
  const local=mode==='guest'?1:0,winningTeam=state.winnerTeam,playerAlive=(state.lives[local]||0)>0;
@@ -409,14 +410,15 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
      document.getElementById('aa-deaths').textContent=soloResult?String(soloResult.deaths):'—';
      document.getElementById('aa-duration').textContent=soloResult?durationLabel(soloResult.durationSeconds):'—';
      document.getElementById('aa-lives').textContent=String(isScoredMatch()?state.scored.scoreTarget:soloResult?.livesRemaining??state.lives[me]??0);
-     const metric=document.getElementById('aa-lives-label');if(metric)metric.textContent=isScoredMatch()?'KO TARGET':'LIVES LEFT';
+     const metric=document.getElementById('aa-lives-label');if(metric)metric.textContent=isScoredMatch()?(state.scored.mode==='teams'?'TEAM KO TARGET':'KO TARGET'):'LIVES LEFT';
      document.getElementById('aa-outcome').textContent=scoredDraw?'DRAW':localWon?'VICTORY':'DEFEAT';
      document.getElementById('aa-note').textContent=mode==='guest'?'AWAIT HOST REDEPLOYMENT':'NEW PROCEDURAL SECTOR READY';
    }
  }
  const replay=document.getElementById('quick-rematch');if(replay){replay.textContent=mode==='solo'?'↻ NEXT MATCH':'↻ NEW SECTOR';replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));}
- const label0=document.getElementById('player0-label');if(label0)label0.textContent=isScoredMatch()?'YOU KOs':'YOU';
- const label1=document.getElementById('player1-label');if(label1)label1.textContent=isScoredMatch()?'LEADER':mode==='solo'&&state.config?.teamMode==='teams'?'RED':mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';
+ const tdm=isScoredMatch()&&state.scored.mode==='teams';
+ const label0=document.getElementById('player0-label');if(label0)label0.textContent=tdm?'BLUE':isScoredMatch()?'YOU KOs':'YOU';
+ const label1=document.getElementById('player1-label');if(label1)label1.textContent=tdm?'RED':isScoredMatch()?'LEADER':mode==='solo'&&state.config?.teamMode==='teams'?'RED':mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';
  if(mode==='solo')document.getElementById('score1').textContent=botLives;
  const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=state?.config?.matchModeId==='scored_ffa'&&!foot?'AIM / FIRE':mode==='solo'&&foot?'HOLD · DRAG TO AIM':comfort.autoFire?'AUTO ON':'HOLD TO FIRE';
  const aimPad=document.getElementById('vehicle-aim');if(aimPad)aimPad.classList.toggle('hidden',!(state?.config?.matchModeId==='scored_ffa'&&!foot&&state.lives[me]>0&&state.winner<0));
@@ -424,8 +426,8 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  if(clock){clock.classList.toggle('hidden',!isScoredMatch());if(isScoredMatch())clock.textContent=durationLabel(Math.ceil(Math.max(0,state.scored.clockSeconds-state.scored.elapsedSeconds)));}
  if(life)life.classList.toggle('hidden',isScoredMatch());
  if(isScoredMatch()){
-   document.getElementById('score0').textContent=state.scored.operatorKOs[me];
-   document.getElementById('score1').textContent=Math.max(0,...state.scored.operatorKOs);
+   const scores=state.scored.operatorKOs;document.getElementById('score0').textContent=tdm?scores.reduce((sum,k,i)=>sum+(state.scored.teamIds[i]===0?k:0),0):scores[me];
+   document.getElementById('score1').textContent=tdm?scores.reduce((sum,k,i)=>sum+(state.scored.teamIds[i]===1?k:0),0):Math.max(0,...scores);
  }
 }
 function newMatch(which){
@@ -658,7 +660,8 @@ function creditScoredPilotKO(attacker,victim){
  state.bullets=state.bullets.filter(b=>b.owner!==victim);
  emitFx('hit',t.x,t.y,combatColor(victim),attacker,victim);
  if(victim===0){screenKick=comfort.shake?3.2:0;damagePulse=.58;}
- audioCue('pilot-hit',t.x,t.y);state.event=label(attacker)+' KO · '+state.kos[attacker]+'/'+next.scoreTarget;state.eventTimer=.9;
+ audioCue('pilot-hit',t.x,t.y);const teamScore=next.mode==='teams'?next.operatorKOs.reduce((sum,k,i)=>sum+(next.teamIds[i]===next.teamIds[attacker]?k:0),0):null;
+  state.event=next.mode==='teams'?(next.teamIds[attacker]===0?'BLUE':'RED')+' TEAM KO · '+teamScore+'/'+next.scoreTarget:label(attacker)+' KO · '+state.kos[attacker]+'/'+next.scoreTarget;state.eventTimer=.9;
  finishScoredMatch();refreshHUD();return true;
 }
 // Shared scored delayed spawn: pilots recover on foot; surviving empty vehicles
