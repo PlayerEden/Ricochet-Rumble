@@ -47,6 +47,8 @@ jobs:
             console.log('CROSS_RATE '+JSON.stringify({mode:m,thirtyHz:{noHitSeeds:noHits(aa),timeouts:aa.filter(x=>x.reason==='time_limit').length},sixtyHz:{noHitSeeds:noHits(bb),timeouts:bb.filter(x=>x.reason==='time_limit').length}}));
           }
           JS
+      - name: Stress-test Blue/Red TDM fairness with 200 additional independent 60 Hz rounds
+        run: node tests/natural-bot-audit.mjs --seeds=200 --seed-offset=100 --maze-seeds=300 --hz=60 --modes=scored_tdm --out=artifacts/tdm-independent-200-60hz-v0938.json
       - name: Preserve inspectable raw evidence and seed-specific samples
         if: always()
         uses: actions/upload-artifact@v4
