@@ -1925,7 +1925,7 @@ console.log('PASS TDM ricochet self-death audit: death counted, neither team sco
 
 // v0.9.35 independent Custom Match modes and same-rules rematch.
 {
- const a=win.__test,playlist=a.selectedPlaylistIds.slice();
+ const a=win.__test,playlist=[...a.selectedPlaylistIds];
  assert.ok(menuHtml.includes('data-action="custom"'),'custom lobby is real');
  assert.ok(menuHtml.includes('id="custom-template"'),'dedicated rule editor template exists');
  assert.ok(menuHtml.includes('id="custom-edit"'),'After Action edit control exists');
