@@ -428,6 +428,54 @@ try{
  assert.equal(customTdm.mode,'teams');assert.equal(customTdm.target,15);
  result.steps.push('real Custom Match editor, saved separate rules, team victory, same-rule new sector, edit rules and locked scored TDM');
 
+ // v0.9.37: Browser actually opts into scored modes without disturbing Survival defaults.
+ // Finish Custom TDM first, because the main-menu button belongs to its After Action.
+ const customFinished=await page.evaluate(()=>{window.__flowQA.expire(300);return window.__flowQA.state.finalResult;});
+ assert.ok(customFinished&&customFinished.reason==='time_limit');
+ await page.locator('#results-menu').click();
+ await page.locator('#menu button[data-action="settings"]').click();
+ await page.locator('details.extra-rules summary').click();
+ for(const id of ['cqc','scored_ffa','scored_tdm']){
+  assert.equal(await page.locator('input[data-playlist-mode="'+id+'"]').isChecked(),false,'scored '+id+' stays OFF by default');
+ }
+ for(const id of ['survival_ffa','survival_teams'])await page.locator('input[data-playlist-mode="'+id+'"]').uncheck();
+ for(const id of ['cqc','scored_ffa','scored_tdm'])await page.locator('input[data-playlist-mode="'+id+'"]').check();
+ const opted=await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-options-v06')).playlist);
+ assert.deepEqual(opted.enabled,['cqc','scored_ffa','scored_tdm'],'user-scored opt-in persists in versioned existing options');
+ assert.equal(opted.version,1,'older playlist save schema remains recognized');
+ assert.ok((await page.locator('#playlist-status').textContent()).includes('3 SCORING TRIALS ENABLED'));
+ await page.locator('button[data-action="settings-play"]').click();
+ const roundModes=[];
+ for(let i=0;i<3;i++){
+  await page.evaluate(()=>window.__flowQA.freeze());
+  const battle=await page.evaluate(()=>{const m=window.__flowQA.state;return {id:m.config.matchModeId,fromQuick:!!m.config.quickPlayMatch,custom:!!m.config.customMatch,
+   goal:m.scored?.scoreTarget,clock:m.scored?.clockSeconds,team:m.scored?.mode,seed:m.mazeSeed,matchId:m.matchId,bots:m.config.botCount}});
+  assert.ok(['cqc','scored_ffa','scored_tdm'].includes(battle.id));
+  assert.ok(battle.fromQuick&&!battle.custom,'scored round records Quick Play rather than Custom');
+  assert.equal(battle.goal,battle.id==='scored_tdm'?15:10);
+  assert.equal(battle.clock,battle.id==='cqc'?180:battle.id==='scored_tdm'?300:240);
+  assert.equal(battle.bots,3);
+  roundModes.push(battle.id);
+  const ending=await page.evaluate(()=>{window.__flowQA.expire(300);return window.__flowQA.state.finalResult;});
+  assert.equal(ending.reason,'time_limit','actual scored match terminates by clock');
+  assert.equal((await page.locator('#aa-outcome').textContent()).trim(),'DRAW');
+  if(i<2)await page.locator('#quick-rematch').click();
+ }
+ assert.equal(new Set(roundModes).size,3,'3 scored choices appear once each before bag repeats');
+ await page.locator('#results-menu').click();
+ await page.locator('#menu button[data-action="cqc"]').click();
+ await page.evaluate(()=>window.__flowQA.freeze());
+ const standalone=await page.evaluate(()=>window.__flowQA.state.config);
+ assert.equal(standalone.matchModeId,'cqc');
+ assert.equal(standalone.quickPlayMatch,undefined,'standalone test button is NOT a playlist round');
+ const directDraw=await page.evaluate(()=>{window.__flowQA.expire(180);return window.__flowQA.state.finalResult;});
+ assert.equal(directDraw.outcome,'draw');
+ await page.locator('#quick-rematch').click();
+ await page.evaluate(()=>window.__flowQA.freeze());
+ assert.equal(await page.evaluate(()=>window.__flowQA.state.config.matchModeId),'cqc','standalone button rematches CQC without rotating');
+ result.steps.push('opt-in scored Quick Play: original defaults off, settings persistence, CQC/FFA/TDM shuffle+timeouts, standalone remains fixed');
+
+
  console.log('PASS live Chromium Quick Play: '+JSON.stringify(result));
 }finally{
  if(page)await page.close().catch(()=>{});
