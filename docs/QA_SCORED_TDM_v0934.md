@@ -17,8 +17,8 @@
 | 300 seeded mazes, existing Survival/CQC/FFA/LAN regressions | Automated PASS | Same fast run |
 | TDM real team assignments, no friendly hits, armored ejection, true KO, bot ally scoring, 15-KO win, timeout draw, rematch new seed | Automated PASS | Same fast run |
 | Ricochet self-death produces no fake team KO | Automated PASS | Same fast run |
-| Real Chromium menu and game scenes at multiple landscape sizes | **PENDING full QA run result** | [Full QA 40825503334](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40825503334) |
-| Debug APK and unsigned AAB from same game SHA | **PENDING full QA run result** | Same full QA |
+| Real Chromium menu and game scenes at multiple landscape sizes | **Automated PASS** (base TDM browser/layout scenes); extended TDM-specific scenario **PENDING** | [Full QA 40825503334 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40825503334), [extended 40825789109](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40825789109) |
+| Debug APK and unsigned AAB from same game SHA | **Automated PASS on core gameplay SHA; re-check extended TDM QA** | [Full QA 40825503334 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40825503334) |
 | 50+ *naturally simulated* bot TDM matches, measured team fairness/timeout/KO rates | **NOT RUN** | Separate balancing gate; scripted forced-KO tests do not substitute |
 | Actual owner handset acceptance, touch/turn feel, long sessions and two-phone LAN | **MANUAL PENDING** | Owner unavailable for phone playtest; LAN not part of scored TDM yet |
 
@@ -30,4 +30,4 @@
 - No scored LAN networking, remote ranked play, production signing, save migration or Google Play store readiness is claimed.
 
 ## Acceptance decision
-**Conditional experimental code milestone:** fast checks passed; full Android/Chromium and real hardware verdict remain pending. Keep draft PR #53 isolated and preserve v0.9.28 CQC, v0.9.31 thumb comfort, v0.9.32 precision and v0.9.33 pilot parity prereleases as rollback references.
+**Conditional experimental code milestone:** fast checks and base full Android/Chromium QA passed; the new TDM-specific real Chromium match-flow test is still pending in run 40825789109; actual owner hardware verdict remains pending. Keep draft PR #53 isolated and preserve v0.9.28 CQC, v0.9.31 thumb comfort, v0.9.32 precision and v0.9.33 pilot parity prereleases as rollback references.
