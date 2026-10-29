@@ -332,6 +332,65 @@ try{
  assert.equal(tdmDraw.winnerTeam,-1);
  result.steps.push('TDM NEXT MATCH regenerated sector, retained mode and respected score-clock draw');
  
+ // v0.9.35: real Custom Match browser journey and independent Quick Play storage.
+ await page.locator('#results-menu').click();
+ await page.locator('#menu button[data-action="custom"]').click();
+ assert.equal(await page.locator('#custom-match').isVisible(),true);
+ await page.locator('#custom-mode').selectOption('survival_teams');
+ await page.locator('#custom-size').selectOption('large');
+ await page.locator('#custom-bots').selectOption('1');
+ await page.locator('#custom-skill').selectOption('spicy');
+ await page.locator('#custom-lives').selectOption('3');
+ await page.locator('#custom-shells').selectOption('1');
+ assert.ok((await page.locator('#custom-preview').textContent()).includes('3 COMBATANTS'));
+ const customSaved=await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-custom-v1')));
+ assert.equal(customSaved.version,1);
+ assert.equal(customSaved.rules.modeId,'survival_teams');
+ assert.equal(customSaved.rules.botCount,1);
+ await page.locator('button[data-action="custom-play"]').click();
+ await page.evaluate(()=>window.__flowQA.freeze());
+ const customStart=await page.evaluate(()=>{const s=window.__flowQA.state;return {id:s.config.matchModeId,size:s.config.mapSize,bots:s.config.botCount,lives:s.config.startLives,shell:s.config.bulletCap,seed:s.mazeSeed,custom:s.config.customMatch}});
+ assert.equal(customStart.custom,true);
+ assert.equal(customStart.id,'survival_teams');
+ assert.equal(customStart.size,'large');assert.equal(customStart.bots,2);
+ assert.equal(customStart.lives,3);assert.equal(customStart.shell,1);
+ const endCustom=()=>page.evaluate(()=>{const q=window.__flowQA,s=q.state,t=s.tanks[1];q.ejectPilot(1);t.shield=0;const hits=[];for(let i=0;i<3;i++){hits.push(q.registerHit(0,1));t.shield=0;}return {hits,result:s.finalResult}});
+ const customWin=await endCustom();
+ assert.ok(customWin.hits.every(Boolean));assert.equal(customWin.result.outcome,'victory');
+ assert.equal(await page.locator('#custom-edit').isVisible(),true);
+ assert.ok((await page.locator('#quick-rematch').textContent()).includes('SAME RULES'));
+ await page.locator('#quick-rematch').click();
+ await page.evaluate(()=>window.__flowQA.freeze());
+ const customNext=await page.evaluate(()=>({id:window.__flowQA.state.config.matchModeId,seed:window.__flowQA.state.mazeSeed,shell:window.__flowQA.state.config.bulletCap}));
+ assert.equal(customNext.id,'survival_teams');assert.equal(customNext.shell,1);
+ assert.notEqual(customNext.seed,customStart.seed);
+ assert.equal((await endCustom()).result.outcome,'victory');
+ await page.locator('#custom-edit').click();
+ assert.equal(await page.locator('#custom-match').isVisible(),true);
+ assert.equal(await page.locator('#custom-size').inputValue(),'large');
+ await page.locator('#custom-mode').selectOption('scored_tdm');
+ assert.equal(await page.locator('#custom-size').isDisabled(),true);
+ assert.equal(await page.locator('#custom-bots').isDisabled(),true);
+ assert.equal(await page.locator('#custom-size').inputValue(),'standard','scored preset shows actual enforced map');
+ assert.equal(await page.locator('#custom-bots').inputValue(),'3','scored preset shows actual enforced bot count');
+ assert.equal(await page.locator('#custom-lives').inputValue(),'2');
+ assert.equal(await page.locator('#custom-shells').inputValue(),'4');
+ for(const [vw,vh] of [[740,360],[915,412],[1280,720]]){
+  await page.setViewportSize({width:vw,height:vh});
+  const geometry=await page.locator('#panel').evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth,scrollHeight:el.scrollHeight,clientHeight:el.clientHeight}));
+  assert.ok(geometry.scrollWidth<=geometry.width+3,'Custom editor must not scroll horizontally at '+vw);
+  await page.locator('button[data-action="custom-play"]').scrollIntoViewIfNeeded();
+  assert.equal(await page.locator('button[data-action="custom-play"]').isVisible(),true,'Custom deploy remains reachable at '+vw);
+ }
+ await page.setViewportSize({width:915,height:412});
+ assert.ok((await page.locator('#custom-preview').textContent()).includes('SCORE 15 KOs / 5 MIN'));
+ await page.locator('button[data-action="custom-play"]').click();
+ await page.evaluate(()=>window.__flowQA.freeze());
+ const customTdm=await page.evaluate(()=>({config:window.__flowQA.state.config,mode:window.__flowQA.state.scored.mode,target:window.__flowQA.state.scored.scoreTarget}));
+ assert.equal(customTdm.config.customMatch,true);assert.equal(customTdm.config.mapSize,'standard');
+ assert.equal(customTdm.mode,'teams');assert.equal(customTdm.target,15);
+ result.steps.push('real Custom Match editor, saved separate rules, team victory, same-rule new sector, edit rules and locked scored TDM');
+
  console.log('PASS live Chromium Quick Play: '+JSON.stringify(result));
 }finally{
  if(page)await page.close().catch(()=>{});

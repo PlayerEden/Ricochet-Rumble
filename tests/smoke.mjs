@@ -15,14 +15,14 @@ node('bot-skill').value='normal';
 node('bot-count').value='1';node('bullet-cap').value='3';node('lives-choice').value='5';node('team-choice').value='ffa';node('map-size').value='standard';
 let frame=null,tick=0,hostCalled=false,discoverCalled=false,packets=[];
 const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},joinGame(){},stopNetwork(){},sendPacket(p){packets.push(JSON.parse(p))}};
-const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(key){return key==='rr-options-v06'?(savedStorage.get(key)??null):null},setItem(key,value){if(key==='rr-options-v06')savedStorage.set(key,String(value))}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(sel){if(sel==='input[data-playlist-mode]')return acceptancePlaylistInputs||[];if(sel==='[data-action="solo"],[data-action="settings-play"]')return acceptancePlayButtons||[];return []}};
+const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(key){return ['rr-options-v06','rr-custom-v1'].includes(key)?savedStorage.get(key)??null:null},setItem(key,value){if(['rr-options-v06','rr-custom-v1'].includes(key))savedStorage.set(key,String(value))}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(sel){if(sel==='input[data-playlist-mode]')return acceptancePlaylistInputs||[];if(sel==='[data-action="solo"],[data-action="settings-play"]')return acceptancePlayButtons||[];return []}};
 let simRand=null;
 const testMath=Object.create(Math);testMath.random=()=>simRand?simRand():Math.random();
 function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5;return(z>>>0)/4294967296;};}
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math:testMath,Number,Set,JSON,String};
 vm.runInNewContext(fs.readFileSync(new URL('../web/scored-match.js',import.meta.url),'utf8'),env,{filename:'scored-match.js'});
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,projectileHitRadius,beginFireAim,updateFireAim,clearFireAim,get fireAim(){return {...fireAim}},get touch(){return touch},tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,get customDraft(){return {...customDraft}},normalizeCustomDraft,customOptionsFor,setCustomDraft,loadCustomDraft,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,projectileHitRadius,beginFireAim,updateFireAim,clearFireAim,get fireAim(){return {...fireAim}},get touch(){return touch},tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -1922,3 +1922,62 @@ console.log('PASS v0.9.34: 2v2 scored Team Deathmatch, real ally+enemy pilot KOs
  assert.ok(m.event.includes('NO KO'),'self-hit event never falsely awards KO');
 }
 console.log('PASS TDM ricochet self-death audit: death counted, neither team scored, no fake KO message.');
+
+// v0.9.35 independent Custom Match modes and same-rules rematch.
+{
+ const a=win.__test,playlist=[...a.selectedPlaylistIds];
+ assert.ok(menuHtml.includes('data-action="custom"'),'custom lobby is real');
+ assert.ok(menuHtml.includes('id="custom-template"'),'dedicated rule editor template exists');
+ assert.ok(menuHtml.includes('id="custom-edit"'),'After Action edit control exists');
+ const bad=a.normalizeCustomDraft({modeId:'unknown',mapSize:'xl',botCount:50,bulletCap:0});
+ assert.equal(bad.modeId,'survival_ffa');
+ assert.equal(bad.mapSize,'standard');assert.equal(bad.botCount,2);
+ a.setCustomDraft({modeId:'survival_teams',mapSize:'large',botCount:1,botSkill:'spicy',startLives:3,bulletCap:1});
+ assert.equal(a.customOptionsFor().botCount,2,'one-bot Team Survival deploys ally and foe');
+ assert.equal(a.customOptionsFor().customMatch,true);
+ assert.equal(a.customOptionsFor().mapSize,'large');
+ assert.equal(a.customOptionsFor().bulletCap,1);
+ assert.equal(JSON.parse(savedStorage.get('rr-custom-v1')).version,1);
+ assert.equal(a.loadCustomDraft().botSkill,'spicy');
+ assert.deepEqual([...a.selectedPlaylistIds],playlist,'custom does not alter Quick Play playlist');
+ a.newMatch('custom');
+ assert.equal(st().config.matchModeId,'survival_teams');
+ assert.equal(st().config.customMatch,true);
+ assert.equal(st().config.botCount,2);
+ assert.equal(st().config.mapSize,'large');
+ assert.equal(st().config.startLives,3);
+ assert.equal(st().config.bulletCap,1);
+ assert.equal(st().scored,null);
+ const oldSeed=st().mazeSeed,oldId=st().matchId;
+ a.resetAll(true);
+ assert.equal(st().config.matchModeId,'survival_teams','Custom rematch cannot rotate playlist');
+ assert.notEqual(st().mazeSeed,oldSeed);assert.notEqual(st().matchId,oldId);
+ assert.equal(st().config.bulletCap,1);
+ a.setCustomDraft({modeId:'survival_ffa',botCount:0,mapSize:'small'});
+ a.newMatch('custom');
+ assert.equal(st().tanks.length,1,'zero bots really means free-roam practice');
+ assert.equal(st().config.mapSize,'small');
+ a.setCustomDraft({modeId:'cqc',mapSize:'large',botCount:0,bulletCap:8});
+ const cqc=a.customOptionsFor();
+ assert.equal(cqc.mapSize,'small','CQC stays validated Small');
+ assert.equal(cqc.botCount,3,'CQC roster remains fixed');
+ assert.equal(cqc.bulletCap,4,'CQC shell cap stays fixed');
+ a.newMatch('custom');
+ assert.equal(st().config.matchModeId,'cqc');assert.equal(st().vehicles.length,0);
+ assert.equal(st().scored.scoreTarget,10);
+ a.setCustomDraft({modeId:'scored_ffa'});
+ a.newMatch('custom');assert.equal(st().scored.clockSeconds,240);
+ assert.equal(st().config.mapSize,'standard');
+ a.setCustomDraft({modeId:'scored_tdm'});
+ a.newMatch('custom');
+ assert.deepEqual([...st().scored.teamIds],[0,1,0,1]);
+ assert.equal(st().scored.scoreTarget,15);
+ assert.equal(st().config.customMatch,true);
+ a.resetAll(true);
+ assert.equal(st().config.matchModeId,'scored_tdm');
+ assert.ok(st().scored.operatorKOs.every(x=>x===0));
+ a.newMatch('solo');
+ assert.equal(st().config.customMatch,undefined,'Quick Play does not inherit custom rules');
+ assert.deepEqual([...a.selectedPlaylistIds],playlist,'Custom Match never changes Quick Play playlist');
+}
+console.log('PASS v0.9.35 Custom Match: separate versioned rules, Survival/team/practice, locked scored modes, same-rules new sector and playlist isolation.');

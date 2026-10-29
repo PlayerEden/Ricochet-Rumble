@@ -1,3 +1,24 @@
+# v0.9.35 Custom Match — automated QA passed, original APK archived (2026-10-29)
+
+- **Latest draft:** [PR #54](https://github.com/PlayerEden/Ricochet-Rumble/pull/54) `feature/custom-match-v0935` directly based on experimental v0.9.34 PR #53. Stable `main` remains v0.9.21; no physical owner approval or production signing.
+- **New playable offline Custom Match:** dedicated rule editor for Survival FFA/Team Survival with maze sizes, 0–4 bots, three bot skills, pilot lives and shell caps. Score-based CQC/FFA/TDM are fixed trial presets with honest locked fields. Custom rules persist separately from Quick Play. After Action: Same Rules/New Sector, Edit Rules, Main Menu. No gameplay engine/scoring/LAN rewrite.
+- **Automated milestone PASS:** fast [40830083491](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40830083491) and full actual Chromium/Android debug APK + unsigned AAB [40830083479](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40830083479). Tested source SHA `8d7f8c7b42804f87a9203d5b8cc4055c408560c3`. Chromium caught and helped fix a real small-screen home Help-button overlay (see [QA report](QA_CUSTOM_MATCH_v0935.md)).
+- **Permanent test APK:** [v0.9.35 Custom Match immutable prerelease](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.35-custom-match-test) holds original byte-identical QA APK, screenshot/QA ZIP and checksums. Publisher [40830719720](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40830719720) succeeded; one-off workflow deleted.
+- **Still OPEN:** user phone acceptance v0.9.32–35, >=50 natural bot matches, named custom presets and Reset to Default, follow-up scored mode/playlist integration, procedural topology dedup/fair spawns, versioned saves, two-phone LAN and signed Play release. Preserve prior v0.9.28/31/32/33/34 releases for rollback.
+- **Next independent development slice:** Complete Custom Match named local saved presets + Reset to Default with strict validation and a quality gate; after that, scored Quick Play integration and mode-balancing audit. Never promote experimental scored modes without evidence and owner acceptance.
+
+---
+
+# v0.9.35 Custom Match — experimental candidate (2026-10-29)
+
+**Draft branch:** `feature/custom-match-v0935` stacked on the v0.9.34 Team Deathmatch draft PR #53. No stable `main` merge; current v0.9.32/33/34 control and mode acceptance remains pending owner handset testing.
+
+**Implemented candidate:** Independent CUSTOM MATCH entry and usable offline rules editor. Casual Solo/Team Survival supports Small/Standard/Large procedural arena, 0–4 bots, AI skill, 2/3/5 lives and 1/2/3/4/5/8 shells; Team Survival with one bot transparently deploys two for Blue ally+Red foe, zero-bot is actual practice. Real scored CQC/FFA/TDM available as **locked experimental presets** (score, time, map/participants, shells/lives fixed; bot skill adjustable) with no fake arbitrary mutators. Separate versioned `rr-custom-v1` persistence independent of Quick Play selection. Custom After Action provides SAME RULES · NEW SECTOR, EDIT RULES and MAIN MENU. Rematch preserves rules but creates a new map/match ID; existing scoring/physics/AI reused.
+
+**QA currently:** Code and both headless/real-browser test additions staged. Automated results must be checked before claiming PASS or releasing APK. No physical owner phone acceptance or 50+ natural bot match fairness conclusions. See [Custom Match milestone QA](QA_CUSTOM_MATCH_v0935.md) and [phase-wide QA ledger](MILESTONE_QA_AND_FINAL_AUDIT_2026-10-29.md). Preserve [v0.9.34 rollback APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.34-scored-tdm-test).
+
+---
+
 # v0.9.34 scored TDM — automation-passed Android QA checkpoint (2026-10-29)
 
 - **Latest milestone:** [DRAFT PR #53](https://github.com/PlayerEden/Ricochet-Rumble/pull/53) on `feature/scored-team-deathmatch-v0934`, based directly on v0.9.33 pilot parity PR #52, which depends on v0.9.32 precision PR #50. **Stable `main` remains v0.9.21.** No user acceptance or merge was assumed.
