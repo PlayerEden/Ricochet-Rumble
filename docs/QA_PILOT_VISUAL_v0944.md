@@ -1,3 +1,13 @@
+# v0.9.44 P-02 FINAL AUTOMATED QA PASS
+
+- **Exactly tested commit SHA:** 8fd0f48dfcd43f13dc6e487cd61bd4b7a77b6c85.
+- **Fast full gameplay and art tests:** https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40999661362 SUCCESS. Geometry tests verify two overhead boots and shoulders, centered gait, helmet +X visor, two hands on single sidearm and muzzle tip (28,2), FFA vs team body paint, zero pilot geometry arcs, unchanged vehicle/camera/movement systems.
+- **Actual Chromium screenshot and Android QA:** https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40999661261 SUCCESS. 740x360, 915x412, 1280x720; real pilot on-foot idle, walking, aiming west/east and firing; tank/mech lobby and reduced motion; Android debug APK and unsigned AAB built on same source.
+- **First attempt failed on stale geometry test:** https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40999585488 incorrectly expected pilot to have NO visible boots. Corrected legacy assertion and ran all tests again successfully.
+- **Immutable QA evidence and original APK** (not rebuilt/resigned): https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.44-pilot-visual-test . Source release contains actual original APK, QA screenshot ZIP and SHA256. One-use publisher passed https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41000180244 and was then removed.
+- **OWNER handset visual verdict STILL PENDING**: sprite legibility vs tank/mech and subjective character feel, UI audio/performance. **DEBUG APK CLEAN-INSTALL ONLY** due to varying archived signing certificates; never uninstall older installed data worth keeping. No actual phone update, production signing or Google Play acceptance claimed.
+
+---
 # v0.9.44 — FIELDGRID P-02 top-down pilot visual-refinement QA
 
 **Scope:** Pilot-only visual presentation change, not movement/weapon balance. Experimental branch `feature/pilot-visual-refinement-v0944` directly based on dependent unapproved v0.9.43 private-test-signing infrastructure. Stable `main` remains untouched. **Android code 44** and visible internal version `0.9.44-pilot-visual-test`; original app ID unchanged. Normal CI debug APK will use a new ephemeral signer unless owner-private credentials are configured—**clean-install testing only if signatures differ**, no safe-data-update claim.
