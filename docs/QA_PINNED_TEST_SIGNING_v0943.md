@@ -1,3 +1,13 @@
+# v0.9.43 final AUTOMATED QA — PASS; owner-signed APK and real update remain BLOCKED
+
+- [Fast 40995367492 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40995367492) with test signer static/secret-scope contracts, versionCode/package checks, offline game/scored/custom/dossier/backup tests.
+- [Full 40995367559 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40995367559) with 740×360, 915×412, 1280×720 Chromium UI/gameplay, Android debug APK + unsigned AAB compiled on exact source SHA `37efc45b2aabb8dbd4bfeefc5ff7783056409c28`. **Neither build was signed with an owner-private test key.** This verifies Gradle defaults and source integrity, NOT the unconfigured private signer branch. No permanent release was made.
+- A new manual-only GitHub Actions workflow initially had a validation error due to `runner.temp` being used in a job-level environment expression; moved it to supported *step-level* environments. Final workflow parsed and fast/full source CI succeeded. Owner-only `workflow_dispatch` must be available on an approved default branch before actual test-key execution.
+- **P0 BLOCKED:** no owner-provided test signing keystore, private secrets or public `SR_TEST_CERT_SHA256` pin. No runtime signed artifact or real same-cert update tested. Still no safe direct upgrade between older 0.9.32/37/39/40 releases: their certs differ [40994470523](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40994470523).
+- Maintain current known original [v0.9.40 release](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.40-upgrade-readiness-test) only for fresh installs or scenarios with explicitly preserved data; never claim non-destructive upgrade.
+
+---
+
 # v0.9.43 — Stable private test APK signing preparation
 
 **Status: SOURCE/BUILD PREPARATION, NOT AN ALREADY-SIGNED RELEASE.** Child of [v0.9.42 actual APK certificate investigation](QA_APK_SIGNER_CONTINUITY_v0942.md), which established four archived debug APK releases each had a different signing certificate. **No private test keystore or password has been supplied or accessed.** No APK from this branch may be described as update-safe until its signature and a real phone upgrade are verified.
