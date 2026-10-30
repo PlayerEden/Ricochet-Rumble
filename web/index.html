@@ -172,11 +172,33 @@
   </div>
   <footer class="dossier-footer">
    <div><strong id="dossier-time">0 MIN</strong> <span>COMBAT TIME</span><p id="dossier-save-status" role="status">LOCAL STORAGE READY</p></div>
-   <button type="button" data-action="dossier-back">BACK TO MENU</button>
+   <div class="dossier-backup-actions"><button type="button" data-action="backup">BACK UP DATA</button><button type="button" data-action="dossier-back">BACK TO MENU</button></div>
   </footer>
   <p class="dossier-note">Only completed Solo matches against bots count. Practice, abandoned matches, and LAN are not recorded. No account or cloud sync. Uninstalling may erase this device's data.</p>
  </section>
 </template>
+  <template id="backup-template">
+ <section class="backup-screen" aria-label="Offline save backup and recovery">
+  <div class="eyebrow">FIELDGRID / LOCAL DATA RECOVERY</div>
+  <h2>BACKUP <span>&amp; RESTORE</span></h2>
+  <p class="backup-intro">COPY YOUR BACKUP TEXT TO A SAFE PLACE BEFORE UNINSTALLING OR CHANGING DEBUG APKS. THIS STAYS ON YOUR DEVICE UNLESS YOU SHARE IT.</p>
+  <div class="backup-grid">
+   <section><h3>01 / EXPORT</h3><p>Includes available Match Settings, Custom Match drafts/presets, and Dossier. No login or network upload.</p>
+    <button data-action="backup-export" type="button">GENERATE BACKUP TEXT</button>
+    <textarea id="backup-output" aria-label="Copy this offline backup text" rows="4" readonly spellcheck="false" placeholder="Exported backup code appears here."></textarea>
+    <button data-action="backup-copy" type="button">COPY SELECTED TEXT</button>
+   </section>
+   <section><h3>02 / RESTORE</h3><p>Paste backup text. PREVIEW before restoring. Only listed saved records are replaced; your previous copies are backed up first.</p>
+    <textarea id="backup-import" aria-label="Paste offline backup text" rows="4" spellcheck="false" placeholder="Paste previously saved backup text"></textarea>
+    <div class="backup-rest-actions"><button data-action="backup-preview" type="button">PREVIEW IMPORT</button><button id="backup-restore" data-action="backup-restore" type="button" disabled>CONFIRM RESTORE</button></div>
+   </section>
+  </div>
+  <p id="backup-message" class="backup-message" role="status" aria-live="polite">NO TRANSFER HAS BEEN MADE.</p>
+  <p class="backup-warning">RESTORE REPLACES THE INCLUDED LOCAL RECORDS. BACK UP YOUR CURRENT DATA FIRST. AN APP WITH A DIFFERENT SIGNING CERTIFICATE CANNOT INSTALL OVER THE OLD ONE.</p>
+  <button type="button" class="backup-back" data-action="backup-back">BACK TO DOSSIER</button>
+ </section>
+</template>
+  <script src="save-backup.js"></script>
   <script src="dossier.js"></script>
   <script src="scored-match.js"></script>
   <script src="game.js"></script>
