@@ -2,6 +2,28 @@
 let W=960,H=600;const START_LIVES=5,STEP=1/60;
 const PREF_KEY='rr-options-v06'; // Preserve existing options across this patch.
 const CUSTOM_PREF_KEY='rr-custom-v1';
+const DOSSIER_SESSION=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
+let dossierStore=null,dossierAttemptedKey='';
+function currentDossier(){return dossierStore?.snapshot()||window.SectorDossier?.empty()||null;}
+function dossierLines(){
+ const info=currentDossier(),eligible=dossierStore?.eligibility()||[],modes=window.SectorDossier?.MODE_LABELS||{};
+ if(!info)return;
+ for(const key of ['matches','wins','losses','draws','kos','deaths']){const el=document.getElementById('dossier-'+key);if(el)el.textContent=String(info[key]||0)}
+ const time=document.getElementById('dossier-time');if(time)time.textContent=Math.floor((info.seconds||0)/60)+' MIN';
+ const availability=document.getElementById('dossier-save-status');if(availability)availability.textContent=dossierStore?.status||'STORAGE NOT AVAILABLE';
+ const list=document.getElementById('dossier-modes');if(list){list.replaceChildren();for(const [id,label] of Object.entries(modes)){
+  const row=document.createElement('div');row.className='dossier-mode';const name=document.createElement('span');name.textContent=label;
+  const score=document.createElement('strong'),stats=info.byMode[id]||{};score.textContent=(stats.matches||0)+' MATCHES · '+(stats.wins||0)+' WINS';
+  row.append(name,score);list.appendChild(row);
+ }}
+ const goals=document.getElementById('dossier-eligibility');if(goals){goals.replaceChildren();for(const entry of eligible){
+  const row=document.createElement('div');row.className='dossier-mode';const name=document.createElement('span');name.textContent=entry.name;
+  const progress=document.createElement('strong');progress.textContent=entry.current===null?'TRACKING NOT AVAILABLE':entry.current+'/'+entry.target+(entry.eligible?' · REQUIREMENT MET':'');
+  row.append(name,progress);goals.appendChild(row);
+ }}
+}
+function openDossier(){setPanel(document.getElementById('dossier-template').innerHTML);dossierLines();}
+
 const CUSTOM_PRESETS_KEY='rr-custom-presets-v1';
 let comfort={sound:true,music:true,shake:false,autoFire:false,leftHanded:false},fixedAccumulator=0;
 let selectedRules={botCount:2,bulletCap:4,startLives:2,teamMode:'ffa',botSkill:'normal',mapSize:'small'};
@@ -525,6 +547,11 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  // Solo results are captured once from combat state. LAN guest uses the existing
  // replicated winner/KO fields until a host-authoritative result packet exists.
  const soloResult=ended&&mode==='solo'?finalizeRound():null;
+ // Count only actual offline Solo-vs-bots final results, once per match.
+ if(soloResult&&state.config?.botCount>0&&state.humanCount===1&&dossierStore){
+  const key=DOSSIER_SESSION+':'+soloResult.matchId+':'+soloResult.mazeSeed;
+  if(dossierAttemptedKey!==key){dossierAttemptedKey=key;dossierStore.record(soloResult,key)}
+ }
  const scoredDraw=!!soloResult&&soloResult.outcome==='draw';
  const localWon=ended&&(soloResult?soloResult.outcome==='victory':state.lives[me]>0&&teamOf(me)===state.winnerTeam);
  if(!ended)resultCuePlayed=false;
@@ -1374,9 +1401,10 @@ function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=fa
 const originalPanel=panel.innerHTML;
 panel.addEventListener('change',e=>{const el=e.target;if(el.id==='custom-preset-select'){pendingPresetDelete='';refreshCustomPresetUI();customPresetStatus('SELECT LOAD TO APPLY SAVED RULES');return;}if(el.id?.startsWith('custom-')){readCustomScreen();refreshCustomUI();return;}if(el.id?.startsWith('pref-')){const key=el.id.slice(5);if(key in comfort)comfort[key]=el.checked;applyPrefsToUI()}savePrefs()});
 loadPrefs();
+dossierStore=window.SectorDossier?.createStore((()=>{try{return window.localStorage}catch(_){return null}})())||null;
 
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
- if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, drag the large circular AIM pad to turn the hull without firing, then tap FIRE when lined up. The centered AIM thumbstick has a dead zone to ignore jitter.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){panel.innerHTML=originalPanel;applyPrefsToUI();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
+ if(a==='dossier'){openDossier()}else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, drag the large circular AIM pad to turn the hull without firing, then tap FIRE when lined up. The centered AIM thumbstick has a dead zone to ignore jitter.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){panel.innerHTML=originalPanel;applyPrefsToUI();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
  else if(a==='custom-reset'){resetCustomDraft();refreshCustomUI();customPresetStatus('DEFAULT RULES RESTORED · SAVED PRESETS KEPT');}
  else if(a==='custom-preset-save'){
   readCustomScreen();const input=document.getElementById('custom-preset-name'),name=cleanPresetName(input?.value);
