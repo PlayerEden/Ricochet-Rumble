@@ -1,3 +1,11 @@
+# v0.9.45.1 P-03 movement readability — OWNER SILHOUETTE ACCEPTED / animation QA PENDING (2026-10-30)
+
+Owner **accepted the v0.9.45 P-03 silhouette** ("I like it") but noticed it still looked static in motion. On new `polish/p03-pilot-motion-v09451` (child of [draft PR #65](https://github.com/PlayerEden/Ricochet-Rumble/pull/65)), speed-driven existing stride now animates only a small upper-vest sway and mirrored shoulder plate shifts. There are **no legs/boots/crawling**. Forward helmet/visor, gun and physics muzzle (28,2), FFA/team identification, all original vehicle/unit controls, combat/modes, camera, AI, scoring, LAN, saves, and original tank/mech art remain unchanged. Android internal code 46 / name 0.9.45.1-pilot-motion-test, debug signer still ephemeral, so new APK is not update-compatible with valuable older installs.
+
+**Status: source implemented; fast/Chromium/Android CI and physical owner walking verdict PENDING at this checkpoint.** [Scoped QA](QA_PILOT_MOTION_v09451.md). Previous [v0.9.45 owner-approved silhouette / original APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.45-pilot-silhouette-test) is explicit rollback. Stable main remains untouched. After confirming movement polish, resume v0.9.46 UI/audio and broader QA.
+
+---
+
 # v0.9.45 P-03 pilot silhouette — ORIGINAL Android/Chromium QA PASS, owner phone visual judgment PENDING (2026-10-30)
 
 **Current experimental pilot:** on [DRAFT PR #65](https://github.com/PlayerEden/Ricochet-Rumble/pull/65), direct child of P-02 PR #63; stable `main` untouched. The owner's real v0.9.44 screenshot showed good team colors but animated boots made the pilot look low-crawling. P-03 removes detached feet and walking countersteps entirely, slightly shortens forearms, preserves shoulders/helmet/team paint/one pistol/actual bullet muzzle (28,2), and changes no other controls, camera, physics, gameplay or saves.
