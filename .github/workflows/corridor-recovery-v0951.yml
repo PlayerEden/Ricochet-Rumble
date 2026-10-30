@@ -1,0 +1,43 @@
+name: Sector Rebound v0.9.51 — live corridor-aware recovery comparison
+on:
+  push:
+    branches: [prototype/corridor-aware-recovery-v0951]
+    paths:
+      - 'web/game.js'
+      - 'android/app/src/main/assets/game.js'
+      - 'tests/corridor-recovery-v0951.mjs'
+      - '.github/workflows/corridor-recovery-v0951.yml'
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source syntax and Android mirror parity
+        run: |
+          set -euo pipefail
+          node --check web/game.js
+          node --check tests/corridor-recovery-v0951.mjs
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/style.css android/app/src/main/assets/style.css
+      - name: Compare actual spawned vehicles against legacy across 3600 maps
+        run: node tests/corridor-recovery-v0951.mjs --seeds=1000
+      - name: Existing gameplay, score and save regressions
+        run: |
+          set -euo pipefail
+          node tests/scored-match-kernel.mjs
+          node tests/save-backup.mjs
+          node tests/smoke.mjs
+      - name: Save per-seed and aggregate actual-game policy evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: corridor-recovery-v0951-${{ github.run_id }}
+          path: qa-results/corridor-recovery-v0951/
+          if-no-files-found: warn
+          retention-days: 30
