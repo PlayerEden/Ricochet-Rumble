@@ -1,4 +1,26 @@
 plugins { id 'com.android.application' }
+// Signing material is NEVER committed. Missing env => intentionally unsigned release AAB.
+// Partial env is treated as a configuration error rather than silently switching signer.
+def uploadKeys = ['SR_UPLOAD_STORE_FILE', 'SR_UPLOAD_STORE_PASSWORD', 'SR_UPLOAD_KEY_ALIAS', 'SR_UPLOAD_KEY_PASSWORD']
+def presentKeys = uploadKeys.findAll { System.getenv(it)?.trim() }
+if (!presentKeys.isEmpty() && presentKeys.size() != uploadKeys.size()) {
+    throw new GradleException('Incomplete external upload signing configuration')
+}
+def hasUploadSigning = presentKeys.size() == uploadKeys.size()
+if (hasUploadSigning && !file(System.getenv('SR_UPLOAD_STORE_FILE')).isFile()) {
+    throw new GradleException('Upload keystore file was not found')
+}
+// Private, durable INTERNAL TEST key is distinct from the production Play upload key.
+// Never use the default ephemeral CI debug key for any preview labeled upgrade-safe.
+def testKeys = ['SR_TEST_STORE_FILE', 'SR_TEST_STORE_PASSWORD', 'SR_TEST_KEY_ALIAS', 'SR_TEST_KEY_PASSWORD']
+def presentTestKeys = testKeys.findAll { System.getenv(it)?.trim() }
+if (!presentTestKeys.isEmpty() && presentTestKeys.size() != testKeys.size()) {
+    throw new GradleException('Incomplete private TEST APK signing configuration')
+}
+def hasTestSigning = presentTestKeys.size() == testKeys.size()
+if (hasTestSigning && !file(System.getenv('SR_TEST_STORE_FILE')).isFile()) {
+    throw new GradleException('Private TEST keystore file was not found')
+}
 android {
     namespace 'com.playereden.ricochetrumble'
     compileSdk 36
@@ -6,11 +28,35 @@ android {
         applicationId 'com.playereden.ricochetrumble'
         minSdk 26
         targetSdk 36
-        versionCode 38
-        versionName '0.9.21-game-feel'
+        versionCode 47
+        versionName '0.9.46-ui-audio-test'
+    }
+    signingConfigs {
+        if (hasUploadSigning) {
+            releaseUpload {
+                storeFile file(System.getenv('SR_UPLOAD_STORE_FILE'))
+                storePassword System.getenv('SR_UPLOAD_STORE_PASSWORD')
+                keyAlias System.getenv('SR_UPLOAD_KEY_ALIAS')
+                keyPassword System.getenv('SR_UPLOAD_KEY_PASSWORD')
+            }
+        }
+        if (hasTestSigning) {
+            internalTest {
+                storeFile file(System.getenv('SR_TEST_STORE_FILE'))
+                storePassword System.getenv('SR_TEST_STORE_PASSWORD')
+                keyAlias System.getenv('SR_TEST_KEY_ALIAS')
+                keyPassword System.getenv('SR_TEST_KEY_PASSWORD')
+            }
+        }
     }
     buildTypes {
-        release { minifyEnabled false }
+        debug {
+            if (hasTestSigning) signingConfig signingConfigs.internalTest
+        }
+        release {
+            minifyEnabled false
+            if (hasUploadSigning) signingConfig signingConfigs.releaseUpload
+        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

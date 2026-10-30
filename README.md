@@ -1,3 +1,5 @@
+> **INTEGRATION CANDIDATE — v0.9.47 (DRAFT, NOT SHIPPED):** This branch contains the newer owner-positive v0.9.46 gameplay/UI/audio tree, assembled from source PR #67 onto stable main without overwriting accepted documentation. Current stable `main` gameplay is still v0.9.21. [Read integration scope and QA gates](docs/INTEGRATION_CANDIDATE_v0947.md) and [release-readiness audit](docs/QA_RELEASE_INTEGRATION_v0947.md). Do not merge or treat the debug build as update-safe until owner + signing + manual acceptance.
+
 # Sector Rebound
 
 **Android-first ricochet combat in a new procedurally generated sector each match.** Pilot a tank or mech, survive on foot, and adapt to unfamiliar maze geometry. Set in the fictional FIELDGRID program.

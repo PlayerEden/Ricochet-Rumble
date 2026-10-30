@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 const handlers={},nodes=new Map();
+// Simulate Android WebView local preferences and controls when exercising settings.
+const savedStorage=new Map();let acceptancePlaylistInputs=null,acceptancePlayButtons=null;
 function node(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',value:'',dataset:{},style:{},
   classList:(()=>{const flags=new Set();return {add(k){flags.add(k)},remove(k){flags.delete(k)},contains(k){return flags.has(k)},toggle(k,v){const active=v===undefined?!flags.has(k):!!v;if(active)flags.add(k);else flags.delete(k);return active}}})(),setPointerCapture(){},releasePointerCapture(){},
   getBoundingClientRect(){return {left:0,top:0,width:148,height:148}},
@@ -13,13 +15,14 @@ node('bot-skill').value='normal';
 node('bot-count').value='1';node('bullet-cap').value='3';node('lives-choice').value='5';node('team-choice').value='ffa';node('map-size').value='standard';
 let frame=null,tick=0,hostCalled=false,discoverCalled=false,packets=[];
 const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},joinGame(){},stopNetwork(){},sendPacket(p){packets.push(JSON.parse(p))}};
-const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(){return null},setItem(){}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(){return []}};
+const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(key){return ['rr-options-v06','rr-custom-v1','rr-custom-presets-v1'].includes(key)?savedStorage.get(key)??null:null},setItem(key,value){if(['rr-options-v06','rr-custom-v1','rr-custom-presets-v1'].includes(key))savedStorage.set(key,String(value))}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(sel){if(sel==='input[data-playlist-mode]')return acceptancePlaylistInputs||[];if(sel==='[data-action="solo"],[data-action="settings-play"]')return acceptancePlayButtons||[];return []}};
 let simRand=null;
 const testMath=Object.create(Math);testMath.random=()=>simRand?simRand():Math.random();
 function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5;return(z>>>0)/4294967296;};}
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math:testMath,Number,Set,JSON,String};
+vm.runInNewContext(fs.readFileSync(new URL('../web/scored-match.js',import.meta.url),'utf8'),env,{filename:'scored-match.js'});
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,get customDraft(){return {...customDraft}},normalizeCustomDraft,customOptionsFor,setCustomDraft,loadCustomDraft,cleanPresetName,normalizeCustomPresets,loadCustomPresets,saveNamedCustomPreset,loadNamedCustomPreset,deleteNamedCustomPreset,resetCustomDraft,get customPresets(){return customPresets.map(p=>({name:p.name,rules:{...p.rules}}))},freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,projectileHitRadius,beginFireAim,updateFireAim,clearFireAim,get fireAim(){return {...fireAim}},get touch(){return touch},tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -33,7 +36,7 @@ assert.equal(menuHtml.includes('data-action="nearby"'),true);
 assert.equal(menuHtml.includes('data-action="duel"'),false);
 assert.ok(menuHtml.includes('PILOT LIVES'));assert.ok(menuHtml.includes('FIELD SIZE'));assert.equal(menuHtml.includes('arena-choice'),false,'No map picker');
 node('lives-choice').value='2';node('map-size').value='standard';
-click('solo');runFrames(8);assert.equal(node('mode-label').textContent,'QUICK MATCH');
+click('solo');runFrames(8);assert.ok(['SOLO SURVIVAL','TEAM SURVIVAL'].includes(node('mode-label').textContent));
 assert.equal(st().config.pilotMode,true);assert.equal(st().lives[0],2);
 assert.equal(st().tanks[0].onFoot,false,'quick play begins inside a tank');
 assert.equal(st().vehicles[st().tanks[0].vehicleId].occupant,0);
@@ -63,24 +66,73 @@ player.x=spare.x-12;player.y=spare.y;assert.equal(win.__test.shoot(0),true);asse
 const seed=st().mazeSeed,hash=JSON.stringify(win.__test.walls);
 win.__test.setArena(0,12345,'small');win.__test.setArena(0,seed,'standard');assert.equal(JSON.stringify(win.__test.walls),hash);
 runFrames(12);const x0=win.__test.camera.x;player.x=960;player.y=720;runFrames(18);assert.ok(win.__test.camera.x>x0);
-// Settings remain match customization, not extra modes.
+// Settings continue to customize bot count, shells and lives; solo presets control sides.
+win.__test.setPlaylistModes(['survival_teams']);
 node('map-size').value='large';node('bot-count').value='4';node('lives-choice').value='3';node('bullet-cap').value='2';node('bot-skill').value='casual';node('team-choice').value='coop';
 click('solo');assert.equal(st().tanks.length,5);assert.equal(st().lives[0],3);
-assert.equal(st().config.bulletCap,2);assert.equal(st().config.teamMode,'coop');
-assert.equal(win.__test.teamOf(1),win.__test.teamOf(4));
+assert.equal(st().config.bulletCap,2);assert.equal(st().config.teamMode,'teams');assert.equal(st().config.matchModeId,'survival_teams');
+assert.equal(win.__test.teamOf(0),0,'human pilot is BLUE');
+assert.equal(win.__test.teamOf(1),1,'AI1 is RED opponent');
+assert.equal(win.__test.teamOf(2),0,'AI2 is BLUE ally');
+assert.equal(win.__test.teamOf(3),1,'AI3 is RED opponent');
+assert.equal(win.__test.teamOf(4),0,'AI4 is BLUE ally');
+assert.equal(win.__test.combatColor(0),'#46d2f5','player team paint matches Cyan');
+assert.equal(win.__test.combatColor(2),'#46d2f5','AI ally uses same BLUE paint');
+assert.equal(win.__test.combatColor(1),'#fc856e','enemy tank and pilot use RED paint');
+assert.equal(win.__test.combatColor(3),'#fc856e','all Red AI painted consistently');
+assert.equal(win.__test.opposingCount(0),2,'only red alive pilots appear in enemy HUD counter');
+assert.equal(node('score1').textContent,2,'team HUD excludes the allied bots');
+assert.equal(node('player1-label').textContent,'RED','HUD clearly shows the opposing team');
 const shooter=st().tanks[0];shooter.shield=0;
 assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),false,'shell cap');
 assert.equal(win.__test.botInput(1,1/60).bot,true);
-// Large mazes remain navigable and spare vehicles never appear inside walls.
-for(const size of ['small','standard','large'])for(let seed=1;seed<=60;seed++){
- const generated=win.__test.initialState(0,{pilotMode:true,mapSize:size,botCount:4,teamMode:'ffa'},seed);
- assert.equal(generated.config.pilotMode,true);assert.equal(generated.config.mapSize,size);
- const maze=win.__test.maze;const visited=new Set([0]),queue=[0];for(let n=0;n<queue.length;n++)for(const nxt of maze.open[queue[n]])if(!visited.has(nxt)){visited.add(nxt);queue.push(nxt)}
- assert.equal(visited.size,maze.cols*maze.rows,'all maze cells reachable');assert.ok(generated.vehicles.some(v=>v.type==='mech'));assert.ok(generated.vehicles.every(v=>v.type==='tank'||v.type==='mech'));
- for(const v of generated.vehicles){assert.equal(win.__test.blocked(v.x,v.y,24),false,'vehicle clear of maze wall')}
- const free=generated.vehicles.filter(v=>v.occupant===-1&&v.armor>0);
- assert.ok(free.length,'spare vehicle');
+// Independent procedural audit: 300 repeatable arena seeds across ALL 3 sizes.
+// Each family is checked for walkable connected topology and honest team
+// assignments, and initial vehicles cannot be inside maze walls.
+// Map generation is deterministic: fingerprints also guard against accidental
+// same-layout reuse on every NEXT MATCH.
+const topologyCoverage={};
+for(const size of ['small','standard','large']){
+ const fingerprints=new Set();
+ for(let seed=1;seed<=100;seed++){
+  const rules=seed%2?'ffa':'teams';
+  const generated=win.__test.initialState(0,{pilotMode:true,mapSize:size,botCount:4,teamMode:rules},seed);
+  assert.equal(generated.config.pilotMode,true);assert.equal(generated.config.mapSize,size);
+  assert.equal(generated.tanks.length,5,'one human and four AI remain in supported actor budget');
+  assert.equal(generated.lives.length,generated.tanks.length,'one stock-life row per actor');
+  assert.equal(generated.kos.length,generated.tanks.length,'one KO counter per actor');
+  const maze=win.__test.maze,cellCount=maze.cols*maze.rows;
+  assert.equal(maze.open.length,cellCount,'cell adjacency data length matches geometry');
+  const visited=new Set([0]),queue=[0];
+  for(let n=0;n<queue.length;n++)for(const nxt of maze.open[queue[n]]){
+   assert.ok(Number.isInteger(nxt)&&nxt>=0&&nxt<cellCount,'all maze exits target valid cells');
+   assert.ok(maze.open[nxt].includes(queue[n]),'maze adjacency links are bidirectional');
+   if(!visited.has(nxt)){visited.add(nxt);queue.push(nxt);}
+  }
+  assert.equal(visited.size,cellCount,'every generated maze cell must be reachable');
+  const fingerprint=maze.open.map(neighbors=>neighbors.slice().sort((a,b)=>a-b).join('.')).join('|');
+  fingerprints.add(fingerprint);
+  assert.ok(generated.vehicles.some(v=>v.type==='mech'),'every run provides a mech');
+  assert.ok(generated.vehicles.every(v=>v.type==='tank'||v.type==='mech'),'only approved vehicle types spawn');
+  for(const v of generated.vehicles)assert.equal(win.__test.blocked(v.x,v.y,24),false,'no vehicle inside maze wall');
+  for(const [i,t] of generated.tanks.entries()){
+   assert.equal(win.__test.blocked(t.x,t.y,t.onFoot?10:21),false,'spawn clear of walls for actor '+i);
+   assert.ok(Number.isFinite(t.x)&&Number.isFinite(t.y),'actor coordinates finite');
+  }
+  const free=generated.vehicles.filter(v=>v.occupant===-1&&v.armor>0);
+  assert.ok(free.length,'at least one recoverable parked vehicle in each seed');
+  if(rules==='teams'){
+   assert.deepEqual([0,1,2,3,4].map(i=>win.__test.teamOf(i,generated)),[0,1,0,1,0],'BLUE allied AI and RED opposition are deterministic');
+   assert.equal(win.__test.combatColor(2,generated),'#46d2f5','AI ally visibly Blue');
+   assert.equal(win.__test.combatColor(1,generated),'#fc856e','enemy AI visibly Red');
+  }else{
+   assert.deepEqual([0,1,2,3,4].map(i=>win.__test.teamOf(i,generated)),[0,1,2,3,4],'FFA participants remain independent');
+  }
+ }
+ assert.ok(fingerprints.size>=95,'procedural topology should vary over 100 deterministic seeds');
+ topologyCoverage[size]={seeds:100,uniqueTopologies:fingerprints.size};
 }
+console.log('PASS Foundation audit: 300 seeded maze connectivity/reciprocity, per-actor spawn clearance, vehicle availability, team coloring and procedural variety '+JSON.stringify(topologyCoverage));
 // Timed mid-match deployments are host-authoritative and never overlap an active actor.
 click('solo');const beforeDrop=st().vehicles.length;st().vehicleDropTimer=1/120;
 win.__test.step(1/60);assert.ok(st().vehicles.length>=beforeDrop,'deployment not destructive');
@@ -143,7 +195,7 @@ assert.notEqual(st().mazeSeed,initialMaze,'replay refreshes procedural field');
 assert.equal(node('quick-rematch').classList.contains('hidden'),true,'no replay button during combat');
 // Mech shell limitation preserves separate tank identity and avoids limitless ricochets.
 assert.ok(script.includes("b.kind==='mech'?2:5"),'mech rounds stop after fewer bounces');
-assert.ok(script.includes("b.kind==='mech'?5:0"),'mech rounds have distinguishable hit width');
+assert.ok(script.includes("bullet.kind==='mech'?5:0"),'mech rounds retain distinguishable hit width via shared collision helper');
 // v0.9.2: menu safety for both host and guest; no sticky auto-fire while paused.
 click('solo');win.__test.comfort.autoFire=true;
 assert.equal(win.__test.makeControl(true).fire,true,'auto-fire works during live match');
@@ -186,7 +238,7 @@ assert.equal(win.__test.tryInteract(0),true,'voluntary ejection is always availa
 assert.equal(footP.onFoot,true);assert.equal(footP.vehicleId,null);
 assert.ok(script.includes('inp.bot?194:268'),'human pilot keeps its faster movement');
 assert.ok(script.includes('const radius=t.onFoot?10:21'),'pilot can use narrower passages');
-assert.ok(script.includes('(t.onFoot?14:26)'),'pilot remains a smaller projectile target');
+assert.equal(win.__test.projectileHitRadius(footP,{kind:'sidearm'}),14,'original Survival pilot retains the smaller 14-unit sidearm hit radius');
 assert.equal(win.__test.shoot(0),true);assert.equal(st().bullets.at(-1).kind,'sidearm');
 opponent.shield=0;
 for(let a=2;a>=0;a--){assert.equal(win.__test.registerHit(0,1),true);assert.equal(enemyArmor.armor,a)}
@@ -208,7 +260,7 @@ console.log('PASS v0.9.4 visual clarity: pilot duel advantage, tactical sidearm,
 // 0.9.7 motion pass: animation must not change game physics or break the
 // construction contract. Both idle and moving mechs retain mirrored limbs.
 {
- const geom=(fn,stride)=>{const out=[],stack=[];let side=1,dx=0;const c={save(){stack.push([side,dx])},restore(){[side,dx]=stack.pop()},scale(x,y){side*=y},translate(x,y){dx+=x},fillRect(x,y,w,h){out.push({side,x:x+dx,y,w,h})},strokeRect(){},arc(){},beginPath(){},stroke(){},fill(){},set fillStyle(v){},set strokeStyle(v){},set lineWidth(v){}};
+ const geom=(fn,stride)=>{const out=[],stack=[];let side=1,dx=0;const c={save(){stack.push([side,dx])},restore(){[side,dx]=stack.pop()},scale(x,y){side*=y},translate(x,y){dx+=x},fillRect(x,y,w,h){out.push({side,x:x+dx,y,w,h})},strokeRect(){},arc(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},stroke(){},fill(){},set fillStyle(v){},set strokeStyle(v){},set lineWidth(v){}};
   if(fn==='mech')win.__test.drawTopMech(c,'#b69aff',false,stride);else win.__test.drawTopPilot(c,'#51d9ff',false,stride);
   return out};
  const mechIdle=geom('mech',0).filter(o=>o.w===17&&o.h===12&&o.y===12);
@@ -218,14 +270,32 @@ console.log('PASS v0.9.4 visual clarity: pilot duel advantage, tactical sidearm,
  assert.notEqual(mechIdle[0].x,mechMove[0].x,'left leg advances when walking');
  assert.notEqual(mechIdle[1].x,mechMove[1].x,'right leg counter-steps');
  assert.equal(mechMove[0].x+mechMove[1].x,mechIdle[0].x+mechIdle[1].x,'walking gait remains centered');
- const bootsIdle=geom('pilot',0).filter(o=>o.w===10&&o.h===7);
- const bootsMove=geom('pilot',2).filter(o=>o.w===10&&o.h===7);
- assert.equal(bootsIdle.length,2,'pilot keeps two separated boot silhouettes');
- assert.equal(bootsMove.length,2,'walking pilot still shows both boots');
- assert.notEqual(bootsIdle[0].x,bootsMove[0].x,'first boot advances');
- assert.notEqual(bootsIdle[1].x,bootsMove[1].x,'second boot counter-steps');
- assert.equal(bootsMove[0].x+bootsMove[1].x,bootsIdle[0].x+bootsIdle[1].x,'walk cycle stays centered');
- assert.ok(Math.abs(bootsIdle[0].y-bootsIdle[1].y)>=12,'feet remain separated along shoulder axis');
+ // P-03 must never recreate the rejected low-crawling boots, including in motion.
+ const idle=geom('pilot',0),moving=geom('pilot',3),reverse=geom('pilot',-3);
+ const boots=parts=>parts.filter(o=>o.w===12&&o.h===9&&o.y===7);
+ const patches=parts=>parts.filter(o=>o.w===6&&o.h===2&&o.y===19);
+ assert.equal(boots(idle).length,0,'idle pilot has no visible detached boots');
+ assert.equal(boots(moving).length,0,'moving pilot has no detached boots');
+ assert.equal(boots(reverse).length,0,'reversed gait cannot create detached boots');
+ assert.equal(patches(idle).length,2,'both mirrored team shoulder patches preserved');
+ assert.equal(patches(moving).length,2,'team colors remain visible throughout the gait');
+ assert.equal(patches(reverse).length,2,'reverse gait retains team identification');
+ const torso=parts=>parts.find(o=>o.w===28&&o.h===20);
+ assert.ok(torso(idle)&&torso(moving),'one uninterrupted upper-body vest is present');
+ assert.ok(torso(moving).x<torso(idle).x,'torso sways gently backwards when walking');
+ const shoulders=parts=>parts.filter(o=>o.w===17&&o.h===11&&o.y===11);
+ assert.equal(shoulders(idle).length,2,'both overhead shoulders are present');
+ assert.ok(shoulders(moving)[0].x<shoulders(idle)[0].x,'first shoulder animates with movement');
+ assert.ok(shoulders(moving)[1].x>shoulders(idle)[1].x,'other shoulder counter-shifts');
+ assert.ok(shoulders(reverse)[0].x>shoulders(idle)[0].x&&shoulders(reverse)[1].x<shoulders(idle)[1].x,'opposite gait phase reverses shoulder movement');
+ assert.equal(shoulders(moving)[0].x+shoulders(moving)[1].x,shoulders(idle)[0].x+shoulders(idle)[1].x,'shoulder sway remains balanced');
+ const muzzle=parts=>parts.find(o=>o.w===2&&o.h===2&&o.y===1);
+ assert.ok(muzzle(idle)&&muzzle(moving)&&muzzle(reverse),'muzzle is drawn at all gait phases');
+ assert.equal(muzzle(moving).x,muzzle(idle).x,'walking never moves pistol muzzle off real ballistic source');
+ assert.equal(muzzle(reverse).x,muzzle(idle).x,'reverse phase never alters muzzle alignment');
+ assert.ok(idle.some(o=>o.w===5&&o.h===12&&o.x===6),'single +X visor remains facing-forward');
+ assert.ok(!idle.some(o=>o.h>26)&&!moving.some(o=>o.h>26),'no elongated crawling limbs');
+ assert.deepEqual(geom('pilot',0),idle,'stationary pose must remain motionless');
 }
 // Emergency ejection is a cosmetic event, not damage to pilot lives.
 click('solo');const v0=st().vehicles[st().tanks[0].vehicleId],pilot=st().tanks[0],lives=st().lives[0];
@@ -266,7 +336,7 @@ const live=st().tanks[1];live.x=vacant.x;live.y=vacant.y;live.vx=live.vy=0;
 lone.x=vacant.x-37;lone.y=vacant.y;lone.vx=lone.vy=0;
 win.__test.tankMove(lone,{moveX:1,moveY:0},.13,0);
 assert.ok(lone.x<=vacant.x-37+1,'living occupied actors still block vehicles');
-assert.ok(menuHtml.includes('PLAY TOGETHER')&&menuHtml.includes('ADVANCED RULES'));
+assert.ok(menuHtml.includes('PLAY TOGETHER')&&menuHtml.includes('QUICK PLAY MODES + ADVANCED'));
 console.log('PASS v0.9.8: vacant vehicle is passable and non-cover; occupied actors block; UI hierarchy present.');
 
 // v0.9.8.1 entry-clearance regression. Empty deployments never block movement,
@@ -385,11 +455,11 @@ console.log('PASS v0.9.10 fullscreen canvas, overlay HUD, independently moving t
 win.innerWidth=1536;win.innerHeight=672;win.devicePixelRatio=1;
 assert.equal(win.__test.resizeArenaCanvas(),true);
 const [fieldWidth,fieldHeight]=win.__test.world;
-const expectedZoom=Math.max(1.15,1536/(fieldWidth+224),672/(fieldHeight+224));
+const expectedZoom=Math.max(1.00,1536/(fieldWidth+840),672/(fieldHeight+840));
 assert.ok(Math.abs(win.__test.cameraZoom(null)-expectedZoom)<1e-9,'zoom accounts for playable perimeter without black side gutters');
 assert.ok(win.__test.cameraZoom()<Math.max(1.28,1536/fieldWidth,672/fieldHeight),'new widescreen camera genuinely shows more world');
 const motions=[];
-const motionPaint={save(){},restore(){},translate(x,y){motions.push([x,y])},scale(){},fillRect(){},strokeRect(){},arc(){},beginPath(){},stroke(){},fill(){},set lineWidth(v){},set lineJoin(v){},set strokeStyle(v){},set fillStyle(v){}};
+const motionPaint={save(){},restore(){},translate(x,y){motions.push([x,y])},scale(){},fillRect(){},strokeRect(){},arc(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},stroke(){},fill(){},set lineWidth(v){},set lineJoin(v){},set strokeStyle(v){},set fillStyle(v){}};
 win.__test.drawTopMech(motionPaint,'#aaaaff',false,0,0,0);
 assert.ok(Math.abs(motions[0][0])<0.000001&&Math.abs(motions[0][1])<0.000001);
 motions.length=0;win.__test.drawTopMech(motionPaint,'#aaaaff',false,2,.56,.55);
@@ -433,28 +503,28 @@ const local=st().tanks[0],veh=st().vehicles[local.vehicleId];
 veh.type='tank';
 win.innerWidth=1536;win.innerHeight=672;win.devicePixelRatio=1;
 win.__test.resizeArenaCanvas();
-const minZoom=Math.max(1536/(win.__test.world[0]+224),672/(win.__test.world[1]+224));
-assert.ok(Math.abs(win.__test.unitTargetZoom(local)-1.13)<1e-9);
-assert.ok(Math.abs(win.__test.cameraZoom(local)-Math.max(1.13,minZoom))<1e-9);
+const minZoom=Math.max(1536/(win.__test.world[0]+840),672/(win.__test.world[1]+840));
+assert.ok(Math.abs(win.__test.unitTargetZoom(local)-0.82)<1e-9);
+assert.ok(Math.abs(win.__test.cameraZoom(local)-Math.max(0.82,minZoom))<1e-9);
 win.__test.render(1/60);
 const zTank=win.__test.camera.zoom;
-assert.ok(Math.abs(zTank-Math.max(1.13,minZoom))<1e-7);
+assert.ok(Math.abs(zTank-Math.max(0.82,minZoom))<1e-7);
 local.onFoot=true;local.vehicleId=null;
-assert.equal(win.__test.unitTargetZoom(local),1.22);
+assert.equal(win.__test.unitTargetZoom(local),1.07);
 win.__test.render(1/60);
-assert.ok(win.__test.camera.zoom>zTank&&win.__test.camera.zoom<1.22,'zoom must ease in rather than snap to foot');
+assert.ok(win.__test.camera.zoom>zTank&&win.__test.camera.zoom<1.07,'zoom must ease in rather than snap to foot');
 for(let i=0;i<80;i++)win.__test.render(1/60);
-assert.ok(Math.abs(win.__test.camera.zoom-1.22)<.003,'foot zoom should converge');
+assert.ok(Math.abs(win.__test.camera.zoom-1.07)<.003,'foot zoom should converge');
 local.onFoot=false;local.vehicleId=veh.id;veh.occupant=0;veh.type='mech';
-assert.equal(win.__test.unitTargetZoom(local),1.08);
+assert.equal(win.__test.unitTargetZoom(local),0.77);
 const zFoot=win.__test.camera.zoom;
 win.__test.render(1/60);
-assert.ok(win.__test.camera.zoom<zFoot&&win.__test.camera.zoom>Math.max(1.08,minZoom),'mech transition eases outward');
+assert.ok(win.__test.camera.zoom<zFoot&&win.__test.camera.zoom>Math.max(0.77,minZoom),'mech transition eases outward');
 for(let i=0;i<85;i++)win.__test.render(1/60);
-assert.ok(Math.abs(win.__test.camera.zoom-Math.max(1.08,minZoom))<.003,'mech target converges');
+assert.ok(Math.abs(win.__test.camera.zoom-Math.max(0.77,minZoom))<.003,'mech target converges');
 veh.type='tank';
 for(let i=0;i<85;i++)win.__test.render(1/60);
-assert.ok(Math.abs(win.__test.camera.zoom-Math.max(1.13,minZoom))<.003,'tank transition converges');
+assert.ok(Math.abs(win.__test.camera.zoom-Math.max(0.82,minZoom))<.003,'tank transition converges');
 console.log('PASS v0.9.11 console design, camera targets, smooth transitions and viewport floor.');
 
 // v0.9.12 reliability and camera audit: close each unit's view modestly,
@@ -475,7 +545,7 @@ for(const typ of ['mech','tank']){
 }
 unit.onFoot=true;
 cameraOrder.push(win.__test.unitTargetZoom(unit));
-assert.deepEqual(cameraOrder,[1.08,1.13,1.22],'mech/tank/foot view hierarchy');
+assert.deepEqual(cameraOrder,[0.77,0.82,1.07],'mech/tank/foot view hierarchy');
 unit.onFoot=false;model.type='tank';
 unit.recoil=.72;unit.trackLeft=83;unit.trackRight=119;
 const freeBay=st().vehicles.find(v=>v.occupant===-1&&v.armor>0);
@@ -485,11 +555,11 @@ unit.x=freeBay.x;unit.y=freeBay.y;
 assert.equal(win.__test.tryInteract(0),true,'board recovery vehicle');
 assert.equal(unit.recoil,0,'old tank recoil does not carry to fresh hull');
 assert.equal(unit.trackLeft,0);assert.equal(unit.trackRight,0);
-assert.equal(win.__test.cameraZoom(unit),Math.max(win.__test.unitTargetZoom(unit),1536/(win.__test.world[0]+224),672/(win.__test.world[1]+224)));
+assert.equal(win.__test.cameraZoom(unit),Math.max(win.__test.unitTargetZoom(unit),1536/(win.__test.world[0]+840),672/(win.__test.world[1]+840)));
 for(const [w,h] of [[740,360],[915,412],[1280,720],[1536,672]]){
  win.innerWidth=w;win.innerHeight=h;win.devicePixelRatio=1;
  assert.equal(win.__test.resizeArenaCanvas(),true);
- const expected=Math.max(win.__test.unitTargetZoom(unit),w/(win.__test.world[0]+224),h/(win.__test.world[1]+224));
+ const expected=Math.max(win.__test.unitTargetZoom(unit),w/(win.__test.world[0]+840),h/(win.__test.world[1]+840));
  assert.ok(Math.abs(win.__test.cameraZoom(unit)-expected)<1e-9);
  win.__test.render(1/60);
  assert.ok(Number.isFinite(win.__test.camera.zoom)&&Number.isFinite(win.__test.camera.x)&&Number.isFinite(win.__test.camera.y),'camera must stay finite across viewport sizes');
@@ -511,15 +581,15 @@ console.log('PASS v0.9.12 LAN map-change camera reset, unchanged-field continuit
 
 // v0.9.12a: deliberately small, uniform +.04 across camera modes.
 // Large map and aspect-ratio minimum continue to prevent letterboxing.
-assert.equal(win.__test.unitTargetZoom(null),1.15,'spectator fallback zoom');
+assert.equal(win.__test.unitTargetZoom(null),1.00,'spectator fallback zoom');
 click('solo');
 const zoomOperator=st().tanks[0],zoomVehicle=st().vehicles[zoomOperator.vehicleId];
 zoomOperator.onFoot=false;zoomVehicle.type='tank';
-assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-1.13)<1e-9);
+assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-0.82)<1e-9);
 zoomVehicle.type='mech';
-assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-1.08)<1e-9);
+assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-0.77)<1e-9);
 zoomOperator.onFoot=true;
-assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-1.22)<1e-9);
+assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-1.07)<1e-9);
 console.log('PASS v0.9.12a closer pilot/tank/mech zoom with unchanged viewport floor.');
 
 
@@ -606,8 +676,8 @@ assert.deepEqual(['mech','tank','foot'].map(type=>{
  actor.onFoot=type==='foot';
  if(!actor.onFoot&&v)v.type=type;
  return win.__test.unitTargetZoom(actor);
-}),[1.08,1.13,1.22]);
-assert.equal(win.__test.unitTargetZoom(null),1.15);
+}),[0.77,0.82,1.07]);
+assert.equal(win.__test.unitTargetZoom(null),1.00);
 {
  const src=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
  assert.ok(src.includes("guard:{label:'B'")&&src.includes("overcharge:{label:'C'")&&src.includes("repair:{label:'H'"),'pickup types should use unique glyphs');
@@ -694,12 +764,16 @@ console.log('PASS v0.9.14 end-of-life powerup state audit.');
  assert.equal(node('aa-title').textContent,'SECTOR CLEARED');
  assert.equal(node('aa-kos').textContent,'2','KO metric must be accurately named');
  assert.equal(node('aa-lives').textContent,'3');
- assert.equal(node('aa-outcome').textContent,'SUCCESS');
+ assert.equal(node('aa-outcome').textContent,'VICTORY');
  assert.equal(node('quick-rematch').classList.contains('hidden'),false);
+ // A final result is immutable even if a late/duplicated combat event tries to change the winner.
+ const frozen=game.finalResult;
+ assert.ok(Object.isFrozen(frozen),'final result becomes an immutable summary');
  game.winner=1;game.winnerTeam=1;game.event='BOT 1 WINS!';
  win.__test.refreshHUD();
- assert.equal(node('aa-title').textContent,'SECTOR LOST');
- assert.equal(node('after-action').classList.contains('lost'),true,'defeat styling toggles');
+ assert.equal(game.finalResult,frozen,'refreshing a completed result does not rescore it');
+ assert.equal(node('aa-title').textContent,'SECTOR CLEARED','snapshot does not flicker or reverse');
+ assert.equal(node('aa-outcome').textContent,'VICTORY');
  for(const cb of handlers['quick-rematch:click'])cb();
  assert.equal(node('after-action').classList.contains('hidden'),true,'report closes on rematch');
  assert.equal(st().winner,-1);
@@ -880,9 +954,10 @@ console.log('PASS v0.9.17 contextual guidance, true projectile availability, one
 {
  const source=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
  assert.equal(source.includes("c.fillText('ENTER  ·  '+vehicleDef(v).name"),false,'dismounted pilot must not be covered by duplicate world enter label');
- assert.ok(source.includes('t.x+(t.onFoot?27:0)'),'on-foot ID is separated from nearby parked armor');
- assert.ok(source.includes('c.arc(0,0,21,0,Math.PI*2)'),'on-foot locator is a subtle larger background ring');
- assert.ok(source.includes('c.moveTo(t.x-21,t.y)'),'on-foot chevron points from the side rather than merging with the old vehicle');
+ assert.ok(source.includes('t.x+(t.onFoot?42:0)'),'on-foot ID stays further from new helmet and parked armor');
+ assert.ok(source.includes('drawPilotLocator(c,t.x,t.y'),'operator uses fixed tactical brackets');
+ assert.equal(source.includes('c.arc(0,0,21,0,Math.PI*2)'),false,'always-on circular pilot ring removed');
+ assert.ok(source.includes('c.moveTo(t.x-30,t.y)'),'on-foot chevron clears the animated boots and parked vehicle');
  assert.equal(source,fs.readFileSync(new URL('../android/app/src/main/assets/game.js',import.meta.url),'utf8'),'Android and browser share pilot renderer');
 }
 console.log('PASS v0.9.19 on-foot readability, safe parked-vehicle labeling and Android/web parity.');
@@ -906,3 +981,1192 @@ console.log('PASS v0.9.19 on-foot readability, safe parked-vehicle labeling and 
  win.__test.comfort.sound=oldSetting;win.__test.comfort.music=oldMusic;
 }
 console.log('PASS v0.9.21 menu cleanup, separate music/SFX options and 7% wider class cameras.');
+
+// v0.9.22 Slice A: two actually supported survival presets, not the future score modes.
+{
+ const api=win.__test;
+ assert.ok(menuHtml.includes('data-playlist-mode="survival_ffa"')&&menuHtml.includes('data-playlist-mode="survival_teams"'));
+ assert.ok(menuHtml.includes('↻ NEXT MATCH'),'solo result primary CTA is explicit');
+ assert.equal(api.normalizePlaylistModes(['retired','survival_ffa','survival_ffa']).join(','),'survival_ffa');
+ assert.equal(api.normalizePlaylistModes(null).length,2,'legacy saves default to both supported modes');
+ api.setPlaylistModes(['survival_ffa','survival_teams']);
+ const cycle=[api.nextPlaylistMode(()=>0),api.nextPlaylistMode(()=>0)];
+ assert.equal(new Set(cycle).size,2,'each mode appears once per shuffle bag');
+ const next=api.nextPlaylistMode(()=>0);
+ assert.notEqual(next,cycle[1],'new bag does not immediately repeat prior mode');
+ api.setPlaylistModes(['survival_teams']);
+ assert.equal(api.nextPlaylistMode(()=>0),'survival_teams');
+ assert.equal(api.nextPlaylistMode(()=>0),'survival_teams','single selected mode repeats');
+ api.setPlaylistModes(['survival_ffa']);
+ api.newMatch('solo');
+ assert.equal(st().config.matchModeId,'survival_ffa');
+ assert.equal(st().config.teamMode,'ffa');
+ const before={seed:st().mazeSeed,matchId:st().matchId};
+ api.resetAll(true);
+ assert.notEqual(st().mazeSeed,before.seed,'NEXT MATCH guarantees a fresh seed');
+ assert.ok(st().matchId>before.matchId,'new match gets a unique incremental match ID');
+ assert.equal(st().config.matchModeId,'survival_ffa');
+ api.setPlaylistModes([]);
+ assert.equal(api.nextPlaylistMode(),null,'zero selected modes cannot silently reroll');
+ const kept=st();
+ assert.equal(api.newMatch('solo'),false,'zero modes blocks QUICK PLAY');
+ assert.equal(st(),kept,'zero mode selection leaves the current match untouched');
+ api.setPlaylistModes(['survival_ffa','survival_teams']);
+ assert.equal(/score|flag|capture/i.test(st().config.matchModeId),false,'proposed score modes never presented as live');
+}
+console.log('PASS v0.9.22 Slice A versioned playlist selection, shuffle-bag boundaries, real survival presets and fresh seeds.');
+
+// v0.9.22-dev2 — honest, one-time frozen solo result evidence and clock.
+{
+ const api=win.__test;
+ api.setPlaylistModes(['survival_ffa']);
+ node('bot-count').value='1';
+ api.newMatch('solo');
+ const s=st();assert.equal(s.tanks.length,2,'single bot provides deterministic solo result');s.tanks[0].shield=0;
+ assert.equal(s.elapsedSeconds,0);
+ api.step(1/60);assert.ok(s.elapsedSeconds>0,'active simulation advances match time');
+ const elapsed=s.elapsedSeconds;
+ for(const fn of handlers['menu-button:click']||[])fn();
+ api.step(0.75);
+ assert.equal(s.elapsedSeconds,elapsed,'pause does not advance simulation match time');
+ click('resume');
+ // Pause and finalization must not advance the clock; only active simulation ticks count.
+ s.tanks[0].onFoot=true;s.tanks[0].shield=0;s.lives[0]=2;
+ s.kos[0]=0;
+ const target=s.tanks[1];target.onFoot=true;target.shield=0;s.lives[1]=1;
+ assert.equal(api.registerHit(0,1),true,'pilot elimination registers hit');
+ assert.equal(s.kos[0],1,'operator KO counts actual pilot elimination');
+ assert.equal(s.deaths[1],1,'victim death counts once');
+ assert.equal(s.respawns[1],0,'last life does not respawn');
+ assert.equal(s.finalResult.outcome,'victory');
+ assert.equal(s.finalResult.operatorKOs,1);
+ assert.equal(s.finalResult.deaths,0);
+ assert.equal(s.finalResult.livesRemaining,2);
+ assert.equal(s.finalResult.durationSeconds,elapsed);
+ assert.equal(s.finalResult.matchId,s.matchId);
+ assert.equal(s.finalResult.mazeSeed,s.mazeSeed);
+ assert.ok(Object.isFrozen(s.finalResult));
+ const snap=s.finalResult;
+ assert.equal(api.finalizeRound(),snap,'no duplicate finalizations');
+ assert.equal(api.registerHit(0,1),false,'late hit after result ignored');
+ api.step(3);assert.equal(s.elapsedSeconds,elapsed,'terminal clock frozen');
+ s.kos[0]=99;s.deaths[0]=99;s.lives[0]=0;
+ api.refreshHUD();
+ assert.equal(node('aa-kos').textContent,'1','results use frozen KO snapshot');
+ assert.equal(node('aa-deaths').textContent,'0');
+ assert.equal(node('aa-lives').textContent,'2','results use frozen life snapshot');
+ assert.equal(node('aa-duration').textContent,api.durationLabel(elapsed));
+ assert.equal(api.durationLabel(125.9),'02:05');
+ assert.equal(api.durationLabel(null),'—','unknown time must not appear as zero');
+ const old=s.finalResult,seed=s.mazeSeed,matchId=s.matchId;
+ api.resetAll(true);
+ assert.equal(st().finalResult,null,'fresh round clears finalized result');
+ assert.equal(st().deaths[0],0,'fresh round clears death counter');
+ assert.equal(st().elapsedSeconds,0,'fresh round clears timer');
+ assert.notEqual(st().mazeSeed,seed,'new round always new maze');
+ assert.ok(st().matchId>matchId,'new round new match ID');
+ assert.equal(old.operatorKOs,1,'previous snapshot remains unchanged');
+ // Respawn is counted once per actual nonterminal death, and ejection is not a death.
+ const next=st();next.tanks[0].shield=0;next.lives[0]=2;
+ const beforeArmor=next.vehicles[next.tanks[0].vehicleId].armor;
+ assert.equal(api.registerHit(1,0),true,'vehicle armor hit accepted');
+ assert.equal(next.vehicles[next.tanks[0].vehicleId].armor,beforeArmor-1);
+ assert.equal(next.deaths[0],0,'armor hit cannot be a pilot death');
+ assert.equal(next.kos[1],0,'armor hit cannot be an operator KO');
+ api.ejectPilot(0);assert.equal(next.deaths[0],0,'vehicle ejection is not a pilot death');
+ next.tanks[0].shield=0;
+ assert.equal(api.registerHit(1,0),true);
+ assert.equal(next.deaths[0],1);
+ assert.equal(next.respawns[0],1);
+ assert.equal(next.winner,-1,'losing one life does not end match');
+ api.newMatch('solo');
+ const loss=st();assert.equal(loss.finalResult,null,'starting another match cannot inherit prior result');
+ loss.tanks[0].onFoot=true;loss.tanks[0].shield=0;loss.lives[0]=1;
+ assert.equal(api.registerHit(1,0),true,'last pilot life lost');
+ assert.equal(loss.winner>=0,true);
+ assert.equal(loss.finalResult.outcome,'defeat','defeat snapshot uses real surviving opponent');
+ assert.equal(loss.finalResult.deaths,1);
+ assert.equal(loss.finalResult.operatorKOs,0);
+ assert.equal(loss.finalResult.livesRemaining,0);
+ assert.equal(node('aa-outcome').textContent,'DEFEAT');
+ assert.equal(node('aa-deaths').textContent,'1');
+ const ended=loss.finalResult;
+ api.refreshHUD();api.refreshHUD();
+ assert.equal(loss.finalResult,ended,'repeated results refresh keeps one immutable object');
+}
+console.log('PASS v0.9.22-dev2 frozen final results, win/loss, pilot deaths/respawns and active match clock.');
+
+
+// v0.9.22-dev3: tactical pullback across all three playable unit classes,
+// wide-screen apron and sustained camera smoothing without canvas gutters.
+{
+ const api=win.__test;
+ api.setPlaylistModes(['survival_ffa']);
+ api.newMatch('solo');
+ const actor=st().tanks[0],ride=st().vehicles[actor.vehicleId];
+ const before=[1.08,1.13,1.22];
+ const after=[];
+ for(const kind of ['mech','tank','foot']){
+   actor.onFoot=kind==='foot';ride.type=kind==='foot'?'tank':kind;
+   if(!actor.onFoot)actor.vehicleId=ride.id;
+   after.push(api.unitTargetZoom(actor));
+ }
+ assert.deepEqual(after,[.77,.82,1.07]);
+ after.forEach((z,i)=>assert.ok(z<before[i]*.89,'each unit gets a meaningful world-space zoom-out'));
+ actor.onFoot=false;ride.type='tank';actor.vehicleId=ride.id;
+ for(const [w,h] of [[740,360],[915,412],[1280,720],[1536,672]]){
+   win.innerWidth=w;win.innerHeight=h;win.devicePixelRatio=1;
+   assert.equal(api.resizeArenaCanvas(),true);
+   const [ww,wh]=api.world;
+   const floor=Math.max(w/(ww+840),h/(wh+840));
+   assert.equal(api.cameraZoom(actor),Math.max(.82,floor));
+   api.render(1/60);
+   assert.ok(Number.isFinite(api.camera.x)&&Number.isFinite(api.camera.y)&&Number.isFinite(api.camera.zoom),'all device cameras stay finite');
+ }
+}
+console.log('PASS v0.9.22-dev3 tactical pullback, wide-screen floor and class hierarchy.');
+
+
+// v0.9.22-dev5 camera: vehicles get another tactical pullback;
+// approved on-foot view and future pilot-only CQC are not disturbed.
+{
+ const api=win.__test;
+ api.setPlaylistModes(['survival_ffa']);
+ node('map-size').value='small';
+ api.newMatch('solo');
+ const actor=st().tanks[0],vehicle=st().vehicles[actor.vehicleId];
+ const pilotBefore=1.07,oldTank=.87,oldMech=.82;
+ actor.onFoot=true;
+ assert.equal(api.unitTargetZoom(actor),pilotBefore,'on-foot view MUST remain at dev3-approved zoom');
+ actor.onFoot=false;actor.vehicleId=vehicle.id;
+ vehicle.type='tank';assert.equal(api.unitTargetZoom(actor),.82);
+ vehicle.type='mech';assert.equal(api.unitTargetZoom(actor),.77);
+ assert.ok(.82<oldTank&&.77<oldMech,'both vehicles see more terrain than dev4');
+ assert.ok(.77<.82&&.82<1.07,'mech, tank, pilot hierarchy unchanged');
+ // True 1536px wide, SMALL map must not clamp either vehicle above its target.
+ win.innerWidth=1536;win.innerHeight=672;win.devicePixelRatio=1;
+ assert.equal(api.resizeArenaCanvas(),true);
+ const [w,h]=api.world;
+ assert.equal(w,9*132);assert.equal(h,6*132,'small-map test uses real 9x6 world');
+ const floor=Math.max(1536/(w+840),672/(h+840));
+ assert.ok(1536/(w+760)>.77,'old apron would clamp the latest mech zoom');
+ assert.ok(floor<.77,'apron is large enough to deliver intended mech FOV');
+ assert.equal(api.cameraZoom(actor),.77,'wide 1536 small map reaches full mech zoom');
+ vehicle.type='tank';assert.equal(api.cameraZoom(actor),.82);
+ actor.onFoot=true;assert.equal(api.cameraZoom(actor),pilotBefore);
+ // In-game rendering and camera must remain stable for every class and view size.
+ for(const [screenW,screenH] of [[740,360],[915,412],[1280,720],[1536,672]]){
+  win.innerWidth=screenW;win.innerHeight=screenH;win.devicePixelRatio=1;
+  assert.equal(api.resizeArenaCanvas(),true);
+  for(const type of ['tank','mech','pilot']){
+   actor.onFoot=type==='pilot';
+   if(!actor.onFoot){actor.vehicleId=vehicle.id;vehicle.type=type;}
+   const wanted=type==='pilot'?1.07:type==='tank'?.82:.77;
+   const deviceFloor=Math.max(screenW/(w+840),screenH/(h+840));
+   assert.ok(Math.abs(api.cameraZoom(actor)-Math.max(wanted,deviceFloor))<1e-9,'every unit reaches its correct viewport-limited zoom target');
+   api.render(1/60);
+   assert.ok(Number.isFinite(api.camera.x)&&Number.isFinite(api.camera.y)&&Number.isFinite(api.camera.zoom),'camera stays finite after class/viewport switch');
+   assert.ok(api.camera.zoom>0,'nonzero rendering scale');
+  }
+ }
+}
+console.log('PASS v0.9.22-dev5 vehicle-wide camera, unchanged pilot and widescreen small-map FOV.');
+
+// v0.9.22-dev5 owner camera constraint: pilot must never be pushed farther away.
+{
+ const src=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
+ const bundled=fs.readFileSync(new URL('../android/app/src/main/assets/game.js',import.meta.url),'utf8');
+ assert.equal(src,bundled,'Android and web JS should remain byte-identical');
+ assert.ok(src.includes('if(t.onFoot)return 1.07'),'pilot view unchanged');
+ assert.ok(src.includes('const CAMERA_APRON=420'),'new exterior perimeter present');
+ assert.ok(!src.includes('const CAMERA_APRON=380'),'old exterior camera limit must not silently return');
+ assert.ok(src.includes("v?.type==='mech'?.77:v?.type==='tank'?.82"),'mech/tank zooms changed together');
+}
+console.log('PASS v0.9.22-dev5 small vehicle-only pullback, pilot preserved and assets mirrored.');
+
+// v0.9.22 closeout acceptance: simulate actual settings changes, persisted local
+// preferences, a fresh app context, and repeated real terminal pilot KOs + rematch UI.
+// Full Android hardware acceptance remains separate.
+{
+ const api=win.__test;
+ const ffa={dataset:{playlistMode:'survival_ffa'},checked:true};
+ const teams={dataset:{playlistMode:'survival_teams'},checked:true};
+ acceptancePlaylistInputs=[ffa,teams];
+ acceptancePlayButtons=[node('solo-button'),node('settings-play-button')];
+ // No selection: disabled UI and real newMatch guard both prevent Quick Play.
+ ffa.checked=false;teams.checked=false;
+ for(const fn of handlers['panel:change'])fn({target:ffa});
+ assert.deepEqual(Array.from(api.selectedPlaylistIds),[],'all unchecked modes persist as empty list');
+ assert.equal(acceptancePlayButtons[0].disabled,true);
+ assert.equal(acceptancePlayButtons[1].disabled,true);
+ const blocked=st();
+ assert.equal(api.newMatch('solo'),false,'programmatic start must also reject empty playlist');
+ assert.equal(st(),blocked);
+ assert.deepEqual(JSON.parse(savedStorage.get('rr-options-v06')).playlist,{version:1,enabled:[]});
+
+ // Single selected mode survives an app preference re-load, then always repeats.
+ ffa.checked=true;
+ for(const fn of handlers['panel:change'])fn({target:ffa});
+ assert.deepEqual(Array.from(api.selectedPlaylistIds),['survival_ffa']);
+ assert.equal(acceptancePlayButtons[0].disabled,false);
+ const saved=JSON.parse(savedStorage.get('rr-options-v06'));
+ assert.deepEqual(saved.playlist,{version:1,enabled:['survival_ffa']});
+ acceptancePlaylistInputs=null;acceptancePlayButtons=null; // new page, settings closed
+ api.setPlaylistModes([]);api.loadPrefs();
+ assert.deepEqual(Array.from(api.selectedPlaylistIds),['survival_ffa'],'persisted mode selection restored');
+ node('bot-count').value='1';node('lives-choice').value='2';
+ api.newMatch('solo');
+ let lastSeed=st().mazeSeed,lastMatch=st().matchId;
+ const played=[];
+ for(let n=0;n<3;n++){
+  const old=st();
+  assert.equal(old.config.matchModeId,'survival_ffa','one selected preset repeats');
+  old.tanks[1].onFoot=true;old.tanks[1].shield=0;old.lives[1]=1;
+  assert.equal(api.registerHit(0,1),true);
+  assert.equal(old.finalResult.outcome,'victory');
+  assert.equal(old.finalResult.operatorKOs,1);
+  assert.equal(node('aa-kos').textContent,'1','rendered KO is from real endgame');
+  assert.equal(node('aa-deaths').textContent,'0');
+  assert.equal(node('aa-lives').textContent,'2');
+  played.push({seed:old.mazeSeed,id:old.matchId,final:old.finalResult});
+  for(const fn of handlers['quick-rematch:click'])fn();
+  assert.equal(st().winner,-1,'NEXT MATCH really starts new combat');
+  assert.equal(st().finalResult,null,'NEXT MATCH cannot inherit final statistics');
+  assert.equal(st().elapsedSeconds,0,'NEXT MATCH starts a new timer');
+  assert.notEqual(st().mazeSeed,lastSeed,'every rematch gets fresh seed');
+  assert.ok(st().matchId>lastMatch,'match identity monotonically increases');
+  lastSeed=st().mazeSeed;lastMatch=st().matchId;
+ }
+ assert.equal(played.length,3);
+
+ // Re-enable both saved modes, then real UI NEXT MATCH must alternate when 2
+ // options are enabled (the implementation's shuffle bag avoids repeats).
+ acceptancePlaylistInputs=[ffa,teams];acceptancePlayButtons=[node('solo-button'),node('settings-play-button')];
+ ffa.checked=true;teams.checked=true;
+ for(const fn of handlers['panel:change'])fn({target:teams});
+ assert.deepEqual(Array.from(api.selectedPlaylistIds),['survival_ffa','survival_teams']);
+ assert.deepEqual(JSON.parse(savedStorage.get('rr-options-v06')).playlist.enabled,['survival_ffa','survival_teams']);
+ acceptancePlaylistInputs=null;acceptancePlayButtons=null;
+ api.newMatch('solo');
+ const sequence=[];
+ for(let n=0;n<4;n++){
+  const game=st();sequence.push(game.config.matchModeId);
+  // In team games one bot may be an ally; eliminate only real hostiles.
+  for(let victim=1;victim<game.tanks.length;victim++){
+   if(api.teamOf(victim)===api.teamOf(0))continue;
+   game.tanks[victim].onFoot=true;game.tanks[victim].shield=0;game.lives[victim]=1;
+   assert.equal(api.registerHit(0,victim),true,'can eliminate each enemy');
+  }
+  assert.equal(game.finalResult?.matchId,game.matchId,'last enemy ends a real team or FFA match');
+  for(const fn of handlers['quick-rematch:click'])fn();
+ }
+ for(let n=1;n<sequence.length;n++)assert.notEqual(sequence[n],sequence[n-1],'two-mode playlist should not repeat consecutively');
+ assert.equal(new Set(sequence).size,2,'both actual survival modes played');
+ api.setPlaylistModes([]);api.loadPrefs();
+ assert.deepEqual(Array.from(api.selectedPlaylistIds),['survival_ffa','survival_teams'],'two-mode selection survives reload');
+}
+console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real rematches, fresh seeds and true frozen After Action.');
+
+
+// v0.9.24 LAB E -- arcade-block overhead pilot and shared modular paint roles.
+{
+ const api=win.__test,calls=[],colors=[];
+ const painter=new Proxy({
+  save(){calls.push(['save'])},restore(){calls.push(['restore'])},
+  translate(...a){calls.push(['translate',...a])},
+  scale(...a){calls.push(['scale',...a])},
+  beginPath(){},closePath(){},moveTo(...a){calls.push(['move',...a])},
+  lineTo(...a){calls.push(['line',...a])},fill(){},stroke(){calls.push(['stroke'])},
+  fillRect(...a){calls.push(['rect',...a])},
+  arc(...a){calls.push(['arc',...a])}
+ },{get(obj,key){return obj[key]},set(obj,key,val){if(key==='fillStyle')colors.push(val);obj[key]=val;return true}});
+ api.drawTopPilot(painter,'#46d2f5',false,1,0,0);
+ assert.equal(calls.filter(x=>x[0]==='arc').length,0,'pilot has no layered circular head, arms or turret');
+ assert.equal(calls.filter(x=>x[0]==='rect'&&x[1]===-9&&x[2]===11&&x[3]===17&&x[4]===11).length,2,'P-02 symmetric overhead shoulder plates');
+ assert.equal(calls.filter(x=>x[0]==='rect'&&x[1]===16&&x[2]===2&&x[3]===8&&x[4]===6).length,2,'two square gloves on one shared pistol');
+ assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===-8&&x[2]===-9&&x[3]===17&&x[4]===18),'flat single overhead helmet instead of circles');
+  assert.equal(calls.filter(x=>x[0]==='rect'&&x[1]===-25&&x[2]===7&&x[3]===12&&x[4]===9).length,0,'P-03 has no detached boot geometry');
+  assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===6&&x[2]===-6&&x[3]===5&&x[4]===12),'visible +X visor band shows facing direction');
+  assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===-20&&x[2]===-10&&x[3]===28&&x[4]===20),'P-03 unified torso instead of dangling legs');
+ assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===17&&x[2]===0&&x[3]===11),'same compact gun projects beyond head');
+ assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===27&&x[2]===1),'shared muzzle tip exactly at (28,2)');
+ assert.ok(!calls.some(x=>x[0]==='rect'&&x[4]>26),'no fake 2.5D crawling legs');
+ assert.ok(colors.includes('#46d2f5'),'team accent remains visible independent of paint');
+ assert.ok(colors.includes('#607a85'),'standard armored body is steel blue, not team colored entirely');
+ api.drawTopPilot(painter,'#fc856e',true,0,.2,0);
+ assert.ok(calls.some(x=>x[0]==='move'&&x[1]===29&&x[2]===2),'pistol flash stays beyond muzzle');
+ assert.equal(calls.filter(x=>x[0]==='arc').length,0,'even firing uses zero decorative circular caps');
+ const before=calls.length;
+ api.drawPilotLocator(painter,220,170,'#60dfff');
+ const locator=calls.slice(before);
+ assert.equal(locator.filter(x=>x[0]==='move').length,4,'four fixed tactical locator brackets');
+ assert.equal(locator.filter(x=>x[0]==='line').length,8,'two lines per bracket');
+ assert.equal(locator.filter(x=>x[0]==='arc').length,0,'no permanent circular player ring');
+ assert.equal(calls.filter(x=>x[0]==='save').length,calls.filter(x=>x[0]==='restore').length,'canvas transforms balanced');
+ // Four original shared material families; no runtime/purchase/selection required.
+ assert.deepEqual(Object.keys(api.FIELDGRID_UNIT_SKINS),['fieldgrid.standard','fieldgrid.moss','fieldgrid.dune','fieldgrid.oxide']);
+ assert.deepEqual(Object.keys(api.resolveUnitMaterials('pilot','#19aaff')).sort(),['armor','light','shadow','team','trim']);
+ const normalTank=api.resolveUnitMaterials('tank','#19aaff');
+ const normalMech=api.resolveUnitMaterials('mech','#19aaff');
+ const normalPilot=api.resolveUnitMaterials('pilot','#19aaff');
+ assert.equal(normalTank.armor,'#19aaff','tank keeps its exact current live color in standard skin');
+ assert.equal(normalTank.shadow,'#193845','default tank shadow stays unchanged');
+ assert.equal(normalTank.light,'#bfe3e6','default tank light stays unchanged');
+ assert.equal(normalMech.armor,'#19aaff','mech keeps its live team fill');
+ assert.equal(normalMech.shadow,'#243d55','mech core stays unchanged');
+ assert.equal(normalMech.light,'#e5e5ff','mech light stays unchanged');
+ assert.equal(normalPilot.team,'#19aaff','team identity independent of player helmet color');
+ for(const id of Object.keys(api.FIELDGRID_UNIT_SKINS)){
+  for(const type of ['tank','mech','pilot']){
+   const mat=api.resolveUnitMaterials(type,'#19aaff',id);
+   for(const role of ['armor','shadow','light','trim','team'])assert.match(mat[role],/^#[0-9a-f]{6}$/,'palette contains safe fixed hex color');
+   assert.equal(mat.team,'#19aaff','cosmetics cannot overwrite team identifying accent');
+  }
+ }
+ assert.equal(api.resolveUnitMaterials('pilot','#19aaff','not-approved.fake').armor,normalPilot.armor,'bad cosmetic IDs revert to default');
+ const sample=api.resolveUnitMaterials('pilot','#19aaff','fieldgrid.moss');
+ assert.notEqual(sample.armor,normalPilot.armor,'same geometry may take a new palette');
+ const tankCalls=[],tankColors=[];
+ const tankPainter=new Proxy({
+  save(){},restore(){},scale(){},translate(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},fill(){},stroke(){},
+  fillRect(...v){tankCalls.push(v)},strokeRect(){},
+ },{get(o,k){return o[k]},set(o,k,v){if(k==='fillStyle')tankColors.push(v);o[k]=v;return true}});
+ api.drawTopTank(tankPainter,'#19aaff',false,0,0,0,0,'fieldgrid.moss');
+ api.drawTopMech(tankPainter,'#19aaff',false,0,0,0,'fieldgrid.moss');
+ assert.ok(tankColors.includes('#759376')&&tankColors.includes('#779480'),'tank and mech use the same named cosmetic material system');
+ assert.ok(tankCalls.length>25,'actual tank/mech geometry remains drawn');
+ // Test true gun-origin fire on four rotations from an obstacle-free point.
+ api.setPlaylistModes(['survival_ffa']);
+ node('bot-count').value='0';node('map-size').value='large';
+ api.newMatch('solo');
+ const shooter=st().tanks[0];shooter.onFoot=true;shooter.vehicleId=null;
+ const ww=api.world[0],hh=api.world[1];let clear=null;
+ for(let y=90;y<hh-90&&!clear;y+=40)for(let x=90;x<ww-90&&!clear;x+=40)
+   if([0,Math.PI/2,Math.PI,Math.PI*1.5].every(a=>{
+     for(let k=0;k<=12;k++){
+      const bx=x+(Math.cos(a)*28-Math.sin(a)*2)*k/12;
+      const by=y+(Math.sin(a)*28+Math.cos(a)*2)*k/12;
+      if(api.blocked(bx,by,4))return false;
+     }
+     return true;
+   }))clear={x,y};
+ assert.ok(clear,'test finds a walkable open square with 360-degree muzzle clearance');
+ shooter.x=clear.x;shooter.y=clear.y;shooter.shield=0;
+ for(const angle of [0,Math.PI/2,Math.PI,3*Math.PI/2]){
+  st().bullets.length=0;shooter.a=angle;
+  assert.equal(api.shoot(0),true,'every compass direction can shoot');
+  const b=st().bullets.at(-1),mx=clear.x+Math.cos(angle)*28-Math.sin(angle)*2,
+   my=clear.y+Math.sin(angle)*28+Math.cos(angle)*2;
+  assert.ok(Math.hypot(b.x-mx,b.y-my)<1e-7,'bullet starts at rotated hand-held muzzle, NOT head center');
+  assert.ok(Math.hypot(b.x-shooter.x,b.y-shooter.y)>26,'round never starts inside helmet');
+  assert.ok(Math.abs(b.vx-Math.cos(angle)*475)<1e-7&&Math.abs(b.vy-Math.sin(angle)*475)<1e-7,'direction and speed unchanged');
+ }
+ assert.equal(api.unitTargetZoom({onFoot:true}),1.07,'approved pilot camera fixed');
+}
+console.log('PASS Lab E chunky two-hand operator, four palette IDs, preserved default vehicles, team identity and rotated muzzle geometry.');
+// Operator field audit: human silhouette must not be occluded by the
+// previous oversized pilot locator, P1 label and selected-player triangle.
+{
+ const src=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
+ const android=fs.readFileSync(new URL('../android/app/src/main/assets/game.js',import.meta.url),'utf8');
+ assert.equal(src,android,'actual Android pilot art/indicator source mirrors web');
+ assert.ok(src.includes("t.x+(t.onFoot?42:0),t.y+(t.onFoot?-18:-38)"),'on-foot P1 label clears the head');
+ assert.ok(src.includes('c.moveTo(t.x-30,t.y);c.lineTo(t.x-40,t.y-6)'), 'pilot arrow clears the overhead operator and nearby armor');
+ assert.ok(src.includes('drawPilotLocator(c,t.x,t.y'),'foot locator uses a single quartet of tactical brackets');
+ assert.ok(src.includes("t.onFoot?.42:.8"),'on-foot shield retains readable cue without a massive outline');
+}
+console.log('PASS pilot prototype visibility: label, arrow, shield and locator clear the operator shape.');
+
+// Team Survival is currently last-team-standing, NOT scored respawning TDM.
+{
+ const api=win.__test;
+ assert.ok(menuHtml.includes('TEAM SURVIVAL (BLUE + AI VS RED)'),'mode name correctly promises AI allies');
+ const blue=api.soloOptionsFor('survival_teams',{botCount:1,teamMode:'ffa'});
+ assert.equal(blue.botCount,2,'one bot is promoted to one teammate AND one enemy');
+ assert.equal(api.soloOptionsFor('survival_teams',{botCount:0}).botCount,0,'explicit 0 bots remains free roam practice');
+ assert.equal(api.soloOptionsFor('survival_ffa',{botCount:1}).botCount,1,'FFA bot count unaffected');
+ const clean=api.initialState(0,{pilotMode:true,botCount:2,teamMode:'teams',matchModeId:'survival_teams',startLives:2},542);
+ assert.equal(clean.tanks.length,3);
+ assert.equal(api.teamOf(2,clean),0);
+ assert.equal(api.teamOf(1,clean),1);
+ assert.equal(api.combatColor(2,clean),'#46d2f5');
+ assert.equal(api.combatColor(1,clean),'#fc856e');
+ assert.equal(api.opposingCount(0,clean),1);
+ clean.lives[0]=0;clean.lives[1]=0;clean.lives[2]=1;
+ clean.winner=2;clean.winnerTeam=0;clean.event='TEAM BLUE WINS!';
+ // Explicitly reinitialize live state using the public menu flow, then recreate
+ // a team win with the human eliminated but a friendly AI surviving.
+ api.setPlaylistModes(['survival_teams']);
+ node('bot-count').value='2';node('lives-choice').value='2';api.newMatch('solo');
+ const live=st();assert.equal(live.config.botCount,2);
+ live.lives[0]=0;live.lives[1]=0;live.lives[2]=1;
+ live.winner=2;live.winnerTeam=0;live.event='TEAM BLUE WINS!';
+ const result=api.finalizeRound();
+ assert.equal(result.outcome,'victory','team victory counts even if human had died');
+ assert.equal(result.livesRemaining,0,'team victory does not fake surviving personal lives');
+ api.refreshHUD();
+ assert.equal(node('aa-outcome').textContent,'VICTORY','visible After Action reflects side victory');
+ assert.equal(node('aa-lives').textContent,'0');
+ assert.equal(node('score1').textContent,0,'enemy red force eliminated');
+ api.newMatch('solo');assert.equal(st().winner,-1,'new team match still resets');
+ node('bot-count').value='1';api.newMatch('solo');
+ assert.equal(st().config.botCount,2,'one configured bot transparently deploys second for teams');
+ assert.equal(st().tanks.length,3);
+ node('bot-count').value='0';api.newMatch('solo');
+ assert.equal(st().tanks.length,1,'team free-roam with zero bots remains no-bot practice');
+ // Verify the helmet/vest/shoulder ARMS are visibly team-painted at source
+ // geometry level, not merely surrounded by a colored selection ring.
+ const drawn=[];
+ const painter=new Proxy({save(){},restore(){},translate(){},scale(){},beginPath(){},
+  moveTo(){},lineTo(){},closePath(){},fill(){},fillRect(){}},
+  {get(o,k){return o[k]},set(o,k,v){if(k==='fillStyle')drawn.push(v);o[k]=v;return true}});
+ api.drawTopPilot(painter,'#46d2f5',false,0,0,0,'fieldgrid.standard',true);
+ assert.ok(drawn.filter(color=>color==='#46d2f5').length>=5,'team blue covers multiple full armor pieces');
+ drawn.length=0;
+ api.drawTopPilot(painter,'#fc856e',false,0,0,0,'fieldgrid.standard',true);
+ assert.ok(drawn.filter(color=>color==='#fc856e').length>=5,'team red covers helmet, vest, shoulders and forearms');
+ drawn.length=0;
+ api.drawTopPilot(painter,'#46d2f5',false,0,0,0,'fieldgrid.standard',false);
+ assert.ok(drawn.includes('#607a85'),'FFA keeps approved Lab E neutral steel operator art');
+ drawn.length=0;
+ api.drawTopPilot(painter,'#46d2f5',false,0,0,0,'fieldgrid.moss',true);
+ assert.ok(drawn.includes('#71866f'),'future explicit skin retains independent armor material');
+ node('bot-count').value='4';
+}
+console.log('PASS Team Survival: real BLUE allies, RED opponents, mirrored tank/pilot material IDs, enemy-only HUD and team-win results.');
+
+
+// Score-mode integration must be tested through the real game IIFE, not only
+// via the imported pure rules unit tests. Existing survival tests above remain.
+{
+ const api=win.__test;
+ assert.ok(menuHtml.includes('data-action="cqc"'),'real, separately marked CQC button exists');
+ assert.ok(menuHtml.includes('scored-match.js'),'score engine is actually loaded ahead of gameplay');
+ api.newMatch('cqc');
+ const g=st();
+ assert.equal(g.config.matchModeId,'cqc');
+ assert.equal(g.config.mapSize,'small');
+ assert.equal(g.config.botCount,3);
+ assert.equal(g.tanks.length,4);
+ assert.equal(g.vehicles.length,0,'CQC has no vehicle spawns');
+ assert.ok(g.tanks.every(t=>t.onFoot&&t.vehicleId===null));
+ assert.equal(api.tryInteract(0),false,'vehicle boarding disabled in CQC');
+ assert.equal(g.scored.scoreTarget,10);assert.equal(g.scored.clockSeconds,180);
+ assert.equal(node('player0-label').textContent,'YOU KOs');
+ assert.equal(node('player1-label').textContent,'LEADER');
+ assert.equal(node('score0').textContent,0);
+ assert.equal(node('score-clock').textContent,'03:00');
+ g.tanks[1].shield=0;
+ assert.equal(api.registerHit(0,1),true,'pilot hit credited as score');
+ assert.equal(g.kos[0],1);
+ assert.equal(g.scored.operatorKOs[0],1);
+ assert.equal(g.deaths[1],1);
+ assert.equal(g.lives[1],0,'victim waiting for safe pilot respawn');
+ assert.ok(g.tanks[1].respawnWait>0);
+ assert.equal(node('score0').textContent,1);
+ g.tanks[1].respawnWait=0;
+ assert.equal(api.tryCqcRespawn(1),true,'safe respawn finds a tested connected cell');
+ assert.equal(g.lives[1],1);
+ assert.equal(g.respawns[1],1);
+ assert.ok(g.tanks[1].shield>0);
+ for(let n=1;n<10;n++){
+  g.tanks[1].shield=0;
+  assert.equal(api.registerHit(0,1),true,'live pilot KO '+(n+1));
+  if(n<9){g.tanks[1].respawnWait=0;assert.equal(api.tryCqcRespawn(1),true);}
+ }
+ assert.equal(g.winner,0);
+ assert.equal(g.finalResult.outcome,'victory');
+ assert.equal(g.finalResult.objective,'operator_ko_target');
+ assert.equal(g.finalResult.operatorKOs,10);
+ assert.equal(g.finalResult.scoreTarget,10);
+ assert.equal(g.finalResult.reason,'score_target');
+ assert.equal(node('aa-title').textContent,'SECTOR CLEARED');
+ assert.equal(node('aa-outcome').textContent,'VICTORY');
+ assert.equal(node('aa-lives-label').textContent,'KO TARGET');
+ assert.equal(node('aa-lives').textContent,'10');
+ assert.equal(api.registerHit(0,1),false,'results frozen after win');
+ const prevSeed=g.mazeSeed,prevId=g.matchId;
+ api.resetAll(true);
+ assert.equal(st().config.matchModeId,'cqc','next CQC battle does not rotate the survival playlist');
+ assert.notEqual(st().mazeSeed,prevSeed,'CQC NEXT MATCH regenerates sector');
+ assert.notEqual(st().matchId,prevId);
+ assert.equal(st().scored.operatorKOs[0],0,'CQC result is not carried into new round');
+ const g2=st();
+ api.step(180);
+ assert.equal(g2.finalResult.outcome,'draw','no-kill time expiration is a genuine DRAW');
+ assert.equal(g2.finalResult.reason,'time_limit');
+ assert.equal(node('aa-title').textContent,'MATCH DRAW');
+ assert.equal(node('aa-outcome').textContent,'DRAW');
+ api.newMatch('solo');
+ assert.equal(st().scored,null,'ordinary finite-life survival is not scored');
+ assert.ok(st().vehicles.length,'original vehicle survival still has spawned vehicles');
+ assert.equal(node('score-clock').classList.contains('hidden'),true,'no score clock shown in survival');
+}
+console.log('PASS playable CQC contract: real 10 pilot KOs, protected safe respawns, clock draw, next sector and survival isolation.');
+
+
+// 2026-10-28 owner Android feedback: CQC pilot rotation too fast and aiming
+// painfully precise. Test REAL movement/turn code plus FIRE drag state.
+{
+ const api=win.__test,dt=1/60;
+ api.newMatch('cqc');
+ const game=st(),pilot=game.tanks[0];
+ assert.equal(game.config.matchModeId,'cqc');
+ assert.equal(api.projectileHitRadius(pilot,{kind:'sidearm'}),17.5,'fair pilot CQC hit tolerance');
+ assert.equal(api.projectileHitRadius(game.tanks[1],{kind:'sidearm'}),17.5,'bot and human sidearms use same radius');
+ assert.equal(api.projectileHitRadius(pilot,{kind:'shell'}),14,'tank shells have unchanged pilot radius');
+ pilot.a=0;
+ api.tankMove(pilot,{moveX:0,moveY:1,bot:false},dt,0);
+ assert.ok(Math.abs(pilot.a-6.5*dt)<.000001,'CQC local thumb facing is deliberately slower than previous 12rad/s');
+ pilot.a=0;
+ api.tankMove(pilot,{moveX:0,moveY:1,aimX:1,aimY:0,bot:false},dt,0);
+ assert.equal(pilot.a,0,'right-thumb aim stays east while left joystick moves south');
+ api.tankMove(pilot,{moveX:0,moveY:1,aimX:0,aimY:-1,bot:false},dt,0);
+ assert.ok(Math.abs(pilot.a+6.5*dt)<.000001,'right thumb controls aim even while moving the other way');
+ pilot.a=0;
+ api.tankMove(pilot,{moveX:0,moveY:0,aimX:0,aimY:1,bot:false},dt,0);
+ assert.ok(pilot.a>0,'stand-still FIRE drag permits fine aiming without steering');
+ const bot=game.tanks[1];
+ bot.a=0;
+ api.tankMove(bot,{moveX:0,moveY:1,bot:true},dt,1);
+ assert.ok(Math.abs(bot.a-12*dt)<.000001,'bot rotation unchanged');
+
+ api.beginFireAim({pointerId:77,clientX:210,clientY:240});
+ assert.equal(api.fireAim.active,false);
+ api.updateFireAim({pointerId:77,clientX:216,clientY:243});
+ assert.equal(api.fireAim.active,false,'finger jitter under 14px must not swing player');
+ api.updateFireAim({pointerId:999,clientX:270,clientY:240});
+ assert.equal(api.fireAim.active,false,'unrelated multitouch pointer cannot hijack aim');
+ api.updateFireAim({pointerId:77,clientX:210,clientY:180});
+ assert.equal(api.fireAim.active,true);
+ assert.equal(api.fireAim.y,-1);
+ api.touch.add('fire');
+ let input=api.makeControl(true);
+ assert.equal(input.fire,true,'dragging FIRE continues firing');
+ assert.equal(input.aimX,0);
+ assert.equal(input.aimY,-1);
+ api.clearFireAim();
+ assert.equal(api.fireAim.active,false);
+ input=api.makeControl(true);
+ assert.equal(input.aimX,undefined,'release restores movement-based aiming');
+ api.touch.delete('fire');
+
+ api.newMatch('solo');
+ assert.equal(api.projectileHitRadius(st().tanks[0],{kind:'sidearm'}),26,'occupied vehicle collision remains unchanged');
+ assert.equal(api.projectileHitRadius(st().tanks[0],{kind:'mech'}),31,'mech still has five extra hit units in actual collision path');
+ st().tanks[0].onFoot=true;
+ assert.equal(api.projectileHitRadius(st().tanks[0],{kind:'sidearm'}),14,'Survival sidearm hitbox unaffected');
+ st().tanks[0].a=0;
+ api.tankMove(st().tanks[0],{moveX:0,moveY:1,aimX:1,aimY:0,bot:false},dt,0);
+ assert.equal(st().tanks[0].a,0,'Solo Survival FIRE aim can face east while the player moves south');
+ api.clearFireAim();
+}
+console.log('PASS CQC aim polish: dual-thumb FIRE aim, no tap jitter, fair scored sidearms; Survival foot now shares CQC turn and its hitboxes remain unchanged.');
+
+
+// Scored vehicle FFA reuses the EXACT CQC scoring kernel, but pilots must
+// first lose occupied armor and survive an actual vehicle ejection. No tank
+// armor chip, vehicle destruction or empty parked tank is ever a player KO.
+{
+ const api=win.__test;
+ assert.ok(menuHtml.includes('data-action="scored_ffa"'),'scored FFA has honest separate test menu choice');
+ api.newMatch('scored_ffa');
+ const m=st(),enemy=m.tanks[1],vehicle=m.vehicles[enemy.vehicleId];
+ assert.equal(m.config.matchModeId,'scored_ffa');
+ assert.equal(m.config.mapSize,'standard');
+ assert.equal(m.config.botCount,3);
+ assert.equal(m.scored.scoreTarget,10);
+ assert.equal(m.scored.clockSeconds,240);
+ assert.equal(m.tanks.length,4);
+ assert.ok(m.tanks.every(t=>!t.onFoot),'vehicle scored FFA starts players inside their tanks');
+ assert.ok(m.vehicles.some(v=>v.type==='mech'),'vehicle FFA includes spare mech');
+ assert.ok(m.vehicles.some(v=>v.type==='tank'&&v.occupant<0),'vehicle FFA has spare tanks');
+ assert.ok(vehicle.armor>0);
+ assert.equal(node('score-clock').textContent,'04:00');
+ assert.equal(node('player0-label').textContent,'YOU KOs');
+ assert.equal(node('mode-label').textContent,'SCORED FREE-FOR-ALL');
+ const hp=vehicle.armor;
+ for(let n=0;n<hp;n++){
+   assert.equal(api.registerHit(0,1),true,'real tank armor impact');
+   assert.equal(m.scored.operatorKOs[0],0,'vehicle armor loss never credits a pilot KO');
+   assert.equal(m.scored.deaths[1],0,'vehicle armor loss never credits pilot death');
+ }
+ assert.equal(vehicle.armor,0);
+ assert.equal(vehicle.occupant,-1);
+ assert.equal(enemy.onFoot,true,'last armor loss ejects the pilot');
+ assert.equal(m.lives[1],1,'ejection keeps pilot alive in scored match');
+ assert.ok(enemy.shield>0,'ejected pilot has an invulnerability window');
+ assert.equal(api.registerHit(0,1),false,'ejection shield cannot yield instant KO');
+ enemy.shield=0;
+ assert.equal(api.registerHit(0,1),true,'actual vulnerable pilot death scores');
+ assert.equal(m.scored.operatorKOs[0],1);
+ assert.equal(m.scored.deaths[1],1);
+ assert.equal(m.kos[0],1);
+ assert.equal(m.lives[1],0,'scored pilot waiting for respawn');
+ assert.equal(node('score0').textContent,1);
+ enemy.respawnWait=0;
+ assert.equal(api.tryCqcRespawn(1),true,'same safe score respawn system handles vehicle FFA');
+ assert.equal(m.lives[1],1);
+ assert.equal(enemy.onFoot,true,'scored pilot recovers on foot, not resurrected in destroyed tank');
+ assert.equal(enemy.vehicleId,null);
+ assert.equal(m.scored.respawns[1],1);
+ assert.equal(m.vehicles[vehicle.id].occupant,-1,'dead pilot never remains attached to a vehicle');
+ const empty=m.vehicles.find(v=>v.occupant===-1&&v.armor>0);
+ assert.ok(empty,'healthy parked ride remains available after a score');
+ const player=m.tanks[0];
+ const pveh=m.vehicles[player.vehicleId];
+ pveh.x=player.x;pveh.y=player.y;pveh.a=player.a;
+ assert.equal(api.tryInteract(0),true,'player can exit tank in scored FFA');
+ assert.equal(player.onFoot,true);
+ player.x=empty.x;player.y=empty.y-45;player.shield=0;
+ // Explicit vehicle bay interaction is permitted when an accessible safe bay exists.
+ assert.equal(api.tryInteract(0),true,'player can re-enter a spare scored FFA tank');
+ assert.equal(player.onFoot,false);
+ assert.equal(empty.occupant,0);
+ // Prevent a phantom KO on a tank even when damaged in a scored match.
+ const before=m.scored.operatorKOs[1];
+ assert.equal(api.creditScoredPilotKO(1,0),false,'scored hits cannot credit an occupied vehicle as operator death');
+ assert.equal(m.scored.operatorKOs[1],before);
+ assert.equal(m.lives[0],1);
+ // The same 10 point target now ends vehicle FFA only on genuine pilot deaths.
+ for(let n=1;n<10;n++){
+   enemy.shield=0;
+   assert.equal(api.registerHit(0,1),true,'scored vehicle FFA real pilot KO '+(n+1));
+   if(n<9){enemy.respawnWait=0;assert.equal(api.tryCqcRespawn(1),true);}
+ }
+ assert.equal(m.finalResult.outcome,'victory');
+ assert.equal(m.finalResult.matchModeId,'scored_ffa');
+ assert.equal(m.finalResult.operatorKOs,10);
+ assert.equal(m.finalResult.reason,'score_target');
+ assert.equal(m.finalResult.durationSeconds,m.scored.elapsedSeconds);
+ const oldSeed=m.mazeSeed,oldMatch=m.matchId;
+ api.resetAll(true);
+ assert.equal(st().config.matchModeId,'scored_ffa','NEXT MATCH retains vehicle FFA');
+ assert.notEqual(st().mazeSeed,oldSeed);
+ assert.notEqual(st().matchId,oldMatch);
+ assert.ok(st().vehicles.length>0,'new scored FFA retains tank and mech spawns');
+ assert.deepEqual([...st().scored.operatorKOs],[0,0,0,0],'new FFA round starts without previous KOs');
+ api.step(240);
+ assert.equal(st().finalResult.outcome,'draw','4-minute no-score expiration is a DRAW');
+ assert.equal(st().finalResult.reason,'time_limit');
+ api.newMatch('cqc');
+ assert.equal(st().config.matchModeId,'cqc');
+ assert.equal(st().vehicles.length,0,'old CQC still absolutely vehicle-free');
+ assert.equal(st().scored.clockSeconds,180,'CQC keeps its own score timer');
+ api.newMatch('solo');
+ assert.equal(st().scored,null,'finite-life Survival unaffected by scored presets');
+}
+console.log('PASS scored vehicle FFA: tank armor not KO, real ejection, safe pilot respawn, vehicle re-entry, real 10-KO finish, 4m draw, next maze, CQC/Survival isolation.');
+
+
+// 2026-10-28: Owner wants deliberate Tank Trouble-like ricochet combat instead of
+// sprinting around active shells. Validate an ISOLATED scored-vehicle-FFA
+// movement experiment; CQC, Survival, bots' relative pace, projectile lifetime
+// and ricochet danger must not accidentally change.
+{
+ const api=win.__test,dt=1/60;
+ api.newMatch('scored_ffa');
+ const m=st(),human=m.tanks[0],bot=m.tanks[1],humanVehicle=m.vehicles[human.vehicleId],botVehicle=m.vehicles[bot.vehicleId];
+ const close=(got,want,label)=>assert.ok(Math.abs(got-want)<1e-6,label+': '+got+' vs '+want);
+ human.a=0;human.vx=0;human.vy=0;human.powerTimer=0;humanVehicle.type='tank';
+ api.tankMove(human,{moveX:1,moveY:0,bot:false},dt,0);
+ close(human.vx,166*9*dt,'scored FFA human hull movement has lower target speed');
+ assert.ok(166<222,'normal Survival tank is faster than the experimental scored tank');
+ human.a=0;human.vx=0;human.vy=0;
+ api.tankMove(human,{moveX:0,moveY:1,bot:false},dt,0);
+ close(human.a,2.6*dt,'scored FFA human hull rotates deliberately');
+ bot.a=0;bot.vx=0;bot.vy=0;botVehicle.type='tank';
+ api.tankMove(bot,{moveX:1,moveY:0,bot:true},dt,1);
+ close(bot.vx,136*9*dt,'AI in scored vehicle FFA also slows; no unfair human-only nerf');
+ bot.a=0;bot.vx=0;bot.vy=0;
+ api.tankMove(bot,{moveX:0,moveY:1,bot:true},dt,1);
+ close(bot.a,2.6*dt,'AI rotation also slows');
+ humanVehicle.type='mech';human.a=0;human.vx=0;human.vy=0;
+ api.tankMove(human,{moveX:1,moveY:0,bot:false},dt,0);
+ close(human.vx,166*.76*9*dt,'mech retains its original .76 relative movement factor');
+ humanVehicle.type='tank';human.a=0;human.vx=0;human.vy=0;
+ assert.equal(api.shoot(0),true,'shot remains available with tactical hull speed');
+ const shell=m.bullets.at(-1);
+ close(Math.hypot(shell.vx,shell.vy),415,'tank shell flies at old unchanged 415 speed');
+ close(shell.life,2.55,'tank shell lifetime unchanged');
+ assert.equal(shell.kind,'shell');
+ assert.equal(api.activeBulletCap(human),4,'four shells in flight remains the default');
+ assert.equal(api.fireInterval(human),.36,'fire cooldown still forces deliberate timing');
+ assert.ok(415/166>2.49,'shell outruns scored FFA player tank >2.3x');
+ assert.ok(415/222<1.9,'previous shell-to-hull pace was below 1.9x');
+ assert.ok(fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8').includes('b.age>.38&&b.bounces>0'),'returning owner ricochet can still hit the original shooter');
+
+ api.newMatch('solo');
+ const old=st().tanks[0];old.a=0;old.vx=0;old.vy=0;
+ api.tankMove(old,{moveX:1,moveY:0,bot:false},dt,0);
+ close(old.vx,222*9*dt,'legacy Survival player tank movement preserved');
+ old.a=0;old.vx=0;old.vy=0;
+ api.tankMove(old,{moveX:0,moveY:1,bot:false},dt,0);
+ close(old.a,12*dt,'legacy Survival player tank turn preserved');
+ api.newMatch('cqc');
+ const pilot=st().tanks[0];pilot.a=0;pilot.vx=0;pilot.vy=0;
+ api.tankMove(pilot,{moveX:0,moveY:1,bot:false},dt,0);
+ close(pilot.a,6.5*dt,'owner-approved CQC pilot turning unchanged');
+}
+console.log('PASS scored vehicle FFA tactical pacing: 166/136 movement and 2.6rad steering, 1.8rad precision AIM; 415 shell and 2.55s lifetime/4-cap unchanged; original CQC and Survival intact.');
+
+
+// Scored FFA station-keeping design: a dedicated AIM pointer turns the hull
+// *without* allocating shells or forcing a move-stick input. This matters more
+// when the hull is deliberately slower than its ricocheting shells.
+{
+ const api=win.__test,dt=1/60;
+ assert.ok(menuHtml.includes('id="vehicle-aim"'),'dedicated scored vehicle AIM control is shipped');
+ api.newMatch('scored_ffa');
+ const g=st(),pilot=g.tanks[0];
+ assert.equal(node('vehicle-aim').classList.contains('hidden'),false,'vehicle AIM shown only in scored vehicle FFA');
+ // When driving, FIRE never occupies the dedicated AIM thumb pointer.
+ api.touch.add('fire');
+ api.beginFireAim({pointerId:90,clientX:80,clientY:80},'fire');
+ assert.equal(api.fireAim.pointerId,null,'vehicle FIRE cannot steal the precision AIM pointer');
+ api.touch.delete('fire');
+ pilot.a=0;pilot.vx=0;pilot.vy=0;
+ const count=g.bullets.length;
+ api.beginFireAim({pointerId:42,clientX:74,clientY:74},'aim');
+ assert.equal(api.fireAim.source,'aim');
+ api.updateFireAim({pointerId:42,clientX:78,clientY:77});
+ assert.equal(api.fireAim.active,false,'small touch jitter does not rotate the stationary tank');
+ api.updateFireAim({pointerId:900,clientX:74,clientY:134});
+ assert.equal(api.fireAim.active,false,'other touch fingers must not hijack AIM');
+ api.updateFireAim({pointerId:42,clientX:74,clientY:134});
+ assert.ok(String(node('vehicle-aim-knob').style.transform).includes('calc('),'visual aim-thumb travels in the direction of the gesture');
+ assert.equal(api.fireAim.active,true);
+ const target=api.makeControl(true);
+ assert.equal(target.moveX,0);assert.equal(target.moveY,0);
+ assert.equal(target.fire,false,'AIM drag never consumes an in-flight shell slot');
+ assert.equal(g.bullets.length,count,'no shell created by setting an aim vector');
+ api.touch.add('fire');
+ assert.equal(api.makeControl(true).fire,true,'a separate FIRE touch still works while independent AIM is held');
+ assert.equal(api.fireAim.source,'aim','FIRE does not hijack an existing AIM pointer');
+ api.touch.delete('fire');
+ assert.ok(target.aimY>.95&&Math.abs(target.aimX)<.01,'AIM vectors point in chosen direction');
+ api.tankMove(pilot,target,dt,0);
+ assert.ok(Math.abs(pilot.a-1.8*dt)<.000001,'stationary hull pivots at new fine precision 1.8 rad/s cap');
+ assert.equal(pilot.x,g.tanks[0].x,'position is stable when not using movement stick');
+ assert.equal(g.bullets.length,count,'hull pivot has no side-effect shot');
+ const rotated=pilot.a;
+ api.clearFireAim();
+ assert.equal(api.fireAim.source,null);
+ assert.equal(api.makeControl(true).aimX,undefined,'release holds chosen angle until movement/next aim input');
+ assert.equal(api.makeControl(true).fire,false);
+ assert.equal(node('vehicle-aim-knob').style.transform,'translate(-50%, -50%)','release re-centers aim indicator');
+ assert.equal(api.shoot(0),true,'FIRE independently launches a normal tank shell after aiming');
+ assert.equal(g.bullets.length,count+1);
+ assert.ok(Math.abs(g.bullets.at(-1).vx-415*Math.cos(rotated))<.000001,'shell direction follows precisely aimed hull');
+ assert.ok(Math.abs(g.bullets.at(-1).vy-415*Math.sin(rotated))<.000001);
+ const localTank=g.tanks[0],mech=g.vehicles[localTank.vehicleId];
+ mech.type='mech';localTank.a=0;localTank.vx=0;localTank.vy=0;
+ api.beginFireAim({pointerId:43,clientX:74,clientY:74},'aim');
+ api.updateFireAim({pointerId:43,clientX:74,clientY:134});
+ api.tankMove(localTank,api.makeControl(true),dt,0);
+ assert.ok(Math.abs(localTank.a-1.8*dt)<.000001,'same stationary pivot works when occupying a mech');
+ api.releaseControls();
+ assert.equal(api.fireAim.active,false);
+ assert.equal(api.fireAim.source,null);
+ api.newMatch('cqc');
+ assert.equal(node('vehicle-aim').classList.contains('hidden'),true,'vehicle AIM hidden in CQC');
+ api.beginFireAim({pointerId:47,clientX:280,clientY:180},'fire');
+ assert.equal(api.fireAim.pointerId,47,'CQC pilot FIRE drag capture remains available');
+ api.updateFireAim({pointerId:47,clientX:280,clientY:210});
+ assert.equal(api.fireAim.active,true,'CQC pilot precision aim still responds to FIRE drag');
+ api.clearFireAim();
+ api.beginFireAim({pointerId:44,clientX:300,clientY:190},'aim');
+ assert.equal(api.fireAim.pointerId,null,'AIM-only gesture prohibited in pilot-only CQC');
+ api.newMatch('solo');
+ assert.equal(node('vehicle-aim').classList.contains('hidden'),true,'vehicle AIM hidden in ordinary Survival');
+ api.beginFireAim({pointerId:45,clientX:300,clientY:190},'aim');
+ assert.equal(api.fireAim.pointerId,null,'Survival cannot enter experimental aim state');
+}
+console.log('PASS vehicle tactical stationary AIM: held right AIM rotates hull/mech at 1.8rad/s without shots; FIRE shoots in the chosen direction; modes isolated.');
+
+// A/B test note: CQC pilot feel was already owner-positive. The pilot remains
+// quick; vehicle precision mode is a separate handling family.
+{
+ const a=win.__test,dt=1/60;
+ a.newMatch('scored_ffa');
+ const v=st().tanks[0];v.a=0;v.vx=v.vy=0;
+ a.tankMove(v,{moveX:0,moveY:1,bot:false,aimX:1,aimY:0},dt,0);
+ assert.equal(v.a,0,'held vehicle AIM overrides movement while aiming exactly east');
+ v.a=0;v.vx=v.vy=0;
+ a.tankMove(v,{moveX:0,moveY:1,bot:false,aimX:0,aimY:-1},dt,0);
+ assert.ok(Math.abs(v.a+1.8*dt)<1e-6,'vehicle AIM+MOVE rotates at the slower 1.8rad/s precision cap');
+ a.newMatch('cqc');
+ const p=st().tanks[0];p.vx=p.vy=0;
+ a.tankMove(p,{moveX:1,moveY:0,bot:false},dt,0);
+ assert.ok(Math.abs(p.vx-268*9*dt)<1e-6,'approved CQC pilot sprint speed 268 remains unchanged');
+ a.newMatch('solo');
+ const survival=st().tanks[0];survival.onFoot=true;survival.vehicleId=null;survival.a=0;
+ a.tankMove(survival,{moveX:0,moveY:1,bot:false},dt,0);
+ assert.ok(Math.abs(survival.a-6.5*dt)<1e-6,'Solo Survival foot turn now matches accepted CQC');
+}
+console.log('PASS v0.9.32 precision handling: independent 1.8rad/s AIM versus 2.6rad/s steer; FIRE pointer never steals AIM; accepted CQC pilot and legacy Survival isolated.');
+
+// 2026-10-29: experimental pilot-only parity, explicitly NOT a LAN change.
+{
+ const a=win.__test,dt=1/60;
+ a.newMatch('solo');
+ const s=st(),p=s.tanks[0];
+ a.beginFireAim({pointerId:600,clientX:200,clientY:200},'fire');
+ assert.equal(a.fireAim.pointerId,null,'Solo vehicle FIRE does not claim pilot aim pointer');
+ a.ejectPilot(0);
+ assert.equal(p.onFoot,true,'real Solo vehicle ejection returns to pilot');
+ a.touch.add('fire');
+ a.beginFireAim({pointerId:601,clientX:200,clientY:200},'fire');
+ a.updateFireAim({pointerId:601,clientX:200,clientY:240});
+ assert.equal(a.fireAim.active,true,'Solo Survival pilot FIRE-drag is enabled');
+ const input=a.makeControl(true);
+ assert.ok(Math.abs(input.aimX)<.01&&input.aimY>.99,'on-foot Survival independent aim vector');
+ assert.equal(input.fire,true,'dragging FIRE still fires');
+ p.a=0;p.vx=p.vy=0;
+ a.tankMove(p,{moveX:1,moveY:0,aimX:0,aimY:1},dt,0);
+ assert.ok(Math.abs(p.a-6.5*dt)<1e-6,'Solo Survival pilot turns 6.5rad/s with independent aim');
+ p.a=0;p.vx=p.vy=0;
+ a.tankMove(p,{moveX:1,moveY:0},dt,0);
+ assert.ok(Math.abs(p.vx-268*9*dt)<1e-6,'pilot speed unaffected');
+ assert.equal(a.projectileHitRadius(p,{kind:'sidearm'}),14,'Survival sidearm collision unchanged');
+ a.clearFireAim();a.touch.delete('fire');
+ a.beginFireAim({pointerId:602,clientX:200,clientY:200},'aim');
+ assert.equal(a.fireAim.pointerId,null,'vehicle AIM is unavailable on foot');
+ a.newMatch('scored_ffa');
+ const q=st().tanks[0];
+ a.beginFireAim({pointerId:603,clientX:74,clientY:74},'aim');
+ assert.equal(a.fireAim.source,'aim','FFA vehicle AIM still works');
+ a.ejectPilot(0);
+ assert.equal(q.onFoot,true,'scored FFA pilot ejection works');
+ assert.equal(a.fireAim.pointerId,null,'ejection clears old vehicle AIM pointer');
+ a.touch.add('fire');
+ a.beginFireAim({pointerId:604,clientX:200,clientY:200},'fire');
+ a.updateFireAim({pointerId:604,clientX:245,clientY:200});
+ assert.ok(a.makeControl(true).aimX>.99,'scored FFA pilot still FIRE-drags');
+ a.newMatch('solo');
+ assert.equal(a.fireAim.pointerId,null,'new match clears old FIRE pointer');
+ a.touch.delete('fire');
+ a.newMatch('host');
+ const host=st().tanks[0];host.onFoot=true;host.vehicleId=null;host.a=0;
+ a.beginFireAim({pointerId:605,clientX:200,clientY:200},'fire');
+ assert.equal(a.fireAim.pointerId,null,'LAN host has no unreplicated independent aim');
+ a.tankMove(host,{moveX:0,moveY:1,bot:false},dt,0);
+ assert.ok(Math.abs(host.a-12*dt)<1e-6,'LAN host pilot steering unchanged');
+ a.newMatch('guest');
+ a.beginFireAim({pointerId:606,clientX:200,clientY:200},'fire');
+ assert.equal(a.fireAim.pointerId,null,'LAN guest aim remains unchanged');
+ a.newMatch('cqc');
+ const cqc=st().tanks[0];cqc.a=0;
+ a.tankMove(cqc,{moveX:0,moveY:1,bot:false},dt,0);
+ assert.ok(Math.abs(cqc.a-6.5*dt)<1e-6,'owner-positive CQC aiming preserved');
+}
+console.log('PASS local Solo pilot FIRE-drag parity, independent heading, ejection reset, LAN isolation, CQC baseline.');
+
+// v0.9.34: true 2v2 team scoring is not renamed last-side-standing survival.
+{
+ const api=win.__test;
+ assert.ok(menuHtml.includes('data-action="scored_tdm"'),'explicit TDM trial in main menu');
+ api.newMatch('scored_tdm');
+ const m=st(),red=m.tanks[1],redVehicle=m.vehicles[red.vehicleId];
+ assert.equal(m.config.matchModeId,'scored_tdm');
+ assert.equal(m.config.teamMode,'teams');assert.equal(m.config.mapSize,'standard');
+ assert.equal(m.config.botCount,3);assert.equal(m.tanks.length,4);
+ assert.deepEqual([...m.scored.teamIds],[0,1,0,1],'balanced Blue/Red teams');
+ assert.equal(m.scored.mode,'teams','canonical immutable team-scoring kernel');
+ assert.equal(m.scored.scoreTarget,15);assert.equal(m.scored.clockSeconds,300);
+ assert.ok(m.tanks.every(t=>!t.onFoot),'all TDM players start in vehicles');
+ assert.ok(m.vehicles.some(v=>v.type==='mech'),'mech recovery is preserved');
+ assert.equal(api.teamOf(2),0);assert.equal(api.teamOf(3),1);
+ assert.equal(api.combatColor(2),'#46d2f5');assert.equal(api.combatColor(3),'#fc856e');
+ assert.equal(node('player0-label').textContent,'BLUE');
+ assert.equal(node('player1-label').textContent,'RED');
+ assert.equal(node('score0').textContent,0);assert.equal(node('score1').textContent,0);
+ assert.equal(node('score-clock').textContent,'05:00');
+ assert.equal(node('vehicle-aim').classList.contains('hidden'),false,'same experimental vehicle AIM as scored FFA');
+ assert.equal(api.registerHit(0,2),false,'friendly fire does not hurt Blue ally');
+ for(let n=0;n<3;n++)assert.equal(api.registerHit(0,1),true,'scored TDM tank armor damage');
+ assert.equal(redVehicle.armor,0);
+ assert.equal(m.scored.operatorKOs[0],0,'armor and ejection never count as pilot KOs');
+ assert.equal(red.onFoot,true,'vehicle ejection leaves a real pilot');
+ red.shield=0;
+ assert.equal(api.registerHit(0,1),true,'real red pilot death awards Blue KO');
+ assert.equal(m.scored.operatorKOs[0],1);
+ assert.equal(node('score0').textContent,1);
+ assert.equal(m.lives[1],0);
+ red.respawnWait=0;
+ assert.equal(api.tryCqcRespawn(1),true,'safe scored TDM respawn');
+ assert.equal(red.onFoot,true);red.shield=0;
+ assert.equal(api.creditScoredPilotKO(2,1),true,'Blue bot ally can earn a genuine enemy pilot KO');
+ assert.equal(m.scored.operatorKOs[2],1);
+ assert.equal(node('score0').textContent,2,'team scoreboard aggregates both Blue participants');
+ for(let n=2;n<15;n++){
+  red.respawnWait=0;assert.equal(api.tryCqcRespawn(1),true);
+  red.shield=0;assert.equal(api.creditScoredPilotKO(n%2===0?0:2,1),true);
+ }
+ assert.equal(m.scored.finished,true);
+ assert.equal(m.scored.result.winningSide,0);
+ assert.deepEqual([...m.scored.result.scores],[15,0]);
+ assert.equal(m.finalResult.outcome,'victory');
+ assert.equal(m.finalResult.winnerTeam,0);
+ assert.equal(m.finalResult.teamMode,'teams');
+ assert.equal(m.finalResult.objective,'team_operator_ko_target');
+ assert.equal(m.finalResult.operatorKOs,m.scored.operatorKOs[0],'After Action keeps personal operator KOs');
+ assert.equal(m.finalResult.scoreboard[0],15,'After Action records genuine shared team score');
+ assert.equal(node('aa-lives-label').textContent,'TEAM KO TARGET');
+ const frozen=m.finalResult;api.step(1/60);assert.equal(m.finalResult,frozen,'result finalized exactly once');
+ const oldSeed=m.mazeSeed,oldId=m.matchId;api.resetAll(true);
+ assert.equal(st().config.matchModeId,'scored_tdm','NEXT MATCH stays scored TDM');
+ assert.notEqual(st().mazeSeed,oldSeed,'new sector on rematch');
+ assert.notEqual(st().matchId,oldId,'fresh match identifier');
+ assert.ok(st().scored.operatorKOs.every(x=>x===0),'reset all team scores');
+ api.step(300);
+ assert.equal(st().finalResult.outcome,'draw','equal-team-score timeout is DRAW');
+ assert.equal(st().finalResult.reason,'time_limit');
+ assert.equal(st().finalResult.winnerTeam,-1);
+ api.newMatch('solo');assert.equal(st().scored,null,'finite-life Survival rules unchanged');
+}
+console.log('PASS v0.9.34: 2v2 scored Team Deathmatch, real ally+enemy pilot KOs, 15/300, no friendly fire, respawn, draw, result, new sector.');
+
+// v0.9.34 audit: genuine self-ricochet death is a death, never a team KO.
+{
+ const api=win.__test;
+ api.newMatch('scored_tdm');
+ const m=st(),p=m.tanks[0],vehicle=m.vehicles[p.vehicleId];
+ p.shield=0;
+ const startingArmor=vehicle.armor;
+ for(let n=0;n<startingArmor;n++)assert.equal(api.registerHit(0,0),true,'self shell hits tank armor');
+ assert.equal(p.onFoot,true);
+ p.shield=0;
+ assert.equal(api.registerHit(0,0),true,'real self-ricochet pilot death');
+ assert.equal(m.scored.deaths[0],1);
+ assert.deepEqual([...m.scored.operatorKOs],[0,0,0,0],'no team gets points for self-death');
+ assert.equal(node('score0').textContent,0);
+ assert.equal(node('score1').textContent,0);
+ assert.ok(m.event.includes('NO KO'),'self-hit event never falsely awards KO');
+}
+console.log('PASS TDM ricochet self-death audit: death counted, neither team scored, no fake KO message.');
+
+// v0.9.35 independent Custom Match modes and same-rules rematch.
+{
+ const a=win.__test,playlist=[...a.selectedPlaylistIds];
+ assert.ok(menuHtml.includes('data-action="custom"'),'custom lobby is real');
+ assert.ok(menuHtml.includes('id="custom-template"'),'dedicated rule editor template exists');
+ assert.ok(menuHtml.includes('id="custom-edit"'),'After Action edit control exists');
+ const bad=a.normalizeCustomDraft({modeId:'unknown',mapSize:'xl',botCount:50,bulletCap:0});
+ assert.equal(bad.modeId,'survival_ffa');
+ assert.equal(bad.mapSize,'standard');assert.equal(bad.botCount,2);
+ a.setCustomDraft({modeId:'survival_teams',mapSize:'large',botCount:1,botSkill:'spicy',startLives:3,bulletCap:1});
+ assert.equal(a.customOptionsFor().botCount,2,'one-bot Team Survival deploys ally and foe');
+ assert.equal(a.customOptionsFor().customMatch,true);
+ assert.equal(a.customOptionsFor().mapSize,'large');
+ assert.equal(a.customOptionsFor().bulletCap,1);
+ assert.equal(JSON.parse(savedStorage.get('rr-custom-v1')).version,1);
+ assert.equal(a.loadCustomDraft().botSkill,'spicy');
+ assert.deepEqual([...a.selectedPlaylistIds],playlist,'custom does not alter Quick Play playlist');
+ a.newMatch('custom');
+ assert.equal(st().config.matchModeId,'survival_teams');
+ assert.equal(st().config.customMatch,true);
+ assert.equal(st().config.botCount,2);
+ assert.equal(st().config.mapSize,'large');
+ assert.equal(st().config.startLives,3);
+ assert.equal(st().config.bulletCap,1);
+ assert.equal(st().scored,null);
+ const oldSeed=st().mazeSeed,oldId=st().matchId;
+ a.resetAll(true);
+ assert.equal(st().config.matchModeId,'survival_teams','Custom rematch cannot rotate playlist');
+ assert.notEqual(st().mazeSeed,oldSeed);assert.notEqual(st().matchId,oldId);
+ assert.equal(st().config.bulletCap,1);
+ a.setCustomDraft({modeId:'survival_ffa',botCount:0,mapSize:'small'});
+ a.newMatch('custom');
+ assert.equal(st().tanks.length,1,'zero bots really means free-roam practice');
+ assert.equal(st().config.mapSize,'small');
+ a.setCustomDraft({modeId:'cqc',mapSize:'large',botCount:0,bulletCap:8});
+ const cqc=a.customOptionsFor();
+ assert.equal(cqc.mapSize,'small','CQC stays validated Small');
+ assert.equal(cqc.botCount,3,'CQC roster remains fixed');
+ assert.equal(cqc.bulletCap,4,'CQC shell cap stays fixed');
+ a.newMatch('custom');
+ assert.equal(st().config.matchModeId,'cqc');assert.equal(st().vehicles.length,0);
+ assert.equal(st().scored.scoreTarget,10);
+ a.setCustomDraft({modeId:'scored_ffa'});
+ a.newMatch('custom');assert.equal(st().scored.clockSeconds,240);
+ assert.equal(st().config.mapSize,'standard');
+ a.setCustomDraft({modeId:'scored_tdm'});
+ a.newMatch('custom');
+ assert.deepEqual([...st().scored.teamIds],[0,1,0,1]);
+ assert.equal(st().scored.scoreTarget,15);
+ assert.equal(st().config.customMatch,true);
+ a.resetAll(true);
+ assert.equal(st().config.matchModeId,'scored_tdm');
+ assert.ok(st().scored.operatorKOs.every(x=>x===0));
+ a.newMatch('solo');
+ assert.equal(st().config.customMatch,undefined,'Quick Play does not inherit custom rules');
+ assert.deepEqual([...a.selectedPlaylistIds],playlist,'Custom Match never changes Quick Play playlist');
+}
+console.log('PASS v0.9.35 Custom Match: separate versioned rules, Survival/team/practice, locked scored modes, same-rules new sector and playlist isolation.');
+
+// v0.9.36 named local preset lifecycle: validation, persistence, duplicate safety and delete confirm.
+{
+ const a=win.__test,baselinePlaylist=[...a.selectedPlaylistIds],quickPrefs=savedStorage.get('rr-options-v06');
+ assert.ok(menuHtml.includes('id="custom-preset-name"'),'Custom editor has real named preset input');
+ assert.ok(menuHtml.includes('data-action="custom-preset-save"'),'Save control exists');
+ assert.ok(menuHtml.includes('data-action="custom-preset-load"'),'Load control exists');
+ assert.ok(menuHtml.includes('data-action="custom-preset-delete"'),'Delete control exists');
+ assert.ok(menuHtml.includes('data-action="custom-reset"'),'Reset to Default exists');
+ const bad=a.normalizeCustomPresets([{name:'Broken',rules:{modeId:'hacked'}},{name:'Valid',rules:{modeId:'survival_ffa',botCount:999}}, {name:'valid',rules:{modeId:'survival_teams'}}]);
+ assert.equal(bad.length,1,'unknown-mode and duplicate names removed during recovery');
+ assert.equal(bad[0].name,'Valid');
+ assert.equal(bad[0].rules.botCount,2,'stale values bounded by same Custom Match schema');
+ assert.equal(a.cleanPresetName('  Maze\n   Duel '),'Maze Duel','names have clean whitespace');
+ assert.equal(a.cleanPresetName('a'.repeat(25)),'','names longer than 24 are rejected');
+ savedStorage.set('rr-custom-presets-v1','{malformed');
+ assert.equal(a.loadCustomPresets().length,0,'corrupt storage never crashes game');
+ savedStorage.set('rr-custom-presets-v1',JSON.stringify({version:99,entries:[{name:'Old',rules:{modeId:'survival_ffa'}}]}));
+ assert.equal(a.loadCustomPresets().length,0,'unknown schema version ignored without unsafe migration');
+ a.setCustomDraft({modeId:'survival_teams',botCount:3,mapSize:'large',bulletCap:1,startLives:5});
+ assert.equal(a.saveNamedCustomPreset('Maze Duel').ok,true);
+ assert.equal(a.saveNamedCustomPreset('maze duel').ok,false,'case-insensitive collision never silently overwrites');
+ assert.equal(a.saveNamedCustomPreset('   ').ok,false);
+ assert.equal(a.loadCustomPresets().length,1,'saved presets survive local reload');
+ a.resetCustomDraft();
+ assert.equal(a.customDraft.modeId,'survival_ffa','reset changes draft to game default');
+ assert.equal(a.customDraft.mapSize,'standard');
+ assert.equal(a.customPresets.length,1,'reset preserves saved setups');
+ assert.equal(a.loadNamedCustomPreset('Maze Duel').ok,true);
+ assert.equal(a.customDraft.modeId,'survival_teams');
+ assert.equal(a.customDraft.botCount,3);
+ assert.equal(a.customDraft.bulletCap,1);
+ assert.equal(a.customOptionsFor().teamMode,'teams','loaded preset uses actual game mode');
+ assert.equal(a.deleteNamedCustomPreset('Maze Duel').ok,false,'first Delete is a confirmation, no mutation');
+ assert.equal(a.customPresets.length,1);
+ assert.equal(a.deleteNamedCustomPreset('Maze Duel').ok,true,'second Delete removes selected');
+ assert.equal(a.customPresets.length,0);
+ assert.equal(a.loadNamedCustomPreset('Maze Duel').ok,false);
+ for(let i=1;i<=5;i++)assert.equal(a.saveNamedCustomPreset('Setup '+i).ok,true);
+ assert.equal(a.saveNamedCustomPreset('Setup 6').ok,false,'maximum 5 presets enforced');
+ assert.equal(a.loadCustomPresets().length,5,'versioned preset store survives reload');
+ assert.equal(a.deleteNamedCustomPreset('Setup 2').ok,false);
+ assert.equal(a.deleteNamedCustomPreset('Setup 2').ok,true);
+ assert.equal(a.saveNamedCustomPreset('Replacement').ok,true,'deleted slot reusable');
+ assert.equal(a.customPresets.length,5);
+ a.resetCustomDraft();
+ assert.equal(savedStorage.get('rr-options-v06'),quickPrefs,'preset operations never overwrite Quick Play prefs');
+ a.newMatch('custom');
+ assert.equal(st().config.customMatch,true);
+ assert.equal(st().config.matchModeId,'survival_ffa','reset draft launches actual default');
+ assert.deepEqual([...a.selectedPlaylistIds],baselinePlaylist,'presets never mutate Quick Play playlist');
+
+}
+console.log('PASS v0.9.36 local Custom presets: validated names, duplicate safety, 5 maximum, corrupted version recovery, two-step deletion, default reset, reload and Quick Play isolation.');
+
+// v0.9.37: opt-in scored Quick Play MUST rotate using the existing truthful scored kernel.
+{
+ const api=win.__test;
+ assert.ok(menuHtml.includes('data-playlist-mode="cqc"'));
+ assert.ok(menuHtml.includes('data-playlist-mode="scored_ffa"'));
+ assert.ok(menuHtml.includes('data-playlist-mode="scored_tdm"'));
+ for(const id of ['cqc','scored_ffa','scored_tdm']){
+  assert.ok(!menuHtml.match(new RegExp('data-playlist-mode="'+id+'"\\s+checked')),'experimental '+id+' OFF by default');
+ }
+ assert.deepEqual([...api.normalizePlaylistModes(null)],['survival_ffa','survival_teams'],'legacy/default playlists remain Survival-only');
+ assert.deepEqual([...api.normalizePlaylistModes(['not_real','scored_tdm','cqc','cqc'])],['cqc','scored_tdm'],'unknown choices discarded, no duplicates');
+ api.setPlaylistModes(['cqc','scored_ffa','scored_tdm']);
+ const seen=new Set();
+ api.newMatch('solo');
+ for(let i=0;i<3;i++){
+  const m=st(),id=m.config.matchModeId;
+  assert.ok(['cqc','scored_ffa','scored_tdm'].includes(id),'only selected scored game modes');
+  assert.equal(seen.has(id),false,'shuffle bag avoids repeats until every choice played');
+  seen.add(id);
+  assert.equal(m.config.quickPlayMatch,true,'round has explicit Quick Play provenance');
+  assert.equal(m.config.customMatch,undefined);
+  assert.ok(m.scored,'actual scored kernel instantiated');
+  assert.equal(m.config.botCount,3,'score modes enforce 3 bots');
+  assert.equal(m.config.bulletCap,4,'score modes enforce known shell physics');
+  assert.equal(m.config.mapSize,id==='cqc'?'small':'standard','CQC gets small arena, scored vehicles standard');
+  assert.equal(m.config.teamMode,id==='scored_tdm'?'teams':'ffa');
+  assert.equal(m.scored.scoreTarget,id==='scored_tdm'?15:10);
+  assert.equal(m.scored.clockSeconds,id==='cqc'?180:id==='scored_tdm'?300:240);
+  const seed=m.mazeSeed,matchId=m.matchId;
+  api.step(300);
+  assert.equal(m.finalResult.outcome,'draw','real paused-aware score-mode timeout');
+  assert.equal(m.finalResult.reason,'time_limit');
+  api.resetAll(true);
+  assert.notEqual(st().mazeSeed,seed);assert.notEqual(st().matchId,matchId);
+ }
+ assert.equal(seen.size,3,'all selected scored modes actually playable in Quick Play');
+ api.setPlaylistModes(['survival_ffa','scored_ffa']);
+ const one=api.nextPlaylistMode(()=>0),two=api.nextPlaylistMode(()=>0);
+ assert.notEqual(one,two,'Survival + scored play equally in mixed bag');
+ api.newMatch('solo');
+ const start=st().config.matchModeId;
+ api.resetAll(true);
+ assert.notEqual(st().config.matchModeId,start,'mixed Survival/scored playlist rotates without being trapped');
+ assert.equal(st().config.quickPlayMatch,true);
+ api.newMatch('cqc');
+ assert.equal(st().config.quickPlayMatch,undefined,'standalone scored button is not Quick Play');
+ api.resetAll(true);
+ assert.equal(st().config.matchModeId,'cqc','standalone CQC rematch never rotates playlist');
+ api.setCustomDraft({modeId:'scored_tdm'});
+ api.newMatch('custom');
+ assert.equal(st().config.quickPlayMatch,undefined,'Custom match stays independent');
+ assert.equal(st().config.customMatch,true);
+ api.resetAll(true);
+ assert.equal(st().config.matchModeId,'scored_tdm','Custom scored rematch keeps rules');
+ api.setPlaylistModes(['survival_ffa','survival_teams']);
+ api.newMatch('solo');
+ assert.equal(st().scored,null,'original Survival-only defaults still launch unscored');
+ assert.equal(st().config.quickPlayMatch,true);
+}
+console.log('PASS v0.9.37 opt-in Quick Play: 3 scored rotations, mixed-mode shuffle, truthful score rules, standalone/Custom isolation, old Survival defaults.');
+
+
+// v0.9.46 UI/audio QA: pause shortcuts are real controls, not decorative
+// menu text. They use existing saved settings and leave gameplay unchanged.
+{
+ const api=win.__test;
+ const source=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
+ const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
+ assert.ok(source.includes("data-action=\"toggle-sound\""),'pause overlay contains a real SFX action');
+ assert.ok(source.includes("data-action=\"toggle-music\""),'pause overlay contains a real MUSIC action');
+ assert.ok(css.includes('.pause-audio button[aria-pressed="true"]'),'pressed-state visual feedback is styled');
+ assert.ok(['ui-select','ui-back','deploy'].every(k=>k in api.AUDIO_CUES),'quiet original menu tones are defined');
+ for(const k of ['ui-select','ui-back','deploy'])assert.ok(api.AUDIO_CUES[k].gain<=.015,'menu tones remain quieter than weapons');
+ api.comfort.sound=true;api.comfort.music=true;
+ api.newMatch('solo');
+ const pauseHandlers=handlers['menu-button:click']||[];
+ assert.ok(pauseHandlers.length,'actual Pause button wired');
+ pauseHandlers[0]();
+ assert.ok(node('panel').innerHTML.includes('aria-label="In-match audio controls"'),'pause has real audio controls');
+ assert.ok(node('panel').innerHTML.includes('SFX · ON'),'SFX starts with saved preference');
+ assert.ok(node('panel').innerHTML.includes('MUSIC · ON'),'MUSIC starts with saved preference');
+ const select=(action)=>{
+  const el={dataset:{action},textContent:'',attributes:{},setAttribute(k,v){this.attributes[k]=v}};
+  for(const fn of handlers['menu:click']||[])fn({target:{closest(){return el},dataset:el.dataset}});
+  return el;
+ };
+ const soundOff=select('toggle-sound');
+ assert.equal(api.comfort.sound,false,'SFX shuts off instantly');
+ assert.equal(soundOff.textContent,'SFX · OFF','pause toggle updates label');
+ assert.equal(soundOff.attributes['aria-pressed'],'false','SFX accessible pressed-state updates');
+ assert.equal(JSON.parse(savedStorage.get('rr-options-v06')).comfort.sound,false,'SFX persists in existing local prefs');
+ const musicOff=select('toggle-music');
+ assert.equal(api.comfort.music,false,'music shuts off instantly');
+ assert.equal(musicOff.textContent,'MUSIC · OFF');
+ assert.equal(musicOff.attributes['aria-pressed'],'false');
+ assert.equal(JSON.parse(savedStorage.get('rr-options-v06')).comfort.music,false,'music persists');
+ const soundOn=select('toggle-sound');
+ assert.equal(api.comfort.sound,true);
+ assert.equal(soundOn.textContent,'SFX · ON');
+ const musicOn=select('toggle-music');
+ assert.equal(api.comfort.music,true);
+ assert.equal(musicOn.textContent,'MUSIC · ON');
+ assert.ok(source.includes("if(a==='dossier')"),'existing dossier navigation stays wired');
+ assert.equal(api.comfort.sound,true);
+ assert.equal(api.comfort.music,true);
+ assert.ok(source.includes("audioCue('deploy')"),'deploy cue is wired on real matches/replays');
+ assert.ok(source.includes("audioCue('ui-back')"),'post-match return is audible when enabled');
+ assert.ok(source.includes("if(!comfort.sound)return false"),'all UI sounds obey global SOUND FX setting');
+ assert.ok(source.includes("if(!musicGesture||!comfort.music||document.hidden)return"),'music off and background gating preserved');
+}
+console.log('PASS v0.9.46 presentation: interactive pause SFX/music, persistence, accessibility, low-volume menu/deploy cues, no physics change.');

@@ -1,3 +1,11 @@
+# ISOLATED v0.9.47 INTEGRATION CANDIDATE — NOT MERGED / PHYSICAL GATES OPEN (2026-10-30)
+
+**Branch:** `integration/v0947-consolidated-preview`. Derived from current `main` documents and versioned gameplay, then overlaid exactly 32 changed non-doc code/test/workflow paths from the latest source-equivalent v0.9.46 owner-positive draft #67. All six Android and browser playable asset Git blobs exactly match that accepted experimental snapshot. `docs/APPROVED_PILOT_P03.md` and main project handoff **preserved**; no direct merge of 24 historical stacked PRs. **This is a DRAFT staging/QA candidate and never an automatic production upgrade.**
+
+[Exact integration provenance / open QA](INTEGRATION_CANDIDATE_v0947.md), [full release-readiness risk audit](QA_RELEASE_INTEGRATION_v0947.md), [original accepted v0.9.46 APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.46-ui-audio-test). **New integrated commit automated full Android and real phone QA not yet confirmed at this checkpoint**. Signer continuity, physical controls, LAN on two phones and Play release policy still remain open. Old app data must not be lost to install a different debug-signer APK.
+
+---
+
 # CURRENT PHASE — v0.9.47 CROSS-SYSTEM AUDIT, SOURCE QA PASS (2026-10-30)
 
 **Owner design approval:** v0.9.45.1 P-03 pilot and v0.9.46 UI/audio are both accepted. No more cosmetic redesigns without an actual issue. Latest source release remains [original v0.9.46 QA-passing APK and screenshots](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.46-ui-audio-test); debug certificate continuity is NOT guaranteed, so protect old device data.
