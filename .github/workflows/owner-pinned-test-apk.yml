@@ -78,7 +78,7 @@ jobs:
           test -n "$actual" && test "$actual" = "$pin" || { echo "CERTIFICATE MISMATCH: refusing to distribute test APK" >&2; exit 1; }
           metadata="$("$AAPT" dump badging "$APK" | head -n 1)"
           [[ "$metadata" == *"name='com.playereden.ricochetrumble'"* ]] || exit 1
-          [[ "$metadata" == *"versionCode='43'"* ]] || exit 1
+          [[ "$metadata" == *"versionCode='44'"* ]] || exit 1
           mkdir -p qa-results
           {
             echo "Sha256 of public TEST signer certificate: $actual"
