@@ -1,3 +1,13 @@
+# CURRENT PHASE — v0.9.47 CROSS-SYSTEM AUDIT, SOURCE QA PASS (2026-10-30)
+
+**Owner design approval:** v0.9.45.1 P-03 pilot and v0.9.46 UI/audio are both accepted. No more cosmetic redesigns without an actual issue. Latest source release remains [original v0.9.46 QA-passing APK and screenshots](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.46-ui-audio-test); debug certificate continuity is NOT guaranteed, so protect old device data.
+
+**Completed audit phase 1:** [draft v0.9.47 PR #70](https://github.com/PlayerEden/Ricochet-Rumble/pull/70) and [full severity-ranked integration/QA report](https://github.com/PlayerEden/Ricochet-Rumble/blob/audit/release-readiness-v0947/docs/QA_RELEASE_INTEGRATION_v0947.md). [GitHub Actions 41013774058 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41013774058) on audit source SHA `354758f5fe2d76110f9ddbf3d59eb79580ab4361`: **15 source-contract passes, 7 explicitly open manual/production gates**, including 300-seed gameplay/saves tests. No runtime changes or APK were needed for the audit.
+
+**Confirmed live dependency topology:** 31 open draft PRs, including one connected chain of **24 dependent PRs from #41 to #67**. Current main gameplay remains v0.9.21; latest candidate is 325 ahead/32 behind main and differs in ~61 file paths, including documentation. Don't blindly bulk-merge this chain. **NEXT engineering step:** build/review one isolated integrated candidate on top of stable main, preserve approved P-03 and newest audio, run exact-integrated-source QA before any main merge. **STILL release NO-GO:** physical mobile stability/precise control approval, two-phone LAN if advertised for v1, proper same-cert Android saved-data upgrades, production signing and Play policy acceptance.
+
+---
+
 # OWNER ACCEPTED v0.9.46 UI/AUDIO — NEXT v0.9.47 AUDIT (2026-10-30)
 
 Owner's latest verdict after v0.9.46: **"I think it's good"**. This approves the quiet original menu/deploy sounds and the compact pause SFX/MUSIC controls as the current UI/audio design baseline. **P-03 pilot visuals and movement remain separately LOCKED**; see [approved P-03 source of truth](APPROVED_PILOT_P03.md). v0.9.46 original [Android debug test release, screenshots and SHA256](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.46-ui-audio-test) / [focused draft PR #67](https://github.com/PlayerEden/Ricochet-Rumble/pull/67) preserved.
