@@ -777,3 +777,6 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  .home-action-grid small{font-size:8px;overflow-wrap:anywhere}
  .home-footer{padding:5px 9px}
 }
+
+/* Do not leave the inactive scored clock underneath MENU in Survival. */
+.game-hud .score-clock.hidden{display:none!important}
