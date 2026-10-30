@@ -44,6 +44,13 @@ jobs:
             --pattern 'sector-rebound-v0.9.51-corridor-prototype-debug.apk' --dir evidence/apks
           echo 'e405e9714399495705e9dec1fbe2f12ea3f9222d91f10ab6aaf6f253b11417f2  evidence/apks/sector-rebound-v0.9.46-ui-audio-debug.apk' | sha256sum -c -
           echo '1e262f546710a10a6416de94cbb86952b435549c6ed9785452396f914a4571e5  evidence/apks/sector-rebound-v0.9.51-corridor-prototype-debug.apk' | sha256sum -c -
+      - name: Inspect public signing certificate output shape for real APKs
+        run: |
+          set -euo pipefail
+          for apk in evidence/apks/*.apk; do
+            echo "Public certificate diagnostics for $(basename "$apk"):"
+            apksigner verify --min-sdk-version 26 --print-certs "$apk" | head -n 18
+          done
       - name: Real signed APK certificate and version comparison — read-only
         run: |
           set -euo pipefail
