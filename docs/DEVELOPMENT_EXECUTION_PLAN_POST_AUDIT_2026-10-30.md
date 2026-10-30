@@ -17,6 +17,12 @@
 
 ---
 
+## Phase C progress — 3,000 real map samples (2026-10-30)
+
+[**v0.9.50 draft PR #78**](https://github.com/PlayerEden/Ricochet-Rumble/pull/78) audited actual generator + spares for 1,000 seeds each small/standard/large, saved all seeded JSON, with [full automated CI **SUCCESS** 41022666945](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41022666945), original test SHA `327501703c0eb68a6029ee7452886511ebac895b`. **All 3,000 uniquely replayable, connected graphs and accessible spare vehicles PASS.** [Detailed metrics and problem seed replays](MAP_FAIRNESS_BASELINE_v0950.md). **Potential P1 recovery-balance concern:** player-to-nearest spare path p95 10/14/15 cells (small/standard/large), but worst 22/32/35; recovery access across actor seats differs up to 44 steps in large seed 395; 11.1% of small maps have at least one exposed direct sightline between starting actors. Map geometry is not broken, but apparent Euclidean garage nearness can be very misleading through corridors. **Next:** graph-distance-aware spawn placement feasibility comparison, without altering live generator until quality and side bias are proven. Human phone controls A/B (Phase B) remains pending. No game runtime changes, no authorizing a merge, Android P0 still open.
+
+---
+
 ## Priority and order
 | Phase | Work package | Purpose / real deliverable | Exit gate | Decision owner |
 |---|---|---|---|---|
