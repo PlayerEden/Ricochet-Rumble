@@ -1,0 +1,32 @@
+name: v0.9.48 Real Mobile Layout Geometry (diagnostic only)
+on:
+  push:
+    branches: [integration/ui-layout-qa-snapshot-v0948]
+    paths: ['.github/workflows/ui-layout-diagnostic-v0948.yml']
+permissions:
+  contents: read
+jobs:
+  layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Browser geometry measurements and scene screenshots
+        run: |
+          set -euo pipefail
+          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_BIN"
+          export CHROME_BIN
+          npm install --no-save --ignore-scripts playwright-core@1.56.1
+          node tests/ui-layout-geometry-v0948.mjs
+      - name: Upload unfiltered layout evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-layout-v0948-${{ github.run_id }}
+          path: qa-layout/
+          retention-days: 14
+          if-no-files-found: warn
