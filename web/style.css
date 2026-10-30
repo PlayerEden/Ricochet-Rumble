@@ -722,3 +722,15 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 #panel .dossier-backup-actions button{margin:0;min-width:115px;min-height:40px;padding:5px 9px}
 @media(max-width:620px){.backup-grid{grid-template-columns:1fr}.dossier-backup-actions{flex-direction:column}#panel .dossier-backup-actions button{width:100%}}
 @media(max-height:390px){#panel .backup-grid textarea{min-height:65px}}
+
+
+/* v0.9.46: compact tactical audio shortcuts in SOLO/HOST/GUEST pause overlays.
+   No in-battlefield clutter or extra gameplay touch targets. */
+#panel .pause-audio{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);align-items:center;gap:7px;
+ max-width:520px;margin:12px auto 0;padding-top:9px;border-top:1px solid #395966}
+#panel .pause-audio-label{font:800 clamp(9px,1.1vw,11px)/1.2 'Droid Sans Mono',monospace;letter-spacing:.8px;color:#8bb9c5}
+#panel .pause-audio button{width:100%;min-width:0;min-height:38px;margin:0;padding:6px 8px;border:1px solid #527685;
+ background:#142e3a;color:#d6e9ed;font:800 clamp(10px,1.25vw,12px)/1.1 'sans-serif-condensed',Roboto,sans-serif}
+#panel .pause-audio button[aria-pressed="true"]{background:#234757;border-color:#82bdca;color:#e5faff}
+#panel .pause-audio button:focus-visible{outline:2px solid #e4cf91;outline-offset:2px}
+@media(max-height:390px){#panel .pause-audio{margin-top:7px;padding-top:6px;gap:5px}#panel .pause-audio button{min-height:34px}}
