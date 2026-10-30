@@ -73,10 +73,17 @@ const run = (command, args) => execFileSync(command, args, {
   stdio: ['ignore', 'pipe', 'pipe']
 });
 function sdkTool(name) {
+  const selected = process.env[name.toUpperCase() + '_PATH'];
+  if (selected) {
+    if (!fs.existsSync(selected)) throw Error('ANDROID_SDK_TOOL_PATH_MISSING_' + name);
+    return selected;
+  }
   const sdk = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
   const suffix = process.platform === 'win32' ? '.exe' : '';
   if (sdk) {
     const root = path.join(sdk, 'build-tools');
+    const preferred = path.join(root, '35.0.0', name + suffix);
+    if (fs.existsSync(preferred)) return preferred;
     if (fs.existsSync(root)) {
       const versions = fs.readdirSync(root).sort((a, b) =>
         b.localeCompare(a, undefined, { numeric: true }));
