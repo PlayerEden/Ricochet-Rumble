@@ -47,6 +47,11 @@ jobs:
           node tests/scored-browser-parity.mjs
       - name: Game regression and seeded combat tests
         run: node tests/smoke.mjs
+      - name: Audit approved art, UI audio, runtime/source and explicit release blockers
+        run: |
+          set -euo pipefail
+          node tests/release-readiness-v0947.mjs
+          node tests/first-plan-contract-audit.mjs
       - name: Verify durable local dossier and safe concept-only cosmetics
         run: node tests/dossier.mjs
       - name: Verify pure scored KO, team timeouts and spawn ranking contract
