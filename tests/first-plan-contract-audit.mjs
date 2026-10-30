@@ -47,7 +47,10 @@ assert.ok(manifest.includes('android:label="Sector Rebound"'));
 assert.ok(manifest.includes('android:allowBackup="false"'));
 assert.ok(manifest.includes('android:usesCleartextTraffic="false"'));
 assert.ok(manifest.includes('android:screenOrientation="sensorLandscape"'));
-pass('Android app identity, version, backup posture and landscape',pkg+' / 0.9.40 / code 40');
+const auditedCode=Number(gradle.match(/versionCode\s+(\d+)/)?.[1]);
+const auditedName=gradle.match(/versionName\s+'([^']+)'/)?.[1];
+assert.ok(Number.isInteger(auditedCode)&&auditedCode>0&&auditedName,'installed version metadata must be parseable');
+pass('Android app identity, version, backup posture and landscape',pkg+' / '+auditedName+' / code '+auditedCode);
 for(const k of ['SR_UPLOAD_STORE_FILE','SR_UPLOAD_STORE_PASSWORD','SR_UPLOAD_KEY_ALIAS','SR_UPLOAD_KEY_PASSWORD','SR_TEST_STORE_FILE','SR_TEST_STORE_PASSWORD','SR_TEST_KEY_ALIAS','SR_TEST_KEY_PASSWORD'])
  assert.ok(gradle.includes(k));
 assert.ok(!/storePassword\s+['"]|keyPassword\s+['"]/.test(gradle),'hardcoded signing credential');
@@ -71,10 +74,10 @@ for(const [name,detail] of [
  ['Two-phone same-Wi-Fi LAN acceptance','Physical devices must verify NSD discovery, join by IP, gameplay sync, ejection/score and disconnect/reconnect'],
  ['Owner decision for v1 scope and visual/audio polish','Choose LAN must-have vs offline-first launch; inspect pilot art, accessibility, sound/music and match feel on actual devices'],
  ['Production signing, Play Console and privacy','No release upload key, signed AAB, verified developer package registration, public privacy policy, Data safety, store listing or account verification established'],
- ['Final integrated merge/release candidate','Nine dependent experimental PRs remain unmerged; owner approval, integration and release-tagged rollback required']
+ ['Final integrated merge/release candidate','Multiple dependent experimental PRs remain unmerged; live dependency graph, owner approval and release-tagged rollback required']
  ])blocked(name,detail);
 const report={schemaVersion:1,audit:'First development plan cross-system source and automated-contract audit',
- scope:'Current v0.9.40 dependent experimental branch, not stable main and not a Play production build',
+ scope:'Current source-validated experimental development branch; not stable main and not a Play production build',
  mode:'source contract plus prior independent gameplay/Chromium/Android and natural-bot evidence',
  checks,manual,summary:{automatedPass:checks.length,automatedFail:0,manualPending:manual.length,releaseDecision:'NO_GO_PENDING_MANUAL_AND_SIGNING'},
  sourceHash:{game:sha('web/game.js'),androidGradle:sha('android/app/build.gradle'),offlineBackup:sha('web/save-backup.js')}};
