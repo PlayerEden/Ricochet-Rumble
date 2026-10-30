@@ -1,0 +1,70 @@
+name: Archive exact QA-passing v0.9.45.1 P-03 movement preview
+on:
+  push:
+    branches: [polish/p03-pilot-motion-v09451]
+    paths:
+      - '.github/workflows/archive-v09451-pilot-motion.yml'
+permissions:
+  contents: write
+  actions: read
+jobs:
+  archive:
+    if: github.repository == 'PlayerEden/Ricochet-Rumble'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Verify immutable original successful QA source and new tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          RUN=41005017792
+          SHA=ab12c6b2e4ce2bcb3b2ebe694494d8e7dd5b45ed
+          TAG=v0.9.45.1-pilot-motion-test
+          test "$(gh api "repos/$REPO/actions/runs/$RUN" --jq .conclusion)" = success
+          test "$(gh api "repos/$REPO/actions/runs/$RUN" --jq .head_sha)" = "$SHA"
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            echo 'Refusing to replace an existing release'
+            exit 1
+          fi
+      - name: Download exact original QA APK and real Chromium screenshot evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 41005017792 --repo "$GITHUB_REPOSITORY" --name debug-apk-41005017792 --dir original-apk
+          gh run download 41005017792 --repo "$GITHUB_REPOSITORY" --name sector-rebound-qa-41005017792-1 --dir original-qa
+          test -s original-apk/app-debug.apk
+          test "$(sha256sum original-apk/app-debug.apk | awk '{print $1}')" = c41ade4009551845b5668bfecb5ed67c80af1f077b471607a7f8b3228f15096f
+          test "$(find original-qa -type f -name '*.png' | wc -l)" -ge 12
+          cp original-apk/app-debug.apk sector-rebound-v0.9.45.1-pilot-motion-debug.apk
+          (cd original-qa && zip -q -r ../sector-rebound-v0.9.45.1-motion-qa.zip .)
+          sha256sum sector-rebound-v0.9.45.1-pilot-motion-debug.apk sector-rebound-v0.9.45.1-motion-qa.zip > v0.9.45.1-sha256.txt
+      - name: Publish single immutable source-linked experimental prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cat > notes.md <<'ENDNOTES'
+          # Sector Rebound v0.9.45.1 — P-03 Pilot Movement (Experimental)
+          User approved the v0.9.45 compact top-down pilot silhouette but wanted it to animate when moving. The pilot now subtly sways its unified torso and alternating symmetric shoulder armor in response to real locomotion velocity, **without any detached legs or crawling gait**. The helmet, centerline pistol, muzzle alignment, team colors and all vehicle/score/control/gameplay physics are unchanged.
+
+          **ORIGINAL COMPLETE AUTOMATED QA PASS**
+          - Exact tested gameplay/test SHA: `ab12c6b2e4ce2bcb3b2ebe694494d8e7dd5b45ed`.
+          - Fast animation/no-boots/score/maze/regression QA: https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41005017654
+          - Full actual Chromium 740/915/1280 landscape visual/touch and Android debug APK/unsigned AAB: https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41005017792
+          - Exact original Android debug APK copied from passing run **byte-for-byte, without recompilation or re-signing**. Attached visual QA screenshots and SHA-256 manifest.
+          - Draft PR #66: https://github.com/PlayerEden/Ricochet-Rumble/pull/66
+          - Owner physical Android motion acceptance remains pending.
+
+          **CLEAN INSTALL TEST ONLY.** This ephemeral CI signing certificate will not normally update differently-signed past tests in place; do not uninstall any older copy with valuable local data. This is NOT Play-signed, two-phone LAN-tested or merged to stable main. User-approved prior P-03 [v0.9.45 silhouette test](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.45-pilot-silhouette-test) remains available for comparison/rollback.
+          ENDNOTES
+          gh release create v0.9.45.1-pilot-motion-test \
+            sector-rebound-v0.9.45.1-pilot-motion-debug.apk \
+            sector-rebound-v0.9.45.1-motion-qa.zip \
+            v0.9.45.1-sha256.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --target ab12c6b2e4ce2bcb3b2ebe694494d8e7dd5b45ed \
+            --prerelease --title "Sector Rebound v0.9.45.1 — P-03 Pilot Motion Test (Clean Install)" \
+            --notes-file notes.md
