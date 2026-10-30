@@ -1,3 +1,13 @@
+# v0.9.47 — STAGED INTEGRATION CANDIDATE CREATED (2026-10-30)
+
+**User-approved presentation still locked:** P-03 pilot + walking and v0.9.46 UI/audio. After [v0.9.47 source audit #70](https://github.com/PlayerEden/Ricochet-Rumble/pull/70) **PASS** ([41013774058](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41013774058): 15 checks, seven open release gates), created **[isolated draft integration PR #71](https://github.com/PlayerEden/Ricochet-Rumble/pull/71)** from latest stable `main`. It overlays exactly **32 non-doc code/test/workflow paths** from v0.9.46 PR #67 while preserving **all newer main documentation** and the [approved pilot contract](APPROVED_PILOT_P03.md). All six mirrored game assets and the source smoke suite match the user-approved v0.9.46 experimental source via exact Git blob SHA. The branch is **mergeable without conflict, NOT actually merged**.
+
+**QA status at this checkpoint:** [integrated source fast regression 41014535531 PASSED](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41014535531); [integrated full Chromium/Android run 41014535504](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41014535504) has passed initial gameplay/assets and is working through visual testing (do not assume final PASS yet). [Exact integration provenance](https://github.com/PlayerEden/Ricochet-Rumble/blob/integration/v0947-consolidated-preview/docs/INTEGRATION_CANDIDATE_v0947.md); [release-readiness matrix](https://github.com/PlayerEden/Ricochet-Rumble/blob/integration/v0947-consolidated-preview/docs/QA_RELEASE_INTEGRATION_v0947.md).
+
+**Do not merge PR #71** or any of its stacked ancestors into production main merely because CI passes. **Keep older data safe**: v0.9.46 [original test APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.46-ui-audio-test) uses a debug signer and is not established as install-over-old compatible; actual existing device certificate and same-key migration remain unverified. Two-phone LAN, long-session controls, Play upload key and policy remain open. Stable main **gameplay** is still v0.9.21.
+
+---
+
 # CURRENT PHASE — v0.9.47 CROSS-SYSTEM AUDIT, SOURCE QA PASS (2026-10-30)
 
 **Owner design approval:** v0.9.45.1 P-03 pilot and v0.9.46 UI/audio are both accepted. No more cosmetic redesigns without an actual issue. Latest source release remains [original v0.9.46 QA-passing APK and screenshots](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.46-ui-audio-test); debug certificate continuity is NOT guaranteed, so protect old device data.
