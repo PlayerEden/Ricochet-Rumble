@@ -2,6 +2,16 @@
 
 **2026-10-30 · Experimental gameplay change on isolated draft [PR #80](https://github.com/PlayerEden/Ricochet-Rumble/pull/80).** This is the first real-game implementation after [3,000-map fairness baseline](MAP_FAIRNESS_BASELINE_v0950.md) and [3,000-map hypothetical garage A/B](RECOVERY_PLACEMENT_AB_v09501.md). Parent [draft #79](https://github.com/PlayerEden/Ricochet-Rumble/pull/79) is the byte-accurate gameplay rollback point. Stable `main` runtime is **not merged or modified**.
 
+## FINAL AUTOMATED QA + PERMANENT ORIGINAL APK — PASS (2026-10-30)
+
+- [Full real Chromium / Android debug APK and unsigned AAB **SUCCESS** — original source run 41024682060](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41024682060), tested commit **`22ba2237919c5a78255475d84638c4f5c769d8d3`**.
+- [Original APK + QA screenshot ZIP + checksums **permanently preserved** as v0.9.51 experimental GitHub prerelease](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.51-corridor-recovery-prototype). **Actual APK SHA256:** `1e262f546710a10a6416de94cbb86952b435549c6ed9785452396f914a4571e5`. Exactly copied from the successful Android build with no rebuilding or resigning using [single-use archive job 41025433074 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41025433074); publisher workflow then deleted.
+- [Earlier actual 3,600 seeded map and gameplay/save regression run 41024297470 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41024297470); runtime game JS is unchanged between the source-test and full-build SHA (only Android metadata, version contract tests and QA workflow added).
+- **Owner physical phone gameplay verdict pending:** the game may feel better or worse despite graph-distance improvements; pilot must still be meaningfully vulnerable. Existing local APK's signer is not verified compatible: **NEVER uninstall an older installation with important progress just to test this release**.
+- **Release decision:** experimental APK available, **not Play-ready and NOT authorized to merge draft PR #80 or dependencies into stable main**.
+
+---
+
 ## What actually changed
 
 - Normal `createMaze()`, vehicle count/types, actor initial positions, score mode, tank/mech dynamics, P-03 pilot, menu spacing/audio, camera, combat shells, powerups, LAN protocol and user saves **unchanged**.
@@ -32,7 +42,7 @@
 ## QA gates / integration decision
 
 - **PASS:** actual 3,600 seeded live-game placement A/B; deterministic legacy rollback; previous gameplay, score/save and Web/Android parity regression.
-- **FULL QA:** [Chromium + Android debug APK + unsigned AAB run 41024682060](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41024682060) (verify final conclusion before calling it passed). First run 41024532107 failed because generated workflow encoded a shell command separator literally as `\n`; this was corrected in full QA workflow. This failure was in test orchestration, not source gameplay.
+- **FULL QA PASS:** [Chromium + Android debug APK + unsigned AAB run 41024682060](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41024682060) SUCCESS. Original APK release and immutable checksum linked above. First run 41024532107 failed because generated workflow encoded a shell command separator literally as `\n`; this was corrected in full QA workflow. This failure was in test orchestration, not source gameplay.
 - **Manual phone PENDING:** compare classic vs new garage distances after pilot ejection; ensure player must still traverse meaningful danger, spare navigation indicator points to a reachable route rather than misleading straight line; no unintended easy KOs or unfair vehicle access.
 - **Still independent release P0:** same-cert Android data-safe updates, 2-phone LAN input parity/connection, long-session performance, Play signing/policy.
 
