@@ -1,3 +1,15 @@
+# v0.9.40 final automated QA verdict — PASS (2026-10-29)
+
+- **Exact complete game/test/build SHA:** `8cb4aa9b73aa47c9f4ecf56ecfcf9b67bbe91c5e`.
+- **Fast CI:** [40991176243 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40991176243). Includes byte-for-byte Web/Android asset parity, actual game-mode regressions, source-level Android package/version checks, no hardcoded key audit, safe backup roundtrip, allowed schemas, corrupt/unknown inputs, pre-restore recovery, interrupted writes and rollback tests.
+- **Full real Chromium and Android CI:** [40991176203 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40991176203). Covers actual game/Dossier save, user-controlled four-store export, bad import blocked, valid preview, confirmation, restore and reload plus 740x360 / 915x412 / 1280x720 responsive UI and debug APK + **unsigned** AAB. Normal game AI, scoring, Quick Play, Custom and LAND regression unchanged.
+- **Immutable original tested artifact:** [v0.9.40 prerelease APK/QA ZIP/SHA256](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.40-upgrade-readiness-test), verified SHA target and [single-use publisher 40991741503 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40991741503). No rebuild/re-sign after QA, one-off workflow removed.
+- **Audit repair evidence:** [earlier 40990715229 failed real browser step](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40990715229): overly short invalid fixture correctly hit the minimum-length guard rather than malformed-JSON parser. Corrected fixture, complete re-run green.
+- **Still open—do not mark physical update PASS:** verify old vs new APK certificates on actual phone; old v0.9.39 did not contain backup export; any uninstall can erase old app data. An unsigned AAB is NOT Play-ready. Owner must provision protected upload key and Play account independently. No cloud backup, payment or account.
+- **Next:** comprehensive independent integrated cross-system audit with explicit unresolved owner handset, LAN and actual signed release conditions. No merge to stable main without owner acceptance.
+
+---
+
 # v0.9.40 Android upgrade safety, local recovery and upload-signing boundary
 
 **Experimental branch:** `feature/android-upgrade-readiness-v0940` stacked directly on v0.9.39 dossier PR #58. This is **not** a production-signed Android release or confirmation that past debug APKs can update in-place.
