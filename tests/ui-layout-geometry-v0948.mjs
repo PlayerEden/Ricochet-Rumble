@@ -51,7 +51,9 @@ try{
     const brand=document.querySelector('.home-brand h2');
     const util=document.querySelector('.home-utilities');
     const homeHeading=document.querySelector('.home-actions h3');
-    const decor={clock:clock&&visible(clock)?rect(clock):null,menuKey:menuKey&&visible(menuKey)?rect(menuKey):null,
+    const result=document.querySelector('#after-action .aa-panel');
+    const decor={result:result&&visible(result)?rect(result):null,
+      clock:clock&&visible(clock)?rect(clock):null,menuKey:menuKey&&visible(menuKey)?rect(menuKey):null,
       brand:brand&&visible(brand)?rect(brand):null,util:util&&visible(util)?rect(util):null,
       homeHeading:homeHeading&&visible(homeHeading)?rect(homeHeading):null};
     return {stage,menuOpen,panelRect,homeScroll,decor,scrollHeight:panel.scrollHeight,clientHeight:panel.clientHeight,scrollWidth:panel.scrollWidth,clientWidth:panel.clientWidth,
@@ -89,6 +91,11 @@ try{
    }
    if((stage==='scored-aim-hud'||stage==='survival-hud')&&info.decor.clock&&info.decor.menuKey&&intersect(info.decor.clock,info.decor.menuKey)>10)
     issues.push({level:'fail',type:'match-clock-overlaps-menu-button'});
+   if(stage==='after-action'){
+    const r=info.decor.result;
+    if(!r||r.left<0||r.right>width+1||r.top<0||r.bottom>height+1)
+      issues.push({level:'fail',type:'after-action-card-clipped',rect:r});
+   }
    for(let i=0;i<info.elements.length;i++){
     const a=info.elements[i],ra=a.rect;
     for(let j=i+1;j<info.elements.length;j++){
@@ -142,8 +149,49 @@ try{
   await page.locator('#menu-button').evaluate(el=>el.click());await clickAction('close');
   await clickAction('scored_ffa');await page.waitForTimeout(180);await scene('scored-aim-hud',{gameplay:true});
   await page.locator('#menu-button').evaluate(el=>el.click());await scene('scored-pause');
+  await clickAction('resume');
+  // Actual after-action HTML/CSS; deterministic presentation fixture only.
+  // No fabricated gameplay success is asserted by this layout measurement.
+  await page.evaluate(()=>{
+   const $=id=>document.getElementById(id);
+   $('game-screen').classList.add('match-finished');
+   $('after-action').classList.remove('hidden');
+   $('aa-title').textContent='SECTOR CLEARED';
+   $('aa-event').textContent='BLUE TEAM WINS!';
+   $('aa-kos').textContent='15';$('aa-deaths').textContent='4';
+   $('aa-duration').textContent='05:00';$('aa-lives').textContent='0';
+   $('aa-outcome').textContent='VICTORY';
+   $('aa-note').textContent='NEW PROCEDURAL SECTOR AVAILABLE';
+   $('quick-rematch').classList.remove('hidden');
+  });
+  await page.addStyleTag({content:[
+   '#after-action.hidden{display:grid!important}',
+   '#after-action .quick-rematch.hidden{display:block!important}',
+   '#game-screen .game-hud,#game-screen .battlefield>.touch-zone{display:none!important}'
+  ].join('\n')});
+  await scene('after-action',{gameplay:true});
   if(errors.length)report.issues.push({level:'fail',type:'browser-console-errors',viewport:vp,errors:errors.slice(0,12)});
   await page.close();
+ }
+ // Portrait is intentionally gated: no gameplay touch controls should be
+ // presented under the "rotate" guidance at common handset sizes.
+ for(const [w,h] of [[360,740],[412,915]]){
+  const p=await browser.newPage({viewport:{width:w,height:h}});
+  await p.goto(pathToFileURL(path.join(process.cwd(),'web/index.html')).href,{waitUntil:'load'});
+  await p.waitForTimeout(70);
+  const x=await p.evaluate(()=>{
+   const guide=document.querySelector('.rotate-prompt');
+   const box=guide.getBoundingClientRect();
+   const canSee=getComputedStyle(guide).display!=='none'&&box.width>=innerWidth-1&&box.height>=innerHeight-1;
+   const menu=document.querySelector('.overlay');
+   return {canSee,menuVisible:getComputedStyle(menu).visibility!=='hidden'};
+  });
+  const issues=[];
+  if(!x.canSee||x.menuVisible)issues.push({level:'fail',type:'portrait-rotation-guard-not-fullscreen'});
+  report.scenes.push({viewport:w+'x'+h,stage:'portrait-rotation-guide',issues});
+  report.issues.push(...issues.map(e=>({...e,viewport:w+'x'+h,stage:'portrait-rotation-guide'})));
+  await p.screenshot({path:path.join(out,w+'x'+h+'-portrait.png'),animations:'disabled'});
+  await p.close();
  }
 }finally{await browser.close();}
 report.totals={scenes:report.scenes.length,fail:report.issues.filter(x=>x.level==='fail').length,warn:report.issues.filter(x=>x.level==='warn').length};
