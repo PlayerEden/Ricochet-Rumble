@@ -37,6 +37,12 @@ Implemented owner-requested next step: [actual game code PR #80](https://github.
 
 ---
 
+## v0.9.51 Android test candidate available / manual gate outstanding (2026-10-30)
+
+After actual 3,600-seed source QA PASS and complete [Chromium + Android run 41024682060 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41024682060), original experimental [APK and screenshots permanently archived](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.51-corridor-recovery-prototype) at SHA `22ba2237919c5a78255475d84638c4f5c769d8d3`. [Detailed release caveats](CORRIDOR_RECOVERY_PROTOTYPE_v0951.md). **No in-place update safety**; owner phone review of pilot vulnerability/recovery navigation pending. Keep PR #80 and ancestor drafts UNMERGED. Next after review: decide keep/retune/revert placement; independently continue Android durable signing & 2-device LAN validation before Play.
+
+---
+
 ## Priority and order
 | Phase | Work package | Purpose / real deliverable | Exit gate | Decision owner |
 |---|---|---|---|---|
