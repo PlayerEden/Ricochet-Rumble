@@ -24,7 +24,7 @@ window.__flowQA={
 };
 })();`);
 assert.notEqual(instrumented,game,'QA hook injected into transient HTTP response');
-const sources={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/game.js':'game.js','/scored-match.js':'scored-match.js'};
+const sources={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/game.js':'game.js','/scored-match.js':'scored-match.js','/dossier.js':'dossier.js'};
 const server=http.createServer((req,res)=>{
  const name=sources[new URL(req.url,'http://localhost').pathname];
  if(!name){res.writeHead(404);res.end();return}
@@ -474,6 +474,39 @@ try{
  await page.evaluate(()=>window.__flowQA.freeze());
  assert.equal(await page.evaluate(()=>window.__flowQA.state.config.matchModeId),'cqc','standalone button rematches CQC without rotating');
  result.steps.push('opt-in scored Quick Play: original defaults off, settings persistence, CQC/FFA/TDM shuffle+timeouts, standalone remains fixed');
+
+ // v0.9.39: Only finalized local bot matches enter the actual dossier.
+ const beforeDossier=await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-dossier-v1')));
+ assert.ok(beforeDossier?.matches>=4,'prior real scored/Custom matches must be recorded');
+ const beforeCount=beforeDossier.matches;
+ const endForDossier=await page.evaluate(()=>{window.__flowQA.expire(180);return window.__flowQA.state.finalResult;});
+ assert.ok(endForDossier&&endForDossier.outcome==='draw');
+ const afterDossier=await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-dossier-v1')));
+ assert.equal(afterDossier.matches,beforeCount+1,'one actual finished match gets one service record');
+ assert.equal(afterDossier.draws,beforeDossier.draws+1);
+ await page.evaluate(()=>window.__flowQA.refreshHUD());
+ assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-dossier-v1')).matches),beforeCount+1,'repeated HUD does not duplicate dossier');
+ await page.locator('#results-menu').click();
+ for(const [vw,vh] of [[740,360],[915,412],[1280,720]]){
+  await page.setViewportSize({width:vw,height:vh});
+  await page.locator('#menu button[data-action="dossier"]').click();
+  assert.equal(await page.locator('.dossier-screen').isVisible(),true);
+  assert.equal(await page.locator('#dossier-matches').textContent(),String(afterDossier.matches));
+  assert.equal(await page.locator('#dossier-draws').textContent(),String(afterDossier.draws));
+  assert.ok((await page.locator('.dossier-guard').textContent()).includes('not released'),'cosmetics remain explicitly unavailable');
+  const geometry=await page.locator('#panel').evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth}));
+  assert.ok(geometry.scrollWidth<=geometry.width+3,'dossier has no horizontal overflow at '+vw);
+  await page.locator('button[data-action="dossier-back"]').scrollIntoViewIfNeeded();
+  await page.locator('button[data-action="dossier-back"]').click();
+ }
+ await page.setViewportSize({width:915,height:412});
+ await page.reload({waitUntil:'load'});
+ await page.waitForFunction(()=>!!window.__flowQA);
+ await page.locator('#menu button[data-action="dossier"]').click();
+ assert.equal(await page.locator('#dossier-matches').textContent(),String(afterDossier.matches),'record survives full app reload');
+ assert.ok((await page.locator('#dossier-save-status').textContent()).includes('READY'));
+ result.steps.push('genuine finished offline match -> duplicate-safe saved dossier -> three landscape screens -> reload; cosmetic concepts remain locked');
+
 
 
  console.log('PASS live Chromium Quick Play: '+JSON.stringify(result));
