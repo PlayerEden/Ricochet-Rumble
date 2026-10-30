@@ -42,7 +42,7 @@ assert.ok(icons.cosmetics.every(c=>c.selectable!==true),'concept-only cosmetics 
 pass('Cosmetic economy remains concept-only',icons.cosmetics.length+' proposed assets, zero authorized');
 const pkg='com.playereden.ricochetrumble';
 assert.ok(gradle.includes("applicationId '"+pkg+"'"));assert.ok(gradle.includes("namespace '"+pkg+"'"));
-assert.ok(gradle.includes('versionCode 47'));assert.ok(gradle.includes("versionName '0.9.46-ui-audio-test'"));
+assert.ok(gradle.includes('versionCode 48'));assert.ok(gradle.includes("versionName '0.9.51-corridor-prototype'"));
 assert.ok(manifest.includes('android:label="Sector Rebound"'));
 assert.ok(manifest.includes('android:allowBackup="false"'));
 assert.ok(manifest.includes('android:usesCleartextTraffic="false"'));
