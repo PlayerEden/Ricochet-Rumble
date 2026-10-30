@@ -31,14 +31,30 @@ try{
    const info=await page.evaluate(({stage,opts})=>{
     const round=x=>Math.round(x*10)/10;
     const rect=el=>{const r=el.getBoundingClientRect();return {left:round(r.left),top:round(r.top),right:round(r.right),bottom:round(r.bottom),width:round(r.width),height:round(r.height)};};
-    const visible=el=>{const st=getComputedStyle(el);return st.display!=='none'&&st.visibility!=='hidden'&&Number(st.opacity)!==0&&el.getBoundingClientRect().width>1&&el.getBoundingClientRect().height>1;};
+    const visible=el=>{
+     // Native closed DETAILS contents and their controls are not actionable.
+     // A hidden ancestor must never be misreported as an overlapping button.
+     if(el.closest('details:not([open])')&&!el.matches('summary'))return false;
+     for(let p=el;p;p=p.parentElement){const s=getComputedStyle(p);if(s.display==='none'||s.visibility==='hidden')return false;}
+     return el.getBoundingClientRect().width>1&&el.getBoundingClientRect().height>1;
+    };
     const panel=document.querySelector('#panel'),overlay=document.querySelector('#menu');
     const menuOpen=overlay&&!overlay.classList.contains('hidden');
     const scope=opts.gameplay?document.querySelector('.game-screen'):panel;
     const elems=[...scope.querySelectorAll('button,select,input,textarea,summary')].filter(visible);
     const bounds=elems.map((el,i)=>({id:el.id||el.dataset.action||el.getAttribute('aria-label')||el.textContent.trim().slice(0,28)||'control-'+i,tag:el.tagName,rect:rect(el),scrollW:el.scrollWidth,clientW:el.clientWidth}));
     const panelRect=rect(panel);
-    return {stage,menuOpen,panelRect,scrollHeight:panel.scrollHeight,clientHeight:panel.clientHeight,scrollWidth:panel.scrollWidth,clientWidth:panel.clientWidth,
+    const homeScroller=document.querySelector('.home-actions');
+    const homeScroll=homeScroller?{usable:/auto|scroll/.test(getComputedStyle(homeScroller).overflowY),canScroll:homeScroller.scrollHeight>homeScroller.clientHeight+2,range:homeScroller.scrollHeight-homeScroller.clientHeight}:null;
+    const clock=document.querySelector('#score-clock');
+    const menuKey=document.querySelector('#menu-button');
+    const brand=document.querySelector('.home-brand h2');
+    const util=document.querySelector('.home-utilities');
+    const homeHeading=document.querySelector('.home-actions h3');
+    const decor={clock:clock&&visible(clock)?rect(clock):null,menuKey:menuKey&&visible(menuKey)?rect(menuKey):null,
+      brand:brand&&visible(brand)?rect(brand):null,util:util&&visible(util)?rect(util):null,
+      homeHeading:homeHeading&&visible(homeHeading)?rect(homeHeading):null};
+    return {stage,menuOpen,panelRect,homeScroll,decor,scrollHeight:panel.scrollHeight,clientHeight:panel.clientHeight,scrollWidth:panel.scrollWidth,clientWidth:panel.clientWidth,
       scrollStyle:getComputedStyle(panel).overflowY,viewport:{width:innerWidth,height:innerHeight},
       elements:bounds,screenScroll:document.documentElement.scrollWidth>innerWidth+1};
    },{stage,opts});
@@ -55,13 +71,24 @@ try{
     if(r.right>width+2||r.left<-2)issues.push({level:'fail',type:'horizontal-control-offscreen',id:x.id,rect:r});
     if(info.menuOpen&&r.left<outer.left-2||info.menuOpen&&r.right>outer.right+2)
       issues.push({level:'fail',type:'button-beyond-panel-horizontally',id:x.id,rect:r});
-    if(stage==='home'&&(r.bottom>outer.bottom+1||r.top<outer.top-1))
-      issues.push({level:'fail',type:'home-button-clipped-vertically',id:x.id,rect:r});
+    if(stage==='home'&&(r.bottom>outer.bottom+1||r.top<outer.top-1)){
+      if(!info.homeScroll?.usable||!info.homeScroll?.canScroll)
+       issues.push({level:'fail',type:'unreachable-home-button',id:x.id,rect:r});
+     }
     if((x.tag==='BUTTON'||x.tag==='SELECT')&&r.height<30)
       issues.push({level:'warn',type:'small-target',id:x.id,height:r.height});
     if(x.scrollW>x.clientW+4&&x.tag==='BUTTON')
       issues.push({level:'warn',type:'button-label-overflow',id:x.id,delta:x.scrollW-x.clientW});
    }
+   if(stage==='home'){
+    const d=info.decor;
+    if(d.brand&&d.util&&intersect(d.brand,d.util)>12)
+      issues.push({level:'fail',type:'home-brand-overlaps-utility-navigation'});
+    if(d.homeHeading&&d.util&&intersect(d.homeHeading,d.util)>12)
+      issues.push({level:'fail',type:'home-heading-overlaps-topbar-navigation'});
+   }
+   if((stage==='scored-aim-hud'||stage==='survival-hud')&&info.decor.clock&&info.decor.menuKey&&intersect(info.decor.clock,info.decor.menuKey)>10)
+    issues.push({level:'fail',type:'match-clock-overlaps-menu-button'});
    for(let i=0;i<info.elements.length;i++){
     const a=info.elements[i],ra=a.rect;
     for(let j=i+1;j<info.elements.length;j++){
@@ -72,7 +99,7 @@ try{
       issues.push({level:'fail',type:'interactive-control-overlap',ids:[a.id,b.id],overlap:Math.round(overlap)});
     }
    }
-   const row={viewport:vp,stage,panelScrollNeeded:info.scrollHeight>info.clientHeight+2,elementCount:info.elements.length,issues};
+   const row={viewport:vp,stage,panelScrollNeeded:info.scrollHeight>info.clientHeight+2,homeScroll:info.homeScroll,elementCount:info.elements.length,issues};
    report.scenes.push(row);
    report.issues.push(...issues.map(x=>({...x,viewport:vp,stage})));
    const dest=path.join(out,vp+'-'+stage+'.png');
