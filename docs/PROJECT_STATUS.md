@@ -1,3 +1,11 @@
+# OWNER ACCEPTED v0.9.46 UI/AUDIO — NEXT v0.9.47 AUDIT (2026-10-30)
+
+Owner's latest verdict after v0.9.46: **"I think it's good"**. This approves the quiet original menu/deploy sounds and the compact pause SFX/MUSIC controls as the current UI/audio design baseline. **P-03 pilot visuals and movement remain separately LOCKED**; see [approved P-03 source of truth](APPROVED_PILOT_P03.md). v0.9.46 original [Android debug test release, screenshots and SHA256](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.46-ui-audio-test) / [focused draft PR #67](https://github.com/PlayerEden/Ricochet-Rumble/pull/67) preserved.
+
+**Proceeding to actual [v0.9.47 release-readiness, branch-integration and cross-system audit #69](https://github.com/PlayerEden/Ricochet-Rumble/issues/69).** Owner design acceptance is NOT physical signer-upgrade continuity, two-phone LAN proof, Google Play approval or authorization to merge the draft gameplay chain. Stable `main` runtime is still v0.9.21, only durable docs added.
+
+---
+
 # NEXT DEVELOPMENT CHECKPOINT — v0.9.46 UI / AUDIO (2026-10-30) — AUTOMATED PASS / OWNER HANDSET PENDING
 
 **Latest experimental change:** [draft PR #67](https://github.com/PlayerEden/Ricochet-Rumble/pull/67), a child of approved P-03 motion PR #66. It adds quiet original offline menu selection/back/deploy cues and compact pause-screen **SFX / MUSIC ON-OFF** controls, persisted in existing local settings, for solo and nearby host/guest. Existing combat sounds and synthesized music retained. **Locked P-03 pilot art/movement, combat, controls, maze, scoring, save and LAN unchanged.**
