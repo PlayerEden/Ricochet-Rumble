@@ -270,19 +270,18 @@ console.log('PASS v0.9.4 visual clarity: pilot duel advantage, tactical sidearm,
  assert.notEqual(mechIdle[0].x,mechMove[0].x,'left leg advances when walking');
  assert.notEqual(mechIdle[1].x,mechMove[1].x,'right leg counter-steps');
  assert.equal(mechMove[0].x+mechMove[1].x,mechIdle[0].x+mechIdle[1].x,'walking gait remains centered');
- // P-02 is strictly overhead: two flat boots in rear, two small team patches,
- // and a centered counter-step, not long legs or a side-on crawling pose.
+ // P-03 must never recreate the rejected low-crawling boots, including in motion.
  const idle=geom('pilot',0),moving=geom('pilot',2);
  const boots=parts=>parts.filter(o=>o.w===12&&o.h===9&&o.y===7);
  const patches=parts=>parts.filter(o=>o.w===6&&o.h===2&&o.y===19);
- assert.equal(boots(idle).length,2,'two compact overhead shoes');
- assert.equal(patches(idle).length,2,'two mirrored shoulder team identifiers');
- assert.equal(patches(moving).length,2,'team patches survive walking gait');
- assert.notEqual(boots(moving)[0].x,boots(idle)[0].x,'first boot counter-steps');
- assert.notEqual(boots(moving)[1].x,boots(idle)[1].x,'second boot counter-steps');
- assert.ok(Math.abs(boots(moving)[0].x+boots(moving)[1].x-2*(-25))<1e-6,'overhead gait stays centered');
- assert.ok(idle.some(o=>o.w===5&&o.h===12&&o.x===6),'single +X visor points in firing direction');
- assert.ok(!idle.some(o=>o.h>26),'no long extruded leg or crawling profile');
+ assert.equal(boots(idle).length,0,'idle pilot has no visible detached boots');
+ assert.equal(boots(moving).length,0,'moving pilot has no visible detached boots');
+ assert.deepEqual(moving,idle,'pilot stride cannot reintroduce a crawling counterstep');
+ assert.equal(patches(idle).length,2,'two mirrored team shoulder patches preserved');
+ assert.equal(patches(moving).length,2,'team shoulder patches remain when moving');
+ assert.ok(idle.some(o=>o.w===5&&o.h===12&&o.x===6),'forward visor still shows aim');
+ assert.ok(idle.some(o=>o.w===28&&o.h===20&&o.x===-20),'compact one-piece rear torso');
+ assert.ok(!idle.some(o=>o.h>26),'no elongated crawling limbs');
 }
 // Emergency ejection is a cosmetic event, not damage to pilot lives.
 click('solo');const v0=st().vehicles[st().tanks[0].vehicleId],pilot=st().tanks[0],lives=st().lives[0];
@@ -1272,9 +1271,9 @@ console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real r
  assert.equal(calls.filter(x=>x[0]==='rect'&&x[1]===-9&&x[2]===11&&x[3]===17&&x[4]===11).length,2,'P-02 symmetric overhead shoulder plates');
  assert.equal(calls.filter(x=>x[0]==='rect'&&x[1]===16&&x[2]===2&&x[3]===8&&x[4]===6).length,2,'two square gloves on one shared pistol');
  assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===-8&&x[2]===-9&&x[3]===17&&x[4]===18),'flat single overhead helmet instead of circles');
-  assert.equal(calls.filter(x=>x[0]==='rect'&&x[1]===-25&&x[2]===7&&x[3]===12&&x[4]===9).length,2,'two compact mirrored boots, never a crawl silhouette');
+  assert.equal(calls.filter(x=>x[0]==='rect'&&x[1]===-25&&x[2]===7&&x[3]===12&&x[4]===9).length,0,'P-03 has no detached boot geometry');
   assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===6&&x[2]===-6&&x[3]===5&&x[4]===12),'visible +X visor band shows facing direction');
-  assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===-20&&x[2]===-11&&x[3]===29&&x[4]===22),'shared armored body has one central torso');
+  assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===-20&&x[2]===-10&&x[3]===28&&x[4]===20),'P-03 unified torso instead of dangling legs');
  assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===17&&x[2]===0&&x[3]===11),'same compact gun projects beyond head');
  assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===27&&x[2]===1),'shared muzzle tip exactly at (28,2)');
  assert.ok(!calls.some(x=>x[0]==='rect'&&x[4]>26),'no fake 2.5D crawling legs');
