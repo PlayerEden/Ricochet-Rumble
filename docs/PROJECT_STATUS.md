@@ -1,3 +1,13 @@
+# OWNER-LOCKED P-03 PILOT DESIGN + MOVEMENT (2026-10-30) — CURRENT ART SOURCE OF TRUTH
+
+**Owner explicitly said "I think that's good. Lock it in."** The player-facing **P-03 strictly top-down pilot with small speed-responsive shoulder and torso movement is FINAL-APPROVED for pilot appearance/motion**. The user had previously rejected exposed crawling-looking boots and approved the new compact P-03, then approved the v0.9.45.1 walking animation. NO further pilot silhouette/animation changes without an explicit user request or reproducible problem. **Read the detailed [APPROVED PILOT P-03 design lock](APPROVED_PILOT_P03.md) FIRST when starting future chat handoffs.**
+
+**Exactly tested visual source:** `ab12c6b2e4ce2bcb3b2ebe694494d8e7dd5b45ed`. [Original APK, Chromium QA ZIP and SHA256 immutable GitHub prerelease](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.45.1-pilot-motion-test), [fast tests PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41005017654), [full Chromium/Android QA PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41005017792). Implementation review [PR #66](https://github.com/PlayerEden/Ricochet-Rumble/pull/66) depends on silhouette [PR #65](https://github.com/PlayerEden/Ricochet-Rumble/pull/65), plus unmerged experimental ancestors. v0.9.45 owner-approved no-motion P-03 is a rollback. **This is owner approval of art, NOT general controls, two-phone multiplayer, app signing/data preservation or Play release readiness.** Debug APK is clean-install-only; do not remove older installed app with valuable data.
+
+**Stable `main` game runtime remains v0.9.21**, protected from automatic merging of dependent experimental prototype PRs. This document-only acceptance record does NOT merge new game runtime. NEXT: resume v0.9.46 UI/audio polish separately, then cross-system QA and integration planning, while preserving locked P-03 visuals.
+
+---
+
 # Sector Rebound — Project Status & Chat Handoff
 
 **Last checked:** 2026-10-28 (v0.9.31 owner phone: much better controls but rotation too fast; v0.9.32 separate movement and fine AIM successfully Chromium/Android QA-tested and APK published, owner device verdict pending; pilot parity tracked #51; stable main runtime v0.9.21)
