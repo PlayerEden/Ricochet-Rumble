@@ -34,6 +34,8 @@ export function parseInstalledPaths(output) {
 export function assessUpdate(candidate, previous, { allowFresh = false } = {}) {
   if (candidate.packageId !== PACKAGE_ID)
     return { ok: false, reason: 'CANDIDATE_PACKAGE_ID_MISMATCH' };
+  if (allowFresh && previous)
+    return { ok: false, reason: 'FRESH_INSTALL_REQUEST_BUT_PACKAGE_ALREADY_INSTALLED' };
   if (!previous)
     return allowFresh
       ? { ok: true, reason: 'FRESH_INSTALL_ONLY_NO_EXISTING_PACKAGE' }
