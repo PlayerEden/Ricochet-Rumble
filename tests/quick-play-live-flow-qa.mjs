@@ -24,7 +24,7 @@ window.__flowQA={
 };
 })();`);
 assert.notEqual(instrumented,game,'QA hook injected into transient HTTP response');
-const sources={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/game.js':'game.js','/scored-match.js':'scored-match.js','/dossier.js':'dossier.js'};
+const sources={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/game.js':'game.js','/scored-match.js':'scored-match.js','/dossier.js':'dossier.js','/save-backup.js':'save-backup.js'};
 const server=http.createServer((req,res)=>{
  const name=sources[new URL(req.url,'http://localhost').pathname];
  if(!name){res.writeHead(404);res.end();return}
@@ -506,6 +506,46 @@ try{
  assert.equal(await page.locator('#dossier-matches').textContent(),String(afterDossier.matches),'record survives full app reload');
  assert.ok((await page.locator('#dossier-save-status').textContent()).includes('READY'));
  result.steps.push('genuine finished offline match -> duplicate-safe saved dossier -> three landscape screens -> reload; cosmetic concepts remain locked');
+
+ // v0.9.40: actual user-controlled export + preview + confirmed restore.
+ await page.locator('button[data-action="backup"]').click();
+ assert.equal(await page.locator('.backup-screen').isVisible(),true);
+ await page.locator('button[data-action="backup-export"]').click();
+ const saveText=await page.locator('#backup-output').inputValue();
+ const parsedSave=JSON.parse(saveText);
+ assert.equal(parsedSave.format,'sector-rebound-local-v1');
+ assert.deepEqual(Object.keys(parsedSave.entries).sort(),['rr-custom-presets-v1','rr-custom-v1','rr-dossier-v1','rr-options-v06']);
+ for(const [vw,vh] of [[740,360],[915,412],[1280,720]]){
+  await page.setViewportSize({width:vw,height:vh});
+  const geom=await page.locator('#panel').evaluate(el=>({w:el.clientWidth,sw:el.scrollWidth}));
+  assert.ok(geom.sw<=geom.w+3,'backup menu no horizontal overflow at '+vw);
+  await page.locator('button[data-action="backup-preview"]').scrollIntoViewIfNeeded();
+  assert.equal(await page.locator('button[data-action="backup-preview"]').isVisible(),true);
+ }
+ await page.setViewportSize({width:915,height:412});
+ await page.evaluate(()=>localStorage.setItem('rr-custom-presets-v1',JSON.stringify({version:1,entries:[{name:'Temporary',rules:{modeId:'survival_ffa'}}]})));
+ await page.locator('#backup-import').fill('not-json');
+ await page.locator('button[data-action="backup-preview"]').click();
+ assert.equal(await page.locator('#backup-restore').isDisabled(),true);
+ assert.ok((await page.locator('#backup-message').textContent()).includes('NOT VALID JSON'));
+ await page.locator('#backup-import').fill(saveText);
+ await page.locator('button[data-action="backup-preview"]').click();
+ assert.equal(await page.locator('#backup-restore').isDisabled(),false,'only valid preview can enable destructive action');
+ assert.ok((await page.locator('#backup-message').textContent()).includes('EXISTING WILL BE REPLACED'));
+ await page.locator('#backup-restore').click();
+ await page.waitForFunction(()=>!!document.querySelector('#menu button[data-action="dossier"]')&&!!window.__flowQA,{timeout:20000});
+ const recovered=await page.evaluate(()=>({
+  data:JSON.parse(localStorage.getItem('rr-dossier-v1')),
+  presets:JSON.parse(localStorage.getItem('rr-custom-presets-v1')),
+  recovery:JSON.parse(localStorage.getItem('rr-restore-recovery-v1'))
+ }));
+ assert.equal(recovered.data.matches,afterDossier.matches,'real dossier survives explicit export/import');
+ assert.equal(recovered.presets.entries.length,0,'chosen saved Custom presets restored');
+ assert.equal(recovered.recovery.entries['rr-custom-presets-v1'].includes('Temporary'),true,'pre-restore state was backed up');
+ await page.locator('#menu button[data-action="dossier"]').click();
+ assert.equal(await page.locator('#dossier-matches').textContent(),String(afterDossier.matches));
+ result.steps.push('user manual offline backup export, 3 mobile layouts, invalid-code guard, explicit preview/restore, pre-import recovery snapshot and dossier reload');
+
 
 
 
