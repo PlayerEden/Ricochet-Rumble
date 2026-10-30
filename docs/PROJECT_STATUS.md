@@ -1,3 +1,11 @@
+# v0.9.45 P-03 pilot silhouette — submitted for QA (2026-10-30)
+
+**Owner visual feedback:** v0.9.44 P-02 has excellent team-identification colors, but its two animated rear boots appear to low-crawl in actual Android gameplay. Created experimental branch `feature/pilot-silhouette-cleanup-v0945` based on preserved v0.9.44 draft PR #63; P-03 **removes both boot blocks and their opposite-foot gait**, slightly shortens forward arms, but keeps overhead helmet/visor, two shoulders, two hands on a centerline pistol, team/FFA colors and actual muzzle (28,2). Web/Android source mirrored. Camera, pilot/tank/mech movement/aim, physics, scoring, AI, gameplay modes, procedural maps, menus, dossier, saves, LAN and original vehicle art unchanged.
+
+**Android test metadata:** code 45, name 0.9.45-pilot-silhouette-test; ordinary debug APK is **clean-install only** until durable owner-private signing, do not uninstall older installs with valuable data. Automated results and real-device verdict are not yet proven at this checkpoint. [QA checklist](QA_PILOT_SILHOUETTE_v0945.md). [v0.9.44 rollback APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.44-pilot-visual-test). **No merge to stable main**; continue to preserve all earlier gameplay and signing gates.
+
+---
+
 # v0.9.44 P-02 top-down pilot — automated QA PASS / Android test archived (2026-10-29)
 
 **Experimental draft PR #63**: https://github.com/PlayerEden/Ricochet-Rumble/pull/63 . Stable main untouched. Candidate based on v0.9.43 PR #62.
