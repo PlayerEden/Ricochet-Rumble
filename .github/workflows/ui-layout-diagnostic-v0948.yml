@@ -34,3 +34,5 @@ jobs:
 # Second pass after measured fixes: CSS only; no art, control, physics changes.
 
 # Final targeted fixes: score timer visibility, scroll-to-last action proof.
+
+# Final coverage: actual after-action results and portrait gate.
