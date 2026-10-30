@@ -385,7 +385,54 @@ function vehicleSite(x,y,vehicles=[],pilots=[]){
  if(near)return near;
  return candidates.slice(offsets.length).filter(valid).sort((a,b)=>Math.hypot(a[0]-x,a[1]-y)-Math.hypot(b[0]-x,b[1]-y))[0]||null;
 }
-function spawnVehicles(tanks,humans,seed=1){const vehicles=[];
+// v0.9.51 preview-only policy: real corridor distance (not minimap straight line).
+// Deterministic and bounded to <=2 spare relocations. Legacy remains selectable.
+function corridorSteps(start){
+ const open=mazeGrid.open,cols=mazeGrid.cols,cell=mazeGrid.cell;
+ const index=Math.floor(start.y/cell)*cols+Math.floor(start.x/cell);
+ const distance=new Int16Array(open.length).fill(-1),queue=[index];distance[index]=0;
+ for(let i=0;i<queue.length;i++)for(const adjacent of open[queue[i]])
+  if(distance[adjacent]===-1){distance[adjacent]=distance[queue[i]]+1;queue.push(adjacent);}
+ return distance;
+}
+function balanceSpareRecovery(vehicles,tanks,config,shuffledCells){
+ const free=vehicles.filter(v=>v.occupant===-1&&v.armor>0);
+ if(!mazeGrid||free.length<2||!tanks.length)return;
+ const {cell,cols,rows}=mazeGrid,seatRoutes=tanks.map(t=>corridorSteps(t));
+ const at=p=>Math.floor(p.y/cell)*cols+Math.floor(p.x/cell);
+ const nearest=sites=>seatRoutes.map(routes=>Math.min(...sites.map(v=>routes[at(v)])));
+ const worst=values=>Math.max(...values),sum=values=>values.reduce((a,b)=>a+b,0);
+ const competitive=!!SCORED_MATCH_RULES[config.matchModeId]||mode==='host'||mode==='duel';
+ const maxPasses=competitive?2:1;
+ const original=nearest(free);
+ // Solo already has a reachable spare within a reasonable corridor walk.
+ // Don't turn a dangerous on-foot recovery into an instant two-cell bailout.
+ if(!competitive&&original[0]<=8)return;
+ const candidates=shuffledCells.map(index=>({x:((index%cols)+.5)*cell,y:(Math.floor(index/cols)+.5)*cell}))
+  .filter(p=>!blocked(p.x,p.y,28)&&tanks.every(t=>Math.hypot(t.x-p.x,t.y-p.y)>=150)
+    &&seatRoutes.every(routes=>routes[at(p)]>=4));
+ const eligible=(candidate,k)=>free.every((v,j)=>j===k||Math.hypot(v.x-candidate.x,v.y-candidate.y)>=150);
+ let current=nearest(free);
+ const evaluation=values=>competitive?worst(values)*100+sum(values):Math.abs(values[0]-6)*100+worst(values)*2+sum(values);
+ for(let pass=0;pass<maxPasses;pass++){
+  let best=evaluation(current),bestMove=null;
+  for(let k=0;k<free.length;k++)for(const p of candidates){
+   if(!eligible(p,k))continue;
+   const draft=free.slice();draft[k]=p;
+   const distances=nearest(draft);
+   if(!competitive){
+    if(distances[0]<4||distances[0]>8||distances[0]>=current[0])continue;
+    if(worst(distances)>worst(original)+2)continue;
+   }
+   const score=evaluation(distances);
+   if(score<best){best=score;bestMove={k,p,distances};}
+  }
+  if(!bestMove)break;
+  const vehicle=free[bestMove.k];vehicle.x=bestMove.p.x;vehicle.y=bestMove.p.y;
+  current=bestMove.distances;
+ }
+}
+function spawnVehicles(tanks,humans,seed=1,config=null){const vehicles=[];
  for(let i=0;i<tanks.length;i++){const t=tanks[i];t.onFoot=false;t.vehicleId=vehicles.length;
   vehicles.push({id:vehicles.length,x:t.x,y:t.y,a:t.a,type:'tank',armor:VEHICLE_TYPES.tank.armor,occupant:i,respawn:0});}
  const rng=mazeRandom(deploymentSeed(seed,42)),cells=Array.from({length:mazeGrid.cols*mazeGrid.rows},(_,i)=>i);
@@ -404,6 +451,7 @@ function spawnVehicles(tanks,humans,seed=1){const vehicles=[];
  for(const index of cells){if(vehicles.filter(v=>v.occupant===-1).length>=3)break;place(index);}
  // Guarantee a mech appears among the spare vehicles when feasible, without forcing the player to select it.
  const free=vehicles.filter(v=>v.occupant===-1);if(free.length&&!free.some(v=>v.type==='mech')){const v=free.at(-1);v.type='mech';v.armor=VEHICLE_TYPES.mech.armor;}
+ if(config?.recoveryPolicy==='corridor-v1')balanceSpareRecovery(vehicles,tanks,config,cells);
  return vehicles;
 }
 function isPilotMatch(){return state?.config?.pilotMode===true;}
@@ -450,12 +498,12 @@ function ejectPilot(i){const t=state.tanks[i],v=state.vehicles?.[t.vehicleId];if
  if(i===0&&mode==='solo')clearFireAim(); // no vehicle AIM leaking into pilot FIRE drag
  t.ejectAnim=.62;if(i===0&&coachEnabled&&!coachPilotShown){coachPilotShown=true;coachTip('ON FOOT · FOLLOW THE VEHICLE ARROW · ENTER TO BOARD',4.4);}audioCue('eject',v.x,v.y);state.event=label(i)+' EJECTED · FIND COVER!';state.eventTimer=1.15;emitFx('eject',v.x,v.y,combatColor(i),-1,i);
 }
-function initialState(arena=0,options=null,seed=null){const config={...readSettings(),pilotMode:true,...(options||{})};let count=mode==='solo'?1:2;
+function initialState(arena=0,options=null,seed=null){const config={...readSettings(),pilotMode:true,recoveryPolicy:'corridor-v1',...(options||{})};let count=mode==='solo'?1:2;
  // Zero bots is a legitimate free-roam practice setting; don't silently add an enemy.
  const mazeSeed=seed||Math.floor(Math.random()*0x7fffffff)||1,id=setArena(0,mazeSeed,config.mapSize);
  const numBots=config.botCount,humans=count,total=humans+numBots,tanks=Array.from({length:total},(_,i)=>freshTank(i));
  const cqc=config.matchModeId==='cqc',scoredRules=SCORED_MATCH_RULES[config.matchModeId]||null;
- const vehicles=cqc?[]:config.pilotMode?spawnVehicles(tanks,humans,mazeSeed):[];
+ const vehicles=cqc?[]:config.pilotMode?spawnVehicles(tanks,humans,mazeSeed,config):[];
  if(cqc)for(const t of tanks){t.onFoot=true;t.vehicleId=null;t.shield=1.5;t.respawnWait=0;}
  const matchId=++matchSerial;
  // Shared real scoring system for both on-foot CQC and tank/mech Free-for-All.
