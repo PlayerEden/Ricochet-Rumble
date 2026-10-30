@@ -106,6 +106,21 @@ try{
    await page.screenshot({path:dest,animations:'disabled'});
   }
   await scene('home');
+  // When compact home actions need internal scroll, the final actual mode key
+  // must be reachable within that scroll viewport, not merely DOM-present.
+  const homeScroller=page.locator('.home-actions');
+  const scrollable=await homeScroller.evaluate(el=>el.scrollHeight>el.clientHeight+2);
+  if(scrollable){
+   await homeScroller.evaluate(el=>{el.scrollTop=el.scrollHeight;});
+   await page.waitForTimeout(75);
+   const last=await page.locator('#menu button[data-action="custom"]').boundingBox();
+   const scroller=await homeScroller.boundingBox();
+   if(!last||!scroller||last.y<scroller.y-2||last.y+last.height>scroller.y+scroller.height+2){
+    report.issues.push({level:'fail',type:'home-last-button-not-scroll-reachable',viewport:vp});
+   }
+   await scene('home-scrolled');
+   await homeScroller.evaluate(el=>{el.scrollTop=0;});
+  }
   await clickAction('settings');await scene('settings');
   const details=page.locator('details.extra-rules');
   if(await details.count()){await details.locator('summary').evaluate(el=>el.click());await scene('settings-expanded');}
