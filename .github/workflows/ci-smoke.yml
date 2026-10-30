@@ -37,9 +37,13 @@ jobs:
           cmp web/index.html android/app/src/main/assets/index.html
           cmp web/style.css android/app/src/main/assets/style.css
           cmp web/scored-match.js android/app/src/main/assets/scored-match.js
+          node --check web/dossier.js
+          cmp web/dossier.js android/app/src/main/assets/dossier.js
           node tests/scored-browser-parity.mjs
       - name: Game regression and seeded combat tests
         run: node tests/smoke.mjs
+      - name: Verify durable local dossier and safe concept-only cosmetics
+        run: node tests/dossier.mjs
       - name: Verify pure scored KO, team timeouts and spawn ranking contract
         run: node tests/scored-match-kernel.mjs
       - name: Validate FIELDGRID cosmetic manifest

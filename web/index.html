@@ -63,7 +63,7 @@
         <div class="home-screen">
           <header class="home-topbar">
             <div class="home-brand"><span class="home-brand-mark" aria-hidden="true">SR</span><div><span class="home-overline">FIELDGRID / COMBAT SIMULATION</span><h2>SECTOR <span>REBOUND</span></h2></div></div>
-            <div class="home-utilities"><button data-action="help" aria-label="How to play Sector Rebound">? <span>HOW TO PLAY</span></button></div>
+            <div class="home-utilities"><button data-action="dossier" aria-label="View local player dossier">DOSSIER</button><button data-action="help" aria-label="How to play Sector Rebound">? <span>HOW TO PLAY</span></button></div>
           </header>
           <div class="home-content">
             <section class="home-showcase" aria-label="Tank preview">
@@ -155,6 +155,29 @@
   <div class="custom-actions"><button type="button" data-action="custom-back">BACK</button><button class="primary" type="button" data-action="custom-play">DEPLOY MATCH</button></div>
  </section>
 </template>
+<template id="dossier-template">
+ <section class="dossier-screen" aria-label="Local player dossier">
+  <header class="dossier-head"><div class="eyebrow">FIELDGRID / OPERATOR FILE</div><h2>PLAYER <span>DOSSIER</span></h2><p>OFFLINE SERVICE RECORD · THIS DEVICE ONLY</p></header>
+  <div class="dossier-stats">
+   <div><small>MATCHES</small><strong id="dossier-matches">0</strong></div>
+   <div><small>VICTORIES</small><strong id="dossier-wins">0</strong></div>
+   <div><small>DEFEATS</small><strong id="dossier-losses">0</strong></div>
+   <div><small>DRAWS</small><strong id="dossier-draws">0</strong></div>
+   <div><small>OPERATOR KOs</small><strong id="dossier-kos">0</strong></div>
+   <div><small>DEATHS</small><strong id="dossier-deaths">0</strong></div>
+  </div>
+  <div class="dossier-columns">
+   <section><h3>MODE RECORD</h3><div id="dossier-modes"></div></section>
+   <section><h3>FUTURE PILOT ICON ELIGIBILITY</h3><div id="dossier-eligibility"></div><p class="dossier-guard">Concept milestones only. Icons are not released, selectable, or purchasable. Eligibility does not grant items.</p></section>
+  </div>
+  <footer class="dossier-footer">
+   <div><strong id="dossier-time">0 MIN</strong> <span>COMBAT TIME</span><p id="dossier-save-status" role="status">LOCAL STORAGE READY</p></div>
+   <button type="button" data-action="dossier-back">BACK TO MENU</button>
+  </footer>
+  <p class="dossier-note">Only completed Solo matches against bots count. Practice, abandoned matches, and LAN are not recorded. No account or cloud sync. Uninstalling may erase this device's data.</p>
+ </section>
+</template>
+  <script src="dossier.js"></script>
   <script src="scored-match.js"></script>
   <script src="game.js"></script>
 </body>
