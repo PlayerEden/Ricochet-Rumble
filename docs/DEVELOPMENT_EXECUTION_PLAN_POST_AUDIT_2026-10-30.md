@@ -11,6 +11,12 @@
 - **Every milestone:** small one-purpose draft branch from a *specific reviewed parent commit*; inspect diff; run fast regression + appropriate real browser/Android build; preserve exact source SHA and screenshots/metrics, log remaining manual tests, compare rollback. **No automated merge to stable main**, no unverified Android update compatibility, no shipping incomplete cosmetics/remote play.
 - Do not open a new stacked feature branch until the previous phase's evidence is recorded and its integration/rollback path is clear. Prefer a single parent integration candidate for current runtime; isolate tests/reports from gameplay changes. Avoid temporary QA-only branches except when GitHub's `main` docs conflict prevents normal PR CI.
 
+## Phase A progress — automation complete, human sign-off pending (2026-10-30)
+
+**PASS:** [real-engine test-only PR #77](https://github.com/PlayerEden/Ricochet-Rumble/pull/77) / [successful run 41021741127](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41021741127), exact tested SHA `6196e0305ff668760fb30ac0a2b5289c7ad8c2e1`. Nine real-source `tankMove()`/`shoot()` measurements for Survival/Scored FFA/Scored TDM × tank/mech/pilot; regression suite and Android-Web game/CSS parity PASS. [Durable baseline table and measured values](CONTROL_FEEL_BASELINE_v0949.md). **Survival tank nominal 222 vs scored 166 units/s (1.337349×); joystick first-frame heading 0.2 vs 0.043333 radians; scored fine-AIM 0.03 rad.** No production code, speed/aim, art, UI or signing changed. **Physical owner control comfort and bank-shot accuracy PENDING**; do not advance to balance tuning based solely on source measurements.
+
+---
+
 ## Priority and order
 | Phase | Work package | Purpose / real deliverable | Exit gate | Decision owner |
 |---|---|---|---|---|
