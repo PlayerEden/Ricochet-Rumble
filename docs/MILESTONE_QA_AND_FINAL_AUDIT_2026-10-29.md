@@ -26,7 +26,7 @@ Use states **Automated PASS / Automated FAIL / Manual PASS / Manual PENDING / Bl
 | Gate 4A — Custom Match | v0.9.35 Custom editor + v0.9.36 named local presets/default reset **automated QA PASS** (40830083479, 40832553495); owner phone acceptance, natural bot balance and upgrade persistence PENDING |
 | Gate 4B — scored Quick Play integration | Only genuinely validated and selected modes rotate; preserve old Survival |
 | Gate 4C — procedural uniqueness and bot fairness | v0.9.38 full audit **PASS**: 500 naturally simulated all-bot scored games (30/60Hz plus 200 independent TDM), 300 unique connected maps each size, 0 observed unsafe respawns. Physics-rate sensitivity in CQC; native 60Hz TDM 200 rounds Blue 102/Red 96/draw 2. Physical user testing still OPEN. [Evidence run 40840318936](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40840318936) |
-| Gate 5 — Dossier, saves and optional cosmetics | v0.9.39 candidate: real offline bot results → versioned local per-mode dossier; guarded backup and no fake cosmetic entitlement. Automated and handset QA PENDING; actual cosmetic selection/store explicitly OUT OF SCOPE |
+| Gate 5 — Dossier, saves and optional cosmetics | v0.9.39 real local dossier/versioned safe save foundation, **fast + full Chromium/Android automated QA PASS** (40987749714/40987749740), immutable test APK archived. Cosmetics remain concept-only/not selectable; physical Android storage-upgrade acceptance OPEN |
 | Gate 6 — sound, release identity, privacy and Play readiness | Android debug/unsigned baseline exists; production release not ready |
 
 ## End-of-first-development-plan comprehensive audit
