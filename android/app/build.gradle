@@ -28,8 +28,8 @@ android {
         applicationId 'com.playereden.ricochetrumble'
         minSdk 26
         targetSdk 36
-        versionCode 45
-        versionName '0.9.45-pilot-silhouette-test'
+        versionCode 46
+        versionName '0.9.45.1-pilot-motion-test'
     }
     signingConfigs {
         if (hasUploadSigning) {
