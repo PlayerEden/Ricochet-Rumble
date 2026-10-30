@@ -29,6 +29,14 @@
 
 ---
 
+## Phase C runtime prototype checkpoint — v0.9.51 (2026-10-30)
+
+Implemented owner-requested next step: [actual game code PR #80](https://github.com/PlayerEden/Ricochet-Rumble/pull/80) — a **bounded graph corridor-aware spare-vehicle relocation**, retaining `recoveryPolicy:'legacy'` for exact old seeded placement/rollback. Solo relocates ≤1 spare only when nearest original corridor walk exceeds 8 cells; targets 4–8 steps without instant reboard; scored/2-human relocates ≤2 spares to reduce worst-seat path. No maze generator, vehicle count/type, P-03, controls, physics, combat, UI, sound, game save or LAN protocol changes. Android Web game source byte-for-byte mirrored, code 48 / v0.9.51 experimental metadata.
+
+**Real source 3,600 comparisons + gameplay/saves/score smoke CI PASS:** [41024297470](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41024297470). Solo p95 original→new **10→8 small / 14→8 standard / 15→8 large** cell steps; scored 600-seed worst-seat p95 **13→6 / 19→8 / 29→12**. [Durable full report and rollback](CORRIDOR_RECOVERY_PROTOTYPE_v0951.md). **Full Chromium+Android run [41024682060](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41024682060) still needs final PASS verification; no Android device or user approval yet.** No automatic merge of draft PR #80 or ancestors to stable main.
+
+---
+
 ## Priority and order
 | Phase | Work package | Purpose / real deliverable | Exit gate | Decision owner |
 |---|---|---|---|---|
