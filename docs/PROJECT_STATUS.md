@@ -1,3 +1,11 @@
+# v0.9.39 — player dossier and safe progression foundation (2026-10-29)
+
+**New experimental draft** `feature/player-dossier-local-v0939` stacked on v0.9.38 QA PR #57 (and prior unapproved v0.9.37 gameplay experiments). **Current candidate:** versioned device-local PLAYER DOSSIER accessible from the home header, counts genuine completed offline Solo bot matches from immutable real match results with duplicate protections, per-mode stats and genuine KOs/deaths. Saves under separate `rr-dossier-v1` key; future schema protected from overwrite, corrupt data backed up before replacement; denied storage reported. Zero-bot practice, unfinished rounds and local LAN excluded. No changes to core simulation, physics, AI, Quick Play or cosmetic assets. Existing cosmetic catalog still concept-only, so dossier lists future milestones without granting/equipping/purchasing anything. [Milestone QA checklist](QA_PLAYER_DOSSIER_v0939.md).
+
+**QA currently STAGED, not yet accepted:** stand-alone profile storage and real Chromium match/dossier/reload tests added, Android/Web source mirrors and CI wiring. Must record actual green CI SHA and archive exact debug APK before declaring this candidate automated PASS. Handset acceptance, local save upgrade continuity, two-phone LAN, and Google Play signing remain open.
+
+---
+
 # v0.9.38 COMPLETE automated procedural/AI QA — original gameplay untouched (2026-10-29)
 
 **New QA-only draft:** [PR #57](https://github.com/PlayerEden/Ricochet-Rumble/pull/57) on `qa/natural-bot-maze-audit-v0938`, directly based on v0.9.37 scored Quick Play. **Full natural game evidence PASS** [GitHub Actions 40840318936](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40840318936) on tested code SHA `1041f1b52185bde5acdbb620c2d62c532f94463a`, with downloadable **`scored-bot-and-map-audit-v0938`** containing 500 complete AI-only scored matches and canonical unique procedural map traces. Real game simulation/score engine used; **only test VM substituted bot input for human seat**, not runtime game or Android sources. 300/300 unique connected maze graphs per Small/Standard/Large size, across 30/60 Hz; no unsafe respawns detected.
