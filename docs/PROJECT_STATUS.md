@@ -1,3 +1,18 @@
+# v0.9.44 P-02 top-down pilot — automated QA PASS / Android test archived (2026-10-29)
+
+**Experimental draft PR #63**: https://github.com/PlayerEden/Ricochet-Rumble/pull/63 . Stable main untouched. Candidate based on v0.9.43 PR #62.
+
+**Player-visible:** strict overhead single helmet with forward visor, steel modular vest, two mirrored shoulders/feet and small mirrored walking gait, two hands supporting one centerline pistol. Muzzle remains (28,2) and matches real projectile origin; team blue/red plates and FFA neutral steel preserved. Tank/mech art, lobby cycle, approved camera zoom, physics, controls, score, maze, LAN and saves unchanged.
+
+**Automated PASS:** exact tested SHA 8fd0f48dfcd43f13dc6e487cd61bd4b7a77b6c85; fast regression https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40999661362 and full real Chromium visual shots at 740x360, 915x412, 1280x720 (idle/walking/aim west-east/firing, tank/mech showcase) plus Android debug APK and unsigned AAB https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40999661261 . Obsolete no-boots geometry assertion failed initially, then was corrected to the new P-02 spec and entire suite passed.
+
+**Permanent exact source/QA binary:** https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.44-pilot-visual-test . Original APK and before/after visual QA screenshot ZIP plus SHA256 archived byte-identically, without rebuild or resigning, via successful single-use workflow https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41000180244 (workflow then deleted).
+
+**CRITICAL Android warning:** the owner deferred durable signing. GitHub ephemeral debug APK is CLEAN-INSTALL ONLY on disposable test data; it cannot safely update previously released differently signed APKs. Do NOT uninstall an older installed game containing valuable saved history. Owner actual visual/artistic approval and physical tests remain pending. No stable main merge, Play signed release, two-phone LAN or production acceptance.
+
+**Next:** v0.9.45 gameplay controls after physical owner P-02 assessment, then v0.9.46 UI/audio and v0.9.47 full game QA. [Detailed v0.9.44 QA](QA_PILOT_VISUAL_v0944.md).
+
+---
 # v0.9.44 — FIELDGRID P-02 pilot visual refinement (2026-10-29)
 
 **Current experimental game branch:** `feature/pilot-visual-refinement-v0944` directly extends v0.9.43 signer-prep PR #62 without stable main merge. P-02 revises strictly top-down operator art only: a legible overhead helmet/visor, single torso, mirrored shoulders/boots, symmetric arms on a single sidearm, small in-plane gait and shared colored armor family with tanks/mechs. It preserves real bullet muzzle at (28,2), free-for-all steel vs blue/red team paint, approved pilot scale/vehicle zoom, tank/mech renderers, projectile rules, control physics, procedural maps, AI, playlists, dossier, saves, LAN and signing logic. Android code/name 44 / `0.9.44-pilot-visual-test` with original package ID. Source mirror and geometry tests staged; full screenshot/Android CI not yet verified in this text. [Exact pilot QA checklist](QA_PILOT_VISUAL_v0944.md).
