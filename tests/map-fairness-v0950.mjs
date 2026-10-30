@@ -134,13 +134,31 @@ for(const size of sizes){
  };
  console.log('SIZE_COMPLETE '+size+' '+JSON.stringify(summary[size]));
 }
-const outliers=rows.filter(x=>x.initialExposedActors>0||x.playerRecoveryCells>=6||x.recoveryImbalanceCells>=7||
- x.firstPlayerVsEnemyMinPath<=1||x.deadEndPct>=30);
+// Outliers are size-relative, NOT a fixed "6 cells is broken" rule:
+ // large sectors naturally have longer corridors than 9x6 sectors.
+const cutoffs=Object.fromEntries(sizes.map(size=>{
+ const rs=rows.filter(r=>r.size===size);
+ return [size,{
+  highRecoveryCells:quantile(rs.map(r=>r.playerRecoveryCells),.95),
+  highImbalanceCells:quantile(rs.map(r=>r.recoveryImbalanceCells),.95),
+  lowEnemyPath:quantile(rs.map(r=>r.firstPlayerVsEnemyMinPath),.05)
+ }]
+}));
+const outliers=rows.filter(r=>r.initialExposedActors>0||
+ r.playerRecoveryCells>cutoffs[r.size].highRecoveryCells||
+ r.recoveryImbalanceCells>cutoffs[r.size].highImbalanceCells||
+ r.firstPlayerVsEnemyMinPath<cutoffs[r.size].lowEnemyPath)
+ .map(r=>({...r,flags:[
+  ...(r.initialExposedActors>0?['initial-line-of-sight']:[]),
+  ...(r.playerRecoveryCells>cutoffs[r.size].highRecoveryCells?['long-recovery-walk']:[]),
+  ...(r.recoveryImbalanceCells>cutoffs[r.size].highImbalanceCells?['unequal-recovery-walk']:[]),
+  ...(r.firstPlayerVsEnemyMinPath<cutoffs[r.size].lowEnemyPath?['very-close-initial-actors']:[])
+ ]}));
 const leaderboard=(key,direction=1)=>rows.slice().sort((a,b)=>direction*(b[key]-a[key])).slice(0,12)
  .map(x=>({seed:x.seed,size:x.size,value:x[key]}));
 const result={
  schemaVersion:1,method:'Real original seeded createMaze + initialState/spawnVehicles, 1000 deterministic seeds per small/standard/large size. Graph distances are corridor steps; no physical bullets, dynamic opponents or user control simulated.',
- expected:seeds*sizes.length,observed:rows.length,summary,
+ expected:seeds*sizes.length,observed:rows.length,summary,cutoffs,
  extremeExamples:{
   longestRecovery:leaderboard('playerRecoveryCells'),
   greatestRecoveryImbalance:leaderboard('recoveryImbalanceCells'),
@@ -159,3 +177,5 @@ fs.writeFileSync(output,JSON.stringify(result,null,2)+'\n');
 fs.writeFileSync(out+'/seed-records.json',JSON.stringify(rows,null,2)+'\n');
 fs.writeFileSync(out+'/potential-outliers.json',JSON.stringify(outliers,null,2)+'\n');
 console.log('MAP_FAIRNESS_AUTOMATED_PASS '+JSON.stringify({samples:result.observed,unique:true,summary,flaggedSeedRows:outliers.length}));
+
+console.log('MAP_FAIRNESS_REPLAY_EXAMPLES '+JSON.stringify({cutoffs,extremeExamples:result.extremeExamples,flaggedRows:outliers.length}));
