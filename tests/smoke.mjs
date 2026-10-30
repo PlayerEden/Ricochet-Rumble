@@ -1262,9 +1262,12 @@ console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real r
  },{get(obj,key){return obj[key]},set(obj,key,val){if(key==='fillStyle')colors.push(val);obj[key]=val;return true}});
  api.drawTopPilot(painter,'#46d2f5',false,1,0,0);
  assert.equal(calls.filter(x=>x[0]==='arc').length,0,'pilot has no layered circular head, arms or turret');
- assert.equal(calls.filter(x=>x[0]==='rect'&&x[1]===-12&&x[2]===10&&x[3]===16&&x[4]===12).length,2,'symmetrical chunky shoulder modules');
+ assert.equal(calls.filter(x=>x[0]==='rect'&&x[1]===-9&&x[2]===11&&x[3]===17&&x[4]===11).length,2,'P-02 symmetric overhead shoulder plates');
  assert.equal(calls.filter(x=>x[0]==='rect'&&x[1]===16&&x[2]===2&&x[3]===8&&x[4]===6).length,2,'two square gloves on one shared pistol');
- assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===-8&&x[2]===-9&&x[3]===17&&x[4]===18),'flat block helmet instead of tiny facets');
+ assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===-8&&x[2]===-9&&x[3]===17&&x[4]===18),'flat single overhead helmet instead of circles');
+  assert.equal(calls.filter(x=>x[0]==='rect'&&x[1]===-25&&x[2]===7&&x[3]===12&&x[4]===9).length,2,'two compact mirrored boots, never a crawl silhouette');
+  assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===6&&x[2]===-6&&x[3]===5&&x[4]===12),'visible +X visor band shows facing direction');
+  assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===-20&&x[2]===-11&&x[3]===29&&x[4]===22),'shared armored body has one central torso');
  assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===17&&x[2]===0&&x[3]===11),'same compact gun projects beyond head');
  assert.ok(calls.some(x=>x[0]==='rect'&&x[1]===27&&x[2]===1),'shared muzzle tip exactly at (28,2)');
  assert.ok(!calls.some(x=>x[0]==='rect'&&x[4]>26),'no fake 2.5D crawling legs');
