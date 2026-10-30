@@ -43,6 +43,14 @@ After actual 3,600-seed source QA PASS and complete [Chromium + Android run 4102
 
 ---
 
+## Phase D — Read-only update preflight and actual archived signer mismatch verified (2026-10-30)
+
+[Draft v0.9.52 PR #81](https://github.com/PlayerEden/Ricochet-Rumble/pull/81) adds Node-only read-only `tools/android-update-preflight.mjs` for signed APK metadata/certificate and Android installed-app comparison. [Final CI 41144134616 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41144134616), exact tool SHA `80c5321a040a45c1a5032093708ef1af91bd9fd6`. **Confirmed with real signed GitHub release APKs:** v0.9.46 code47 and v0.9.51 code48 certificates differ and are **not normal in-place upgrade compatible**, notwithstanding valid independent builds. [Detailed public digest and safe workflow](ANDROID_UPDATE_PREFLIGHT_v0952.md).
+
+**Remaining P0:** owner supplies private durable TEST signing materials through controlled secrets (not chat), records installed app cert and verifies TWO same-signer in-place upgrades retaining actual dossier data, then separately finalizes Play signing/package/data policy. Static/pass-through preflight is **not physical installation success**. v0.9.51 vehicle placement owner's phone gameplay verdict also pending. No new APK or gameplay change from this step.
+
+---
+
 ## Priority and order
 | Phase | Work package | Purpose / real deliverable | Exit gate | Decision owner |
 |---|---|---|---|---|
