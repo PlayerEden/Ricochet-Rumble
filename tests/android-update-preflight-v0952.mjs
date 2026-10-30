@@ -36,6 +36,7 @@ assert.equal(pair(apk(49),apk(49)).reason,'CANDIDATE_VERSION_CODE_NOT_HIGHER');
 assert.equal(pair(apk(47),apk(48)).reason,'CANDIDATE_VERSION_CODE_NOT_HIGHER');
 assert.equal(pair(apk(49),null).reason,'NO_PREVIOUS_APK_VERIFIED');
 assert.equal(pair(apk(49),null,true).reason,'FRESH_INSTALL_ONLY_NO_EXISTING_PACKAGE');
+assert.equal(pair(apk(49),apk(48),true).reason,'FRESH_INSTALL_REQUEST_BUT_PACKAGE_ALREADY_INSTALLED');
 assert.equal(pair(apk(49),apk(48,b,'com.fake.app')).reason,'PREVIOUS_PACKAGE_ID_MISMATCH');
 assert.equal(pair(apk(49,a,'com.fake.app'),apk(48)).reason,'CANDIDATE_PACKAGE_ID_MISMATCH');
 assert.equal(pair(apk(49,null),apk(48)).reason,'SIGNER_CERTIFICATE_UNKNOWN');
