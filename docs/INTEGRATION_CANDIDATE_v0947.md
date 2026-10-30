@@ -1,3 +1,11 @@
+## Verified v0.9.47 integration QA — 2026-10-30
+
+**Full actual Chromium/Android QA PASS**, [run 41014535504](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41014535504), and [fast integrated regression PASS, run 41014535531](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41014535531). Both tested the original assembled source commit `feea956856df767cbb20a02c8a954d22cf73b02f`. The completed full run produced artifacts: `debug-apk-41014535504`, `unsigned-aab-NOT-FOR-PLAY-41014535504`, and `sector-rebound-qa-41014535504-1`. These are GitHub Actions artifacts, **not** a permanent release and **not** signed update-safe or Play-approved. The automation results confirm source/gameplay regression and browser/Android packaging, **not** real two-phone networking, signing continuity, device stress, or Play approval.
+
+**Current decision:** Keep [integration candidate PR #71](https://github.com/PlayerEden/Ricochet-Rumble/pull/71) DRAFT and unmerged. Main remains v0.9.21 game runtime with documentation updates. Next priority is private durable TEST signer and verified same-certificate upgrade with saves preserved, followed by Android long-session/precise-aim and two-phone LAN acceptance. Do not uninstall an existing APK with valuable local progress. Pilot P-03 and v0.9.46 UI/audio remain owner-approved.
+
+---
+
 # v0.9.47 — Controlled integration candidate from stable main (DO NOT MERGE)
 
 **Status: SOURCE ASSEMBLED / NEW INTEGRATED SHA NOT YET QA-ACCEPTED.** Owner explicitly accepted P-03 pilot silhouette/movement and v0.9.46 UI/audio. This branch is a *separate, reversible review candidate*, not a production release and not approval to merge experimental features.
