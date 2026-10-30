@@ -270,12 +270,19 @@ console.log('PASS v0.9.4 visual clarity: pilot duel advantage, tactical sidearm,
  assert.notEqual(mechIdle[0].x,mechMove[0].x,'left leg advances when walking');
  assert.notEqual(mechIdle[1].x,mechMove[1].x,'right leg counter-steps');
  assert.equal(mechMove[0].x+mechMove[1].x,mechIdle[0].x+mechIdle[1].x,'walking gait remains centered');
- // Strict overhead view: head/shoulders only. Legs are intentionally NOT visible.
+ // P-02 is strictly overhead: two flat boots in rear, two small team patches,
+ // and a centered counter-step, not long legs or a side-on crawling pose.
  const idle=geom('pilot',0),moving=geom('pilot',2);
- assert.ok(idle.some(o=>o.w===2&&o.h===10),'small vest highlight remains below overhead helmet');
- assert.ok(!idle.some(o=>o.w===12&&o.h===6),'no exposed crawling-legs geometry');
- assert.equal(idle.filter(o=>o.w===5&&o.h===2&&o.x===-10).length,2,'two chunky team shoulder marks');
- assert.equal(moving.filter(o=>o.w===5&&o.h===2).length,2,'two separate team patches survive arm sway');
+ const boots=parts=>parts.filter(o=>o.w===12&&o.h===9&&o.y===7);
+ const patches=parts=>parts.filter(o=>o.w===6&&o.h===2&&o.y===19);
+ assert.equal(boots(idle).length,2,'two compact overhead shoes');
+ assert.equal(patches(idle).length,2,'two mirrored shoulder team identifiers');
+ assert.equal(patches(moving).length,2,'team patches survive walking gait');
+ assert.notEqual(boots(moving)[0].x,boots(idle)[0].x,'first boot counter-steps');
+ assert.notEqual(boots(moving)[1].x,boots(idle)[1].x,'second boot counter-steps');
+ assert.ok(Math.abs(boots(moving)[0].x+boots(moving)[1].x-2*(-25))<1e-6,'overhead gait stays centered');
+ assert.ok(idle.some(o=>o.w===5&&o.h===12&&o.x===6),'single +X visor points in firing direction');
+ assert.ok(!idle.some(o=>o.h>26),'no long extruded leg or crawling profile');
 }
 // Emergency ejection is a cosmetic event, not damage to pilot lives.
 click('solo');const v0=st().vehicles[st().tanks[0].vehicleId],pilot=st().tanks[0],lives=st().lives[0];
