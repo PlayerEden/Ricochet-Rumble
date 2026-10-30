@@ -634,7 +634,7 @@ function newMatch(which){
  const playlistId=which==='solo'?nextPlaylistMode():null;
  if(bridgeReady())window.AndroidBridge.stopNetwork();mode=scoredLaunch||customLaunch?'solo':which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;
  const arena=selectArena(),options=customLaunch?customOptionsFor():scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:which==='scored_tdm'?'teams':'ffa',matchModeId:which,pilotMode:true}:playlistId?quickPlayOptionsFor(playlistId):{...selectedRules,pilotMode:true};
- state=initialState(arena,options,freshSectorSeed(state?.mazeSeed));camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config)):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch){exitMenu();if(which==='solo')firstMatchHint();}}
+ state=initialState(arena,options,freshSectorSeed(state?.mazeSeed));camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config)):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch){exitMenu();audioCue('deploy');if(which==='solo')firstMatchHint();}}
 function resetAll(advancePlaylist=false){
  const previousSeed=state.mazeSeed;
  let options={...state.config};
@@ -945,7 +945,11 @@ const AUDIO_CUES={
  'barrier':{wave:'triangle',start:640,end:1070,duration:.14,gain:.020},
  'pickup':{wave:'sine',start:420,end:920,duration:.15,gain:.020},
  'victory':{wave:'triangle',start:390,end:550,duration:.18,gain:.021},
- 'defeat':{wave:'triangle',start:240,end:85,duration:.25,gain:.022}
+ 'defeat':{wave:'triangle',start:240,end:85,duration:.25,gain:.022},
+ // Deliberately quiet, short UI tones; existing SOUND FX preference governs them.
+ 'ui-select':{wave:'sine',start:540,end:660,duration:.055,gain:.008,minGap:55},
+ 'ui-back':{wave:'sine',start:480,end:360,duration:.065,gain:.007,minGap:55},
+ 'deploy':{wave:'triangle',start:330,end:495,duration:.14,gain:.015,minGap:150}
 };
 // v0.9.21 original offline procedural music: same Web Audio context as SFX.
 // This is a tiny, consciously composed four-bar tonal pattern, not a copy
@@ -1027,6 +1031,21 @@ function audioCue(kind,x=null,y=null){
   lastAudioCue.set(kind,now);
   return true;
  }catch(_){return false;}
+}
+// In-match audio controls share existing persisted preferences.
+function pauseAudioControls(){
+ return '<div class="pause-audio" role="group" aria-label="In-match audio controls"><span class="pause-audio-label">AUDIO</span>'+
+  '<button type="button" data-action="toggle-sound" aria-pressed="'+comfort.sound+'">SFX · '+(comfort.sound?'ON':'OFF')+'</button>'+
+  '<button type="button" data-action="toggle-music" aria-pressed="'+comfort.music+'">MUSIC · '+(comfort.music?'ON':'OFF')+'</button></div>';
+}
+function togglePauseAudio(setting,button){
+ if(setting!=='sound'&&setting!=='music')return false;
+ comfort[setting]=!comfort[setting];
+ savePrefs();
+ if(button){button.textContent=(setting==='sound'?'SFX':'MUSIC')+' · '+(comfort[setting]?'ON':'OFF');button.setAttribute?.('aria-pressed',String(comfort[setting]));}
+ if(setting==='music'){musicScene='';if(comfort.music)armMusic();}
+ else if(comfort.sound)audioCue('ui-select');
+ return comfort[setting];
 }
 function updateVisuals(dt){visualClock+=dt;if(coachRemaining>0){coachRemaining=Math.max(0,coachRemaining-dt);if(coachRemaining===0)document.getElementById('field-coach')?.classList.add('hidden');}screenKick=Math.max(0,screenKick-dt*22);damagePulse=Math.max(0,damagePulse-dt*1.65);for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.max(0,1-dt*3);p.vy*=Math.max(0,1-dt*3)}particles=particles.filter(p=>p.life>0)}
 
@@ -1454,6 +1473,9 @@ loadPrefs();
 dossierStore=window.SectorDossier?.createStore((()=>{try{return window.localStorage}catch(_){return null}})())||null;
 
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
+ if(a==='toggle-sound'||a==='toggle-music'){togglePauseAudio(a==='toggle-sound'?'sound':'music',b);return;}
+ if(!['solo','settings-play','cqc','scored_ffa','scored_tdm','custom-play','duel','host','find','custom-preset-save','custom-preset-delete','custom-preset-load','ip-join'].includes(a))
+  audioCue(['settings-back','help-back','dossier-back','backup-back','custom-back','close','resume'].includes(a)?'ui-back':'ui-select');
  if(a==='dossier'){openDossier()}else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, drag the large circular AIM pad to turn the hull without firing, then tap FIRE when lined up. The centered AIM thumbstick has a dead zone to ignore jitter.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){panel.innerHTML=originalPanel;applyPrefsToUI();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
  else if(a==='custom-reset'){resetCustomDraft();refreshCustomUI();customPresetStatus('DEFAULT RULES RESTORED · SAVED PRESETS KEPT');}
  else if(a==='custom-preset-save'){
@@ -1474,12 +1496,12 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
  const s=document.getElementById('lan-address').value.trim(),m=s.match(/^([\da-fA-F:.]+):(\d{1,5})$/);
  if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';window.AndroidBridge.joinGame(m[1],Number(m[2]));}});
 function showPauseMenu(){releaseControls();if(mode==='idle')return;
- if(mode==='solo'||mode==='duel'){paused=true;setPanel('<div class="eyebrow">FIELDGRID / PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">The field is frozen. Continue or generate a fresh sector.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">NEW FIELD</button><button data-action="close">MAIN MENU</button></div>')}
- else if(mode==='host'){paused=true;guestInput={moveX:0,moveY:0,fire:false};setPanel('<div class="eyebrow">FIELDGRID / HOST PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">Both players are paused.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">NEW FIELD</button><button data-action="close">DISCONNECT</button></div>')}
- else if(mode==='guest'){if(connected)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}});setPanel('<div class="eyebrow">FIELDGRID / PLAYER MENU</div><h2>SECTOR <span>MENU</span></h2><p class="pause-hint">The host controls rematches.</p><div class="pause-actions"><button class="primary" data-action="resume">BACK TO ARENA</button><button data-action="close">DISCONNECT</button></div>')}}
-document.getElementById('menu-button').addEventListener('click',showPauseMenu);
-document.getElementById('quick-rematch')?.addEventListener('click',()=>{if(state.winner>=0&&mode!=='guest'&&mode!=='idle'){if(resetAll(mode==='solo'&&!!state.config?.quickPlayMatch)!==false)notice('NEW FIELD · NEW FIGHT',1400)}});
- document.getElementById('results-menu')?.addEventListener('click',()=>{if(state.winner>=0&&mode!=='idle')stop()});
+ if(mode==='solo'||mode==='duel'){paused=true;setPanel('<div class="eyebrow">FIELDGRID / PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">The field is frozen. Continue or generate a fresh sector.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">NEW FIELD</button><button data-action="close">MAIN MENU</button></div>'+pauseAudioControls())}
+ else if(mode==='host'){paused=true;guestInput={moveX:0,moveY:0,fire:false};setPanel('<div class="eyebrow">FIELDGRID / HOST PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">Both players are paused.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">NEW FIELD</button><button data-action="close">DISCONNECT</button></div>'+pauseAudioControls())}
+ else if(mode==='guest'){if(connected)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}});setPanel('<div class="eyebrow">FIELDGRID / PLAYER MENU</div><h2>SECTOR <span>MENU</span></h2><p class="pause-hint">The host controls rematches.</p><div class="pause-actions"><button class="primary" data-action="resume">BACK TO ARENA</button><button data-action="close">DISCONNECT</button></div>'+pauseAudioControls())}}
+document.getElementById('menu-button').addEventListener('click',()=>{if(mode!=='idle')audioCue('ui-select');showPauseMenu()});
+document.getElementById('quick-rematch')?.addEventListener('click',()=>{if(state.winner>=0&&mode!=='guest'&&mode!=='idle'){if(resetAll(mode==='solo'&&!!state.config?.quickPlayMatch)!==false){audioCue('deploy');notice('NEW FIELD · NEW FIGHT',1400)}}});
+ document.getElementById('results-menu')?.addEventListener('click',()=>{if(state.winner>=0&&mode!=='idle'){audioCue('ui-back');stop()}});
  document.getElementById('custom-edit')?.addEventListener('click',()=>{if(state.winner>=0&&mode==='solo'&&state.config?.customMatch){stop();openCustomScreen();}});
 document.getElementById('interact-btn')?.addEventListener('pointerdown',e=>{e.preventDefault();if(mode==='guest'){if(connected&&!paused&&menu.classList.contains('hidden')&&!state.hostPaused)nativePacket({type:'interact'});}else tryInteract(0)});
 menu.addEventListener('click',e=>{const a=e.target?.dataset?.action;

@@ -2119,3 +2119,54 @@ console.log('PASS v0.9.36 local Custom presets: validated names, duplicate safet
  assert.equal(st().config.quickPlayMatch,true);
 }
 console.log('PASS v0.9.37 opt-in Quick Play: 3 scored rotations, mixed-mode shuffle, truthful score rules, standalone/Custom isolation, old Survival defaults.');
+
+
+// v0.9.46 UI/audio QA: pause shortcuts are real controls, not decorative
+// menu text. They use existing saved settings and leave gameplay unchanged.
+{
+ const api=win.__test;
+ const source=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
+ const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
+ assert.ok(source.includes("data-action=\"toggle-sound\""),'pause overlay contains a real SFX action');
+ assert.ok(source.includes("data-action=\"toggle-music\""),'pause overlay contains a real MUSIC action');
+ assert.ok(css.includes('.pause-audio button[aria-pressed="true"]'),'pressed-state visual feedback is styled');
+ assert.ok(['ui-select','ui-back','deploy'].every(k=>k in api.AUDIO_CUES),'quiet original menu tones are defined');
+ for(const k of ['ui-select','ui-back','deploy'])assert.ok(api.AUDIO_CUES[k].gain<=.015,'menu tones remain quieter than weapons');
+ api.comfort.sound=true;api.comfort.music=true;
+ api.newMatch('solo');
+ const pauseHandlers=handlers['menu-button:click']||[];
+ assert.ok(pauseHandlers.length,'actual Pause button wired');
+ pauseHandlers[0]();
+ assert.ok(node('panel').innerHTML.includes('aria-label="In-match audio controls"'),'pause has real audio controls');
+ assert.ok(node('panel').innerHTML.includes('SFX · ON'),'SFX starts with saved preference');
+ assert.ok(node('panel').innerHTML.includes('MUSIC · ON'),'MUSIC starts with saved preference');
+ const select=(action)=>{
+  const el={dataset:{action},textContent:'',attributes:{},setAttribute(k,v){this.attributes[k]=v}};
+  for(const fn of handlers['menu:click']||[])fn({target:{closest(){return el},dataset:el.dataset}});
+  return el;
+ };
+ const soundOff=select('toggle-sound');
+ assert.equal(api.comfort.sound,false,'SFX shuts off instantly');
+ assert.equal(soundOff.textContent,'SFX · OFF','pause toggle updates label');
+ assert.equal(soundOff.attributes['aria-pressed'],'false','SFX accessible pressed-state updates');
+ assert.equal(JSON.parse(savedStorage.get('rr-options-v06')).comfort.sound,false,'SFX persists in existing local prefs');
+ const musicOff=select('toggle-music');
+ assert.equal(api.comfort.music,false,'music shuts off instantly');
+ assert.equal(musicOff.textContent,'MUSIC · OFF');
+ assert.equal(musicOff.attributes['aria-pressed'],'false');
+ assert.equal(JSON.parse(savedStorage.get('rr-options-v06')).comfort.music,false,'music persists');
+ const soundOn=select('toggle-sound');
+ assert.equal(api.comfort.sound,true);
+ assert.equal(soundOn.textContent,'SFX · ON');
+ const musicOn=select('toggle-music');
+ assert.equal(api.comfort.music,true);
+ assert.equal(musicOn.textContent,'MUSIC · ON');
+ assert.ok(source.includes("if(a==='dossier')"),'existing dossier navigation stays wired');
+ assert.equal(api.comfort.sound,true);
+ assert.equal(api.comfort.music,true);
+ assert.ok(source.includes("audioCue('deploy')"),'deploy cue is wired on real matches/replays');
+ assert.ok(source.includes("audioCue('ui-back')"),'post-match return is audible when enabled');
+ assert.ok(source.includes("if(!comfort.sound)return false"),'all UI sounds obey global SOUND FX setting');
+ assert.ok(source.includes("if(!musicGesture||!comfort.music||document.hidden)return"),'music off and background gating preserved');
+}
+console.log('PASS v0.9.46 presentation: interactive pause SFX/music, persistence, accessibility, low-volume menu/deploy cues, no physics change.');
