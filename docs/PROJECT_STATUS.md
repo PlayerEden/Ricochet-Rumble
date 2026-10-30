@@ -1,3 +1,11 @@
+# LATEST — v0.9.51 ACTUAL GARAGE RECOVERY EXPERIMENT FULL QA PASS / APK READY (2026-10-30)
+
+**New experimental build:** [v0.9.51 original debug APK / screenshots / SHA256 GitHub prerelease](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.51-corridor-recovery-prototype); APK SHA256 `1e262f546710a10a6416de94cbb86952b435549c6ed9785452396f914a4571e5`, from exact successful Chromium/Android source [run 41024682060](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41024682060) SHA `22ba2237919c5a78255475d84638c4f5c769d8d3`. Additional [3,600 seeded actual-game source comparison + scored/saves/smoke PASS 41024297470](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41024297470). New source is in **draft PR #80, unmerged**. [Final full detail](CORRIDOR_RECOVERY_PROTOTYPE_v0951.md) and [development plan](DEVELOPMENT_EXECUTION_PLAN_POST_AUDIT_2026-10-30.md). Solo source p95 player route 10→8 small, 14→8 standard, 15→8 large; 600 scored seeds worst seat p95 13→6, 19→8, 29→12. Up to 1 Solo or 2 scored spare relocations; original `recoveryPolicy:'legacy'` fallback preserved; no map/pilot/controls/UI/audio/physics changes.
+
+**Remaining manual owner gate:** on actual phone judge whether recovery is too easy/hard after armor loss, and whether navigation arrow/vehicle access are understandable. **CI debug signer may differ**, so APK is clean-install ONLY and should not replace an older install with important progress. Stable `main` still older runtime; NO merge. Real two-device LAN, durable same-signed update and Play safety remain unresolved.
+
+---
+
 # v0.9.51 — ACTUAL CORRIDOR-AWARE RECOVERY PROTOTYPE / CODE QA PASS (2026-10-30)
 
 [Isolated draft PR #80](https://github.com/PlayerEden/Ricochet-Rumble/pull/80) now adds a **real** deterministic bounded path-distance spare vehicle placement option to `web/game.js` and exact mirrored Android `game.js`, preserving exact `recoveryPolicy:'legacy'` rollback. Solo: leave map and garages alone if player spare <=8 cells, else move ≤1 spare to 4–8 corridor steps where safe; scored and 2-human: move ≤2 spares to improve worst-seat access with no added vehicles. No owner-locked pilot, aiming/movement settings, ricochet physics, UI/audio/layout or saved progress changed. Android versionCode 48 v0.9.51 experimental debug clean-install identity, not a safe signer update.
