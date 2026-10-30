@@ -1,3 +1,11 @@
+# v0.9.46 UI/AUDIO POLISH — experimental, quality gates pending (2026-10-30)
+
+**Continuing after owner LOCKED v0.9.45.1 P-03 design and movement.** Review child branch `polish/ui-audio-feedback-v0946` adds quiet offline synthesized menu-select/menu-back/deployment cues, plus in-match pause SFX/MUSIC ON/OFF buttons for Solo/Host/Guest with saved comfort preferences and compact landscape styling. Original background procedural music and existing combat SFX remain. **P-03 pilot geometry and animation unchanged; no changes to tank/mech, physics, camera, aim, controls, procedural arena, scoring, network, save/dossier or current cosmetics.** Android debug metadata updated to code 47 / `0.9.46-ui-audio-test`. [Full milestone QA/rollback](QA_UI_AUDIO_v0946.md).
+
+**Automated fast and full Chromium/Android QA: not yet verified at this entry.** User physical mobile UI/audio assessment pending; retain previous [original v0.9.45.1 owner-approved P-03 APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.45.1-pilot-motion-test). Stable main runtime v0.9.21 remains unmerged; manual signing continuity, two-phone LAN, full device controls and Play compliance blocked/open. Debug candidates are clean-install only: DO NOT uninstall older app with valuable save data.
+
+---
+
 # OWNER-APPROVED CHECKPOINT — P-03 PILOT ART + MOVEMENT LOCKED (2026-10-30)
 
 **LATEST USER DECISION: "I think that's good. Lock it in."** This explicitly approves the full top-down **P-03 silhouette and v0.9.45.1 velocity-responsive torso/shoulder motion** as the default pilot presentation for Sector Rebound. Team colors, visor, two-handed centerline pistol and actual muzzle (28,2) remain; NO separate legs, boots or prone/crawling silhouette. **Do not make more pilot visual/art passes absent a specific bug or a new owner request.** Proceed to the next separate milestone: UI/audio polish (v0.9.46), and later cross-system/Android release QA.
