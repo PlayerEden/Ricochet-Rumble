@@ -19,3 +19,5 @@
 - [ ] Subsequent independently audited cosmetic equip pipeline only AFTER art/license/product status approves runtime; future local profile migration/import/export and cloud accounts not yet developed
 
 **No fake cosmetic grants. No pay-to-win. No assumed old stats.** This milestone is data foundation + real dossier, not a storefront or online account.
+
+**CI dispatch note:** PR #58 temporarily targets main because the existing fast/full PR workflows listen only to main. Restore the draft to its direct parent QA branch when the automated gate completes. This is not merge approval.
