@@ -1,3 +1,9 @@
+## P0 evidence update: v0.9.42 actual archived certificates
+
+The previous "unknown certificate match" is now **confirmed FAIL for standard in-place upgrade** on exact archived builds: [actual Android signer/package/SHA verification 40994470523](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40994470523) found **four distinct public debug certificate SHA-256 values** across original v0.9.32, v0.9.37, v0.9.39 and v0.9.40. All have stable package ID `com.playereden.ricochetrumble` and valid original APK checksum. 0.9.32/37/39 embedded `versionCode 38`; 0.9.40 code 40. Normal in-place updating from any of these three older assets to v0.9.40 is blocked by certificate mismatch, regardless of versionCode. The actual owner-installed APK remains unexamined. **Preserve existing data; do not direct owner to uninstall older app** without a verified migration. Detailed [certificate matrix and owner-custody release plan](QA_APK_SIGNER_CONTINUITY_v0942.md).
+
+---
+
 # Sector Rebound — First Development Plan Cross-System Audit and Go/No-Go Register
 
 **Audit date:** 2026-10-29 / 2026-10-30 UTC execution. **Disposition: AUTOMATED CONTRACTS PASS; FINAL RELEASE NO-GO.** This is the evidence-backed end-of-first-plan assessment, not a claim that real handset, LAN, production credentials or Play review have passed.
