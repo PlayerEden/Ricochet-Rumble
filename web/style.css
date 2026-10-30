@@ -734,3 +734,49 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 #panel .pause-audio button[aria-pressed="true"]{background:#234757;border-color:#82bdca;color:#e5faff}
 #panel .pause-audio button:focus-visible{outline:2px solid #e4cf91;outline-offset:2px}
 @media(max-height:390px){#panel .pause-audio{margin-top:7px;padding-top:6px;gap:5px}#panel .pause-audio button{min-height:34px}}
+
+
+/* v0.9.48 ergonomic layout corrections — only spacing, clipping and tap
+   reachability; all approved art, colors, movement and physics are unchanged. */
+/* Score clock previously sat at x=0 under the absolute MENU key. Give it
+   its own small safe-area-aware slot below that key, away from the scoreboard. */
+.game-hud .score-clock:not(.hidden){
+ position:absolute;top:max(53px,calc(env(safe-area-inset-top) + 53px));
+ left:max(12px,calc(env(safe-area-inset-left) + 12px));right:auto;
+ max-width:min(130px,30vw);z-index:7;pointer-events:none;
+}
+/* The preset footer inherited panel button width:100% with flex:0 0 auto,
+   overflowing horizontally when the second footer item was present. */
+.custom-preset-foot{min-width:0;max-width:100%;flex-wrap:wrap}
+#panel .custom-preset-foot button{width:auto;max-width:100%;flex:0 1 auto}
+#panel .custom-preset-foot p{min-width:0;overflow-wrap:anywhere}
+/* Short real phone landscapes: keep the primary deploy button visible, and
+   let players scroll secondary game modes rather than clip the final row. */
+@media(max-height:370px) and (orientation:landscape){
+ .home-actions{justify-content:flex-start;overflow-y:auto;overflow-x:hidden;
+   overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:thin}
+ .home-actions>*{flex-shrink:0}
+ .home-action-grid{flex-shrink:0}
+}
+@media(max-width:650px) and (orientation:landscape){
+ .home-topbar{gap:6px;padding:7px 10px}
+ .home-overline{display:none}
+ .home-brand{gap:4px}
+ .home-brand h2{font-size:clamp(16px,3.4vw,20px);letter-spacing:0}
+ .home-utilities{gap:5px}
+ #panel .home-utilities button{padding:6px 5px;font-size:9px;min-height:32px}
+ #panel .home-utilities button[data-action="help"] span{display:none}
+ .home-actions{gap:5px;padding:6px 9px}
+ #panel .home-actions h3{font-size:clamp(18px,3.8vw,22px);line-height:1.05;overflow-wrap:anywhere}
+ #panel .home-description{font-size:10px;line-height:1.2}
+ #panel .home-deploy{font-size:18px;gap:4px;min-height:46px;padding:6px 8px}
+ .home-deploy small{font-size:8px}
+ .home-action-grid{gap:4px}
+ #panel .home-action-grid button{padding:5px 6px;min-height:44px}
+ .home-action-grid strong{font-size:11px;overflow-wrap:anywhere}
+ .home-action-grid small{font-size:8px;overflow-wrap:anywhere}
+ .home-footer{padding:5px 9px}
+}
+
+/* Do not leave the inactive scored clock underneath MENU in Survival. */
+.game-hud .score-clock.hidden{display:none!important}
