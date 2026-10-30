@@ -1,0 +1,42 @@
+name: Sector Rebound v0.9.50 — 3000-map fairness evidence
+on:
+  push:
+    branches: [research/procedural-fairness-v0950]
+    paths:
+      - 'tests/map-fairness-v0950.mjs'
+      - '.github/workflows/map-fairness-v0950.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fairness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Assert original source and test syntax plus mirrored assets
+        run: |
+          set -euo pipefail
+          node --check tests/map-fairness-v0950.mjs
+          node --check web/game.js
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/style.css android/app/src/main/assets/style.css
+      - name: Run original procedural generator and vehicle placement — 1000 seeds per size
+        run: node tests/map-fairness-v0950.mjs --seeds=1000
+      - name: Preserve game, scored match and save regression gates
+        run: |
+          set -euo pipefail
+          node tests/scored-match-kernel.mjs
+          node tests/save-backup.mjs
+          node tests/smoke.mjs
+      - name: Preserve map fairness summary, 3000 seed rows and replay seeds
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: map-fairness-v0950-${{ github.run_id }}
+          path: qa-results/map-fairness-v0950/
+          if-no-files-found: warn
+          retention-days: 30
