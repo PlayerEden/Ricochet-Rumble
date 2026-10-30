@@ -1,0 +1,69 @@
+name: Archive exact passing v0.9.51 corridor recovery prototype
+on:
+  push:
+    branches: [prototype/corridor-aware-recovery-v0951]
+    paths:
+      - '.github/workflows/archive-v0951-corridor.yml'
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: archive-v0951-corridor
+  cancel-in-progress: false
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Validate original tested source and avoid release overwrite
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          RUN=41024682060
+          SOURCE=22ba2237919c5a78255475d84638c4f5c769d8d3
+          TAG=v0.9.51-corridor-recovery-prototype
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN" --jq .conclusion)" = success
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN" --jq .head_sha)" = "$SOURCE"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Tag already released; refusing to overwrite" >&2
+            exit 1
+          fi
+      - name: Copy byte-identical tested APK and browser QA evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 41024682060 --repo "$GITHUB_REPOSITORY" --name debug-apk-41024682060 --dir original-apk
+          gh run download 41024682060 --repo "$GITHUB_REPOSITORY" --name sector-rebound-qa-41024682060-1 --dir original-qa
+          test -s original-apk/app-debug.apk
+          test "$(find original-qa -name '*.png' | wc -l)" -ge 10
+          cp original-apk/app-debug.apk sector-rebound-v0.9.51-corridor-prototype-debug.apk
+          (cd original-qa && zip -q -r ../sector-rebound-v0.9.51-visual-qa.zip .)
+          sha256sum sector-rebound-v0.9.51-corridor-prototype-debug.apk sector-rebound-v0.9.51-visual-qa.zip > SHA256-v0.9.51.txt
+      - name: Publish original test artifacts with full scope limits
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cat > release.md <<'NOTES'
+          # Sector Rebound v0.9.51 — Corridor-Aware Vehicle Recovery (Experimental)
+
+          This debug APK adds bounded deterministic path-aware positioning for existing spare vehicles, with no new vehicles and no changes to maze generation, scores, combat, locked pilot, UI/audio, speed, aiming, controls, online protocol or user saves. An explicit `recoveryPolicy:'legacy'` restores old initial spare placement.
+
+          **Exact QA-tested source commit:** `22ba2237919c5a78255475d84638c4f5c769d8d3`.
+          - [Real-game seeded initial vehicle recovery test **PASS** — 3,000 Solo + 600 scored seeds](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41024297470). The earlier source-game diff was already tested here; metadata/workflow edits afterward did not change runtime JS.
+          - [Full real Chromium + Android debug APK and unsigned AAB **PASS**](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41024682060). This APK was **copied byte-for-byte**, not rebuilt, changed or resigned after QA. Original screenshots ZIP and SHA256 are attached.
+          - [Feature draft PR #80](https://github.com/PlayerEden/Ricochet-Rumble/pull/80); [prior unchanged placement source for rollback PR #79](https://github.com/PlayerEden/Ricochet-Rumble/pull/79).
+          - [Detailed permanent rollout/QA and measured p95 results](https://github.com/PlayerEden/Ricochet-Rumble/blob/main/docs/CORRIDOR_RECOVERY_PROTOTYPE_v0951.md).
+
+          **WARNING — CLEAN-INSTALL EXPERIMENTAL DEBUG APK.** The CI signing certificate is ephemeral and may not match any previous installed build; this release does **NOT** support a guaranteed in-place update. **Do not uninstall an older installation containing important progress merely to test this build.** Manual owner judgement of recoverable-pilot risk/fun, actual Android performance and 2-phone LAN have NOT passed. Unsigned AAB is not for Play. Stable main is unchanged.
+          NOTES
+          gh release create v0.9.51-corridor-recovery-prototype \
+            sector-rebound-v0.9.51-corridor-prototype-debug.apk \
+            sector-rebound-v0.9.51-visual-qa.zip SHA256-v0.9.51.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --target 22ba2237919c5a78255475d84638c4f5c769d8d3 \
+            --prerelease \
+            --title "Sector Rebound v0.9.51 — Corridor Recovery Experimental" \
+            --notes-file release.md
