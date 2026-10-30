@@ -1,0 +1,45 @@
+name: Sector Rebound - first development plan cross-system automated audit
+on:
+  push:
+    branches: [qa/first-plan-cross-system-audit-v0941]
+    paths:
+      - 'tests/first-plan-contract-audit.mjs'
+      - '.github/workflows/first-plan-cross-system-audit-v0941.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  full-plan-automated-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify audited input scripts and all mirrored Android/Web game assets
+        run: |
+          set -euo pipefail
+          node --check tests/first-plan-contract-audit.mjs
+          for file in game.js scored-match.js dossier.js save-backup.js index.html style.css; do
+            cmp "web/$file" "android/app/src/main/assets/$file"
+          done
+          node tests/first-plan-contract-audit.mjs
+      - name: Execute existing full offline gameplay, scores, saves and upgrade regression contracts
+        run: |
+          set -euo pipefail
+          node tests/smoke.mjs
+          node tests/scored-match-kernel.mjs
+          node tests/scored-browser-parity.mjs
+          node tests/dossier.mjs
+          node tests/save-backup.mjs
+          node tests/android-upgrade-readiness.mjs
+          node tools/validate-cosmetic-catalog.mjs
+      - name: Upload durable evidence including explicitly unresolved physical gates
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: first-plan-cross-system-contract-audit-v0941
+          path: qa-results/first-plan-contract-audit.json
+          if-no-files-found: warn
+          retention-days: 90
