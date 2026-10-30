@@ -1166,43 +1166,37 @@ function drawLobbyPreview(dt){
  c.globalAlpha=1;
 }
 function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0,skinId='fieldgrid.standard',squadPaint=false){
- // v0.9.44 FIELDGRID P-02: one clean, strictly overhead soldier silhouette.
+ // v0.9.45 FIELDGRID P-03: compact overhead operator; no exposed legs.
  // +X is forward for the pilot, tank, mech AND the real projectile muzzle.
- // Feet/shoulders mirror across Y; two forearms lead to ONE compact pistol.
+ // Only shoulders and short arms mirror across Y; two hands hold ONE pistol.
  // No foreshortened face/profile, segmented circles, fake depth or glow rings.
  const skin=resolveUnitMaterials('pilot',paint,skinId);
  const armorPaint=squadPaint&&skinId==='fieldgrid.standard'?paint:skin.armor;
- const step=clamp(stride,-3,3)*.55;
+ // Intentionally no counterstepping gait: the separated feet read as crawling.
  c.save();c.translate(-recoil*.15,bob*.25);
  c.lineJoin='miter';c.lineWidth=1.6;c.strokeStyle='#071923';
- // Rear backpack and broad vest; dark clearance gap separates the legs.
- c.fillStyle='#071923';c.fillRect(-20,-11,29,22);
- c.fillStyle=armorPaint;c.fillRect(-18,-9,25,18);
+ // One continuous compact vest; no detached lower-body elements.
+ c.fillStyle='#071923';c.fillRect(-20,-10,28,20);
+ c.fillStyle=armorPaint;c.fillRect(-18,-8,24,16);
  c.fillStyle=skin.shadow;c.fillRect(-16,-7,8,14);
  c.fillStyle=skin.light;c.fillRect(-14,-8,3,15);
  c.fillStyle='#132c38';c.fillRect(-19,-5,4,10);
  c.fillStyle=skin.trim;c.fillRect(-17,-8,2,3);
- // Exactly mirrored feet, shoulder plates and bent arms.
+ // Mirrored shoulder plates and short pistol arms; no visible boots or legs.
  for(const side of [-1,1]){
   c.save();c.scale(1,side);
-  // Two shoes travel opposite directions when walking; do not fake a sideways crawl.
-  c.translate(-side*step,0);
-  c.fillStyle='#071923';c.fillRect(-25,7,12,9);
-  c.fillStyle='#263f4b';c.fillRect(-24,9,9,5);
-  c.fillStyle=skin.light;c.fillRect(-24,8,5,2);
-  c.fillStyle=armorPaint;c.fillRect(-16,9,10,5);
-  // Helmet is separate from broad, rectangular armored shoulders.
+  // Broad overhead shoulders remain legible in neutral and team colors.
   c.fillStyle='#071923';c.fillRect(-9,11,17,11);
   c.fillStyle=armorPaint;c.fillRect(-7,13,14,7);
   c.fillStyle=skin.light;c.fillRect(-6,13,10,2);
   c.fillStyle=skin.team;c.fillRect(-7,19,6,2);
   // Each arm is one angular armored bent limb — not a second barrel.
   c.fillStyle='#071923';c.beginPath();
-  c.moveTo(5,18);c.lineTo(10,18);c.lineTo(21,7);
-  c.lineTo(21,3);c.lineTo(16,3);c.lineTo(7,13);c.closePath();c.fill();
+  c.moveTo(6,16);c.lineTo(11,15);c.lineTo(20,6);
+  c.lineTo(20,3);c.lineTo(16,3);c.lineTo(8,12);c.closePath();c.fill();
   c.fillStyle=armorPaint;c.beginPath();
-  c.moveTo(8,16);c.lineTo(10,16);c.lineTo(19,7);
-  c.lineTo(19,5);c.lineTo(17,5);c.lineTo(8,14);c.closePath();c.fill();
+  c.moveTo(9,14);c.lineTo(12,14);c.lineTo(19,6);
+  c.lineTo(19,5);c.lineTo(17,5);c.lineTo(9,12);c.closePath();c.fill();
   c.fillStyle=skin.light;c.fillRect(16,6,3,2);
   // One glove per hand on a shared centerline sidearm.
   c.fillStyle='#071923';c.fillRect(16,2,8,6);
