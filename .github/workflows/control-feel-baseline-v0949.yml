@@ -1,0 +1,43 @@
+name: Sector Rebound v0.9.49 — gameplay handling source baseline
+on:
+  push:
+    branches: [research/control-feel-baseline-v0949]
+    paths:
+      - 'tests/control-feel-baseline-v0949.mjs'
+      - '.github/workflows/control-feel-baseline-v0949.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  handling-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify unmodified engine and mirrored Android assets
+        run: |
+          set -euo pipefail
+          node --check web/game.js
+          node --check tests/control-feel-baseline-v0949.mjs
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/style.css android/app/src/main/assets/style.css
+      - name: Measure actual engine response across 9 mode/unit pairs
+        run: node tests/control-feel-baseline-v0949.mjs
+      - name: Protect scored match kernel and earlier game mechanics
+        run: |
+          set -euo pipefail
+          node tests/scored-match-kernel.mjs
+          node tests/smoke.mjs
+      - name: Preserve JSON measurement evidence even on test failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: control-feel-baseline-v0949-${{ github.run_id }}
+          path: qa-results/control-feel-v0949/
+          if-no-files-found: warn
+          retention-days: 30
