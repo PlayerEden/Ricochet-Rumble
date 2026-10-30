@@ -13,7 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      SR_TEST_STORE_FILE: ${{ runner.temp }}/sr-test-credentials/test-only-keystore.jks
       EXPECTED_TEST_CERT: ${{ vars.SR_TEST_CERT_SHA256 }}
     steps:
       - uses: actions/checkout@v4
@@ -26,6 +25,7 @@ jobs:
           gradle-version: '8.13'
       - name: Reject missing private test signer or public digest (NEVER auto-fallback)
         env:
+          SR_TEST_STORE_FILE: ${{ runner.temp }}/sr-test-credentials/test-only-keystore.jks
           SR_TEST_STORE_PASSWORD: ${{ secrets.SR_TEST_STORE_PASSWORD }}
           SR_TEST_KEY_ALIAS: ${{ secrets.SR_TEST_KEY_ALIAS }}
           SR_TEST_KEY_PASSWORD: ${{ secrets.SR_TEST_KEY_PASSWORD }}
@@ -60,6 +60,7 @@ jobs:
       - name: Build APK with ONLY the PRIVATE pinned TEST key
         working-directory: android
         env:
+          SR_TEST_STORE_FILE: ${{ runner.temp }}/sr-test-credentials/test-only-keystore.jks
           SR_TEST_STORE_PASSWORD: ${{ secrets.SR_TEST_STORE_PASSWORD }}
           SR_TEST_KEY_ALIAS: ${{ secrets.SR_TEST_KEY_ALIAS }}
           SR_TEST_KEY_PASSWORD: ${{ secrets.SR_TEST_KEY_PASSWORD }}
@@ -97,4 +98,6 @@ jobs:
           retention-days: 14
       - name: Erase temporary keystore from CI runner
         if: always()
+        env:
+          SR_TEST_STORE_FILE: ${{ runner.temp }}/sr-test-credentials/test-only-keystore.jks
         run: rm -rf "$(dirname "$SR_TEST_STORE_FILE")"
