@@ -1,3 +1,15 @@
+# v0.9.39 — PASS, with explicit manual restrictions
+
+- **Exact verified gameplay/test SHA:** `77adb43e8c999fe37d50f8b940612af561d9845a`.
+- **Fast regression PASS:** [GitHub Actions 40987749714](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40987749714) — syntax, byte-for-byte Android/Web dossier/scored/game/HTML/CSS mirrors, actual 300 seeded mazes, existing scored/Quick Play/LAN/Custom regressions, independent profile corruption/version/dedup/denied-storage and no-entitlement tests.
+- **Full Chromium and Android QA PASS:** [40987749740](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40987749740) — real completed offline results update service record once, HUD refresh doesn't duplicate it, reload recovers data, per-mode display and locked future cosmetic preview, 740x360/915x412/1280x720 landscape touch target checks; debug APK and unsigned AAB built. The workflow passed.
+- **Exact original passing QA APK archived:** [immutable v0.9.39 test prerelease](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.39-player-dossier-test) with byte-identical Android debug APK, QA ZIP and checksums. [One-use archival job 40988277030 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40988277030); workflow removed.
+- **Nothing invented or granted:** local stats begin at zero unless pre-existing valid same-schema service record; only actual offline Solo-vs-bot completion contributes, never practice/abandoned/2-phone LAN; art/premium and earned future pilot icons remain unapproved and unselectable.
+- **Manual gates OPEN:** physical phone navigation, localStorage survival across app upgrade and uninstall, debug signing mismatch, actual owner controls/audio/music/AI fun, two-phone LAN, art/rights and store catalog sign-off, production identity/signing/Play review. Green CI does not establish any of these.
+- **Source status:** new dossier script + UI + CSS and corresponding byte mirrors. Stable `main` unmodified; PR #58 remains draft on parent experiment. Owner approval mandatory before integration.
+
+---
+
 # v0.9.39 — local Player Dossier and future cosmetic eligibility audit
 
 **Experimental code milestone.** Branch `feature/player-dossier-local-v0939` depends on QA-only v0.9.38 PR #57 and all prior unmerged gameplay drafts. No production merge or Google Play claims.
