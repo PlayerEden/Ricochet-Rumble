@@ -52,6 +52,21 @@ jobs:
           set -euo pipefail
           node tests/release-readiness-v0947.mjs
           node tests/first-plan-contract-audit.mjs
+      - name: Three targeted audits then one overall audit — no runtime edits
+        run: |
+          set -euo pipefail
+          node tests/targeted-audits-v0947.mjs gameplay
+          node tests/targeted-audits-v0947.mjs ui-data
+          node tests/targeted-audits-v0947.mjs android-lan
+          node tests/targeted-audits-v0947.mjs overall
+      - name: Preserve individual audit evidence and consolidated verdict
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: targeted-and-overall-audits-v0947-${{ github.run_id }}
+          path: qa-results/targeted-v0947/
+          if-no-files-found: warn
+          retention-days: 30
       - name: Verify durable local dossier and safe concept-only cosmetics
         run: node tests/dossier.mjs
       - name: Verify pure scored KO, team timeouts and spawn ranking contract
