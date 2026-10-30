@@ -1,0 +1,75 @@
+name: Archive exact QA-passing v0.9.45 P-03 pilot preview
+on:
+  push:
+    branches: [feature/pilot-silhouette-cleanup-v0945]
+    paths:
+      - '.github/workflows/archive-v0945-pilot-preview.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: archive-v0945-pilot-preview
+  cancel-in-progress: false
+
+jobs:
+  archive:
+    if: github.repository == 'PlayerEden/Ricochet-Rumble'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Verify exact original QA run and unique tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          TESTED_SHA=af018ec9fee10886ab4cdc02cef78a17e764e0bf
+          RUN_ID=41003818583
+          TAG=v0.9.45-pilot-silhouette-test
+          test "$(gh api "repos/$REPO/actions/runs/$RUN_ID" --jq '.conclusion')" = success
+          test "$(gh api "repos/$REPO/actions/runs/$RUN_ID" --jq '.head_sha')" = "$TESTED_SHA"
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            echo "Release tag exists; refusing to overwrite original preview."
+            exit 1
+          fi
+      - name: Download ORIGINAL tested Android APK and Chromium evidence, no rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 41003818583 --repo "$GITHUB_REPOSITORY" --name debug-apk-41003818583 --dir original-apk
+          gh run download 41003818583 --repo "$GITHUB_REPOSITORY" --name sector-rebound-qa-41003818583-1 --dir original-qa
+          test -s original-apk/app-debug.apk
+          test "$(sha256sum original-apk/app-debug.apk | awk '{print $1}')" = 74f9313c6672877dd7e0e1be26cccea03a6c5a294c91311e511176c71cec0ab6
+          test "$(find original-qa -name '*.png' | wc -l)" -ge 12
+          cp original-apk/app-debug.apk sector-rebound-v0.9.45-pilot-debug.apk
+          (cd original-qa && zip -q -r ../sector-rebound-v0.9.45-pilot-qa.zip .)
+          sha256sum sector-rebound-v0.9.45-pilot-debug.apk sector-rebound-v0.9.45-pilot-qa.zip > v0.9.45-sha256.txt
+      - name: Create immutable-link prerelease assets for manual clean-install testing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cat > release-notes.md <<'NOTES'
+          # Sector Rebound v0.9.45 — P-03 Overhead Pilot (Experimental)
+          The user approved v0.9.44 identification colors but rejected the detached animated boots that looked like a low crawl. This test removes **both boot shapes and counterstepping animation**, shortening arms while retaining the top-down helmet, visor, shoulders, team colors, muzzle alignment and all existing controls/gameplay.
+
+          **FULL AUTOMATED QA PASS** on original exact tested source `af018ec9fee10886ab4cdc02cef78a17e764e0bf`:
+          - Fast Node/scored/mode regressions: https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41003818422
+          - Full Chromium screenshot/touch (740x360, 915x412, 1280x720), Android debug APK + unsigned AAB: https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41003818583
+          - Original QA screenshot ZIP and SHA-256 manifest attached. APK was **copied byte-for-byte** from original passing CI, NOT recompiled or re-signed.
+          - P-03 review branch PR #65: https://github.com/PlayerEden/Ricochet-Rumble/pull/65
+
+          **CLEAN INSTALL TEST ONLY:** Prior public APKs had incompatible debug signing certificates. Never uninstall a prior installation with valuable local progress or settings. Durable owner-private test signing and Google Play release upload signing remain pending. This is NOT a Google Play release or a safe in-place update. Real owner physical Android artistic verdict and two-device LAN testing are pending. Stable main is unchanged; v0.9.44 remains a rollback.
+          NOTES
+          gh release create v0.9.45-pilot-silhouette-test \
+            sector-rebound-v0.9.45-pilot-debug.apk \
+            sector-rebound-v0.9.45-pilot-qa.zip \
+            v0.9.45-sha256.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --target af018ec9fee10886ab4cdc02cef78a17e764e0bf \
+            --prerelease \
+            --title "Sector Rebound v0.9.45 — P-03 Pilot Silhouette Test (Clean Install)" \
+            --notes-file release-notes.md
