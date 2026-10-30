@@ -1,3 +1,11 @@
+# LATEST DEVELOPMENT v0.9.50 — 3,000 MAP FAIRNESS QA PASS / VEHICLE RECOVERY P1 REVIEW (2026-10-30)
+
+After Phase A [actual handling baseline](CONTROL_FEEL_BASELINE_v0949.md) (Survival tank 222 vs scored 166, manual A/B pending), implemented tests-only [draft #78](https://github.com/PlayerEden/Ricochet-Rumble/pull/78) to audit **3,000 original seeded procedural maps and vehicle spawns**. [CI 41022666945 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41022666945), exact test SHA `327501703c0eb68a6029ee7452886511ebac895b`. All uniquely reproducible, connected, and actor-to-spare recovery reachable. **[Permanent map fairness report with precise distributions and replay seeds](MAP_FAIRNESS_BASELINE_v0950.md)**. P1 gameplay *question*: small map initial direct line-of-sight exposure in 11.1% samples; player closest spare max corridor paths 22/32/35 cells small/standard/large; maximum actor recovery disparity 44 cells on large seed 395. Not a claim game is unfair without real-player testing. Follow-on design comparison should measure graph-distance-aware garage placement **without changing player-facing game** until demonstrated improvement and owner review.
+
+**Unchanged:** approved P-03 pilot, UI/audio, v0.9.48 layout fixes, scoring, physics, random maze generator and Android assets. No runtime branch merged to stable main; [canonical phase tracker #76](https://github.com/PlayerEden/Ricochet-Rumble/issues/76). Next manual gate control feel A/B; next automated gate feasibility of path-aware spare locations. Android stable signing and two-phone LAN remain independent P0 release blockers.
+
+---
+
 # NEW EXECUTION PLAN + FIRST DEVELOPMENT CHECKPOINT (2026-10-30)
 
 After owner requested a step-by-step development plan, created the canonical [POST-AUDIT DEVELOPMENT EXECUTION PLAN](DEVELOPMENT_EXECUTION_PLAN_POST_AUDIT_2026-10-30.md) and [tracking issue #76](https://github.com/PlayerEden/Ricochet-Rumble/issues/76), with Phase A source measurement, B human A/B handling, C procedural fairness, D same-signed update/save safety, E two-phone LAN, F onboarding/touch, G device performance/modularity, H reviewed Google Play release candidate. **No new cosmetic, map art or remote PvP scope authorized.**
