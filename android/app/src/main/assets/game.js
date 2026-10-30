@@ -1166,60 +1166,65 @@ function drawLobbyPreview(dt){
  c.globalAlpha=1;
 }
 function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0,skinId='fieldgrid.standard',squadPaint=false){
- // LAB E: chunky, engineered arcade modules matching the TANK chassis/treads.
- // The pilot is strict 90-degree overhead, not a profile or an aerial drone.
- // Named paint roles are shared with tank/mech without touching their physics.
+ // v0.9.44 FIELDGRID P-02: one clean, strictly overhead soldier silhouette.
+ // +X is forward for the pilot, tank, mech AND the real projectile muzzle.
+ // Feet/shoulders mirror across Y; two forearms lead to ONE compact pistol.
+ // No foreshortened face/profile, segmented circles, fake depth or glow rings.
  const skin=resolveUnitMaterials('pilot',paint,skinId);
- // TEAM SURVIVAL: color large armor panels BLUE or RED (not merely a trim pixel).
- // Optional skin palettes retain their own neutral/base material identity.
  const armorPaint=squadPaint&&skinId==='fieldgrid.standard'?paint:skin.armor;
- const sway=clamp(stride,-3,3)*.15;
+ const step=clamp(stride,-3,3)*.55;
  c.save();c.translate(-recoil*.15,bob*.25);
- c.lineJoin='miter';c.lineWidth=2;c.strokeStyle='#071923';
- // Upper back, blocky vest, collar: same dark silhouette + flat panels as tanks.
- c.fillStyle='#071923';c.fillRect(-17,-12,23,25);
- c.fillStyle=armorPaint;c.fillRect(-15,-10,19,21);
- c.fillStyle=skin.shadow;c.fillRect(-12,-8,5,16);
- c.fillStyle=skin.light;c.fillRect(-11,-6,2,10);
- c.fillStyle='#16323e';c.fillRect(-2,-11,6,3);
- // Two separately armored shoulders: like miniature mirrored tread modules.
- // Each has one block plate, one upper-left lit edge, and a narrow team ID bar.
+ c.lineJoin='miter';c.lineWidth=1.6;c.strokeStyle='#071923';
+ // Rear backpack and broad vest; dark clearance gap separates the legs.
+ c.fillStyle='#071923';c.fillRect(-20,-11,29,22);
+ c.fillStyle=armorPaint;c.fillRect(-18,-9,25,18);
+ c.fillStyle=skin.shadow;c.fillRect(-16,-7,8,14);
+ c.fillStyle=skin.light;c.fillRect(-14,-8,3,15);
+ c.fillStyle='#132c38';c.fillRect(-19,-5,4,10);
+ c.fillStyle=skin.trim;c.fillRect(-17,-8,2,3);
+ // Exactly mirrored feet, shoulder plates and bent arms.
  for(const side of [-1,1]){
-  c.save();c.scale(1,side);c.translate(-sway*side,0);
-  c.fillStyle='#071923';c.fillRect(-12,10,16,12);
-  c.fillStyle=armorPaint;c.fillRect(-10,12,12,8);
-  c.fillStyle=skin.light;c.fillRect(-9,12,9,2);
-  c.fillStyle=skin.team;c.fillRect(-10,17,5,2);
-  // One square elbow block, one bent diagonal forearm, no secondary appendage.
-  c.fillStyle='#071923';c.fillRect(1,16,7,7);
-  c.fillStyle=skin.shadow;c.fillRect(3,18,4,3);
+  c.save();c.scale(1,side);
+  // Two shoes travel opposite directions when walking; do not fake a sideways crawl.
+  c.translate(-side*step,0);
+  c.fillStyle='#071923';c.fillRect(-25,7,12,9);
+  c.fillStyle='#263f4b';c.fillRect(-24,9,9,5);
+  c.fillStyle=skin.light;c.fillRect(-24,8,5,2);
+  c.fillStyle=armorPaint;c.fillRect(-16,9,10,5);
+  // Helmet is separate from broad, rectangular armored shoulders.
+  c.fillStyle='#071923';c.fillRect(-9,11,17,11);
+  c.fillStyle=armorPaint;c.fillRect(-7,13,14,7);
+  c.fillStyle=skin.light;c.fillRect(-6,13,10,2);
+  c.fillStyle=skin.team;c.fillRect(-7,19,6,2);
+  // Each arm is one angular armored bent limb — not a second barrel.
   c.fillStyle='#071923';c.beginPath();
-  c.moveTo(5,21);c.lineTo(10,20);c.lineTo(21,8);
-  c.lineTo(21,3);c.lineTo(17,3);c.lineTo(7,15);c.closePath();c.fill();
+  c.moveTo(5,18);c.lineTo(10,18);c.lineTo(21,7);
+  c.lineTo(21,3);c.lineTo(16,3);c.lineTo(7,13);c.closePath();c.fill();
   c.fillStyle=armorPaint;c.beginPath();
-  c.moveTo(8,18);c.lineTo(10,18);c.lineTo(19,7);
-  c.lineTo(19,5);c.lineTo(17,5);c.lineTo(8,15);c.closePath();c.fill();
-  c.fillStyle=skin.light;c.fillRect(16,7,3,3);
-  // Two neutral gloves clamp the ONE handgun, not two independent weapons.
+  c.moveTo(8,16);c.lineTo(10,16);c.lineTo(19,7);
+  c.lineTo(19,5);c.lineTo(17,5);c.lineTo(8,14);c.closePath();c.fill();
+  c.fillStyle=skin.light;c.fillRect(16,6,3,2);
+  // One glove per hand on a shared centerline sidearm.
   c.fillStyle='#071923';c.fillRect(16,2,8,6);
-  c.fillStyle='#b4c7c3';c.fillRect(18,3,5,4);
+  c.fillStyle='#bdcac8';c.fillRect(18,3,5,3);
   c.restore();
  }
- // Helmet: flat square crown plus 45-degree front chamfers, one rim highlight.
- // No concentric disks, eye-face profile, or tiny polished armor facets.
+ // Compact chamfered helmet, viewed entirely from above — no face in profile.
  c.fillStyle='#071923';c.beginPath();
- c.moveTo(-10,-9);c.lineTo(-6,-13);c.lineTo(7,-13);
- c.lineTo(13,-7);c.lineTo(13,7);c.lineTo(7,12);
- c.lineTo(-6,12);c.lineTo(-10,8);c.closePath();c.fill();
+ c.moveTo(-11,-7);c.lineTo(-7,-12);c.lineTo(6,-12);
+ c.lineTo(12,-7);c.lineTo(12,7);c.lineTo(6,12);
+ c.lineTo(-7,12);c.lineTo(-11,7);c.closePath();c.fill();
  c.fillStyle=armorPaint;c.fillRect(-8,-9,17,18);
- c.fillStyle=skin.shadow;c.fillRect(-8,4,17,5);
- c.fillStyle=skin.light;c.fillRect(-5,-9,10,3);
- c.fillStyle=skin.trim;c.fillRect(8,-5,3,10);
- c.fillStyle='#122b39';c.fillRect(-2,7,7,2);
- // Pistol remains mechanically small, in the same direction as both gloves.
+ c.fillStyle=skin.shadow;c.fillRect(-7,4,15,4);
+ c.fillStyle=skin.light;c.fillRect(-6,-9,11,3);
+ // Narrow forward visor band makes facing direction visible at zoomed-out scale.
+ c.fillStyle='#112a36';c.fillRect(6,-6,5,12);
+ c.fillStyle=skin.trim;c.fillRect(9,-5,2,10);
+ c.fillStyle='#d5eeea';c.fillRect(10,-3,1,6);
+ // Shared real weapon muzzle remains exactly local-space (28,2).
  c.fillStyle='#071923';c.fillRect(17,0,11,4);
- c.fillStyle='#7b9da8';c.fillRect(19,0,7,1);
- c.fillStyle='#36535b';c.fillRect(19,4,4,3);
+ c.fillStyle='#849fa8';c.fillRect(19,0,7,1);
+ c.fillStyle='#3f5963';c.fillRect(18,4,5,2);
  c.fillStyle='#e1f3d8';c.fillRect(PILOT_MUZZLE_X-1,PILOT_MUZZLE_Y-1,2,2);
  if(shooting){c.fillStyle='#ffda91';c.beginPath();
   c.moveTo(PILOT_MUZZLE_X+1,2);c.lineTo(PILOT_MUZZLE_X+5,-2);
