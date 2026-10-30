@@ -1,3 +1,19 @@
+# v0.9.39 Player Dossier — automated full QA PASS, exact original Android APK archived (2026-10-29)
+
+**Experimental dependent draft:** [PR #58](https://github.com/PlayerEden/Ricochet-Rumble/pull/58), `feature/player-dossier-local-v0939`, child of QA-only PR #57 and earlier unapproved feature drafts. Stable main v0.9.21 unmodified and no user phone approval implied.
+
+**Implemented:** Real menu-accessible offline Player Dossier. Records only genuine completed Solo battles involving at least one bot, from the engine's immutable final result. Real per-mode matches/victories/defeats/draws/KOs/deaths/playing time; no invented history, currency, or LAN statistics. A versioned `rr-dossier-v1` store is separate from Quick Play and Custom Match preferences; duplicate results ignored, damaged saves backed up before replacement, unsupported newer schemas read-only, write failures explicit. Existing pilot cosmetics manifest is still concept-only and `authorizedForRuntime:false`, so dossier provides informational *future eligibility* only, with no equipment, product sale or entitlement. Web and Android files mirrored, core physics/AI/map/score/controls untouched.
+
+**Verified automated gates:** [fast regression 40987749714 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40987749714), [full actual Chromium finished-match→dossier→repeat-HUD→3 viewport sizes→reload, touch/visual plus Android debug APK and unsigned AAB 40987749740 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40987749740), both on exact gameplay/test SHA `77adb43e8c999fe37d50f8b940612af561d9845a`. An additional docs-only updated SHA [fast 40987782047](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40987782047) and [full 40987782053](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40987782053) also succeeded.
+
+**Permanent original binary:** [v0.9.39 Player Dossier experimental prerelease](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.39-player-dossier-test) holds byte-identical original 40987749740 QA debug APK (no rebuilding/resigning), browser screenshots/QA ZIP, checksum file. One-use publisher [40988277030 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40988277030) deleted after release.
+
+**Still OPEN:** owner physical Android profile touch/usability, continuity when upgrading from earlier debug signing certificate, account/cloud migration or backup/export, real two-phone LAN, cosmetics art approval before any runtime selection, 50+ real human matches/user fairness, Google Play production signing/privacy. No new cosmetics unlocked/purchased, and stable main unmerged.
+
+**Next milestone:** Release readiness foundation / local save migration and app identity, then comprehensive plan-wide QA (including real phone). The experimental branch chain needs deliberate integration/rollback approval before stable main promotion.
+
+---
+
 # v0.9.39 — player dossier and safe progression foundation (2026-10-29)
 
 **New experimental draft** `feature/player-dossier-local-v0939` stacked on v0.9.38 QA PR #57 (and prior unapproved v0.9.37 gameplay experiments). **Current candidate:** versioned device-local PLAYER DOSSIER accessible from the home header, counts genuine completed offline Solo bot matches from immutable real match results with duplicate protections, per-mode stats and genuine KOs/deaths. Saves under separate `rr-dossier-v1` key; future schema protected from overwrite, corrupt data backed up before replacement; denied storage reported. Zero-bot practice, unfinished rounds and local LAN excluded. No changes to core simulation, physics, AI, Quick Play or cosmetic assets. Existing cosmetic catalog still concept-only, so dossier lists future milestones without granting/equipping/purchasing anything. [Milestone QA checklist](QA_PLAYER_DOSSIER_v0939.md).
