@@ -1172,24 +1172,36 @@ function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0,skinId='fie
  // No foreshortened face/profile, segmented circles, fake depth or glow rings.
  const skin=resolveUnitMaterials('pilot',paint,skinId);
  const armorPaint=squadPaint&&skinId==='fieldgrid.standard'?paint:skin.armor;
- // Intentionally no counterstepping gait: the separated feet read as crawling.
+ // Movement rhythm is driven by real velocity in render(), not fake foot steps.
+ // Only the unified vest and shoulder plates move. Helmet, hands, pistol,
+ // muzzle and projectile origin stay on the exact same forward axis.
+ const gait=clamp(stride,-3.5,3.5);
  c.save();c.translate(-recoil*.15,bob*.25);
  c.lineJoin='miter';c.lineWidth=1.6;c.strokeStyle='#071923';
- // One continuous compact vest; no detached lower-body elements.
+ // Tiny grounded upper-body sway while moving, zero movement at rest.
+ // The rear vest sways as ONE solid block; no boots/knees are drawn.
+ c.save();c.translate(-Math.abs(gait)*.18,gait*.32);
  c.fillStyle='#071923';c.fillRect(-20,-10,28,20);
  c.fillStyle=armorPaint;c.fillRect(-18,-8,24,16);
  c.fillStyle=skin.shadow;c.fillRect(-16,-7,8,14);
  c.fillStyle=skin.light;c.fillRect(-14,-8,3,15);
  c.fillStyle='#132c38';c.fillRect(-19,-5,4,10);
  c.fillStyle=skin.trim;c.fillRect(-17,-8,2,3);
- // Mirrored shoulder plates and short pistol arms; no visible boots or legs.
+ c.restore();
+ // Mirrored shoulder plates gently counter-shift along the pilot's forward
+ // axis; the actual two-hand gun hold remains fixed and fully aligned.
+ // There is deliberately no counterstepping lower-body animation.
  for(const side of [-1,1]){
   c.save();c.scale(1,side);
-  // Broad overhead shoulders remain legible in neutral and team colors.
+  // Both shoulders subtly travel in opposing phases. No leg geometry.
+  c.save();c.translate(side*gait*.5,0);
   c.fillStyle='#071923';c.fillRect(-9,11,17,11);
   c.fillStyle=armorPaint;c.fillRect(-7,13,14,7);
   c.fillStyle=skin.light;c.fillRect(-6,13,10,2);
   c.fillStyle=skin.team;c.fillRect(-7,19,6,2);
+  c.restore();
+  // Weapon-gripping forearms do not move with the animated shoulder plates,
+  // so drawn muzzle position stays in sync with actual sidearm projectiles.
   // Each arm is one angular armored bent limb — not a second barrel.
   c.fillStyle='#071923';c.beginPath();
   c.moveTo(6,16);c.lineTo(11,15);c.lineTo(20,6);

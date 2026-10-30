@@ -271,17 +271,31 @@ console.log('PASS v0.9.4 visual clarity: pilot duel advantage, tactical sidearm,
  assert.notEqual(mechIdle[1].x,mechMove[1].x,'right leg counter-steps');
  assert.equal(mechMove[0].x+mechMove[1].x,mechIdle[0].x+mechIdle[1].x,'walking gait remains centered');
  // P-03 must never recreate the rejected low-crawling boots, including in motion.
- const idle=geom('pilot',0),moving=geom('pilot',2);
+ const idle=geom('pilot',0),moving=geom('pilot',3),reverse=geom('pilot',-3);
  const boots=parts=>parts.filter(o=>o.w===12&&o.h===9&&o.y===7);
  const patches=parts=>parts.filter(o=>o.w===6&&o.h===2&&o.y===19);
  assert.equal(boots(idle).length,0,'idle pilot has no visible detached boots');
- assert.equal(boots(moving).length,0,'moving pilot has no visible detached boots');
- assert.deepEqual(moving,idle,'pilot stride cannot reintroduce a crawling counterstep');
- assert.equal(patches(idle).length,2,'two mirrored team shoulder patches preserved');
- assert.equal(patches(moving).length,2,'team shoulder patches remain when moving');
- assert.ok(idle.some(o=>o.w===5&&o.h===12&&o.x===6),'forward visor still shows aim');
- assert.ok(idle.some(o=>o.w===28&&o.h===20&&o.x===-20),'compact one-piece rear torso');
- assert.ok(!idle.some(o=>o.h>26),'no elongated crawling limbs');
+ assert.equal(boots(moving).length,0,'moving pilot has no detached boots');
+ assert.equal(boots(reverse).length,0,'reversed gait cannot create detached boots');
+ assert.equal(patches(idle).length,2,'both mirrored team shoulder patches preserved');
+ assert.equal(patches(moving).length,2,'team colors remain visible throughout the gait');
+ assert.equal(patches(reverse).length,2,'reverse gait retains team identification');
+ const torso=parts=>parts.find(o=>o.w===28&&o.h===20);
+ assert.ok(torso(idle)&&torso(moving),'one uninterrupted upper-body vest is present');
+ assert.ok(torso(moving).x<torso(idle).x,'torso sways gently backwards when walking');
+ const shoulders=parts=>parts.filter(o=>o.w===17&&o.h===11&&o.y===11);
+ assert.equal(shoulders(idle).length,2,'both overhead shoulders are present');
+ assert.ok(shoulders(moving)[0].x<shoulders(idle)[0].x,'first shoulder animates with movement');
+ assert.ok(shoulders(moving)[1].x>shoulders(idle)[1].x,'other shoulder counter-shifts');
+ assert.ok(shoulders(reverse)[0].x>shoulders(idle)[0].x&&shoulders(reverse)[1].x<shoulders(idle)[1].x,'opposite gait phase reverses shoulder movement');
+ assert.equal(shoulders(moving)[0].x+shoulders(moving)[1].x,shoulders(idle)[0].x+shoulders(idle)[1].x,'shoulder sway remains balanced');
+ const muzzle=parts=>parts.find(o=>o.w===2&&o.h===2&&o.y===1);
+ assert.ok(muzzle(idle)&&muzzle(moving)&&muzzle(reverse),'muzzle is drawn at all gait phases');
+ assert.equal(muzzle(moving).x,muzzle(idle).x,'walking never moves pistol muzzle off real ballistic source');
+ assert.equal(muzzle(reverse).x,muzzle(idle).x,'reverse phase never alters muzzle alignment');
+ assert.ok(idle.some(o=>o.w===5&&o.h===12&&o.x===6),'single +X visor remains facing-forward');
+ assert.ok(!idle.some(o=>o.h>26)&&!moving.some(o=>o.h>26),'no elongated crawling limbs');
+ assert.deepEqual(geom('pilot',0),idle,'stationary pose must remain motionless');
 }
 // Emergency ejection is a cosmetic event, not damage to pilot lives.
 click('solo');const v0=st().vehicles[st().tanks[0].vehicleId],pilot=st().tanks[0],lives=st().lives[0];

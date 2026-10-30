@@ -6,8 +6,8 @@ const manifest=fs.readFileSync('android/app/src/main/AndroidManifest.xml','utf8'
 const identity='com.playereden.ricochetrumble';
 assert.ok(gradle.includes("namespace '"+identity+"'"));
 assert.ok(gradle.includes("applicationId '"+identity+"'"),'do not rename installed package');
-assert.ok(gradle.includes('versionCode 45'),'must advance versionCode from old debug code 38');
-assert.ok(gradle.includes("versionName '0.9.45-pilot-silhouette-test'"),'release tag and app name agree');
+assert.ok(gradle.includes('versionCode 46'),'must advance versionCode from old debug code 38');
+assert.ok(gradle.includes("versionName '0.9.45.1-pilot-motion-test'"),'release tag and app name agree');
 assert.ok(manifest.includes('android:label="Sector Rebound"'));
 assert.ok(manifest.includes('android:allowBackup="false"'),'no automatic OS backup enabled before privacy review');
 assert.ok(manifest.includes('android:usesCleartextTraffic="false"'));
