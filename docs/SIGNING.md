@@ -1,3 +1,11 @@
+# v0.9.40 signing configuration update — audited 2026-10-29
+
+The older note below predates the **experimental v0.9.40** Gradle update. This branch now supports **optional externally configured upload signing** using the complete set `SR_UPLOAD_STORE_FILE`, `SR_UPLOAD_STORE_PASSWORD`, `SR_UPLOAD_KEY_ALIAS` and `SR_UPLOAD_KEY_PASSWORD`. **No credentials were supplied during CI; the v0.9.40 release AAB remains unsigned and no signed production artifact has been accepted.** Partial environment configuration throws an error instead of silently selecting an unintended signer. [Exact successful Android QA](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40991176203).
+
+**P0 open:** Historical password-encrypted release key backup exists under public `signing/` and owner custody/exposure review remains open ([issue #20](https://github.com/PlayerEden/Ricochet-Rumble/issues/20)). Do not decrypt/open/print, delete, rotate or assume a key is safe/unsafe without owner-backed security review and independent recoverable backups. The exact Android update certificate must match the installed APK (or supported signing rotation) for in-place data continuity. Signed Play upload, app-signing enrollment and owner hardware validation remain unperformed. No secrets or credentials belong in the public repo, CI logs, issue comments or chat.
+
+---
+
 # Android signing & test build safety
 
 **Status (2026-10-27):** The Actions workflow builds a debug-signed installable APK and an unsigned release AAB for packaging checks. **There is no configured, tested production release-signing workflow.** The Android Gradle project currently has no release signing configuration.
