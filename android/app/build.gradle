@@ -1,4 +1,15 @@
 plugins { id 'com.android.application' }
+// Signing material is NEVER committed. Missing env => intentionally unsigned release AAB.
+// Partial env is treated as a configuration error rather than silently switching signer.
+def uploadKeys = ['SR_UPLOAD_STORE_FILE', 'SR_UPLOAD_STORE_PASSWORD', 'SR_UPLOAD_KEY_ALIAS', 'SR_UPLOAD_KEY_PASSWORD']
+def presentKeys = uploadKeys.findAll { System.getenv(it)?.trim() }
+if (!presentKeys.isEmpty() && presentKeys.size() != uploadKeys.size()) {
+    throw new GradleException('Incomplete external upload signing configuration')
+}
+def hasUploadSigning = presentKeys.size() == uploadKeys.size()
+if (hasUploadSigning && !file(System.getenv('SR_UPLOAD_STORE_FILE')).isFile()) {
+    throw new GradleException('Upload keystore file was not found')
+}
 android {
     namespace 'com.playereden.ricochetrumble'
     compileSdk 36
@@ -6,11 +17,24 @@ android {
         applicationId 'com.playereden.ricochetrumble'
         minSdk 26
         targetSdk 36
-        versionCode 38
-        versionName '0.9.21-game-feel'
+        versionCode 40
+        versionName '0.9.40-upgrade-test'
+    }
+    signingConfigs {
+        if (hasUploadSigning) {
+            releaseUpload {
+                storeFile file(System.getenv('SR_UPLOAD_STORE_FILE'))
+                storePassword System.getenv('SR_UPLOAD_STORE_PASSWORD')
+                keyAlias System.getenv('SR_UPLOAD_KEY_ALIAS')
+                keyPassword System.getenv('SR_UPLOAD_KEY_PASSWORD')
+            }
+        }
     }
     buildTypes {
-        release { minifyEnabled false }
+        release {
+            minifyEnabled false
+            if (hasUploadSigning) signingConfig signingConfigs.releaseUpload
+        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
