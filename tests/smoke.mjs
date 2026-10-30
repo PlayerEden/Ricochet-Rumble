@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 const handlers={},nodes=new Map();
+// Simulate Android WebView local preferences and controls when exercising settings.
+const savedStorage=new Map();let acceptancePlaylistInputs=null,acceptancePlayButtons=null;
 function node(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',value:'',dataset:{},style:{},
   classList:(()=>{const flags=new Set();return {add(k){flags.add(k)},remove(k){flags.delete(k)},contains(k){return flags.has(k)},toggle(k,v){const active=v===undefined?!flags.has(k):!!v;if(active)flags.add(k);else flags.delete(k);return active}}})(),setPointerCapture(){},releasePointerCapture(){},
   getBoundingClientRect(){return {left:0,top:0,width:148,height:148}},
@@ -13,13 +15,13 @@ node('bot-skill').value='normal';
 node('bot-count').value='1';node('bullet-cap').value='3';node('lives-choice').value='5';node('team-choice').value='ffa';node('map-size').value='standard';
 let frame=null,tick=0,hostCalled=false,discoverCalled=false,packets=[];
 const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},joinGame(){},stopNetwork(){},sendPacket(p){packets.push(JSON.parse(p))}};
-const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(){return null},setItem(){}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(){return []}};
+const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(key){return key==='rr-options-v06'?(savedStorage.get(key)??null):null},setItem(key,value){if(key==='rr-options-v06')savedStorage.set(key,String(value))}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(sel){if(sel==='input[data-playlist-mode]')return acceptancePlaylistInputs||[];if(sel==='[data-action="solo"],[data-action="settings-play"]')return acceptancePlayButtons||[];return []}};
 let simRand=null;
 const testMath=Object.create(Math);testMath.random=()=>simRand?simRand():Math.random();
 function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5;return(z>>>0)/4294967296;};}
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math:testMath,Number,Set,JSON,String};
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -33,7 +35,7 @@ assert.equal(menuHtml.includes('data-action="nearby"'),true);
 assert.equal(menuHtml.includes('data-action="duel"'),false);
 assert.ok(menuHtml.includes('PILOT LIVES'));assert.ok(menuHtml.includes('FIELD SIZE'));assert.equal(menuHtml.includes('arena-choice'),false,'No map picker');
 node('lives-choice').value='2';node('map-size').value='standard';
-click('solo');runFrames(8);assert.equal(node('mode-label').textContent,'QUICK MATCH');
+click('solo');runFrames(8);assert.ok(['SOLO SURVIVAL','TEAM SURVIVAL'].includes(node('mode-label').textContent));
 assert.equal(st().config.pilotMode,true);assert.equal(st().lives[0],2);
 assert.equal(st().tanks[0].onFoot,false,'quick play begins inside a tank');
 assert.equal(st().vehicles[st().tanks[0].vehicleId].occupant,0);
@@ -63,10 +65,11 @@ player.x=spare.x-12;player.y=spare.y;assert.equal(win.__test.shoot(0),true);asse
 const seed=st().mazeSeed,hash=JSON.stringify(win.__test.walls);
 win.__test.setArena(0,12345,'small');win.__test.setArena(0,seed,'standard');assert.equal(JSON.stringify(win.__test.walls),hash);
 runFrames(12);const x0=win.__test.camera.x;player.x=960;player.y=720;runFrames(18);assert.ok(win.__test.camera.x>x0);
-// Settings remain match customization, not extra modes.
+// Settings continue to customize bot count, shells and lives; solo presets control sides.
+win.__test.setPlaylistModes(['survival_teams']);
 node('map-size').value='large';node('bot-count').value='4';node('lives-choice').value='3';node('bullet-cap').value='2';node('bot-skill').value='casual';node('team-choice').value='coop';
 click('solo');assert.equal(st().tanks.length,5);assert.equal(st().lives[0],3);
-assert.equal(st().config.bulletCap,2);assert.equal(st().config.teamMode,'coop');
+assert.equal(st().config.bulletCap,2);assert.equal(st().config.teamMode,'teams');assert.equal(st().config.matchModeId,'survival_teams');
 assert.equal(win.__test.teamOf(1),win.__test.teamOf(4));
 const shooter=st().tanks[0];shooter.shield=0;
 assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),false,'shell cap');
@@ -266,7 +269,7 @@ const live=st().tanks[1];live.x=vacant.x;live.y=vacant.y;live.vx=live.vy=0;
 lone.x=vacant.x-37;lone.y=vacant.y;lone.vx=lone.vy=0;
 win.__test.tankMove(lone,{moveX:1,moveY:0},.13,0);
 assert.ok(lone.x<=vacant.x-37+1,'living occupied actors still block vehicles');
-assert.ok(menuHtml.includes('PLAY TOGETHER')&&menuHtml.includes('ADVANCED RULES'));
+assert.ok(menuHtml.includes('PLAY TOGETHER')&&menuHtml.includes('QUICK PLAY MODES + ADVANCED'));
 console.log('PASS v0.9.8: vacant vehicle is passable and non-cover; occupied actors block; UI hierarchy present.');
 
 // v0.9.8.1 entry-clearance regression. Empty deployments never block movement,
@@ -385,7 +388,7 @@ console.log('PASS v0.9.10 fullscreen canvas, overlay HUD, independently moving t
 win.innerWidth=1536;win.innerHeight=672;win.devicePixelRatio=1;
 assert.equal(win.__test.resizeArenaCanvas(),true);
 const [fieldWidth,fieldHeight]=win.__test.world;
-const expectedZoom=Math.max(1.15,1536/(fieldWidth+224),672/(fieldHeight+224));
+const expectedZoom=Math.max(1.00,1536/(fieldWidth+840),672/(fieldHeight+840));
 assert.ok(Math.abs(win.__test.cameraZoom(null)-expectedZoom)<1e-9,'zoom accounts for playable perimeter without black side gutters');
 assert.ok(win.__test.cameraZoom()<Math.max(1.28,1536/fieldWidth,672/fieldHeight),'new widescreen camera genuinely shows more world');
 const motions=[];
@@ -433,28 +436,28 @@ const local=st().tanks[0],veh=st().vehicles[local.vehicleId];
 veh.type='tank';
 win.innerWidth=1536;win.innerHeight=672;win.devicePixelRatio=1;
 win.__test.resizeArenaCanvas();
-const minZoom=Math.max(1536/(win.__test.world[0]+224),672/(win.__test.world[1]+224));
-assert.ok(Math.abs(win.__test.unitTargetZoom(local)-1.13)<1e-9);
-assert.ok(Math.abs(win.__test.cameraZoom(local)-Math.max(1.13,minZoom))<1e-9);
+const minZoom=Math.max(1536/(win.__test.world[0]+840),672/(win.__test.world[1]+840));
+assert.ok(Math.abs(win.__test.unitTargetZoom(local)-0.82)<1e-9);
+assert.ok(Math.abs(win.__test.cameraZoom(local)-Math.max(0.82,minZoom))<1e-9);
 win.__test.render(1/60);
 const zTank=win.__test.camera.zoom;
-assert.ok(Math.abs(zTank-Math.max(1.13,minZoom))<1e-7);
+assert.ok(Math.abs(zTank-Math.max(0.82,minZoom))<1e-7);
 local.onFoot=true;local.vehicleId=null;
-assert.equal(win.__test.unitTargetZoom(local),1.22);
+assert.equal(win.__test.unitTargetZoom(local),1.07);
 win.__test.render(1/60);
-assert.ok(win.__test.camera.zoom>zTank&&win.__test.camera.zoom<1.22,'zoom must ease in rather than snap to foot');
+assert.ok(win.__test.camera.zoom>zTank&&win.__test.camera.zoom<1.07,'zoom must ease in rather than snap to foot');
 for(let i=0;i<80;i++)win.__test.render(1/60);
-assert.ok(Math.abs(win.__test.camera.zoom-1.22)<.003,'foot zoom should converge');
+assert.ok(Math.abs(win.__test.camera.zoom-1.07)<.003,'foot zoom should converge');
 local.onFoot=false;local.vehicleId=veh.id;veh.occupant=0;veh.type='mech';
-assert.equal(win.__test.unitTargetZoom(local),1.08);
+assert.equal(win.__test.unitTargetZoom(local),0.77);
 const zFoot=win.__test.camera.zoom;
 win.__test.render(1/60);
-assert.ok(win.__test.camera.zoom<zFoot&&win.__test.camera.zoom>Math.max(1.08,minZoom),'mech transition eases outward');
+assert.ok(win.__test.camera.zoom<zFoot&&win.__test.camera.zoom>Math.max(0.77,minZoom),'mech transition eases outward');
 for(let i=0;i<85;i++)win.__test.render(1/60);
-assert.ok(Math.abs(win.__test.camera.zoom-Math.max(1.08,minZoom))<.003,'mech target converges');
+assert.ok(Math.abs(win.__test.camera.zoom-Math.max(0.77,minZoom))<.003,'mech target converges');
 veh.type='tank';
 for(let i=0;i<85;i++)win.__test.render(1/60);
-assert.ok(Math.abs(win.__test.camera.zoom-Math.max(1.13,minZoom))<.003,'tank transition converges');
+assert.ok(Math.abs(win.__test.camera.zoom-Math.max(0.82,minZoom))<.003,'tank transition converges');
 console.log('PASS v0.9.11 console design, camera targets, smooth transitions and viewport floor.');
 
 // v0.9.12 reliability and camera audit: close each unit's view modestly,
@@ -475,7 +478,7 @@ for(const typ of ['mech','tank']){
 }
 unit.onFoot=true;
 cameraOrder.push(win.__test.unitTargetZoom(unit));
-assert.deepEqual(cameraOrder,[1.08,1.13,1.22],'mech/tank/foot view hierarchy');
+assert.deepEqual(cameraOrder,[0.77,0.82,1.07],'mech/tank/foot view hierarchy');
 unit.onFoot=false;model.type='tank';
 unit.recoil=.72;unit.trackLeft=83;unit.trackRight=119;
 const freeBay=st().vehicles.find(v=>v.occupant===-1&&v.armor>0);
@@ -485,11 +488,11 @@ unit.x=freeBay.x;unit.y=freeBay.y;
 assert.equal(win.__test.tryInteract(0),true,'board recovery vehicle');
 assert.equal(unit.recoil,0,'old tank recoil does not carry to fresh hull');
 assert.equal(unit.trackLeft,0);assert.equal(unit.trackRight,0);
-assert.equal(win.__test.cameraZoom(unit),Math.max(win.__test.unitTargetZoom(unit),1536/(win.__test.world[0]+224),672/(win.__test.world[1]+224)));
+assert.equal(win.__test.cameraZoom(unit),Math.max(win.__test.unitTargetZoom(unit),1536/(win.__test.world[0]+840),672/(win.__test.world[1]+840)));
 for(const [w,h] of [[740,360],[915,412],[1280,720],[1536,672]]){
  win.innerWidth=w;win.innerHeight=h;win.devicePixelRatio=1;
  assert.equal(win.__test.resizeArenaCanvas(),true);
- const expected=Math.max(win.__test.unitTargetZoom(unit),w/(win.__test.world[0]+224),h/(win.__test.world[1]+224));
+ const expected=Math.max(win.__test.unitTargetZoom(unit),w/(win.__test.world[0]+840),h/(win.__test.world[1]+840));
  assert.ok(Math.abs(win.__test.cameraZoom(unit)-expected)<1e-9);
  win.__test.render(1/60);
  assert.ok(Number.isFinite(win.__test.camera.zoom)&&Number.isFinite(win.__test.camera.x)&&Number.isFinite(win.__test.camera.y),'camera must stay finite across viewport sizes');
@@ -511,15 +514,15 @@ console.log('PASS v0.9.12 LAN map-change camera reset, unchanged-field continuit
 
 // v0.9.12a: deliberately small, uniform +.04 across camera modes.
 // Large map and aspect-ratio minimum continue to prevent letterboxing.
-assert.equal(win.__test.unitTargetZoom(null),1.15,'spectator fallback zoom');
+assert.equal(win.__test.unitTargetZoom(null),1.00,'spectator fallback zoom');
 click('solo');
 const zoomOperator=st().tanks[0],zoomVehicle=st().vehicles[zoomOperator.vehicleId];
 zoomOperator.onFoot=false;zoomVehicle.type='tank';
-assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-1.13)<1e-9);
+assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-0.82)<1e-9);
 zoomVehicle.type='mech';
-assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-1.08)<1e-9);
+assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-0.77)<1e-9);
 zoomOperator.onFoot=true;
-assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-1.22)<1e-9);
+assert.ok(Math.abs(win.__test.unitTargetZoom(zoomOperator)-1.07)<1e-9);
 console.log('PASS v0.9.12a closer pilot/tank/mech zoom with unchanged viewport floor.');
 
 
@@ -606,8 +609,8 @@ assert.deepEqual(['mech','tank','foot'].map(type=>{
  actor.onFoot=type==='foot';
  if(!actor.onFoot&&v)v.type=type;
  return win.__test.unitTargetZoom(actor);
-}),[1.08,1.13,1.22]);
-assert.equal(win.__test.unitTargetZoom(null),1.15);
+}),[0.77,0.82,1.07]);
+assert.equal(win.__test.unitTargetZoom(null),1.00);
 {
  const src=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
  assert.ok(src.includes("guard:{label:'B'")&&src.includes("overcharge:{label:'C'")&&src.includes("repair:{label:'H'"),'pickup types should use unique glyphs');
@@ -694,12 +697,16 @@ console.log('PASS v0.9.14 end-of-life powerup state audit.');
  assert.equal(node('aa-title').textContent,'SECTOR CLEARED');
  assert.equal(node('aa-kos').textContent,'2','KO metric must be accurately named');
  assert.equal(node('aa-lives').textContent,'3');
- assert.equal(node('aa-outcome').textContent,'SUCCESS');
+ assert.equal(node('aa-outcome').textContent,'VICTORY');
  assert.equal(node('quick-rematch').classList.contains('hidden'),false);
+ // A final result is immutable even if a late/duplicated combat event tries to change the winner.
+ const frozen=game.finalResult;
+ assert.ok(Object.isFrozen(frozen),'final result becomes an immutable summary');
  game.winner=1;game.winnerTeam=1;game.event='BOT 1 WINS!';
  win.__test.refreshHUD();
- assert.equal(node('aa-title').textContent,'SECTOR LOST');
- assert.equal(node('after-action').classList.contains('lost'),true,'defeat styling toggles');
+ assert.equal(game.finalResult,frozen,'refreshing a completed result does not rescore it');
+ assert.equal(node('aa-title').textContent,'SECTOR CLEARED','snapshot does not flicker or reverse');
+ assert.equal(node('aa-outcome').textContent,'VICTORY');
  for(const cb of handlers['quick-rematch:click'])cb();
  assert.equal(node('after-action').classList.contains('hidden'),true,'report closes on rematch');
  assert.equal(st().winner,-1);
@@ -906,3 +913,284 @@ console.log('PASS v0.9.19 on-foot readability, safe parked-vehicle labeling and 
  win.__test.comfort.sound=oldSetting;win.__test.comfort.music=oldMusic;
 }
 console.log('PASS v0.9.21 menu cleanup, separate music/SFX options and 7% wider class cameras.');
+
+// v0.9.22 Slice A: two actually supported survival presets, not the future score modes.
+{
+ const api=win.__test;
+ assert.ok(menuHtml.includes('data-playlist-mode="survival_ffa"')&&menuHtml.includes('data-playlist-mode="survival_teams"'));
+ assert.ok(menuHtml.includes('↻ NEXT MATCH'),'solo result primary CTA is explicit');
+ assert.equal(api.normalizePlaylistModes(['retired','survival_ffa','survival_ffa']).join(','),'survival_ffa');
+ assert.equal(api.normalizePlaylistModes(null).length,2,'legacy saves default to both supported modes');
+ api.setPlaylistModes(['survival_ffa','survival_teams']);
+ const cycle=[api.nextPlaylistMode(()=>0),api.nextPlaylistMode(()=>0)];
+ assert.equal(new Set(cycle).size,2,'each mode appears once per shuffle bag');
+ const next=api.nextPlaylistMode(()=>0);
+ assert.notEqual(next,cycle[1],'new bag does not immediately repeat prior mode');
+ api.setPlaylistModes(['survival_teams']);
+ assert.equal(api.nextPlaylistMode(()=>0),'survival_teams');
+ assert.equal(api.nextPlaylistMode(()=>0),'survival_teams','single selected mode repeats');
+ api.setPlaylistModes(['survival_ffa']);
+ api.newMatch('solo');
+ assert.equal(st().config.matchModeId,'survival_ffa');
+ assert.equal(st().config.teamMode,'ffa');
+ const before={seed:st().mazeSeed,matchId:st().matchId};
+ api.resetAll(true);
+ assert.notEqual(st().mazeSeed,before.seed,'NEXT MATCH guarantees a fresh seed');
+ assert.ok(st().matchId>before.matchId,'new match gets a unique incremental match ID');
+ assert.equal(st().config.matchModeId,'survival_ffa');
+ api.setPlaylistModes([]);
+ assert.equal(api.nextPlaylistMode(),null,'zero selected modes cannot silently reroll');
+ const kept=st();
+ assert.equal(api.newMatch('solo'),false,'zero modes blocks QUICK PLAY');
+ assert.equal(st(),kept,'zero mode selection leaves the current match untouched');
+ api.setPlaylistModes(['survival_ffa','survival_teams']);
+ assert.equal(/score|flag|capture/i.test(st().config.matchModeId),false,'proposed score modes never presented as live');
+}
+console.log('PASS v0.9.22 Slice A versioned playlist selection, shuffle-bag boundaries, real survival presets and fresh seeds.');
+
+// v0.9.22-dev2 — honest, one-time frozen solo result evidence and clock.
+{
+ const api=win.__test;
+ api.setPlaylistModes(['survival_ffa']);
+ node('bot-count').value='1';
+ api.newMatch('solo');
+ const s=st();assert.equal(s.tanks.length,2,'single bot provides deterministic solo result');s.tanks[0].shield=0;
+ assert.equal(s.elapsedSeconds,0);
+ api.step(1/60);assert.ok(s.elapsedSeconds>0,'active simulation advances match time');
+ const elapsed=s.elapsedSeconds;
+ for(const fn of handlers['menu-button:click']||[])fn();
+ api.step(0.75);
+ assert.equal(s.elapsedSeconds,elapsed,'pause does not advance simulation match time');
+ click('resume');
+ // Pause and finalization must not advance the clock; only active simulation ticks count.
+ s.tanks[0].onFoot=true;s.tanks[0].shield=0;s.lives[0]=2;
+ s.kos[0]=0;
+ const target=s.tanks[1];target.onFoot=true;target.shield=0;s.lives[1]=1;
+ assert.equal(api.registerHit(0,1),true,'pilot elimination registers hit');
+ assert.equal(s.kos[0],1,'operator KO counts actual pilot elimination');
+ assert.equal(s.deaths[1],1,'victim death counts once');
+ assert.equal(s.respawns[1],0,'last life does not respawn');
+ assert.equal(s.finalResult.outcome,'victory');
+ assert.equal(s.finalResult.operatorKOs,1);
+ assert.equal(s.finalResult.deaths,0);
+ assert.equal(s.finalResult.livesRemaining,2);
+ assert.equal(s.finalResult.durationSeconds,elapsed);
+ assert.equal(s.finalResult.matchId,s.matchId);
+ assert.equal(s.finalResult.mazeSeed,s.mazeSeed);
+ assert.ok(Object.isFrozen(s.finalResult));
+ const snap=s.finalResult;
+ assert.equal(api.finalizeRound(),snap,'no duplicate finalizations');
+ assert.equal(api.registerHit(0,1),false,'late hit after result ignored');
+ api.step(3);assert.equal(s.elapsedSeconds,elapsed,'terminal clock frozen');
+ s.kos[0]=99;s.deaths[0]=99;s.lives[0]=0;
+ api.refreshHUD();
+ assert.equal(node('aa-kos').textContent,'1','results use frozen KO snapshot');
+ assert.equal(node('aa-deaths').textContent,'0');
+ assert.equal(node('aa-lives').textContent,'2','results use frozen life snapshot');
+ assert.equal(node('aa-duration').textContent,api.durationLabel(elapsed));
+ assert.equal(api.durationLabel(125.9),'02:05');
+ assert.equal(api.durationLabel(null),'—','unknown time must not appear as zero');
+ const old=s.finalResult,seed=s.mazeSeed,matchId=s.matchId;
+ api.resetAll(true);
+ assert.equal(st().finalResult,null,'fresh round clears finalized result');
+ assert.equal(st().deaths[0],0,'fresh round clears death counter');
+ assert.equal(st().elapsedSeconds,0,'fresh round clears timer');
+ assert.notEqual(st().mazeSeed,seed,'new round always new maze');
+ assert.ok(st().matchId>matchId,'new round new match ID');
+ assert.equal(old.operatorKOs,1,'previous snapshot remains unchanged');
+ // Respawn is counted once per actual nonterminal death, and ejection is not a death.
+ const next=st();next.tanks[0].shield=0;next.lives[0]=2;
+ const beforeArmor=next.vehicles[next.tanks[0].vehicleId].armor;
+ assert.equal(api.registerHit(1,0),true,'vehicle armor hit accepted');
+ assert.equal(next.vehicles[next.tanks[0].vehicleId].armor,beforeArmor-1);
+ assert.equal(next.deaths[0],0,'armor hit cannot be a pilot death');
+ assert.equal(next.kos[1],0,'armor hit cannot be an operator KO');
+ api.ejectPilot(0);assert.equal(next.deaths[0],0,'vehicle ejection is not a pilot death');
+ next.tanks[0].shield=0;
+ assert.equal(api.registerHit(1,0),true);
+ assert.equal(next.deaths[0],1);
+ assert.equal(next.respawns[0],1);
+ assert.equal(next.winner,-1,'losing one life does not end match');
+ api.newMatch('solo');
+ const loss=st();assert.equal(loss.finalResult,null,'starting another match cannot inherit prior result');
+ loss.tanks[0].onFoot=true;loss.tanks[0].shield=0;loss.lives[0]=1;
+ assert.equal(api.registerHit(1,0),true,'last pilot life lost');
+ assert.equal(loss.winner>=0,true);
+ assert.equal(loss.finalResult.outcome,'defeat','defeat snapshot uses real surviving opponent');
+ assert.equal(loss.finalResult.deaths,1);
+ assert.equal(loss.finalResult.operatorKOs,0);
+ assert.equal(loss.finalResult.livesRemaining,0);
+ assert.equal(node('aa-outcome').textContent,'DEFEAT');
+ assert.equal(node('aa-deaths').textContent,'1');
+ const ended=loss.finalResult;
+ api.refreshHUD();api.refreshHUD();
+ assert.equal(loss.finalResult,ended,'repeated results refresh keeps one immutable object');
+}
+console.log('PASS v0.9.22-dev2 frozen final results, win/loss, pilot deaths/respawns and active match clock.');
+
+
+// v0.9.22-dev3: tactical pullback across all three playable unit classes,
+// wide-screen apron and sustained camera smoothing without canvas gutters.
+{
+ const api=win.__test;
+ api.setPlaylistModes(['survival_ffa']);
+ api.newMatch('solo');
+ const actor=st().tanks[0],ride=st().vehicles[actor.vehicleId];
+ const before=[1.08,1.13,1.22];
+ const after=[];
+ for(const kind of ['mech','tank','foot']){
+   actor.onFoot=kind==='foot';ride.type=kind==='foot'?'tank':kind;
+   if(!actor.onFoot)actor.vehicleId=ride.id;
+   after.push(api.unitTargetZoom(actor));
+ }
+ assert.deepEqual(after,[.77,.82,1.07]);
+ after.forEach((z,i)=>assert.ok(z<before[i]*.89,'each unit gets a meaningful world-space zoom-out'));
+ actor.onFoot=false;ride.type='tank';actor.vehicleId=ride.id;
+ for(const [w,h] of [[740,360],[915,412],[1280,720],[1536,672]]){
+   win.innerWidth=w;win.innerHeight=h;win.devicePixelRatio=1;
+   assert.equal(api.resizeArenaCanvas(),true);
+   const [ww,wh]=api.world;
+   const floor=Math.max(w/(ww+840),h/(wh+840));
+   assert.equal(api.cameraZoom(actor),Math.max(.82,floor));
+   api.render(1/60);
+   assert.ok(Number.isFinite(api.camera.x)&&Number.isFinite(api.camera.y)&&Number.isFinite(api.camera.zoom),'all device cameras stay finite');
+ }
+}
+console.log('PASS v0.9.22-dev3 tactical pullback, wide-screen floor and class hierarchy.');
+
+
+// v0.9.22-dev5 camera: vehicles get another tactical pullback;
+// approved on-foot view and future pilot-only CQC are not disturbed.
+{
+ const api=win.__test;
+ api.setPlaylistModes(['survival_ffa']);
+ node('map-size').value='small';
+ api.newMatch('solo');
+ const actor=st().tanks[0],vehicle=st().vehicles[actor.vehicleId];
+ const pilotBefore=1.07,oldTank=.87,oldMech=.82;
+ actor.onFoot=true;
+ assert.equal(api.unitTargetZoom(actor),pilotBefore,'on-foot view MUST remain at dev3-approved zoom');
+ actor.onFoot=false;actor.vehicleId=vehicle.id;
+ vehicle.type='tank';assert.equal(api.unitTargetZoom(actor),.82);
+ vehicle.type='mech';assert.equal(api.unitTargetZoom(actor),.77);
+ assert.ok(.82<oldTank&&.77<oldMech,'both vehicles see more terrain than dev4');
+ assert.ok(.77<.82&&.82<1.07,'mech, tank, pilot hierarchy unchanged');
+ // True 1536px wide, SMALL map must not clamp either vehicle above its target.
+ win.innerWidth=1536;win.innerHeight=672;win.devicePixelRatio=1;
+ assert.equal(api.resizeArenaCanvas(),true);
+ const [w,h]=api.world;
+ assert.equal(w,9*132);assert.equal(h,6*132,'small-map test uses real 9x6 world');
+ const floor=Math.max(1536/(w+840),672/(h+840));
+ assert.ok(1536/(w+760)>.77,'old apron would clamp the latest mech zoom');
+ assert.ok(floor<.77,'apron is large enough to deliver intended mech FOV');
+ assert.equal(api.cameraZoom(actor),.77,'wide 1536 small map reaches full mech zoom');
+ vehicle.type='tank';assert.equal(api.cameraZoom(actor),.82);
+ actor.onFoot=true;assert.equal(api.cameraZoom(actor),pilotBefore);
+ // In-game rendering and camera must remain stable for every class and view size.
+ for(const [screenW,screenH] of [[740,360],[915,412],[1280,720],[1536,672]]){
+  win.innerWidth=screenW;win.innerHeight=screenH;win.devicePixelRatio=1;
+  assert.equal(api.resizeArenaCanvas(),true);
+  for(const type of ['tank','mech','pilot']){
+   actor.onFoot=type==='pilot';
+   if(!actor.onFoot){actor.vehicleId=vehicle.id;vehicle.type=type;}
+   const wanted=type==='pilot'?1.07:type==='tank'?.82:.77;
+   const deviceFloor=Math.max(screenW/(w+840),screenH/(h+840));
+   assert.ok(Math.abs(api.cameraZoom(actor)-Math.max(wanted,deviceFloor))<1e-9,'every unit reaches its correct viewport-limited zoom target');
+   api.render(1/60);
+   assert.ok(Number.isFinite(api.camera.x)&&Number.isFinite(api.camera.y)&&Number.isFinite(api.camera.zoom),'camera stays finite after class/viewport switch');
+   assert.ok(api.camera.zoom>0,'nonzero rendering scale');
+  }
+ }
+}
+console.log('PASS v0.9.22-dev5 vehicle-wide camera, unchanged pilot and widescreen small-map FOV.');
+
+// v0.9.22-dev5 owner camera constraint: pilot must never be pushed farther away.
+{
+ const src=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
+ const bundled=fs.readFileSync(new URL('../android/app/src/main/assets/game.js',import.meta.url),'utf8');
+ assert.equal(src,bundled,'Android and web JS should remain byte-identical');
+ assert.ok(src.includes('if(t.onFoot)return 1.07'),'pilot view unchanged');
+ assert.ok(src.includes('const CAMERA_APRON=420'),'new exterior perimeter present');
+ assert.ok(!src.includes('const CAMERA_APRON=380'),'old exterior camera limit must not silently return');
+ assert.ok(src.includes("v?.type==='mech'?.77:v?.type==='tank'?.82"),'mech/tank zooms changed together');
+}
+console.log('PASS v0.9.22-dev5 small vehicle-only pullback, pilot preserved and assets mirrored.');
+
+// v0.9.22 closeout acceptance: simulate actual settings changes, persisted local
+// preferences, a fresh app context, and repeated real terminal pilot KOs + rematch UI.
+// Full Android hardware acceptance remains separate.
+{
+ const api=win.__test;
+ const ffa={dataset:{playlistMode:'survival_ffa'},checked:true};
+ const teams={dataset:{playlistMode:'survival_teams'},checked:true};
+ acceptancePlaylistInputs=[ffa,teams];
+ acceptancePlayButtons=[node('solo-button'),node('settings-play-button')];
+ // No selection: disabled UI and real newMatch guard both prevent Quick Play.
+ ffa.checked=false;teams.checked=false;
+ for(const fn of handlers['panel:change'])fn({target:ffa});
+ assert.deepEqual(Array.from(api.selectedPlaylistIds),[],'all unchecked modes persist as empty list');
+ assert.equal(acceptancePlayButtons[0].disabled,true);
+ assert.equal(acceptancePlayButtons[1].disabled,true);
+ const blocked=st();
+ assert.equal(api.newMatch('solo'),false,'programmatic start must also reject empty playlist');
+ assert.equal(st(),blocked);
+ assert.deepEqual(JSON.parse(savedStorage.get('rr-options-v06')).playlist,{version:1,enabled:[]});
+
+ // Single selected mode survives an app preference re-load, then always repeats.
+ ffa.checked=true;
+ for(const fn of handlers['panel:change'])fn({target:ffa});
+ assert.deepEqual(Array.from(api.selectedPlaylistIds),['survival_ffa']);
+ assert.equal(acceptancePlayButtons[0].disabled,false);
+ const saved=JSON.parse(savedStorage.get('rr-options-v06'));
+ assert.deepEqual(saved.playlist,{version:1,enabled:['survival_ffa']});
+ acceptancePlaylistInputs=null;acceptancePlayButtons=null; // new page, settings closed
+ api.setPlaylistModes([]);api.loadPrefs();
+ assert.deepEqual(Array.from(api.selectedPlaylistIds),['survival_ffa'],'persisted mode selection restored');
+ node('bot-count').value='1';node('lives-choice').value='2';
+ api.newMatch('solo');
+ let lastSeed=st().mazeSeed,lastMatch=st().matchId;
+ const played=[];
+ for(let n=0;n<3;n++){
+  const old=st();
+  assert.equal(old.config.matchModeId,'survival_ffa','one selected preset repeats');
+  old.tanks[1].onFoot=true;old.tanks[1].shield=0;old.lives[1]=1;
+  assert.equal(api.registerHit(0,1),true);
+  assert.equal(old.finalResult.outcome,'victory');
+  assert.equal(old.finalResult.operatorKOs,1);
+  assert.equal(node('aa-kos').textContent,'1','rendered KO is from real endgame');
+  assert.equal(node('aa-deaths').textContent,'0');
+  assert.equal(node('aa-lives').textContent,'2');
+  played.push({seed:old.mazeSeed,id:old.matchId,final:old.finalResult});
+  for(const fn of handlers['quick-rematch:click'])fn();
+  assert.equal(st().winner,-1,'NEXT MATCH really starts new combat');
+  assert.equal(st().finalResult,null,'NEXT MATCH cannot inherit final statistics');
+  assert.equal(st().elapsedSeconds,0,'NEXT MATCH starts a new timer');
+  assert.notEqual(st().mazeSeed,lastSeed,'every rematch gets fresh seed');
+  assert.ok(st().matchId>lastMatch,'match identity monotonically increases');
+  lastSeed=st().mazeSeed;lastMatch=st().matchId;
+ }
+ assert.equal(played.length,3);
+
+ // Re-enable both saved modes, then real UI NEXT MATCH must alternate when 2
+ // options are enabled (the implementation's shuffle bag avoids repeats).
+ acceptancePlaylistInputs=[ffa,teams];acceptancePlayButtons=[node('solo-button'),node('settings-play-button')];
+ ffa.checked=true;teams.checked=true;
+ for(const fn of handlers['panel:change'])fn({target:teams});
+ assert.deepEqual(Array.from(api.selectedPlaylistIds),['survival_ffa','survival_teams']);
+ assert.deepEqual(JSON.parse(savedStorage.get('rr-options-v06')).playlist.enabled,['survival_ffa','survival_teams']);
+ acceptancePlaylistInputs=null;acceptancePlayButtons=null;
+ api.newMatch('solo');
+ const sequence=[];
+ for(let n=0;n<4;n++){
+  const game=st();sequence.push(game.config.matchModeId);
+  game.tanks[1].onFoot=true;game.tanks[1].shield=0;game.lives[1]=1;
+  assert.equal(api.registerHit(0,1),true);
+  assert.equal(game.finalResult.matchId,game.matchId);
+  for(const fn of handlers['quick-rematch:click'])fn();
+ }
+ for(let n=1;n<sequence.length;n++)assert.notEqual(sequence[n],sequence[n-1],'two-mode playlist should not repeat consecutively');
+ assert.equal(new Set(sequence).size,2,'both actual survival modes played');
+ api.setPlaylistModes([]);api.loadPrefs();
+ assert.deepEqual(Array.from(api.selectedPlaylistIds),['survival_ffa','survival_teams'],'two-mode selection survives reload');
+}
+console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real rematches, fresh seeds and true frozen After Action.');
