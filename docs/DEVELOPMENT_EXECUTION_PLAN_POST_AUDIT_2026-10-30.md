@@ -23,6 +23,12 @@
 
 ---
 
+## Phase C test-only recovery placement A/B — measured PASS (2026-10-30)
+
+**Why this was tested:** 3,000-map structural audit discovered winding corridor routes to apparently nearby spare vehicles. [Draft test-only PR #79](https://github.com/PlayerEden/Ricochet-Rumble/pull/79), [GitHub CI 41023080678 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41023080678), exact tested source SHA `9cb83bcf199c50df4ec8f6874c0d0b42c9b9a004`. [Detailed permanent A/B evidence and tradeoffs](RECOVERY_PLACEMENT_AB_v09501.md). On the same **1,000 seeds per map size**, hypothetical bounded one-garage relocation for SOLO made player 0 spare consistently 2 path steps away (possibly too easy for pilot survival); three-garage seat-balancing reduced worst-seat path p95 **13→4 small, 20→8 standard, 28→11 large**. Baseline worst-seat maximum **22/32/46** decreased to **6/12/16** in the test-only balanced model. Important: balanced placement worsened player 0's personal distance in ~9–15% of seeds, and doesn't model actual combat/ejection. **Only test fixture positions were changed; `spawnVehicles()` and production game unaffected.** Next **decision gate**: if we want a gameplay change, separately prototype a modest/limited corridor-aware spare policy with a floor against immediate easy reboard, test actual spawn paths, all regressions, full Android and human feel. No silent mode balancing, stable main merging, or signed release claim.
+
+---
+
 ## Priority and order
 | Phase | Work package | Purpose / real deliverable | Exit gate | Decision owner |
 |---|---|---|---|---|
