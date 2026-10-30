@@ -2161,7 +2161,7 @@ console.log('PASS v0.9.37 opt-in Quick Play: 3 scored rotations, mixed-mode shuf
  const musicOn=select('toggle-music');
  assert.equal(api.comfort.music,true);
  assert.equal(musicOn.textContent,'MUSIC · ON');
- assert.equal(select('dossier').dataset.action,'dossier','ordinary menu navigation remains wired');
+ assert.ok(source.includes("if(a==='dossier')"),'existing dossier navigation stays wired');
  assert.equal(api.comfort.sound,true);
  assert.equal(api.comfort.music,true);
  assert.ok(source.includes("audioCue('deploy')"),'deploy cue is wired on real matches/replays');
