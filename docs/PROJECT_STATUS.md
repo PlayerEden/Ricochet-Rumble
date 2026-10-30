@@ -1,3 +1,11 @@
+# v0.9.40 Android release-readiness foundation — candidate under QA (2026-10-29)
+
+**New dependent draft:** `feature/android-upgrade-readiness-v0940` stacked on v0.9.39 dossier PR #58; stable main unchanged. Discovered that experimental v0.9.39 still used Android versionName `0.9.21-game-feel`/versionCode 38. Candidate sets versionName `0.9.40-upgrade-test`/code 40, retains unchanged applicationId `com.playereden.ricochetrumble`, app label and LAN identifiers. Adds user-directed manual backup export/restore in Dossier for four existing separate versioned stores with pre-import recovery snapshot, validated allowed content, preview/confirmation, rollback on partial errors, future-schema protection, and reload after import. Adds optional external upload keystore (only when all four env vars supplied); no keys, accounts, billing or signed Play release. Existing Android `allowBackup=false` unchanged. This does **NOT** retroactively enable export from v0.9.39 or guarantee in-place update across differing CI debug certificates. [Detailed implementation and QA gates](QA_ANDROID_UPGRADE_READINESS_v0940.md).
+
+**Current status:** Source changes and new Node/Chromium test cases staged; fast/full QA, Android binary, owner phone/manual migration and production signing NOT YET VERIFIED. Do not merge into main or claim Play readiness. Preserve [v0.9.39 original gameplay test APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.39-player-dossier-test) as known prior artifact.
+
+---
+
 # v0.9.39 Player Dossier — automated full QA PASS, exact original Android APK archived (2026-10-29)
 
 **Experimental dependent draft:** [PR #58](https://github.com/PlayerEden/Ricochet-Rumble/pull/58), `feature/player-dossier-local-v0939`, child of QA-only PR #57 and earlier unapproved feature drafts. Stable main v0.9.21 unmodified and no user phone approval implied.
