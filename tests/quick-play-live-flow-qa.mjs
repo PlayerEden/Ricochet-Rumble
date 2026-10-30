@@ -524,7 +524,7 @@ try{
  }
  await page.setViewportSize({width:915,height:412});
  await page.evaluate(()=>localStorage.setItem('rr-custom-presets-v1',JSON.stringify({version:1,entries:[{name:'Temporary',rules:{modeId:'survival_ffa'}}]})));
- await page.locator('#backup-import').fill('not-json');
+ await page.locator('#backup-import').fill('this is a long malformed JSON string, not an object');
  await page.locator('button[data-action="backup-preview"]').click();
  assert.equal(await page.locator('#backup-restore').isDisabled(),true);
  assert.ok((await page.locator('#backup-message').textContent()).includes('NOT VALID JSON'));
