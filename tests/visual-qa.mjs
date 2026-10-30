@@ -73,6 +73,24 @@ try{
    }
    await page.locator('#menu button[data-action="settings"]').click();
    await shot('settings');
+   if(name==='after'){
+    const options=page.locator('details.extra-rules');
+    await options.locator('summary').click();
+    const first=page.locator('input[data-playlist-mode="survival_ffa"]');
+    const second=page.locator('input[data-playlist-mode="survival_teams"]');
+    if(!await first.isVisible()||!await second.isVisible())throw new Error('Quick Play mode checkboxes missing at '+label);
+    await first.uncheck();await second.uncheck();
+    if(!await page.locator('#menu button[data-action="settings-play"]').isDisabled())throw new Error('Zero selected modes must disable Quick Play at '+label);
+    await first.check();await second.check();
+    if(await page.locator('#menu button[data-action="settings-play"]').isDisabled())throw new Error('Valid playlist must reenable Quick Play at '+label);
+    await shot('settings-playlist-expanded');
+    await options.locator('summary').click();
+   }
+   // Stable art comparison: no bots can KO the pilot while capturing live gait
+   // and directional poses. Both baseline and candidate use identical settings.
+   await page.locator('#bot-count').evaluate(el=>{
+     el.value='0';el.dispatchEvent(new Event('change',{bubbles:true}));
+   });
    await page.locator('#menu button[data-action="settings-back"]').click();
    await page.locator('#menu button[data-action="help"]').click();
    await shot('help');
@@ -103,6 +121,21 @@ try{
    await page.waitForTimeout(280);
    await shot('on-foot-walking');
    await page.keyboard.up('w');
+   if(name==='after'){
+     // Actual renderer + real controls: four directional poses and pistol flash.
+     await page.keyboard.down('a');
+     await page.waitForTimeout(150);
+     await shot('pilot-aim-west');
+     await page.keyboard.up('a');
+     await page.keyboard.down('d');
+     await page.waitForTimeout(155);
+     await shot('pilot-aim-east');
+     await page.keyboard.up('d');
+     await page.locator('#fire-btn').dispatchEvent('pointerdown',{pointerId:1}).catch(()=>{});
+     await page.waitForTimeout(40);
+     await shot('pilot-fire');
+     await page.locator('#fire-btn').dispatchEvent('pointerup',{pointerId:1}).catch(()=>{});
+   }
    await page.locator('#menu-button').click();
    await shot('pause');
    if(name==='after'){
@@ -116,8 +149,10 @@ try{
      $('aa-title').textContent='SECTOR CLEARED';
      $('aa-event').textContent='CYAN WINS!';
      $('aa-kos').textContent='3';
+     $('aa-deaths').textContent='1';
+     $('aa-duration').textContent='02:15';
      $('aa-lives').textContent='2';
-     $('aa-outcome').textContent='SUCCESS';
+     $('aa-outcome').textContent='VICTORY';
      $('aa-note').textContent='NEW PROCEDURAL SECTOR READY';
      $('quick-rematch').classList.remove('hidden');
     });
