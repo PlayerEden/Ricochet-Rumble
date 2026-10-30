@@ -42,17 +42,17 @@ assert.ok(icons.cosmetics.every(c=>c.selectable!==true),'concept-only cosmetics 
 pass('Cosmetic economy remains concept-only',icons.cosmetics.length+' proposed assets, zero authorized');
 const pkg='com.playereden.ricochetrumble';
 assert.ok(gradle.includes("applicationId '"+pkg+"'"));assert.ok(gradle.includes("namespace '"+pkg+"'"));
-assert.ok(gradle.includes('versionCode 40'));assert.ok(gradle.includes("versionName '0.9.40-upgrade-test'"));
+assert.ok(gradle.includes('versionCode 43'));assert.ok(gradle.includes("versionName '0.9.43-test-signer-preparation'"));
 assert.ok(manifest.includes('android:label="Sector Rebound"'));
 assert.ok(manifest.includes('android:allowBackup="false"'));
 assert.ok(manifest.includes('android:usesCleartextTraffic="false"'));
 assert.ok(manifest.includes('android:screenOrientation="sensorLandscape"'));
 pass('Android app identity, version, backup posture and landscape',pkg+' / 0.9.40 / code 40');
-for(const k of ['SR_UPLOAD_STORE_FILE','SR_UPLOAD_STORE_PASSWORD','SR_UPLOAD_KEY_ALIAS','SR_UPLOAD_KEY_PASSWORD'])
+for(const k of ['SR_UPLOAD_STORE_FILE','SR_UPLOAD_STORE_PASSWORD','SR_UPLOAD_KEY_ALIAS','SR_UPLOAD_KEY_PASSWORD','SR_TEST_STORE_FILE','SR_TEST_STORE_PASSWORD','SR_TEST_KEY_ALIAS','SR_TEST_KEY_PASSWORD'])
  assert.ok(gradle.includes(k));
 assert.ok(!/storePassword\s+['"]|keyPassword\s+['"]/.test(gradle),'hardcoded signing credential');
 assert.ok(gradle.includes('Incomplete external upload signing configuration'));
-pass('Upload-signing source guard','external env credentials only; release bundle unverified as production signed');
+pass('Separate production-upload and owner-private test-signing source guards','external env credentials only; release bundle unverified as production signed');
 for(const i of ['hostGame','findGames','joinGame','stopNetwork','sendPacket'])assert.ok(main.includes('@JavascriptInterface public void '+i+'('));
 assert.ok(main.includes('web.getSettings().setAllowUniversalAccessFromFileURLs(false)'));
 assert.ok(main.includes('web.getSettings().setAllowFileAccessFromFileURLs(false)'));

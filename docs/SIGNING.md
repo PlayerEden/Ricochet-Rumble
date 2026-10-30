@@ -1,3 +1,11 @@
+# v0.9.42/43 — actual archived signer mismatch and private future test signer
+
+[Independent original APK certificate audit 40994470523 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40994470523) verified **four different debug signing certificates** for original v0.9.32, v0.9.37, v0.9.39, v0.9.40 archives. Android app ID stayed the same, code 38→40, but **non-destructive in-place update to v0.9.40 from any checked earlier APK is incompatible**. Keep older installed app with valuable local data; v0.9.39 and earlier lack manual export. [Actual certificate matrix](QA_APK_SIGNER_CONTINUITY_v0942.md).
+
+Experimental v0.9.43 adds **optional external TEST-only signer** `SR_TEST_*` separate from existing production upload `SR_UPLOAD_*`. A manual-only [owner-keyed build workflow](../.github/workflows/owner-pinned-test-apk.yml) fails closed until repository owner provides private credentials and pins a public SHA256 certificate. **No new stable test key exists or has run yet; this is infrastructure only.** Never put secrets/keystore in public commits or chat. [Detailed safe setup and blocked gates](QA_PINNED_TEST_SIGNING_v0943.md).
+
+---
+
 # v0.9.40 signing configuration update — audited 2026-10-29
 
 The older note below predates the **experimental v0.9.40** Gradle update. This branch now supports **optional externally configured upload signing** using the complete set `SR_UPLOAD_STORE_FILE`, `SR_UPLOAD_STORE_PASSWORD`, `SR_UPLOAD_KEY_ALIAS` and `SR_UPLOAD_KEY_PASSWORD`. **No credentials were supplied during CI; the v0.9.40 release AAB remains unsigned and no signed production artifact has been accepted.** Partial environment configuration throws an error instead of silently selecting an unintended signer. [Exact successful Android QA](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40991176203).
