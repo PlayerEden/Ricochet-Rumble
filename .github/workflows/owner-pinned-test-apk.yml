@@ -14,10 +14,6 @@ jobs:
     timeout-minutes: 25
     env:
       SR_TEST_STORE_FILE: ${{ runner.temp }}/sr-test-credentials/test-only-keystore.jks
-      SR_TEST_STORE_PASSWORD: ${{ secrets.SR_TEST_STORE_PASSWORD }}
-      SR_TEST_KEY_ALIAS: ${{ secrets.SR_TEST_KEY_ALIAS }}
-      SR_TEST_KEY_PASSWORD: ${{ secrets.SR_TEST_KEY_PASSWORD }}
-      SR_TEST_KEYSTORE_B64: ${{ secrets.SR_TEST_KEYSTORE_B64 }}
       EXPECTED_TEST_CERT: ${{ vars.SR_TEST_CERT_SHA256 }}
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +25,11 @@ jobs:
         with:
           gradle-version: '8.13'
       - name: Reject missing private test signer or public digest (NEVER auto-fallback)
+        env:
+          SR_TEST_STORE_PASSWORD: ${{ secrets.SR_TEST_STORE_PASSWORD }}
+          SR_TEST_KEY_ALIAS: ${{ secrets.SR_TEST_KEY_ALIAS }}
+          SR_TEST_KEY_PASSWORD: ${{ secrets.SR_TEST_KEY_PASSWORD }}
+          SR_TEST_KEYSTORE_B64: ${{ secrets.SR_TEST_KEYSTORE_B64 }}
         run: |
           set -euo pipefail
           umask 077
@@ -58,6 +59,10 @@ jobs:
           cmp web/save-backup.js android/app/src/main/assets/save-backup.js
       - name: Build APK with ONLY the PRIVATE pinned TEST key
         working-directory: android
+        env:
+          SR_TEST_STORE_PASSWORD: ${{ secrets.SR_TEST_STORE_PASSWORD }}
+          SR_TEST_KEY_ALIAS: ${{ secrets.SR_TEST_KEY_ALIAS }}
+          SR_TEST_KEY_PASSWORD: ${{ secrets.SR_TEST_KEY_PASSWORD }}
         run: gradle --no-daemon :app:assembleDebug
       - name: Verify exact installed APK signing certificate BEFORE sharing
         run: |
