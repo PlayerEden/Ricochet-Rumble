@@ -52,6 +52,10 @@ jobs:
           cmp web/index.html android/app/src/main/assets/index.html
           cmp web/style.css android/app/src/main/assets/style.css
           cmp web/scored-match.js android/app/src/main/assets/scored-match.js
+          node --check web/save-backup.js
+          cmp web/save-backup.js android/app/src/main/assets/save-backup.js
+          node tests/save-backup.mjs
+          node tests/android-upgrade-readiness.mjs
           node tests/scored-browser-parity.mjs
       - name: Checkout screenshot comparison baseline
         uses: actions/checkout@v4
