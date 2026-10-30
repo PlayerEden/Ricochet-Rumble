@@ -24,7 +24,7 @@ Use states **Automated PASS / Automated FAIL / Manual PASS / Manual PENDING / Bl
 | Gate 3 — pilot parity | v0.9.33 Survival on-foot controls automated PASS; owner phone verdict pending |
 | **Gate 3 — true Team Deathmatch** | v0.9.34 implemented on draft PR #53; fast CI 40825788956 + full real Chromium/Android QA 40825789109 **Automated PASS**, exact APK prerelease available; 50+ natural bot matches and real phone acceptance **PENDING** |
 | Gate 4A — Custom Match | v0.9.35 Custom editor + v0.9.36 named local presets/default reset **automated QA PASS** (40830083479, 40832553495); owner phone acceptance, natural bot balance and upgrade persistence PENDING |
-| Gate 4B — scored Quick Play integration | Only genuinely validated and selected modes rotate; preserve old Survival |
+| Gate 4B — scored Quick Play integration | v0.9.37 explicitly opt-in CQC/FFA/TDM, legacy Survival-only default; fast and full Chromium/Android automated PASS (40837545823/40837545844). Owner phone acceptance remains PENDING |
 | Gate 4C — procedural uniqueness and bot fairness | v0.9.38 full audit **PASS**: 500 naturally simulated all-bot scored games (30/60Hz plus 200 independent TDM), 300 unique connected maps each size, 0 observed unsafe respawns. Physics-rate sensitivity in CQC; native 60Hz TDM 200 rounds Blue 102/Red 96/draw 2. Physical user testing still OPEN. [Evidence run 40840318936](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40840318936) |
 | Gate 5 — Dossier, saves and optional cosmetics | v0.9.39 real local dossier/versioned safe save foundation, **fast + full Chromium/Android automated QA PASS** (40987749714/40987749740), immutable test APK archived. Cosmetics remain concept-only/not selectable; physical Android storage-upgrade acceptance OPEN |
 | Gate 6 — sound, release identity, privacy and Play readiness | v0.9.40 package identity/versioning/manual export-import recovery + env-only optional upload signing **fast/full Chromium+Android QA PASS** (40991176243/40991176203), original test APK archived. Real signing certificate continuity, physical data migration, Play registration/privacy and human device acceptance **OPEN** |
@@ -53,3 +53,9 @@ Use states **Automated PASS / Automated FAIL / Manual PASS / Manual PENDING / Bl
 - [ ] User device confirmation deferred; stable main unmodified
 
 **2026-10-29 milestone checkpoint:** [Detailed v0.9.34 audit](QA_SCORED_TDM_v0934.md) — automated implementation gate passed; phone/50+ organic bot fairness gates remain open. Do not merge into stable main or label Google Play-ready.
+
+## v0.9.41 first-plan cross-system review
+
+**Automated contract and regression QA PASS:** [GitHub Actions 40992468366](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40992468366), verifying 6 mirrored player assets, real wired modes, legacy Survival defaults, standalone local Dossier/custom/backup integrity tests, score physics, safe Android identity and optional env signing. [Severity-ranked evidence matrix](FIRST_PLAN_CROSS_SYSTEM_AUDIT_v0941.md).
+
+**Overall status remains RELEASE NO-GO:** manual Android controls/performance and save upgrade, actual signed/certificate-compatible bundle, Play policy/privacy, tested two-device LAN if shipping, and explicit approval/integration of experimental draft chain. No new APK because this is QA/documentation only. Do not mark this first-plan audit physically complete.

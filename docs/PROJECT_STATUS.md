@@ -1,3 +1,9 @@
+# v0.9.41 — First-plan cross-system automated audit PASS; release NO-GO (2026-10-29)
+
+[Final evidence-backed audit and severity-ranked blockers](FIRST_PLAN_CROSS_SYSTEM_AUDIT_v0941.md) on **QA-only** branch `qa/first-plan-cross-system-audit-v0941`, child of unmerged v0.9.40 Android readiness PR #59. [Unified source contracts and offline regression suite 40992468366 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/40992468366) passed; no gameplay changes, no new APK warranted. Prior scored/survival modes, true local Dossier, user-directed backup/restore and Android identity were independently Chromium/Android validated in referenced milestone QA runs. Unresolved P0s: physical owner device/playfeel and data update, signing certificate continuity, owner-controlled private Play signing, two-phone LAN if included in launch scope, store privacy/compliance and explicit integrated PR approval. Stable main `f72d9bda` unchanged. **This audit completes the first-plan AUTOMATED cross-system phase, not physical or Google Play release acceptance.** Next work: owner-gated P0 integration/upgrade reliability; preserve v0.9.40 original QA-passing debug APK.
+
+---
+
 # v0.9.40 Android upgrade-readiness — full automated PASS, exact debug APK archived (2026-10-29)
 
 **Latest experimental source:** `feature/android-upgrade-readiness-v0940`, [draft PR #59](https://github.com/PlayerEden/Ricochet-Rumble/pull/59) child of v0.9.39 Player Dossier PR #58. Stable `main` must stay unchanged. Tested source SHA `8cb4aa9b73aa47c9f4ecf56ecfcf9b67bbe91c5e`.
