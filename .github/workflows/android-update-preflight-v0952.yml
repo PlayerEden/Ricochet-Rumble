@@ -1,0 +1,81 @@
+name: Sector Rebound v0.9.52 — real signed APK upgrade preflight QA
+on:
+  push:
+    branches: [quality/android-update-preflight-v0952]
+    paths:
+      - '.github/workflows/android-update-preflight-v0952.yml'
+      - 'tools/android-update-preflight.mjs'
+      - 'tests/android-update-preflight-v0952.mjs'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate decision logic and fail-closed CLI (no Android device)
+        run: |
+          set -euo pipefail
+          node --check tools/android-update-preflight.mjs
+          node tests/android-update-preflight-v0952.mjs
+          node tests/android-upgrade-readiness.mjs
+          node tests/test-signer-contract.mjs
+          node tests/save-backup.mjs
+      - name: Install official APK signature and metadata tools
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" --install "build-tools;35.0.0"
+          echo "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0" >> "$GITHUB_PATH"
+      - name: Fetch exact prior and new archived APKs (no signing keys)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/apks evidence/public
+          gh release download v0.9.46-ui-audio-test --repo "$GITHUB_REPOSITORY" \
+            --pattern 'sector-rebound-v0.9.46-ui-audio-debug.apk' --dir evidence/apks
+          gh release download v0.9.51-corridor-recovery-prototype --repo "$GITHUB_REPOSITORY" \
+            --pattern 'sector-rebound-v0.9.51-corridor-prototype-debug.apk' --dir evidence/apks
+          echo 'e405e9714399495705e9dec1fbe2f12ea3f9222d91f10ab6aaf6f253b11417f2  evidence/apks/sector-rebound-v0.9.46-ui-audio-debug.apk' | sha256sum -c -
+          echo '1e262f546710a10a6416de94cbb86952b435549c6ed9785452396f914a4571e5  evidence/apks/sector-rebound-v0.9.51-corridor-prototype-debug.apk' | sha256sum -c -
+      - name: Real signed APK certificate and version comparison — read-only
+        run: |
+          set -euo pipefail
+          set +e
+          node tools/android-update-preflight.mjs \
+            --previous evidence/apks/sector-rebound-v0.9.46-ui-audio-debug.apk \
+            --candidate evidence/apks/sector-rebound-v0.9.51-corridor-prototype-debug.apk > evidence/public/update-decision.json
+          rc="$?"
+          set -e
+          if [[ "$rc" != "0" && "$rc" != "2" ]]; then echo 'Unexpected CLI status' >&2; exit 1; fi
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const d=JSON.parse(fs.readFileSync("evidence/public/update-decision.json","utf8"));
+            if(d.candidate.versionCode!==48 || d.previous.versionCode!==47
+               || d.candidate.packageId!=="com.playereden.ricochetrumble"
+               || d.previous.packageId!=="com.playereden.ricochetrumble"
+               || !["PREFLIGHT_PASS","PREFLIGHT_NO_GO"].includes(d.status)
+               || !d.candidate.publicCertificateSha256
+               || !d.previous.publicCertificateSha256
+               || d.installedDataPreservationVerified!==false) process.exit(1);
+            console.log("ACTUAL_ARCHIVED_APK_CERTIFICATE_TEST "+JSON.stringify({
+              status:d.status,reason:d.reason,
+              oldVersion:d.previous.versionCode,newVersion:d.candidate.versionCode,
+              samePublicSigner:d.previous.publicCertificateSha256===d.candidate.publicCertificateSha256,
+              noDeviceDataModified:true
+            }));
+          '
+      - name: Save decision and public certificates (NOT APK binaries or private keys)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-update-preflight-v0952-${{ github.run_id }}
+          path: evidence/public/
+          if-no-files-found: warn
+          retention-days: 30
