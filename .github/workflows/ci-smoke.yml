@@ -41,6 +41,7 @@ jobs:
           cmp web/save-backup.js android/app/src/main/assets/save-backup.js
           node tests/save-backup.mjs
           node tests/android-upgrade-readiness.mjs
+          node tests/test-signer-contract.mjs
           node --check web/dossier.js
           cmp web/dossier.js android/app/src/main/assets/dossier.js
           node tests/scored-browser-parity.mjs
