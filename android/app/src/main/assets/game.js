@@ -23,6 +23,45 @@ function dossierLines(){
  }}
 }
 function openDossier(){setPanel(document.getElementById('dossier-template').innerHTML);dossierLines();}
+let pendingRestoreText='';
+function openBackupScreen(){pendingRestoreText='';setPanel(document.getElementById('backup-template').innerHTML);}
+function backupNotice(message){const el=document.getElementById('backup-message');if(el)el.textContent=message;}
+function localBackupStorage(){try{return window.localStorage}catch(_){return null}}
+function doBackupAction(action){
+ const backups=window.SectorBackup;
+ if(!backups){backupNotice('BACKUP MODULE NOT AVAILABLE');return}
+ if(action==='backup-export'){
+  const result=backups.makeBackup(localBackupStorage());
+  if(!result.ok){backupNotice(result.error);return}
+  const el=document.getElementById('backup-output');if(el)el.value=result.text;
+  backupNotice('READY: '+result.count+' SAVED RECORDS · COPY AND STORE THIS TEXT BEFORE UNINSTALL');
+ }
+ if(action==='backup-copy'){
+  const el=document.getElementById('backup-output');if(!el||!el.value){backupNotice('GENERATE BACKUP TEXT FIRST');return}
+  el.focus();el.select();
+  let copied=false;try{copied=!!document.execCommand('copy')}catch(_){}
+  backupNotice(copied?'COPIED · SAVE THE TEXT OUTSIDE THE GAME':'TEXT SELECTED · USE YOUR DEVICE COPY MENU');
+ }
+ if(action==='backup-preview'){
+  pendingRestoreText='';
+  const btn=document.getElementById('backup-restore');if(btn)btn.disabled=true;
+  const code=document.getElementById('backup-import')?.value||'';
+  const result=backups.previewImport(localBackupStorage(),code);
+  if(!result.ok){backupNotice(result.error);return}
+  pendingRestoreText=code;if(btn)btn.disabled=false;
+  backupNotice('VALID BACKUP: '+result.names.length+' RECORDS · '+result.willReplace.length+' EXISTING WILL BE REPLACED. SAVE CURRENT DATA FIRST, THEN CONFIRM.');
+ }
+ if(action==='backup-restore'){
+  const current=document.getElementById('backup-import')?.value||'';
+  if(!pendingRestoreText||current!==pendingRestoreText){backupNotice('BACKUP TEXT CHANGED · PREVIEW IT AGAIN');pendingRestoreText='';const btn=document.getElementById('backup-restore');if(btn)btn.disabled=true;return}
+  pendingRestoreText='';
+  const btn=document.getElementById('backup-restore');if(btn)btn.disabled=true;
+  const result=backups.restore(localBackupStorage(),current);
+  backupNotice(result.ok?'RESTORE COMPLETE · RELOADING LOCAL DATA':result.error);
+  if(result.ok)window.location.reload();
+ }
+}
+
 
 const CUSTOM_PRESETS_KEY='rr-custom-presets-v1';
 let comfort={sound:true,music:true,shake:false,autoFire:false,leftHanded:false},fixedAccumulator=0;
@@ -1404,7 +1443,7 @@ loadPrefs();
 dossierStore=window.SectorDossier?.createStore((()=>{try{return window.localStorage}catch(_){return null}})())||null;
 
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
- if(a==='dossier'){openDossier()}else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, drag the large circular AIM pad to turn the hull without firing, then tap FIRE when lined up. The centered AIM thumbstick has a dead zone to ignore jitter.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){panel.innerHTML=originalPanel;applyPrefsToUI();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
+ if(a==='dossier'){openDossier()}else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, drag the large circular AIM pad to turn the hull without firing, then tap FIRE when lined up. The centered AIM thumbstick has a dead zone to ignore jitter.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){panel.innerHTML=originalPanel;applyPrefsToUI();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
  else if(a==='custom-reset'){resetCustomDraft();refreshCustomUI();customPresetStatus('DEFAULT RULES RESTORED · SAVED PRESETS KEPT');}
  else if(a==='custom-preset-save'){
   readCustomScreen();const input=document.getElementById('custom-preset-name'),name=cleanPresetName(input?.value);
