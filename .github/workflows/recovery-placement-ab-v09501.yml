@@ -1,0 +1,35 @@
+name: Sector Rebound v0.9.50.1 — test-only spare vehicle placement comparison
+on:
+  push:
+    branches: [research/recovery-placement-comparison-v09501]
+    paths:
+      - 'tests/recovery-placement-ab-v09501.mjs'
+      - '.github/workflows/recovery-placement-ab-v09501.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original source syntax and Android mirroring
+        run: |
+          set -euo pipefail
+          node --check tests/recovery-placement-ab-v09501.mjs
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/style.css android/app/src/main/assets/style.css
+      - name: A/B two test-only path aware spare-placement policies
+        run: node tests/recovery-placement-ab-v09501.mjs --seeds=1000
+      - name: Save all comparison rows, summary and extreme replay seeds
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spare-recovery-ab-v09501-${{ github.run_id }}
+          path: qa-results/recovery-placement-v09501/
+          retention-days: 30
+          if-no-files-found: warn
