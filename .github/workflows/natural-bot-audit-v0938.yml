@@ -1,0 +1,59 @@
+name: Sector Rebound - natural scored bot and procedural fairness audit
+on:
+  push:
+    branches: [qa/natural-bot-maze-audit-v0938]
+    paths:
+      - 'tests/natural-bot-audit.mjs'
+      - '.github/workflows/natural-bot-audit-v0938.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-gameplay-balance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify actual game syntax and Android mirrors before running tests
+        run: |
+          set -euo pipefail
+          node --check tests/natural-bot-audit.mjs
+          node --check web/game.js
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/scored-match.js android/app/src/main/assets/scored-match.js
+      - name: Audit short actual all-bot scored matches and 30 maps per size
+        run: node tests/natural-bot-audit.mjs --seeds=2 --maze-seeds=30 --out=artifacts/bot-balance-probe.json
+      - name: Audit 50 natural full scored matches per mode and 300 maps per size
+        run: node tests/natural-bot-audit.mjs --seeds=50 --maze-seeds=300 --out=artifacts/natural-scored-balance-v0938.json
+      - name: Cross-check full 50x3 round tournament using native 60 Hz physics
+        run: node tests/natural-bot-audit.mjs --seeds=50 --maze-seeds=300 --hz=60 --out=artifacts/natural-scored-balance-60hz-v0938.json
+      - name: Compare identical seeds between 30 Hz and 60 Hz and check probe reproducibility
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';import assert from 'node:assert/strict';
+          const load=(path)=>JSON.parse(fs.readFileSync(path,'utf8'));
+          const lo=load('artifacts/bot-balance-probe.json');
+          const a=load('artifacts/natural-scored-balance-v0938.json');
+          const b=load('artifacts/natural-scored-balance-60hz-v0938.json');
+          assert.equal(a.rounds.length,150);assert.equal(b.rounds.length,150);
+          for(const row of lo.rounds)assert.deepEqual(row,a.rounds.find(x=>x.mode===row.mode&&x.seed===row.seed),'30Hz probe must reproduce EXACT SAME per-seed result from full trial');
+          for(const m of ['cqc','scored_ffa','scored_tdm']){
+            const aa=a.rounds.filter(x=>x.mode===m),bb=b.rounds.filter(x=>x.mode===m);
+            assert.deepEqual(aa.map(x=>x.seed),bb.map(x=>x.seed),'compare identical seeds and order');
+            const noHits=q=>q.filter(x=>x.armorAndPilotHitEvents===0).map(x=>x.seed);
+            console.log('CROSS_RATE '+JSON.stringify({mode:m,thirtyHz:{noHitSeeds:noHits(aa),timeouts:aa.filter(x=>x.reason==='time_limit').length},sixtyHz:{noHitSeeds:noHits(bb),timeouts:bb.filter(x=>x.reason==='time_limit').length}}));
+          }
+          JS
+      - name: Stress-test Blue/Red TDM fairness with 200 additional independent 60 Hz rounds
+        run: node tests/natural-bot-audit.mjs --seeds=200 --seed-offset=100 --maze-seeds=300 --hz=60 --modes=scored_tdm --out=artifacts/tdm-independent-200-60hz-v0938.json
+      - name: Preserve inspectable raw evidence and seed-specific samples
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scored-bot-and-map-audit-v0938
+          path: artifacts/*.json
+          if-no-files-found: warn
+          retention-days: 90

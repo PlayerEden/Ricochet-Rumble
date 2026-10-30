@@ -535,3 +535,202 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 }
 @media(max-width:790px){.home-build{display:none}.home-brand h2{font-size:clamp(18px,4.3dvh,29px)}.home-overline{font-size:8px}}
 @media(max-width:590px) and (orientation:landscape){.home-content{grid-template-columns:1fr 1fr}.home-showcase-caption span{display:none}.home-brand-mark{display:none}.home-actions{gap:5px}}
+
+/* v0.9.22 mode selectors: real thumb-sized checkboxes, not inherited full-width text inputs. */
+.settings-page .quick-mode-option{display:flex;align-items:center;gap:8px;min-height:38px;line-height:1.15;white-space:normal;cursor:pointer;touch-action:manipulation}
+.settings-page .quick-mode-option input[type="checkbox"]{width:23px;height:23px;min-width:23px;margin:0;padding:0;flex:0 0 23px;accent-color:#52d9f7;cursor:pointer}
+.settings-mode-status{text-align:center;margin:2px 0 5px!important;color:#aed6e5!important;font-weight:800;letter-spacing:.2px}
+.panel button:disabled{opacity:.43;cursor:not-allowed;filter:saturate(.35)}
+
+/* v0.9.22-dev2: four verified solo stats; outcome belongs in the compact title rail. */
+.after-action .aa-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.after-action .aa-stats>div{padding-inline:clamp(5px,.8vw,10px)}
+.after-action .aa-stats span{overflow-wrap:anywhere}
+.after-action #aa-outcome{color:#b1e6d4;font-weight:900;white-space:nowrap}
+.after-action.lost #aa-outcome{color:#f8bca2}
+@media(max-width:760px){.after-action .aa-stats{gap:4px}.after-action .aa-stats strong{font-size:clamp(16px,4dvh,22px)}.after-action .aa-stats span{font-size:clamp(8px,1.2vw,10px)}}
+
+/* CQC scored pilot-only test: restrained HUD timer, clear distinct lobby action. */
+.score-clock{flex-shrink:0;color:#e6c986;border:1px solid #5a6e76;background:#152a34;padding:3px 7px;border-radius:5px;font:850 clamp(10px,1.8dvh,16px)/1.2 ui-monospace,monospace;letter-spacing:.5px;font-variant-numeric:tabular-nums}
+#panel .home-action-grid button.home-cqc{grid-column:1/-1;min-height:38px;border-color:#768b6d;background:#21382e}
+#panel .home-action-grid button.home-cqc strong{color:#e1edc2}
+@media(max-height:430px){.score-clock{font-size:11px;padding:2px 4px}#panel .home-action-grid button.home-cqc{min-height:33px}}
+
+/* Scored FFA remains a separately labeled experimental mode, not forced into Quick Play. */
+#panel .home-action-grid button.home-ffa{grid-column:1/-1;min-height:38px;border-color:#6b8998;background:#213441}
+#panel .home-action-grid button.home-ffa strong{color:#d8eefa}
+@media(max-height:430px){#panel .home-action-grid button.home-ffa{min-height:33px}}
+
+/* Deliberate bank-shot control, only shown inside scored vehicle FFA tanks.
+   A compact AIM touch pad is separate from FIRE so positioning shells stays
+   intentional. It is hidden in CQC, legacy Survival and after ejection. */
+.touch-right .vehicle-aim-btn{min-height:40px;width:min(13vw,31dvh,120px);min-width:77px;border:2px solid #80d4e5;background:linear-gradient(140deg,#264c60,#152e42);color:#e2f8fc;border-radius:11px;font-size:clamp(12px,1.7vw,16px);font-weight:900;letter-spacing:1.3px;touch-action:none;user-select:none;box-shadow:0 3px 0 #081c27}
+.touch-right .vehicle-aim-btn span{font-size:1.25em;padding-left:5px}
+.touch-right .vehicle-aim-btn.active{background:#346477;border-color:#c3f5fb;transform:translateY(2px);box-shadow:0 1px 0 #081c27}
+.touch-right .vehicle-aim-btn.hidden{display:none}
+/* Fullscreen arcade has pointer-events:none on control-zone containers; explicitly
+   restore events on this new button just as the existing FIRE button does. */
+.battlefield .touch-right .vehicle-aim-btn{pointer-events:auto}
+@media(max-height:430px){.touch-right .vehicle-aim-btn{min-height:34px;font-size:11px}.touch-right:has(.vehicle-aim-btn:not(.hidden)){gap:2px;padding-bottom:4px}}
+
+
+/* v0.9.31: scored vehicle FFA only. Side-by-side large thumb AIM and independent
+   FIRE, with ENTER above FIRE. Original pilot/Survival/LAN layouts untouched. */
+.battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)){
+ display:grid!important;grid-template-columns:clamp(98px,14vw,112px) clamp(64px,9vw,76px);
+ grid-template-rows:46px clamp(98px,14vw,112px) 14px;
+ column-gap:12px;row-gap:6px;width:max-content;align-items:center;
+ justify-content:end;justify-items:center;padding:0;
+ bottom:max(9px,calc(env(safe-area-inset-bottom) + 9px));
+}
+.battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)) .vehicle-aim-btn{
+ grid-column:1;grid-row:2;position:relative;display:block;overflow:hidden;
+ box-sizing:border-box;width:100%;height:100%;min-width:0;min-height:0;
+ margin:0;padding:0;border:2px solid #78b8c9;border-radius:50%;
+ background:radial-gradient(circle,#1c4555ed,#112d3bdc 72%,#0a202be6);
+ box-shadow:0 0 0 4px #1b536242,inset 0 0 11px #051621d0;
+ pointer-events:auto;touch-action:none;user-select:none;transform:none;
+}
+.battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)) .vehicle-aim-btn.active{
+ background:#245465;border-color:#b8e6ef;transform:none;
+ box-shadow:0 0 0 4px #439ba457,inset 0 0 12px #051621b3;
+}
+.vehicle-aim-ring{position:absolute;inset:13%;display:block;border:1px solid #8ac0cc70;
+ border-radius:50%;pointer-events:none;
+ background:linear-gradient(90deg,transparent 49%,#8ac0cc30 50%,transparent 51%),
+ linear-gradient(0deg,transparent 49%,#8ac0cc30 50%,transparent 51%);}
+.vehicle-aim-knob{display:flex;align-items:center;justify-content:center;
+ position:absolute;left:50%;top:50%;width:30%;aspect-ratio:1;
+ border-radius:50%;border:2px solid #b6e9f1a8;background:#3a798dbb;
+ box-shadow:0 2px 4px #03172399;transform:translate(-50%, -50%);
+ pointer-events:none;}
+.vehicle-aim-dot{width:6px;height:6px;border-radius:50%;background:#e5fcff}
+.vehicle-aim-label{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);
+ font:850 10px/1 ui-monospace,monospace;letter-spacing:1px;color:#d5f4fc;pointer-events:none}
+.battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)) .fire-btn{
+ grid-column:2;grid-row:2;align-self:center;box-sizing:border-box;margin:0;
+ width:100%;height:auto;aspect-ratio:1;min-width:64px;min-height:64px;
+ max-width:76px;max-height:76px;border-width:2px;border-radius:50%;
+ font-size:clamp(10px,1.25vw,12px);}
+.battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)) .fire-icon{font-size:20px}
+.battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)) .interact-btn{
+ grid-column:2;grid-row:1;width:100%;min-width:64px;max-width:none;
+ height:46px;min-height:46px;max-height:46px;margin:0;padding:0 3px;
+ line-height:1.1;font-size:clamp(9px,1.12vw,11px);box-sizing:border-box;white-space:normal;}
+.battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)) .control-caption{
+ grid-column:2;grid-row:3;margin:0;display:block;white-space:nowrap;font-size:9px;letter-spacing:0}
+.battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)) .shell-meter{
+ grid-column:1;grid-row:3;margin:0;display:block;white-space:nowrap;font-size:10px}
+@media(max-height:350px){
+ .battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)){grid-template-rows:42px 92px 12px;column-gap:10px;row-gap:4px}
+ .battlefield .touch-right:has(.vehicle-aim-btn:not(.hidden)) .interact-btn{height:42px;min-height:42px;max-height:42px}
+}
+
+/* The old AIM button styled all child spans as glyphs; remove padding from the new pad's thumb/ring. */
+.battlefield .touch-right .vehicle-aim-btn span{padding-left:0;font-size:inherit}
+
+/* v0.9.34: compact experimental modes while protecting phone landscape menu. */
+#panel .home-action-grid button.home-cqc,#panel .home-action-grid button.home-ffa{grid-column:auto;min-height:clamp(43px,8dvh,58px)}
+#panel .home-action-grid button.home-tdm{grid-column:1/-1;min-height:38px;border-color:#6d9fa5;background:#1b3a3f}
+#panel .home-action-grid button.home-tdm strong{color:#c9f2f3}
+@media(max-height:430px){#panel .home-action-grid button.home-cqc,#panel .home-action-grid button.home-ffa{min-height:36px}#panel .home-action-grid button.home-tdm{min-height:33px}}
+
+/* Custom Match: compact tactical rule editor, phone landscape first. */
+#panel:has(.custom-screen){width:min(850px,calc(100vw - 16px));max-height:calc(100dvh - 14px);overflow-y:auto;padding:clamp(8px,2dvh,18px) clamp(11px,2vw,24px)}
+.custom-screen{display:flex;flex-direction:column;gap:clamp(4px,1.4dvh,10px)}
+.custom-head h2{font:900 clamp(21px,5dvh,35px)/1 'sans-serif-condensed',Arial,sans-serif;margin:1px 0 3px}.custom-head h2 span{color:#77d6df}
+.custom-head p{font-size:clamp(10px,1.35vw,13px);margin:0;color:#a7c4cc}
+.custom-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(5px,1.1dvh,9px) 10px}
+.custom-grid label{display:flex;flex-direction:column;gap:4px;min-width:0;font:750 clamp(10px,1.25vw,12px)/1.15 monospace;color:#b3d7df}
+.custom-grid select{width:100%;min-width:0;min-height:clamp(33px,8dvh,44px);border:1px solid #557d8a;border-radius:4px;background:#0e2734;color:#e4f4f4;padding:4px 7px;font:750 clamp(10px,1.3vw,14px)/1.2 sans-serif;touch-action:manipulation}
+.custom-grid select:disabled{opacity:.48;color:#8eaaae}
+.custom-preview{margin:1px 0 0!important;padding:clamp(5px,1.2dvh,8px) 9px;border-left:3px solid #76d8d6;background:#15333d;color:#ebf6f1!important;font:800 clamp(10px,1.25vw,13px)/1.25 monospace!important}
+.custom-note{margin:0!important;color:#a6bdc5!important;font:700 clamp(9px,1.15vw,12px)/1.2 monospace!important}
+.custom-actions{display:grid;grid-template-columns:1fr 1.7fr;gap:12px}
+#panel .custom-actions button{margin:0;min-height:clamp(36px,9dvh,46px)}
+@media(max-height:390px){.custom-screen{gap:4px}.custom-head p{display:none}.custom-grid{gap:4px 7px}.custom-grid select{min-height:32px}}
+@media(max-width:620px){.custom-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#panel .home-action-grid button.home-custom{grid-column:1/-1;min-height:36px;border-color:#497e78;background:#19372f}
+#panel .home-action-grid button.home-custom strong{color:#b8efdf}
+.after-action #custom-edit{min-height:40px}
+
+/* v0.9.35 audit repair: new Custom button shares TDM's final row.
+   A fourth full-width row pushed home content over HELP at 740x360. */
+#panel .home-action-grid button.home-tdm,#panel .home-action-grid button.home-custom{grid-column:auto;min-height:clamp(36px,8dvh,51px)}
+@media(max-height:440px){#panel .home-action-grid button.home-tdm,#panel .home-action-grid button.home-custom{min-height:36px;padding:5px 8px}}
+
+/* v0.9.36: collapsed by default to retain the approved compact landscape editor. */
+.custom-preset-fold{border:1px solid #376c72;border-radius:5px;background:#0d2831;padding:0 8px 7px;margin:0}
+.custom-preset-fold:not([open]){padding-bottom:0}
+.custom-preset-fold summary{cursor:pointer;min-height:34px;display:flex;align-items:center;justify-content:space-between;gap:8px;color:#a4e2d9;font:850 clamp(10px,1.25vw,13px)/1.2 monospace;touch-action:manipulation}
+.custom-preset-fold summary span{font:650 clamp(9px,1.1vw,11px)/1.2 monospace;color:#97b6bd;text-align:right}
+.custom-preset-save,.custom-preset-manage{display:grid;gap:8px;align-items:end;margin:6px 0}
+.custom-preset-save{grid-template-columns:minmax(0,1fr) minmax(110px,.55fr)}
+.custom-preset-manage{grid-template-columns:minmax(0,1fr) minmax(70px,.35fr) minmax(75px,.4fr)}
+.custom-preset-fold label{display:flex;flex-direction:column;gap:4px;min-width:0;font:750 10px/1.2 monospace;color:#accbd0}
+.custom-preset-fold input,.custom-preset-fold select{width:100%;min-width:0;min-height:40px;padding:5px 8px;border:1px solid #517b86;border-radius:4px;background:#0a202b;color:#eef8f5;font:750 13px/1.1 system-ui,sans-serif}
+#panel .custom-preset-fold button{margin:0;min-width:0;min-height:40px;padding:6px 8px;font:800 clamp(10px,1.15vw,13px)/1.15 monospace}
+.custom-preset-foot{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-top:5px}
+.custom-preset-foot button{flex:0 0 auto}
+#panel .custom-preset-foot p{margin:0;font:700 10px/1.2 monospace;color:#a8ccd1}
+@media(max-width:620px){.custom-preset-save{grid-template-columns:minmax(0,1fr) auto}.custom-preset-manage{grid-template-columns:minmax(0,1fr) 70px 77px}.custom-preset-foot{align-items:flex-start;flex-direction:column}}
+@media(max-height:390px){.custom-preset-fold summary{min-height:34px}.custom-preset-save,.custom-preset-manage{margin:4px 0}}
+
+/* v0.9.39 — actual offline operator dossier. Responsive within phone landscape. */
+#panel:has(.dossier-screen){width:min(890px,calc(100vw - 16px));max-height:calc(100dvh - 14px);overflow-y:auto;padding:clamp(9px,1.8dvh,17px) clamp(13px,2vw,22px)}
+.dossier-screen{display:flex;flex-direction:column;gap:clamp(7px,1.4dvh,12px)}
+.dossier-head h2{font:900 clamp(20px,4.8dvh,34px)/1.05 system-ui,sans-serif;margin:2px 0 3px}.dossier-head h2 span{color:#78d9df}
+.dossier-head p{margin:0;color:#aac7d1;font:750 10px/1.2 monospace}
+.dossier-stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.dossier-stats>div{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0;padding:7px 9px;background:#122e3a;border:1px solid #345b6a;border-radius:4px}
+.dossier-stats small{font:750 clamp(9px,1vw,11px)/1.1 monospace;color:#9ab8c6}
+.dossier-stats strong{font:900 clamp(18px,3.5dvh,27px)/1.1 system-ui;color:#e4f6f6;font-variant-numeric:tabular-nums}
+.dossier-columns{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dossier-columns>section{min-width:0;background:#102630;border:1px solid #345766;border-radius:4px;padding:8px 10px}
+.dossier-columns h3{font:850 11px/1.2 monospace;color:#d9ebe7;margin:0 0 6px}
+.dossier-mode{display:flex;justify-content:space-between;gap:8px;border-top:1px solid #2c4955;padding:5px 0;font:700 clamp(10px,1.1vw,12px)/1.2 monospace}
+.dossier-mode span{color:#a7cad2}.dossier-mode strong{font-weight:800;text-align:right;color:#def1ed}
+.dossier-guard{font:650 10px/1.3 monospace!important;color:#95acb7!important;margin:7px 0 0!important}
+.dossier-footer{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.dossier-footer strong{font:850 14px/1.2 monospace;color:#c9ebdb}
+.dossier-footer span{font:750 11px/1 monospace;color:#91b1bb}
+#panel .dossier-footer button{margin:0;min-width:160px;min-height:39px}
+#panel .dossier-footer p{margin:3px 0 0;font:750 10px monospace;color:#a7c7cf}
+#panel .dossier-note{font:650 10px/1.3 monospace;color:#9eb7bf;margin:0}
+@media(max-width:820px){.dossier-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.dossier-columns{gap:7px}.dossier-mode{font-size:10px}}
+@media(max-height:390px){.dossier-stats>div{padding:5px 7px}.dossier-mode{padding:3px 0}}
+@media(max-width:580px){.dossier-columns{grid-template-columns:1fr}}
+@media(max-width:750px){#panel .home-utilities button{padding:6px 7px;font-size:10px}.home-utilities{gap:6px}}
+
+/* v0.9.40 — user-controlled offline backup/restore, landscape legible. */
+#panel:has(.backup-screen){width:min(990px,calc(100vw - 16px));max-height:calc(100dvh - 14px);overflow-y:auto;padding:clamp(10px,2dvh,18px) clamp(12px,2vw,23px)}
+.backup-screen{display:flex;flex-direction:column;gap:7px}
+.backup-screen h2{margin:0;font:900 clamp(21px,4.6dvh,34px)/1 system-ui}
+.backup-screen h2 span{color:#80d7d6}
+#panel .backup-intro,#panel .backup-warning{font:750 10px/1.3 monospace;color:#a8c7d0;margin:0}
+#panel .backup-warning{color:#ffcf91}
+.backup-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.backup-grid section{min-width:0;border:1px solid #315667;background:#112832;border-radius:5px;padding:9px;display:flex;flex-direction:column;gap:6px}
+.backup-grid h3{margin:0;font:850 12px/1.1 monospace;color:#cdeaea}
+#panel .backup-grid p{margin:0;font:650 10px/1.3 monospace;color:#aac2cb}
+#panel .backup-grid textarea{width:100%;min-width:0;min-height:82px;resize:vertical;font:500 11px/1.25 monospace;color:#e7f9ef;background:#061a24;border:1px solid #4b727d;border-radius:4px;padding:7px;box-sizing:border-box}
+#panel .backup-grid button{min-height:36px;min-width:0;margin:0;padding:6px;font:800 clamp(10px,1.1vw,12px)/1.1 monospace}
+.backup-rest-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#panel .backup-message{margin:0;min-height:22px;font:750 11px/1.25 monospace;color:#c6e9e3}
+#panel .backup-back{min-height:40px;margin:0}
+.dossier-backup-actions{display:flex;gap:6px;align-items:center}
+#panel .dossier-backup-actions button{margin:0;min-width:115px;min-height:40px;padding:5px 9px}
+@media(max-width:620px){.backup-grid{grid-template-columns:1fr}.dossier-backup-actions{flex-direction:column}#panel .dossier-backup-actions button{width:100%}}
+@media(max-height:390px){#panel .backup-grid textarea{min-height:65px}}
+
+
+/* v0.9.46: compact tactical audio shortcuts in SOLO/HOST/GUEST pause overlays.
+   No in-battlefield clutter or extra gameplay touch targets. */
+#panel .pause-audio{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);align-items:center;gap:7px;
+ max-width:520px;margin:12px auto 0;padding-top:9px;border-top:1px solid #395966}
+#panel .pause-audio-label{font:800 clamp(9px,1.1vw,11px)/1.2 'Droid Sans Mono',monospace;letter-spacing:.8px;color:#8bb9c5}
+#panel .pause-audio button{width:100%;min-width:0;min-height:38px;margin:0;padding:6px 8px;border:1px solid #527685;
+ background:#142e3a;color:#d6e9ed;font:800 clamp(10px,1.25vw,12px)/1.1 'sans-serif-condensed',Roboto,sans-serif}
+#panel .pause-audio button[aria-pressed="true"]{background:#234757;border-color:#82bdca;color:#e5faff}
+#panel .pause-audio button:focus-visible{outline:2px solid #e4cf91;outline-offset:2px}
+@media(max-height:390px){#panel .pause-audio{margin-top:7px;padding-top:6px;gap:5px}#panel .pause-audio button{min-height:34px}}
