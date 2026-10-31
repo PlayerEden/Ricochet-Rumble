@@ -6,7 +6,7 @@
 The renderer draws the tank at `(t.x,t.y)` and rotates it about its local origin, with symmetric hull/tracks; it does **not** actually rotate its sprite around an offset point. However, `tankMove()` previously accelerated the tank directly along the joystick's world-space direction **while** its hull was still slowly turning to align. This lateral displacement makes the rotation look orbital or off-center.
 
 ## Targeted experiment
-- **Human, offline Solo, tank, movement-stick steering only:** the hull turns toward a far-off joystick heading first; motor thrust is zero when >~73 degrees off-axis, then ramps with alignment. Actual speed and turn-rate maximum remain unchanged; existing carry momentum damps a little faster while pivoting.
+- **Human, offline Solo player-1 seat (index 0), tank, movement-stick steering only:** the hull turns toward a far-off joystick heading first; motor thrust is zero when >~73 degrees off-axis, then ramps with alignment. Actual speed and turn-rate maximum remain unchanged; existing carry momentum damps a little faster while pivoting.
 - **Explicit exclusions:** pilot, mech, bots, host/guest LAN, local duel, and independent right-hand scored AIM are unchanged. Rendering art, camera zoom, shot ballistics, projectile cap, tanks' hitboxes and audio are unchanged.
 - **Regression:** exercise actual `tankMove()` in `tests/smoke.mjs` to assert a 90-degree tank pivot with no off-axis displacement and responsive heading; aligned movement still accelerates; bot and mech control unchanged. Keep Web and Android assets exactly byte-identical.
 

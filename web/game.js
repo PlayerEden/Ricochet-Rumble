@@ -740,7 +740,7 @@ function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=c
  // direction. During a deliberate, slow turn that appears like an off-center
  // orbit. Throttle forward drive until the tracks align with the requested path.
  // Do not change angular rates, independent AIM, pilot, mech, bots, or LAN.
- const soloTankDrive=mode==='solo'&&!inp.bot&&!t.onFoot&&currentVehicle(t)?.type==='tank'&&!aimed;
+ const soloTankDrive=mode==='solo'&&i===0&&!inp.bot&&!t.onFoot&&currentVehicle(t)?.type==='tank'&&!aimed;
  let driveX=mx,driveY=my,turningToFace=false;
  if(soloTankDrive&&mag){
   const intended=Math.atan2(my,mx);
