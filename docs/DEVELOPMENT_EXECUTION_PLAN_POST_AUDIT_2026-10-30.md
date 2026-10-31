@@ -67,6 +67,12 @@ Added small, reversible [LAN host stale-input safeguard draft #83](https://githu
 
 ---
 
+## Phase E v0.9.54 final automated QA — no further LAN coding necessary until real phones (2026-10-30)
+
+[Draft #83](https://github.com/PlayerEden/Ricochet-Rumble/pull/83) now fail-closes host guest movement/FIRE/aim after >0.4 simulated seconds without a received input, and resets around pause/reconnect/rematch; source-level tests cover valid packet recovery and no ghost FIRE. [Actual engine focused CI 41156162244 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41156162244), [full real Chromium and Android debug APK/unsigned AAB CI 41156274497 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41156274497), tested source `e4cb3e2e9351f1c2a354b35100f23bf0bd9e45a0`. [Permanent original v0.9.54 test APK and screenshots](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.54-lan-ghost-input-test) (SHA256 `c397677cc53466a1e07cf9d9e0d1494b8c82d2e6a8cf1ee4bf5e2b1dc611513b`) and [full technical QA handoff](LAN_GUEST_INPUT_FRESHNESS_v0954.md). **Keep all draft PRs unmerged, no durable signer or physical LAN proof**. Since owner cannot test two phones, **pause LAN networking work here**: no speculative interpolation, matchmaking or new modes. Next independent work optional: reviewed branch integration/rollback and release compliance checklist, not more feature creep. Debug APK signing may differ; don't uninstall a copy with important progress.
+
+---
+
 ## Priority and order
 | Phase | Work package | Purpose / real deliverable | Exit gate | Decision owner |
 |---|---|---|---|---|
