@@ -37,6 +37,7 @@ jobs:
           node tests/quick-play-live-flow-qa.mjs
           node tests/ui-layout-geometry-v0948.mjs
           node tests/visual-qa.mjs
+          node tests/ui-visual-identity-qa.mjs
       - name: Keep inspectable real UI screenshots and layout report
         if: always()
         uses: actions/upload-artifact@v4

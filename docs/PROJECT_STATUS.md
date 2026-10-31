@@ -1,3 +1,9 @@
+# 2026-10-31 — UI VISUAL IDENTITY: EXACT BROWSER/ANDROID QA ENABLED
+
+Color/role test has been added for the current graphical overhaul: real Chromium loads 5 landscape sizes and verifies amber Play vs neutral mode actions, text contrast, 4 glyph cards, selected Hangar cyan, Dossier graphite and existing team HUD identities with screenshots. Triggered the dedicated UI/UX workflow via its workflow-file change. Recheck [Actions scoped UI review](https://github.com/PlayerEden/Ricochet-Rumble/actions/workflows/ui-ux-scoped-audit.yml) and new signed APK before claiming PASS. [Design/rollback](UI_VISUAL_IDENTITY_OVERHAUL_2026-10-31.md). Owner on-device aesthetic acceptance remains pending.
+
+---
+
 # 2026-10-31 — UI VISUAL IDENTITY OVERHAUL CANDIDATE (NEW OWNER AUTHORIZATION)
 
 **Owner explicitly approved a deeper game-style UI overhaul if beneficial.** New candidate changes *visual system/presentation only* after the prior full 87-scene/0-geometry issue Chromium navigation QA of Preview 100019: charcoal/graphite menu surfaces, one distinctive amber Quick Play / Start Match / Next Match, restrained cyan for selections/info, actual menu tank/mech showcase retained, and four icon+label mode cards. All non-Home overlays (Settings, Custom, Hangar, Dossier, Backup, Pause, After Action) get corresponding surface/CTA consistency. No movement, aiming, controls, combat, stats, saved schema, unlock conditions, network protocol, in-battle HUD colors, or Play signing changes. [Design details and acceptance contract](UI_VISUAL_IDENTITY_OVERHAUL_2026-10-31.md). Immutable [Preview 100019 pre-overhaul checkpoint](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-preview-100019-menu-ui-qa-approved) at `0792fd17796f20638608887cc9b6c1006c9b8ba0`. Development stays in [draft PR #85](https://github.com/PlayerEden/Ricochet-Rumble/pull/85); **exact candidate Android/Chromium/owner physical QA pending until verified**, never auto-merge stable game.
