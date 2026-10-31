@@ -1,0 +1,38 @@
+name: Sector Rebound v0.9.54 — host ghost-input watchdog
+on:
+  push:
+    branches: [fix/lan-guest-input-timeout-v0954]
+    paths:
+      - 'web/game.js'
+      - 'android/app/src/main/assets/game.js'
+      - 'tests/lan-guest-input-timeout-v0954.mjs'
+      - 'tests/lan-pilot-input-parity-v0953.mjs'
+      - 'tests/smoke.mjs'
+      - '.github/workflows/lan-guest-input-v0954.yml'
+permissions:
+  contents: read
+jobs:
+  host-input-freshness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate real game source and exact Web/Android mirrors
+        run: |
+          set -euo pipefail
+          node --check web/game.js
+          node --check tests/lan-guest-input-timeout-v0954.mjs
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/style.css android/app/src/main/assets/style.css
+      - name: Verify host stops stale guest controls and allows fresh input
+        run: node tests/lan-guest-input-timeout-v0954.mjs
+      - name: Prior guest aim, scoring, saves and smoke regression
+        run: |
+          set -euo pipefail
+          node tests/lan-pilot-input-parity-v0953.mjs
+          node tests/scored-match-kernel.mjs
+          node tests/save-backup.mjs
+          node tests/smoke.mjs
