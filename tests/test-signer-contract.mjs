@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 const gradle=fs.readFileSync('android/app/build.gradle','utf8');
 const workflow=fs.readFileSync('.github/workflows/owner-pinned-test-apk.yml','utf8');
 assert.match(gradle,/versionCode 49/);
-assert.match(gradle,/versionName '0\.9\.51-corridor-prototype'/);
+assert.match(gradle,/versionName '0\.9\.53-lan-pilot-test'/);
 assert.match(gradle,/applicationId 'com\.playereden\.ricochetrumble'/);
 for(const key of ['SR_TEST_STORE_FILE','SR_TEST_STORE_PASSWORD','SR_TEST_KEY_ALIAS','SR_TEST_KEY_PASSWORD'])assert.ok(gradle.includes(key));
 assert.ok(gradle.includes("throw new GradleException('Incomplete private TEST APK signing configuration')"));
