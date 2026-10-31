@@ -16,6 +16,7 @@
         <span id="round" class="middle" aria-label="Vehicle armor: 3 of 3">TANK · 3/3</span>
         <span class="pink-tag"><strong id="score1">1</strong> <span id="player1-label">ENEMIES</span></span>
       </div>
+      <span id="score-clock" class="score-clock hidden" aria-label="Time remaining">03:00</span>
       <span id="power-status" class="power-status hidden" aria-live="off"></span>
       <button class="hud-menu" id="menu-button" aria-label="Pause or open game menu"><span aria-hidden="true">☰</span> MENU</button>
     </header>
@@ -32,16 +33,18 @@
         <div id="field-coach" class="field-coach hidden" role="status" aria-live="polite" aria-atomic="true"></div>
         <section id="after-action" class="after-action hidden" aria-label="After-action match report">
           <div class="aa-panel">
-            <div class="aa-rail"><span>FIELDGRID // OPERATIONS</span><span>AFTER ACTION / 01</span></div>
+            <div class="aa-rail"><span id="aa-mode-label">FIELDGRID // OPERATIONS</span><span id="aa-outcome">AFTER ACTION</span></div>
             <h2 id="aa-title">SECTOR CLEARED</h2>
             <p id="aa-event" class="aa-event">EXERCISE COMPLETE</p>
             <div class="aa-stats">
               <div><span>OPERATOR KOs</span><strong id="aa-kos">0</strong></div>
-              <div><span>LIVES REMAINING</span><strong id="aa-lives">0</strong></div>
-              <div><span>FINAL STATUS</span><strong id="aa-outcome">CLEARED</strong></div>
+              <div><span>DEATHS</span><strong id="aa-deaths">0</strong></div>
+              <div><span>MATCH TIME</span><strong id="aa-duration">00:00</strong></div>
+              <div><span id="aa-lives-label">LIVES LEFT</span><strong id="aa-lives">0</strong></div>
             </div>
             <div class="aa-actions">
-              <button id="quick-rematch" class="quick-rematch hidden" type="button" aria-label="Start a new match in a newly generated maze">↻ NEW SECTOR</button>
+              <button id="quick-rematch" class="quick-rematch hidden" type="button" aria-label="Start a new match in a newly generated maze">↻ NEXT MATCH</button>
+              <button id="custom-edit" class="hidden" type="button">EDIT RULES</button>
               <button id="results-menu" type="button">MAIN MENU</button>
             </div>
             <p id="aa-note" class="aa-note">NEW PROCEDURAL SECTOR AVAILABLE</p>
@@ -50,6 +53,7 @@
       </section>
       <div class="touch-zone touch-right overlay-control" aria-label="Fire control">
         <button class="interact-btn hidden" id="interact-btn" aria-label="Enter or exit a nearby vehicle">ENTER</button>
+        <button class="vehicle-aim-btn hidden" id="vehicle-aim" type="button" aria-label="Drag circular aim pad to rotate vehicle without firing"><span class="vehicle-aim-ring" aria-hidden="true"></span><span class="vehicle-aim-knob" id="vehicle-aim-knob" aria-hidden="true"><span class="vehicle-aim-dot"></span></span><span class="vehicle-aim-label" aria-hidden="true">AIM</span></button>
         <button class="fire-btn" data-key="fire" aria-label="Hold to fire"><span class="fire-icon">◎</span><span>FIRE</span></button>
         <span class="control-caption" id="fire-mode">HOLD / FIRE</span><span class="shell-meter" id="shell-meter">3/3 READY</span>
       </div>
@@ -59,7 +63,7 @@
         <div class="home-screen">
           <header class="home-topbar">
             <div class="home-brand"><span class="home-brand-mark" aria-hidden="true">SR</span><div><span class="home-overline">FIELDGRID / COMBAT SIMULATION</span><h2>SECTOR <span>REBOUND</span></h2></div></div>
-            <div class="home-utilities"><button data-action="help" aria-label="How to play Sector Rebound">? <span>HOW TO PLAY</span></button></div>
+            <div class="home-utilities"><button data-action="dossier" aria-label="View local player dossier">DOSSIER</button><button data-action="help" aria-label="How to play Sector Rebound">? <span>HOW TO PLAY</span></button></div>
           </header>
           <div class="home-content">
             <section class="home-showcase" aria-label="Tank preview">
@@ -77,6 +81,10 @@
               <div class="home-action-grid">
                 <button data-action="nearby"><strong>PLAY TOGETHER</strong><small>LOCAL WI-FI</small></button>
                 <button data-action="settings"><strong>MATCH SETTINGS</strong><small>RULES &amp; CONTROLS</small></button>
+                <button data-action="cqc" class="home-cqc"><strong>CLOSE QUARTERS</strong><small>PILOT-ONLY · SCORE TEST</small></button>
+                <button data-action="scored_ffa" class="home-ffa"><strong>SCORED FREE-FOR-ALL</strong><small>VEHICLES · KO TARGET · TEST</small></button>
+                <button data-action="scored_tdm" class="home-tdm"><strong>TEAM DEATHMATCH</strong><small>2v2 · TEAM KOs · TEST</small></button>
+                <button data-action="custom" class="home-custom"><strong>CUSTOM MATCH</strong><small>OFFLINE · CHOOSE RULES</small></button>
               </div>
             </section>
           </div>
@@ -87,13 +95,25 @@
     <div class="rotate-prompt" aria-hidden="true"><div class="rotate-symbol">↻</div><strong>ROTATE TO LANDSCAPE</strong><span>Sector Rebound is played sideways.</span></div>
   </main>
 <template id="settings-template">
-  <div class="settings-head"><div class="eyebrow">FIELDGRID // DEPLOYMENT</div><h2>MATCH <span>SETTINGS</span></h2><p>Choose once. Your settings stay saved.</p></div>
+  <div class="settings-head"><div class="eyebrow">FIELDGRID // DEPLOYMENT</div><h2>MATCH <span>SETTINGS</span></h2><p>Solo modes rotate between matches. Nearby sides are separate.</p></div>
   <div class="settings-grid settings-page">
     <label>FIELD SIZE<select id="map-size"><option value="small">QUICK · CLOSE COMBAT</option><option value="standard">STANDARD</option><option value="large">WIDE · EXPLORE</option></select></label>
     <label>BOTS<select id="bot-count"><option value="0">0 · PRACTICE</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>
-    <label>SIDES<select id="team-choice"><option value="ffa">FREE FOR ALL</option><option value="coop">HUMANS VS BOTS</option><option value="teams">TWO TEAMS</option></select></label>
+    <label>NEARBY SIDES<select id="team-choice"><option value="ffa">FREE FOR ALL</option><option value="coop">HUMANS VS BOTS</option><option value="teams">TWO TEAMS</option></select></label>
   </div>
-  <details class="extra-rules"><summary>ADVANCED RULES <span>Lives / Shells / Bot skill</span></summary>
+  <details class="extra-rules"><summary>QUICK PLAY MODES + ADVANCED <span>Survival defaults · scoring trials opt-in</span></summary>
+    <div class="settings-grid settings-page">
+      <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="survival_ffa" checked> FREE-FOR-ALL SURVIVAL</label>
+      <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="survival_teams" checked> TEAM SURVIVAL (BLUE + AI VS RED)</label>
+    </div>
+    <p class="settings-mode-status">OPTIONAL SCORING TRIALS · OFF BY DEFAULT</p>
+    <div class="settings-grid settings-page quick-scored-modes">
+      <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="cqc"> CLOSE QUARTERS · 10 KOs / 3 MIN</label>
+      <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="scored_ffa"> SCORED VEHICLE FFA · 10 KOs / 4 MIN</label>
+      <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="scored_tdm"> TEAM DEATHMATCH · 15 KOs / 5 MIN</label>
+    </div>
+    <p id="playlist-status" class="settings-mode-status">2 SELECTED · SURVIVAL MODES ONLY</p>
+    <p class="settings-mode-status">SCORED TRIALS USE LOCKED MAPS, BOTS AND KO/TIMER RULES. SURVIVAL USES YOUR ADVANCED SETTINGS. EACH MATCH CREATES A NEW MAZE.</p>
     <div class="settings-grid settings-page">
       <label>PILOT LIVES<select id="lives-choice"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>
       <label>TANK SHELL LIMIT<select id="bullet-cap"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4 · STANDARD</option><option value="5">5</option><option value="8">8</option></select></label>
@@ -103,6 +123,84 @@
   <div class="comfort-grid settings-comfort"><label><input type="checkbox" id="pref-autoFire"> AUTO FIRE</label><label><input type="checkbox" id="pref-sound"> SOUND FX</label><label><input type="checkbox" id="pref-music"> MUSIC</label><label><input type="checkbox" id="pref-shake"> SCREEN SHAKE</label><label><input type="checkbox" id="pref-leftHanded"> SWAP CONTROLS</label></div>
   <div class="settings-actions"><button data-action="settings-back">BACK</button><button class="primary" data-action="settings-play">START MATCH</button></div>
 </template>
+<template id="custom-template">
+ <section id="custom-match" class="custom-screen" aria-label="Custom Match">
+  <header class="custom-head"><div class="eyebrow">FIELDGRID / CASUAL OPERATIONS</div><h2>CUSTOM <span>MATCH</span></h2><p>Choose a real mode and deploy into a fresh procedural sector.</p></header>
+  <div class="custom-grid">
+   <label>MODE<select id="custom-mode"><option value="survival_ffa">SOLO SURVIVAL</option><option value="survival_teams">TEAM SURVIVAL</option><option value="cqc">CLOSE QUARTERS · SCORED</option><option value="scored_ffa">VEHICLE FFA · SCORED</option><option value="scored_tdm">TEAM DEATHMATCH · SCORED</option></select></label>
+   <label>MAZE SIZE<select id="custom-size"><option value="small">SMALL</option><option value="standard">STANDARD</option><option value="large">LARGE</option></select></label>
+   <label>BOTS<select id="custom-bots"><option value="0">0 · PRACTICE</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>
+   <label>BOT SKILL<select id="custom-skill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>
+   <label>PILOT LIVES<select id="custom-lives"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>
+   <label>TANK SHELLS<select id="custom-shells"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="8">8</option></select></label>
+  </div>
+  <p id="custom-preview" class="custom-preview" role="status" aria-live="polite"></p>
+  <details class="custom-preset-fold">
+   <summary>LOCAL PRESETS <span id="custom-preset-count">0/5 SAVED ON THIS DEVICE</span></summary>
+   <div class="custom-preset-save">
+    <label for="custom-preset-name">NAME THIS SETUP<input type="text" id="custom-preset-name" maxlength="24" autocomplete="off" spellcheck="false" placeholder="e.g. Maze Duel"></label>
+    <button type="button" data-action="custom-preset-save">SAVE PRESET</button>
+   </div>
+   <div class="custom-preset-manage">
+    <label for="custom-preset-select">SAVED SETUPS<select id="custom-preset-select" aria-label="Saved Custom Match presets"></select></label>
+    <button type="button" id="custom-preset-load" data-action="custom-preset-load">LOAD</button>
+    <button type="button" id="custom-preset-delete" data-action="custom-preset-delete">DELETE</button>
+   </div>
+   <div class="custom-preset-foot">
+    <button type="button" id="custom-reset" data-action="custom-reset">RESET TO DEFAULT</button>
+    <p id="custom-preset-status" role="status" aria-live="polite">PRESETS STAY ON THIS DEVICE · DELETE REQUIRES TWO TAPS</p>
+   </div>
+  </details>
+  <p id="custom-rule-note" class="custom-note">CASUAL · SAVED SEPARATELY FROM QUICK PLAY</p>
+  <div class="custom-actions"><button type="button" data-action="custom-back">BACK</button><button class="primary" type="button" data-action="custom-play">DEPLOY MATCH</button></div>
+ </section>
+</template>
+<template id="dossier-template">
+ <section class="dossier-screen" aria-label="Local player dossier">
+  <header class="dossier-head"><div class="eyebrow">FIELDGRID / OPERATOR FILE</div><h2>PLAYER <span>DOSSIER</span></h2><p>OFFLINE SERVICE RECORD · THIS DEVICE ONLY</p></header>
+  <div class="dossier-stats">
+   <div><small>MATCHES</small><strong id="dossier-matches">0</strong></div>
+   <div><small>VICTORIES</small><strong id="dossier-wins">0</strong></div>
+   <div><small>DEFEATS</small><strong id="dossier-losses">0</strong></div>
+   <div><small>DRAWS</small><strong id="dossier-draws">0</strong></div>
+   <div><small>OPERATOR KOs</small><strong id="dossier-kos">0</strong></div>
+   <div><small>DEATHS</small><strong id="dossier-deaths">0</strong></div>
+  </div>
+  <div class="dossier-columns">
+   <section><h3>MODE RECORD</h3><div id="dossier-modes"></div></section>
+   <section><h3>FUTURE PILOT ICON ELIGIBILITY</h3><div id="dossier-eligibility"></div><p class="dossier-guard">Concept milestones only. Icons are not released, selectable, or purchasable. Eligibility does not grant items.</p></section>
+  </div>
+  <footer class="dossier-footer">
+   <div><strong id="dossier-time">0 MIN</strong> <span>COMBAT TIME</span><p id="dossier-save-status" role="status">LOCAL STORAGE READY</p></div>
+   <div class="dossier-backup-actions"><button type="button" data-action="backup">BACK UP DATA</button><button type="button" data-action="dossier-back">BACK TO MENU</button></div>
+  </footer>
+  <p class="dossier-note">Only completed Solo matches against bots count. Practice, abandoned matches, and LAN are not recorded. No account or cloud sync. Uninstalling may erase this device's data.</p>
+ </section>
+</template>
+  <template id="backup-template">
+ <section class="backup-screen" aria-label="Offline save backup and recovery">
+  <div class="eyebrow">FIELDGRID / LOCAL DATA RECOVERY</div>
+  <h2>BACKUP <span>&amp; RESTORE</span></h2>
+  <p class="backup-intro">COPY YOUR BACKUP TEXT TO A SAFE PLACE BEFORE UNINSTALLING OR CHANGING DEBUG APKS. THIS STAYS ON YOUR DEVICE UNLESS YOU SHARE IT.</p>
+  <div class="backup-grid">
+   <section><h3>01 / EXPORT</h3><p>Includes available Match Settings, Custom Match drafts/presets, and Dossier. No login or network upload.</p>
+    <button data-action="backup-export" type="button">GENERATE BACKUP TEXT</button>
+    <textarea id="backup-output" aria-label="Copy this offline backup text" rows="4" readonly spellcheck="false" placeholder="Exported backup code appears here."></textarea>
+    <button data-action="backup-copy" type="button">COPY SELECTED TEXT</button>
+   </section>
+   <section><h3>02 / RESTORE</h3><p>Paste backup text. PREVIEW before restoring. Only listed saved records are replaced; your previous copies are backed up first.</p>
+    <textarea id="backup-import" aria-label="Paste offline backup text" rows="4" spellcheck="false" placeholder="Paste previously saved backup text"></textarea>
+    <div class="backup-rest-actions"><button data-action="backup-preview" type="button">PREVIEW IMPORT</button><button id="backup-restore" data-action="backup-restore" type="button" disabled>CONFIRM RESTORE</button></div>
+   </section>
+  </div>
+  <p id="backup-message" class="backup-message" role="status" aria-live="polite">NO TRANSFER HAS BEEN MADE.</p>
+  <p class="backup-warning">RESTORE REPLACES THE INCLUDED LOCAL RECORDS. BACK UP YOUR CURRENT DATA FIRST. AN APP WITH A DIFFERENT SIGNING CERTIFICATE CANNOT INSTALL OVER THE OLD ONE.</p>
+  <button type="button" class="backup-back" data-action="backup-back">BACK TO DOSSIER</button>
+ </section>
+</template>
+  <script src="save-backup.js"></script>
+  <script src="dossier.js"></script>
+  <script src="scored-match.js"></script>
   <script src="game.js"></script>
 </body>
 </html>

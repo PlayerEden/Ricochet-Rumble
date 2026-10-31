@@ -23,8 +23,8 @@ permissions:
 jobs:
   full-qa:
     # Full Android QA is automatic only for mainline integration branches.
-    # Other PRs use lightweight CI; developers dispatch this manually as needed.
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'integration/')
+    # Other PRs use lightweight CI unless their body explicitly opts into [full-qa].
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'integration/') || contains(github.event.pull_request.body, '[full-qa]')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -46,10 +46,18 @@ jobs:
         run: |
           set -euo pipefail
           node tests/smoke.mjs
+          node tests/scored-match-kernel.mjs
           node tools/validate-cosmetic-catalog.mjs
           cmp web/game.js android/app/src/main/assets/game.js
           cmp web/index.html android/app/src/main/assets/index.html
           cmp web/style.css android/app/src/main/assets/style.css
+          cmp web/scored-match.js android/app/src/main/assets/scored-match.js
+          node --check web/save-backup.js
+          cmp web/save-backup.js android/app/src/main/assets/save-backup.js
+          node tests/save-backup.mjs
+          node tests/android-upgrade-readiness.mjs
+          node tests/test-signer-contract.mjs
+          node tests/scored-browser-parity.mjs
       - name: Checkout screenshot comparison baseline
         uses: actions/checkout@v4
         with:
@@ -63,7 +71,9 @@ jobs:
           test -n "$CHROME_BIN"
           npm install --no-save --ignore-scripts playwright-core@1.56.1
           node tests/visual-qa.mjs
+          node tests/quick-play-live-flow-qa.mjs
           node tests/pilot-art-review.mjs
+          node tests/ui-layout-geometry-v0948.mjs
       - name: Upload visual and simulation evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -71,6 +81,7 @@ jobs:
           name: sector-rebound-qa-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             qa-screens/
+            qa-layout/
             qa-results/combat-simulation.json
           if-no-files-found: warn
           retention-days: 14
