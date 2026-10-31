@@ -1,0 +1,23 @@
+# Sector Rebound — Preview 100016 Phase 4D/4E source-backed QA (2026-10-31)
+
+## Provenance
+- Exact **Android preview** gameplay-source commit [`cb9928c2e7c52a29fd44bd8deb942f56de7c20ae`](https://github.com/PlayerEden/Ricochet-Rumble/commit/cb9928c2e7c52a29fd44bd8deb942f56de7c20ae) on [draft integration PR #85](https://github.com/PlayerEden/Ricochet-Rumble/pull/85). **Do not merge to stable main based on this report.**
+- [GitHub automatic Android workflow 41181927198](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41181927198): **SUCCESS**, artifact `sector-rebound-preview-16`, signed APK `sector-rebound-preview-100016.apk`, app id `com.playereden.ricochetrumble.preview`, versionCode 100016. Generic PUBLIC TEST AOSP certificate SHA256 `a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc`, unchanged from 100015; NOT production signing. Independently extracted artifact and calculated APK SHA256 `9820948454443d90516f23d7674dd2cef89f15ef01774d7a574718ad7c878b51`; matches workflow verification.
+- Prior [Preview 100015 source rollback](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-preview-100015-reward-notice-qa), exact `1c974e86aa9df83369fc7bcefc2732bb0e46279e`, preserved. Earlier 100014 approval checkpoint preserved.
+
+## Phase 4D verified: real earned-result reporting
+- Extracted the **actual installed-asset bytes** from the 100016 APK: `game.js`, `style.css`, `index.html`, `scored-match.js`, `dossier.js`, `save-backup.js`. Used headless Linux Chromium with DOM and CSS from these exact assets; a **test-only** injected hook invokes the original `registerHit` / `tryCqcRespawn`, real match finalization and Dossier `record`. Hook is not shipped in the APK.
+- Simulated 12 genuinely completed in-engine CQC victories, each with 10 in-engine operator KOs; first victory announces `ACE`, third victory `VECTOR`, fifth completed match `VANGUARD`, twelfth win `VETERAN` and `COMMAND`. Other tested rounds show **no repeated new-unlock notice**. Eligibility in the actual Hangar enables all four operator insignia and both earned finishes; selecting COMMAND and VETERAN stores the recognized v1 preference and Dossier shows COMMAND.
+- Verified responsive After Action and badge strip geometry at 740×360, 915×412, 1280×720 for milestones 3/5/12: 9/9 width/height bounds passed; at 740×360 panel left/right 80/660 and top/bottom ~66/294, reward left/right 94/646 and top/bottom 200/219. No panel vertical scrolling at sampled sizes.
+- **Browser assertion result: 44/44 passed, 0 uncaught page errors.** Includes rewards, selector states, no premature/repeated banners, non-Custom CTA visibility on all 12 results, and Custom CQC Edit Rules appearance/navigation.
+
+## Phase 4E bug discovered/fixed
+- Visual screenshot from original 100015 exposed **EDIT RULES rendered on ordinary CQC results** despite JS applying the `hidden` class. CSS `.aa-actions button {display:block}` overrode the generic hidden declaration.
+- Minimal repair `.after-action #custom-edit.hidden {display:none!important}` added to web and byte-identical packaged Android CSS, with original full-source Playwright test asserting normal Survival, CQC and Scored FFA hide EDIT RULES, and existing custom-mode assertion confirming it remains visible when eligible. No game-state, scoring, input, textures, account or save-schema modifications.
+
+## Scope limitations and pending gates
+- This is an **independent local browser test using original APK assets**, not a completed GitHub **full Android + visual QA** workflow on 100016. The CI **automatic disposable preview** job includes source regression, packaging/parity/signing but does not run that full browser/AAB workflow.
+- Browser uses a test-only in-memory localStorage shim due restricted test-origin navigation. It verifies game serialization/reading in one session, **not** persistence through Android app restart/update/uninstall or secure device storage.
+- Matches were instant simulated in-engine knockouts; not thumb play or Android WebView performance. No two physical device LAN test.
+- **Owner hardware acceptance still pending**: install 100016 over existing preview **without uninstall**; verify Dossier history and saved paint/insignia retained; inspect reward strip after a real threshold; confirm ordinary Solo/CQC/FFA only shows NEXT MATCH + MAIN MENU, and Custom Match exposes EDIT RULES. Android full visual/AAB CI, Play production signing and two-device LAN are still unverified.
+- Stable `main` runtime still v0.9.21; main documentation links current active draft and evidence only. Google Play publishing not authorized.
