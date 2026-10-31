@@ -28,3 +28,9 @@ Main menu: **Quick Play** (direct Solo match; current playlist) + **Choose Mode*
 - Compare new Home/Mode screen real Chromium screenshots at each landscape size with old Preview 100016.
 - Review pause/result dialogs, Settings expansion, Custom saved presets, Hangar unlock/grid, Dossier responsive rows, text hierarchy, focus/tab order and accessibility targets at 740×360.
 - Consolidate dead/overridden CSS only after baseline measurements; do not rewrite the renderer or UI framework blindly.
+
+## Verified automated outcome — 2026-10-31
+- [Real Chromium UI review run 41183152328 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41183152328) on exact test-only QA head `0952d084c8d2d9c096fa7156224124f002d38735`, same actual game source as Preview 100018. Live match-flow tests, Home → Choose Mode → specialist match, Custom navigation, Dossier and Hangar acceptance passed.
+- [87 real UI scenes, zero geometry issues](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41183152328/artifacts/13036100067) across 568×320, 640×360, 740×360, 915×412 and 1280×720. Screenshots inspected at 740×360 Home/Mode Select/Dossier and 568×320 Mode Select: former bottom-of-home truncation eliminated.
+- [Signed Preview 100018 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41182919392); after test-only correction, [signed 100019 PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41183152356) with unchanged game/WebView source. Owner physical comfort, Dossier retention across install, two-phone Wi-Fi and production Play paths remain pending.
+- First browser attempt [41183031192](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41183031192) failed only on obsolete test expectation for removed future-only Dossier text; corrected and rerun successfully. No gameplay engine bugs implicated.
