@@ -2,10 +2,23 @@ name: Sector Rebound - OWNER-KEYED stable test APK build (manual only)
 on:
   workflow_dispatch:
     inputs:
-      evidence_note:
-        description: 'Owner-authorized test release verification note'
-        required: false
+      reviewed_source_sha:
+        description: 'Full reviewed branch HEAD SHA (40 hexadecimal characters)'
+        required: true
         type: string
+      preview_version_code:
+        description: 'New Android versionCode (>=51 and greater than last installed preview)'
+        required: true
+        type: string
+      preview_version_name:
+        description: 'e.g. 0.9.57-owner-test (not a public release)'
+        required: true
+        type: string
+      owner_approved:
+        description: 'I approve this exact SHA for a private test build (no Play release)'
+        required: true
+        default: false
+        type: boolean
 permissions:
   contents: read
 jobs:
@@ -23,6 +36,18 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
+      - name: Reject wrong source, missing approval or unsafe preview version
+        env:
+          REVIEWED_SHA: ${{ inputs.reviewed_source_sha }}
+          PREVIEW_CODE: ${{ inputs.preview_version_code }}
+          PREVIEW_NAME: ${{ inputs.preview_version_name }}
+          OWNER_APPROVED: ${{ inputs.owner_approved }}
+        run: |
+          set -euo pipefail
+          [[ "$OWNER_APPROVED" == 'true' ]] || { echo 'Owner approval required'; exit 1; }
+          [[ "$REVIEWED_SHA" =~ ^[0-9a-f]{40}$ ]] && [[ "$REVIEWED_SHA" == "$GITHUB_SHA" ]] || { echo 'Reviewed SHA differs from selected branch HEAD'; exit 1; }
+          [[ "$PREVIEW_CODE" =~ ^[1-9][0-9]*$ ]] && (( PREVIEW_CODE > 50 && PREVIEW_CODE <= 2100000000 )) || { echo 'Version code must exceed 50'; exit 1; }
+          [[ "$PREVIEW_NAME" =~ ^[0-9]+\\.[0-9]+\\.[0-9]+-[a-z0-9][a-z0-9.-]*$ ]] || { echo 'Invalid test version name'; exit 1; }
       - name: Reject missing private test signer or public digest (NEVER auto-fallback)
         env:
           SR_TEST_STORE_FILE: ${{ runner.temp }}/sr-test-credentials/test-only-keystore.jks
@@ -60,12 +85,17 @@ jobs:
       - name: Build APK with ONLY the PRIVATE pinned TEST key
         working-directory: android
         env:
+          PREVIEW_CODE: ${{ inputs.preview_version_code }}
+          PREVIEW_NAME: ${{ inputs.preview_version_name }}
           SR_TEST_STORE_FILE: ${{ runner.temp }}/sr-test-credentials/test-only-keystore.jks
           SR_TEST_STORE_PASSWORD: ${{ secrets.SR_TEST_STORE_PASSWORD }}
           SR_TEST_KEY_ALIAS: ${{ secrets.SR_TEST_KEY_ALIAS }}
           SR_TEST_KEY_PASSWORD: ${{ secrets.SR_TEST_KEY_PASSWORD }}
-        run: gradle --no-daemon :app:assembleDebug
-      - name: Verify exact installed APK signing certificate BEFORE sharing
+        run: gradle --no-daemon :app:assembleDebug "-PsrPreviewVersionCode=$PREVIEW_CODE" "-PsrPreviewVersionName=$PREVIEW_NAME"
+      - name: Verify exact built APK signing certificate BEFORE sharing
+        env:
+          PREVIEW_CODE: ${{ inputs.preview_version_code }}
+          PREVIEW_NAME: ${{ inputs.preview_version_name }}
         run: |
           set -euo pipefail
           APK="android/app/build/outputs/apk/debug/app-debug.apk"
@@ -78,12 +108,15 @@ jobs:
           test -n "$actual" && test "$actual" = "$pin" || { echo "CERTIFICATE MISMATCH: refusing to distribute test APK" >&2; exit 1; }
           metadata="$("$AAPT" dump badging "$APK" | head -n 1)"
           [[ "$metadata" == *"name='com.playereden.ricochetrumble'"* ]] || exit 1
-          [[ "$metadata" == *"versionCode='50'"* ]] || exit 1
+          [[ "$metadata" == *"versionCode='$PREVIEW_CODE'"* ]] || exit 1
+          [[ "$metadata" == *"versionName='$PREVIEW_NAME'"* ]] || exit 1
           mkdir -p qa-results
           {
             echo "Sha256 of public TEST signer certificate: $actual"
             echo "Package metadata: $metadata"
             echo "APK source SHA: $GITHUB_SHA"
+            echo "Owner-approved preview versionCode: $PREVIEW_CODE"
+            echo "Owner-approved preview versionName: $PREVIEW_NAME"
             echo "APK sha256: $(sha256sum "$APK" | awk '{print $1}')"
             echo "This proves the certificate of THIS APK only, not compatibility with any older, differently signed archived APK."
           } > qa-results/pinned-test-apk-verification.txt

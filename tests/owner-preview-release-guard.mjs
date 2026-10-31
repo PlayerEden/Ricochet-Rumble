@@ -1,0 +1,27 @@
+// Source-only regression. Never reads GitHub secrets or produces an installable APK.
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const gradle=fs.readFileSync('android/app/build.gradle','utf8');
+const wf=fs.readFileSync('.github/workflows/owner-pinned-test-apk.yml','utf8');
+assert.match(gradle,/defaultPreviewVersionCode = 50/);
+assert.match(gradle,/defaultPreviewVersionName = '0\.9\.54-lan-timeout-test'/);
+assert.match(gradle,/Private TEST signer required for preview version overrides/);
+assert.match(gradle,/requestedNumber <= defaultPreviewVersionCode/);
+assert.match(gradle,/versionCode previewVersionCode/);
+assert.match(gradle,/versionName previewVersionName/);
+assert.match(wf,/workflow_dispatch:/);
+for(const s of ['reviewed_source_sha','preview_version_code','preview_version_name','owner_approved'])assert.ok(wf.includes(s),'Missing manual guard '+s);
+assert.ok(wf.includes('"$REVIEWED_SHA" == "$GITHUB_SHA"'));
+assert.ok(wf.includes('PREVIEW_CODE > 50'));
+assert.ok(wf.includes("OWNER_APPROVED"));
+assert.ok(wf.includes("-PsrPreviewVersionCode=$PREVIEW_CODE"));
+assert.ok(wf.includes("-PsrPreviewVersionName=$PREVIEW_NAME"));
+assert.ok(wf.includes("versionCode='$PREVIEW_CODE'"));
+assert.ok(wf.includes("versionName='$PREVIEW_NAME'"));
+assert.ok(wf.includes("CERTIFICATE MISMATCH: refusing to distribute test APK"));
+assert.ok(wf.includes("SR_TEST_CERT_SHA256"));
+assert.ok(!/\n\s+push:/.test(wf));
+assert.ok(!/\n\s+pull_request:/.test(wf));
+assert.ok(!wf.includes('gh release create'));
+assert.ok(wf.includes('Erase temporary keystore from CI runner'));
+console.log('PASS: manual test builds require reviewed SHA, explicit approval, increasing version >50, private test signer and cert pin; no auto public release.');

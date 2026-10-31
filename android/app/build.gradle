@@ -21,6 +21,27 @@ def hasTestSigning = presentTestKeys.size() == testKeys.size()
 if (hasTestSigning && !file(System.getenv('SR_TEST_STORE_FILE')).isFile()) {
     throw new GradleException('Private TEST keystore file was not found')
 }
+// Preserve the exact v0.9.54 identity for ordinary QA builds.
+// A manual private TEST-signed preview may use a newer version via paired project properties.
+def defaultPreviewVersionCode = 50
+def defaultPreviewVersionName = '0.9.54-lan-timeout-test'
+def requestedPreviewCode = providers.gradleProperty('srPreviewVersionCode').orNull
+def requestedPreviewName = providers.gradleProperty('srPreviewVersionName').orNull
+if ((requestedPreviewCode == null) != (requestedPreviewName == null))
+    throw new GradleException('Preview version code and name must be supplied together')
+def previewVersionCode = defaultPreviewVersionCode
+def previewVersionName = defaultPreviewVersionName
+if (requestedPreviewCode != null) {
+    if (!hasTestSigning) throw new GradleException('Private TEST signer required for preview version overrides')
+    if (!(requestedPreviewCode ==~ /[1-9][0-9]*/)) throw new GradleException('Preview version code must be a positive integer')
+    long requestedNumber = requestedPreviewCode.toLong()
+    if (requestedNumber <= defaultPreviewVersionCode || requestedNumber > 2100000000L)
+        throw new GradleException('Preview versionCode must increase above 50 and remain <= 2100000000')
+    if (!(requestedPreviewName ==~ /[0-9]+\.[0-9]+\.[0-9]+-[a-z0-9][a-z0-9.-]*/))
+        throw new GradleException('Preview versionName must be a numeric prerelease identifier')
+    previewVersionCode = requestedNumber.intValue()
+    previewVersionName = requestedPreviewName
+}
 android {
     namespace 'com.playereden.ricochetrumble'
     compileSdk 36
@@ -28,8 +49,8 @@ android {
         applicationId 'com.playereden.ricochetrumble'
         minSdk 26
         targetSdk 36
-        versionCode 50
-        versionName '0.9.54-lan-timeout-test'
+        versionCode previewVersionCode
+        versionName previewVersionName
     }
     signingConfigs {
         if (hasUploadSigning) {

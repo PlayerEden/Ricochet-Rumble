@@ -16,7 +16,7 @@ for(const f of files){
 }
 const game=read('web/game.js'),html=read('web/index.html'),style=read('web/style.css');
 const gradle=read('android/app/build.gradle'),manifest=read('android/app/src/main/AndroidManifest.xml');
-const ver=Number(gradle.match(/versionCode\s+(\d+)/)?.[1]),name=gradle.match(/versionName\s+'([^']+)'/)?.[1];
+const ver=Number(gradle.match(/defaultPreviewVersionCode\s*=\s*(\d+)/)?.[1]),name=gradle.match(/defaultPreviewVersionName\s*=\s*'([^']+)'/)?.[1];
 assert.ok(Number.isInteger(ver)&&ver>=47,'Android versionCode must be >= prior v0.9.46 test');
 assert.ok(name&&/^\d+\.\d+\.\d+(?:-[a-z0-9][a-z0-9.-]*)?$/.test(name),'Android versionName must be a valid explicit release or prerelease identifier');
 assert.ok(gradle.includes("applicationId 'com.playereden.ricochetrumble'"),'Android package must not silently change');

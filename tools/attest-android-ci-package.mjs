@@ -43,8 +43,8 @@ function sdkTool(name) {
   return loc;
 }
 function parseGradleVersion(src){
-  const code=src.match(/^\s*versionCode\s+(\d+)\s*$/m)?.[1];
-  const name=src.match(/^\s*versionName\s+'([^']+)'\s*$/m)?.[1];
+  const code=src.match(/^\s*def defaultPreviewVersionCode\s*=\s*(\d+)\s*$/m)?.[1];
+  const name=src.match(/^\s*def defaultPreviewVersionName\s*=\s*'([^']+)'\s*$/m)?.[1];
   assert.ok(code&&name,'Expected version metadata missing from Android Gradle source');
   return {code:Number(code),name};
 }

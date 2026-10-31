@@ -6,8 +6,11 @@ const manifest=fs.readFileSync('android/app/src/main/AndroidManifest.xml','utf8'
 const identity='com.playereden.ricochetrumble';
 assert.ok(gradle.includes("namespace '"+identity+"'"));
 assert.ok(gradle.includes("applicationId '"+identity+"'"),'do not rename installed package');
-assert.ok(gradle.includes('versionCode 50'),'must advance versionCode from old debug code 38');
-assert.ok(gradle.includes("versionName '0.9.54-lan-timeout-test'"),'release tag and app name agree');
+assert.ok(gradle.includes('def defaultPreviewVersionCode = 50'),'old source baseline remains unchanged');
+assert.ok(gradle.includes("def defaultPreviewVersionName = '0.9.54-lan-timeout-test'"));
+assert.ok(gradle.includes('Private TEST signer required for preview version overrides'));
+assert.ok(gradle.includes('versionCode previewVersionCode')&&gradle.includes('versionName previewVersionName'));
+assert.ok(gradle.includes('requestedNumber <= defaultPreviewVersionCode'));
 assert.ok(manifest.includes('android:label="Sector Rebound"'));
 assert.ok(manifest.includes('android:allowBackup="false"'),'no automatic OS backup enabled before privacy review');
 assert.ok(manifest.includes('android:usesCleartextTraffic="false"'));
