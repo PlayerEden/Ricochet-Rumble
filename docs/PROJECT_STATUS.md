@@ -1,3 +1,9 @@
+# 2026-10-31 — ARCADE-TACTICAL VISUAL QA JOB RETRIGGERED
+
+The committed visual design is isolated to web markup/CSS and Android asset mirrors. Source-backed browser test was corrected for a regexp escaping typo *before* its final audit run; the workflow file is re-touched here to guarantee an exact-head [scoped Chromium QA run](https://github.com/PlayerEden/Ricochet-Rumble/actions/workflows/ui-ux-scoped-audit.yml). Check actual workflow conclusion and screenshot artifact; do not claim PASS prematurely. All gameplay/controls unchanged; [100019 rollback](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-preview-100019-menu-ui-qa-approved) retained.
+
+---
+
 # 2026-10-31 — UI VISUAL IDENTITY: EXACT BROWSER/ANDROID QA ENABLED
 
 Color/role test has been added for the current graphical overhaul: real Chromium loads 5 landscape sizes and verifies amber Play vs neutral mode actions, text contrast, 4 glyph cards, selected Hangar cyan, Dossier graphite and existing team HUD identities with screenshots. Triggered the dedicated UI/UX workflow via its workflow-file change. Recheck [Actions scoped UI review](https://github.com/PlayerEden/Ricochet-Rumble/actions/workflows/ui-ux-scoped-audit.yml) and new signed APK before claiming PASS. [Design/rollback](UI_VISUAL_IDENTITY_OVERHAUL_2026-10-31.md). Owner on-device aesthetic acceptance remains pending.
