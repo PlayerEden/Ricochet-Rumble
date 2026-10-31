@@ -157,6 +157,7 @@
 <template id="hangar-template">
  <section class="hangar-screen" aria-label="Offline Hangar paint choices">
   <header class="hangar-head"><div class="eyebrow">FIELDGRID / VEHICLE BAY</div><h2>THE <span>HANGAR</span></h2><p>FREE FIELD PAINT · COSMETIC ONLY</p></header>
+  <h3 class="hangar-subhead">UNIT PAINT</h3>
   <div class="hangar-grid" role="group" aria-label="Choose a Solo unit paint">
    <button type="button" data-action="equip-paint" data-paint-id="fieldgrid.standard"><span class="paint-swatch paint-standard" aria-hidden="true"></span><strong>STANDARD</strong><small>FIELD ISSUE</small></button>
    <button type="button" data-action="equip-paint" data-paint-id="fieldgrid.moss"><span class="paint-swatch paint-moss" aria-hidden="true"></span><strong>MOSS</strong><small>FIELD GREEN</small></button>
@@ -166,13 +167,21 @@
    <button type="button" data-action="equip-paint" data-paint-id="fieldgrid.veteran" disabled><span class="paint-swatch paint-veteran" aria-hidden="true"></span><strong>VETERAN</strong><small>0 / 12 WINS</small></button>
   </div>
   <p class="hangar-equipped" id="hangar-status" role="status">EQUIPPED · STANDARD · SOLO ONLY</p>
-  <p class="hangar-note">Paint affects your Solo pilot, tank and mech panels. Team outlines, projectiles, scores and combat performance never change. Four starter paints are always free. Earn Vanguard after 5 completed Solo matches and Veteran after 12 wins.</p>
+  <h3 class="hangar-subhead">PILOT INSIGNIA</h3>
+  <div class="emblem-grid" role="group" aria-label="Choose operator insignia for local Dossier">
+   <button type="button" data-action="equip-emblem" data-emblem-id="mark.field"><span class="emblem-symbol" aria-hidden="true">◇</span><strong>FIELD</strong><small>STANDARD ISSUE</small></button>
+   <button type="button" data-action="equip-emblem" data-emblem-id="mark.vector" disabled><span class="emblem-symbol" aria-hidden="true">△</span><strong>VECTOR</strong><small>0 / 3 MATCHES</small></button>
+   <button type="button" data-action="equip-emblem" data-emblem-id="mark.ace" disabled><span class="emblem-symbol" aria-hidden="true">✦</span><strong>ACE</strong><small>0 / 10 KOS</small></button>
+   <button type="button" data-action="equip-emblem" data-emblem-id="mark.command" disabled><span class="emblem-symbol" aria-hidden="true">◆</span><strong>COMMAND</strong><small>0 / 12 WINS</small></button>
+  </div>
+  <p class="hangar-equipped" id="emblem-status" role="status">OPERATOR INSIGNIA · ◇ FIELD</p>
+  <p class="hangar-note">Paint only changes your Solo unit's panels; insignia identify your local Dossier. All four starter paints and FIELD insignia are free. Earn others from genuine Solo matches, wins and KOs. No combat bonuses or online profile.</p>
   <button type="button" data-action="hangar-back" class="hangar-back">BACK TO MENU</button>
  </section>
 </template>
 <template id="dossier-template">
  <section class="dossier-screen" aria-label="Local player dossier">
-  <header class="dossier-head"><div class="eyebrow">FIELDGRID / OPERATOR FILE</div><h2>PLAYER <span>DOSSIER</span></h2><p>OFFLINE SERVICE RECORD · THIS DEVICE ONLY</p></header>
+  <header class="dossier-head"><div class="eyebrow">FIELDGRID / OPERATOR FILE</div><div class="dossier-identity-row"><div><h2>PLAYER <span>DOSSIER</span></h2><p>OFFLINE SERVICE RECORD · THIS DEVICE ONLY</p></div><div class="dossier-emblem" aria-label="Equipped operator insignia"><span id="dossier-emblem-mark" aria-hidden="true">◇</span><strong id="dossier-emblem-name">FIELD</strong></div></div></header>
   <div class="dossier-stats">
    <div><small>MATCHES</small><strong id="dossier-matches">0</strong></div>
    <div><small>VICTORIES</small><strong id="dossier-wins">0</strong></div>
@@ -183,7 +192,7 @@
   </div>
   <div class="dossier-columns">
    <section><h3>MODE RECORD</h3><div id="dossier-modes"></div></section>
-   <section><h3>FUTURE PILOT ICON ELIGIBILITY</h3><div id="dossier-eligibility"></div><p class="dossier-guard">Concept milestones only. Icons are not released, selectable, or purchasable. Eligibility does not grant items.</p></section>
+   <section><h3>FUTURE OPERATOR MILESTONES</h3><div id="dossier-eligibility"></div><p class="dossier-guard">These are future concepts, separate from the real insignia in HANGAR. They do not grant items.</p></section>
   </div>
   <footer class="dossier-footer">
    <div><strong id="dossier-time">0 MIN</strong> <span>COMBAT TIME</span><p id="dossier-save-status" role="status">LOCAL STORAGE READY</p></div>

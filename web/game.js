@@ -22,7 +22,11 @@ function dossierLines(){
   row.append(name,progress);goals.appendChild(row);
  }}
 }
-function openDossier(){setPanel(document.getElementById('dossier-template').innerHTML);dossierLines();}
+function openDossier(){setPanel(document.getElementById('dossier-template').innerHTML);dossierLines();
+ const mark=document.getElementById('dossier-emblem-mark'),name=document.getElementById('dossier-emblem-name');
+ if(mark)mark.textContent=OPERATOR_EMBLEMS[equippedEmblem].glyph;
+ if(name)name.textContent=OPERATOR_EMBLEMS[equippedEmblem].label;
+}
 function refreshHangar(){
  const status=document.getElementById('hangar-status');
  if(status)status.textContent='EQUIPPED · '+HANGAR_PAINTS[equippedPaint].label+' · SOLO ONLY';
@@ -37,6 +41,18 @@ function refreshHangar(){
   }
   const label=el.querySelector?.('small');
   if(label&&unlock.target)label.textContent=unlock.eligible?'UNLOCKED':unlock.current+' / '+unlock.target+' '+unlock.metric.toUpperCase();
+ }
+ const emblemStatus=document.getElementById('emblem-status');
+ if(emblemStatus)emblemStatus.textContent='OPERATOR INSIGNIA · '+OPERATOR_EMBLEMS[equippedEmblem].glyph+' '+OPERATOR_EMBLEMS[equippedEmblem].label;
+ for(const el of document.querySelectorAll('[data-action="equip-emblem"]')){
+  const id=el.dataset.emblemId,def=OPERATOR_EMBLEMS[id],progress=emblemProgress(id),selected=id===equippedEmblem;
+  el.classList.toggle('selected',selected);
+  el.classList.toggle('locked',!progress.eligible);
+  el.disabled=!progress.eligible;
+  el.setAttribute?.('aria-pressed',String(selected));
+  el.setAttribute?.('aria-label',def.label+' · '+(progress.eligible?'AVAILABLE':'LOCKED · '+progress.current+' OF '+progress.target+' '+progress.metric.toUpperCase()));
+  const small=el.querySelector?.('small');
+  if(small)small.textContent=progress.target?(progress.eligible?'UNLOCKED':progress.current+' / '+progress.target+' '+progress.metric.toUpperCase()):'STANDARD ISSUE';
  }
 }
 function openHangar(){setPanel(document.getElementById('hangar-template').innerHTML);refreshHangar();}
@@ -1174,6 +1190,20 @@ function updateVisuals(dt){visualClock+=dt;if(coachRemaining>0){coachRemaining=M
  // Null armor/trim means: preserve existing per-player painted vehicle color.
 // Four free OFFLINE starter materials. No commerce or network entitlement.
 const HANGAR_KEY='rr-hangar-paint-v1';
+const OPERATOR_EMBLEMS=Object.freeze({
+ 'mark.field':{label:'FIELD',glyph:'◇'},
+ 'mark.vector':{label:'VECTOR',glyph:'△',metric:'matches',target:3},
+ 'mark.ace':{label:'ACE',glyph:'✦',metric:'kos',target:10},
+ 'mark.command':{label:'COMMAND',glyph:'◆',metric:'wins',target:12}
+});
+let equippedEmblem='mark.field';
+function emblemProgress(id,info=currentDossier()){
+ const def=Object.prototype.hasOwnProperty.call(OPERATOR_EMBLEMS,id)?OPERATOR_EMBLEMS[id]:null;
+ if(!def)return {eligible:false,current:0,target:0,metric:'unknown'};
+ if(!def.metric)return {eligible:true,current:0,target:0,metric:'free'};
+ const current=Number.isSafeInteger(info?.[def.metric])&&info[def.metric]>=0?info[def.metric]:0;
+ return {eligible:current>=def.target,current,target:def.target,metric:def.metric};
+}
 const HANGAR_PAINTS=Object.freeze({
  'fieldgrid.standard':{label:'STANDARD'},
  'fieldgrid.moss':{label:'MOSS'},
@@ -1191,20 +1221,35 @@ function paintProgress(id,info=currentDossier()){
  return {eligible:current>=def.target,current,target:def.target,metric:def.metric};
 }
 function normalizePaint(id){return paintProgress(id).eligible?id:'fieldgrid.standard';}
+function normalizeEmblem(id){return emblemProgress(id).eligible?id:'mark.field';}
+// Keep v1 backward compatible: legacy paint-only files remain valid and
+// retain their exact old JSON shape until an operator chooses an emblem.
+function hangarRecord(paint,emblem){
+ const data={version:1,equipped:paint};
+ if(emblem!=='mark.field')data.emblem=emblem;
+ return JSON.stringify(data);
+}
+function saveHangar(paint,emblem){
+ const data=hangarRecord(paint,emblem);
+ try{window.localStorage?.setItem(HANGAR_KEY,data);
+  if(window.localStorage?.getItem(HANGAR_KEY)!==data)return false;
+ }catch(_){return false;}
+ equippedPaint=paint;equippedEmblem=emblem;return true;
+}
 function loadPaint(){
- equippedPaint='fieldgrid.standard';
+ equippedPaint='fieldgrid.standard';equippedEmblem='mark.field';
  try{const raw=JSON.parse(window.localStorage?.getItem(HANGAR_KEY)||'null');
-  if(raw?.version===1)equippedPaint=normalizePaint(raw.equipped);
+  if(raw?.version===1){equippedPaint=normalizePaint(raw.equipped);equippedEmblem=normalizeEmblem(raw.emblem||'mark.field');}
  }catch(_){}
  return equippedPaint;
 }
 function equipPaint(id){
  if(!paintProgress(id).eligible)return false;
- const data=JSON.stringify({version:1,equipped:id});
- try{window.localStorage?.setItem(HANGAR_KEY,data);
-  if(window.localStorage?.getItem(HANGAR_KEY)!==data)return false;
- }catch(_){return false;}
- equippedPaint=id;return true;
+ return saveHangar(id,equippedEmblem);
+}
+function equipEmblem(id){
+ if(!emblemProgress(id).eligible)return false;
+ return saveHangar(equippedPaint,id);
 }
 const FIELDGRID_UNIT_SKINS=Object.freeze({
  'fieldgrid.standard':{
@@ -1645,6 +1690,10 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
    const ok=equipPaint(b.dataset.paintId);
    refreshHangar();const status=document.getElementById('hangar-status');
    if(!ok&&status)status.textContent=paintProgress(b.dataset.paintId).eligible?'COULD NOT SAVE PAINT · CURRENT PAINT KEPT':'LOCKED · COMPLETE DOSSIER MILESTONE FIRST';
+  }else if(a==='equip-emblem'){
+   const ok=equipEmblem(b.dataset.emblemId);refreshHangar();
+   const status=document.getElementById('emblem-status');
+   if(!ok&&status)status.textContent=emblemProgress(b.dataset.emblemId).eligible?'COULD NOT SAVE INSIGNIA':'INSIGNIA LOCKED · COMPLETE DOSSIER MILESTONE';
   }else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, point the hull with the movement joystick. Sharp changes pivot the tank before accelerating; tap FIRE when lined up.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){panel.innerHTML=originalPanel;applyPrefsToUI();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
  else if(a==='custom-reset'){resetCustomDraft();refreshCustomUI();customPresetStatus('DEFAULT RULES RESTORED · SAVED PRESETS KEPT');}
  else if(a==='custom-preset-save'){

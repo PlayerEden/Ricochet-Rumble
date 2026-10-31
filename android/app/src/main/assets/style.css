@@ -737,3 +737,21 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 .hangar-grid button.locked,.hangar-grid button:disabled{opacity:.65;border-style:dashed;cursor:not-allowed}
 .hangar-grid button.locked .paint-swatch{filter:grayscale(.58) brightness(.8)}
 .hangar-grid button:not(:disabled):focus-visible{outline:3px solid #f3d69b;outline-offset:2px}
+
+/* Phase 4C: profile insignia — simple vector-like glyphs, no sprites or store. */
+.hangar-subhead{margin:1px 0 -2px;font:850 11px/1.2 monospace;letter-spacing:1.1px;color:#b3d9dc}
+.emblem-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(5px,1.2vw,10px)}
+.emblem-grid button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:77px;min-width:0;padding:4px;border:2px solid #446c79;border-radius:7px;background:#15333f;color:#e4f1ef}
+.emblem-grid button strong{font:850 clamp(10px,1.4vw,12px)/1.1 monospace;letter-spacing:.4px}
+.emblem-grid button small{font:750 9px/1.2 monospace;color:#afc5c5}
+.emblem-grid button.selected{border-color:#f2d697;background:#2d4852}
+.emblem-grid button.locked,.emblem-grid button:disabled{opacity:.66;border-style:dashed;cursor:not-allowed}
+.emblem-grid button.locked .emblem-symbol{filter:grayscale(.85);opacity:.72}
+.emblem-grid button:not(:disabled):focus-visible{outline:3px solid #f4ddae;outline-offset:2px}
+.emblem-symbol{display:grid;place-items:center;width:36px;height:32px;background:#203d49;border:1px solid #72a4ab;color:#d4e6d8;font:900 29px/1 monospace;text-shadow:0 0 8px #73e3e344}
+.dossier-identity-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.dossier-emblem{display:flex;align-items:center;gap:8px;border:1px solid #6c969c;background:#173541;border-radius:6px;padding:4px 8px;white-space:nowrap}
+.dossier-emblem span{color:#e0ddac;font:900 27px/1 monospace}
+.dossier-emblem strong{font:800 11px monospace;color:#d6e7e8}
+@media(max-width:580px){.emblem-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-height:380px){.emblem-grid button{min-height:64px}.emblem-symbol{height:26px;font-size:25px}}

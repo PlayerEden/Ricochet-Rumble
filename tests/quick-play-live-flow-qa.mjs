@@ -51,6 +51,12 @@ try{
  assert.equal(await page.locator('.hangar-grid button[data-paint-id]').count(),6,'four free and two earned finishes in Hangar');
  assert.equal(await page.locator('button[data-paint-id="fieldgrid.vanguard"]').isDisabled(),true,'five-match reward locked before play');
  assert.equal(await page.locator('button[data-paint-id="fieldgrid.veteran"]').isDisabled(),true,'twelve-win reward locked before play');
+ assert.equal(await page.locator('.emblem-grid button[data-emblem-id]').count(),4,'one free and three earned operator emblems');
+ assert.equal(await page.locator('button[data-emblem-id="mark.field"]').isDisabled(),false);
+ assert.equal(await page.locator('button[data-emblem-id="mark.vector"]').isDisabled(),true,'VECTOR locked until three Solo matches');
+ assert.equal(await page.locator('button[data-emblem-id="mark.ace"]').isDisabled(),true,'ACE locked until ten recorded KOs');
+ assert.equal(await page.locator('button[data-emblem-id="mark.command"]').isDisabled(),true,'COMMAND locked until twelve wins');
+ assert.ok((await page.locator('#emblem-status').textContent()).includes('FIELD'));
  assert.equal((await page.locator('button[data-paint-id="fieldgrid.vanguard"] small').textContent()).trim(),'0 / 5 MATCHES');
  await page.locator('button[data-paint-id="fieldgrid.moss"]').click();
  const equipped=await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-hangar-paint-v1')));
@@ -508,7 +514,8 @@ try{
   assert.equal(await page.locator('.dossier-screen').isVisible(),true);
   assert.equal(await page.locator('#dossier-matches').textContent(),String(afterDossier.matches));
   assert.equal(await page.locator('#dossier-draws').textContent(),String(afterDossier.draws));
-  assert.ok((await page.locator('.dossier-guard').textContent()).includes('not released'),'cosmetics remain explicitly unavailable');
+  assert.ok((await page.locator('.dossier-guard').textContent()).includes('future concepts'),'unreleased Dossier concepts are distinct from selectable badges');
+   assert.equal(await page.locator('#dossier-emblem-mark').textContent(),'◇','default identity visible in Dossier');
   const geometry=await page.locator('#panel').evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth}));
   assert.ok(geometry.scrollWidth<=geometry.width+3,'dossier has no horizontal overflow at '+vw);
   await page.locator('button[data-action="dossier-back"]').scrollIntoViewIfNeeded();
@@ -520,7 +527,20 @@ try{
  await page.locator('#menu button[data-action="dossier"]').click();
  assert.equal(await page.locator('#dossier-matches').textContent(),String(afterDossier.matches),'record survives full app reload');
  assert.ok((await page.locator('#dossier-save-status').textContent()).includes('READY'));
- result.steps.push('genuine finished offline match -> duplicate-safe saved dossier -> three landscape screens -> reload; cosmetic concepts remain locked');
+ // The real finalized match record earns VECTOR, which remains available after reload.
+ assert.ok(afterDossier.matches>=3,'real completed Solo matches reached VECTOR threshold');
+ await page.locator('button[data-action="hangar"]').click();
+ assert.equal(await page.locator('button[data-emblem-id="mark.vector"]').isDisabled(),false,'stored Dossier automatically unlocks VECTOR');
+ await page.locator('button[data-emblem-id="mark.vector"]').click();
+ assert.equal(await page.locator('button[data-emblem-id="mark.vector"]').getAttribute('aria-pressed'),'true');
+ const operatorChoice=await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-hangar-paint-v1')));
+ assert.equal(operatorChoice.emblem,'mark.vector','operator insignia saved alongside existing paint');
+ assert.equal(operatorChoice.equipped,'fieldgrid.moss','selecting emblem keeps previous tank paint');
+ await page.locator('button[data-action="hangar-back"]').click();
+ await page.locator('#menu button[data-action="dossier"]').click();
+ assert.equal(await page.locator('#dossier-emblem-mark').textContent(),'△','Dossier shows equipped VECTOR');
+ assert.equal(await page.locator('#dossier-emblem-name').textContent(),'VECTOR');
+ result.steps.push('completed Solo match -> saved Dossier -> earned insignia -> persistent Hangar equip -> Dossier identity');
 
  // v0.9.40: actual user-controlled export + preview + confirmed restore.
  await page.locator('button[data-action="backup"]').click();

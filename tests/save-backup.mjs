@@ -88,3 +88,19 @@ assert.equal(earnedBackup.ok,true);
 const recoveredEarned=storage();
 assert.equal(B.restore(recoveredEarned,earnedBackup.text).ok,true);
 assert.equal(JSON.parse(recoveredEarned.getItem('rr-hangar-paint-v1')).equipped,'fieldgrid.vanguard','earned finish remains saveable and restorable');
+
+const operatorChoice=JSON.stringify({version:1,equipped:'fieldgrid.moss',emblem:'mark.vector'});
+const operatorStorage=storage({'rr-dossier-v1':dossier,'rr-hangar-paint-v1':operatorChoice});
+assert.equal(B.validJson('rr-hangar-paint-v1',operatorChoice),true,'strict v1 backup supports optional identity');
+const operatorExport=B.makeBackup(operatorStorage);
+assert.equal(operatorExport.ok,true);
+const operatorRestored=storage();
+assert.equal(B.restore(operatorRestored,operatorExport.text).ok,true);
+assert.equal(operatorRestored.getItem('rr-hangar-paint-v1'),operatorChoice,'backup roundtrip retains paint and identity');
+assert.equal(B.validJson('rr-hangar-paint-v1',JSON.stringify({version:1,equipped:'fieldgrid.moss'})),true,'legacy paint-only backup accepted');
+for(const bad of [
+ {version:1,equipped:'fieldgrid.moss',emblem:'mark.unowned'},
+ {version:1,equipped:'fieldgrid.moss',emblem:'mark.vector',extra:true},
+ {version:1,equipped:'fieldgrid.moss',emblem:42}
+]) assert.equal(B.validJson('rr-hangar-paint-v1',JSON.stringify(bad)),false,'unknown emblem fields never accepted');
+console.log('PASS Phase 4C backup optional emblem, v1 paint-only compatibility and unknown-badge rejection');
