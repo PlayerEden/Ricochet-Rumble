@@ -1,3 +1,9 @@
+# 2026-10-31 — CONVENIENCE PASS SMOKE HARNESS FIX
+
+Initial [UI QA 41188501994](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41188501994) stopped in the original Node-only mock because its simulated button lacks native `.closest()`. Guarded `b.closest?.()` in Hangar launch so real browser handles Dossier context and mock click still works. No game controls/physics/art/saves changed. Source and Android assets mirrored. New [UI QA workflow](https://github.com/PlayerEden/Ricochet-Rumble/actions/workflows/ui-ux-scoped-audit.yml) retriggered; owner phone acceptance pending.
+
+---
+
 # 2026-10-31 — PLAYER CONVENIENCE PASS (ACTUAL ANDROID SCREENSHOTS)
 
 Owner approved visual identity on physical Preview 100022 but supplied screenshots showing Hangar long-scroll/back and Dossier bottom-only Back friction. Current draft [PR #85](https://github.com/PlayerEden/Ricochet-Rumble/pull/85) candidate adds **Paint / Insignia Hangar tabs**, compact sticky header Back, **Dossier header Back**, and contextual **Dossier → Hangar → Dossier** return. Keyboard and touch accessible tabs. Real existing cosmetics, saved progress and unlock conditions unchanged. [Detailed actual-screen audit and test plan](UI_CONVENIENCE_AUDIT_2026-10-31.md). [Immutable 100022 rollback](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-100022-before-usability-pass). **New exact-source browser geometry/flow QA, signed Android Preview and owner in-phone UI acceptance PENDING until observed.** Stable main gameplay is not merged or changed.

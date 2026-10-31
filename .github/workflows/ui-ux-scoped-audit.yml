@@ -1,5 +1,5 @@
 name: Sector Rebound - scoped UI/UX review
-# QA run: real owner screenshot convenience findings; add Hangar tab and Dossier back regression scenes
+# QA rerun: browser DOM optional closest for simulated smoke buttons, then exact-source mobile UX
 on:
   push:
     branches: [integration/v0956-main-rooted-rehearsal]

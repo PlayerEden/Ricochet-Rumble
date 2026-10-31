@@ -1724,7 +1724,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
  if(a==='toggle-sound'||a==='toggle-music'){togglePauseAudio(a==='toggle-sound'?'sound':'music',b);return;}
  if(!['solo','settings-play','cqc','scored_ffa','scored_tdm','custom-play','duel','host','find','custom-preset-save','custom-preset-delete','custom-preset-load','ip-join'].includes(a))
   audioCue(['settings-back','help-back','dossier-back','backup-back','modes-back','custom-back','close','resume'].includes(a)?'ui-back':'ui-select');
- if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
+ if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest?.('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
    const ok=equipPaint(b.dataset.paintId);
    refreshHangar();const status=document.getElementById('hangar-status');
    if(!ok&&status)status.textContent=paintProgress(b.dataset.paintId).eligible?'COULD NOT SAVE PAINT · CURRENT PAINT KEPT':'LOCKED · COMPLETE DOSSIER MILESTONE FIRST';
