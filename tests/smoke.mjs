@@ -1810,10 +1810,10 @@ console.log('PASS owner vehicle control simplification: centered MOVE steering, 
  a.newMatch('scored_ffa');
  const q=st().tanks[0];
  a.beginFireAim({pointerId:603,clientX:74,clientY:74},'aim');
- assert.equal(a.fireAim.source,'aim','FFA vehicle AIM still works');
+ assert.equal(a.fireAim.source,null,'FFA vehicle AIM intentionally removed');
  a.ejectPilot(0);
  assert.equal(q.onFoot,true,'scored FFA pilot ejection works');
- assert.equal(a.fireAim.pointerId,null,'ejection clears old vehicle AIM pointer');
+ assert.equal(a.fireAim.pointerId,null,'ejection keeps removed vehicle AIM inactive');
  a.touch.add('fire');
  a.beginFireAim({pointerId:604,clientX:200,clientY:200},'fire');
  a.updateFireAim({pointerId:604,clientX:245,clientY:200});
@@ -1858,7 +1858,7 @@ console.log('PASS Solo and LAN pilot FIRE-drag parity, independent heading, ejec
  assert.equal(node('player1-label').textContent,'RED');
  assert.equal(node('score0').textContent,0);assert.equal(node('score1').textContent,0);
  assert.equal(node('score-clock').textContent,'05:00');
- assert.equal(node('vehicle-aim').classList.contains('hidden'),false,'same experimental vehicle AIM as scored FFA');
+ assert.ok(!menuHtml.includes('id="vehicle-aim"'),'TDM uses simple MOVE and FIRE without extra AIM button');
  assert.equal(api.registerHit(0,2),false,'friendly fire does not hurt Blue ally');
  for(let n=0;n<3;n++)assert.equal(api.registerHit(0,1),true,'scored TDM tank armor damage');
  assert.equal(redVehicle.armor,0);
