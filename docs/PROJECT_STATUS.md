@@ -1,3 +1,9 @@
+# 2026-10-31 — TWO-CLIENT REAL CHROMIUM LAN LOBBY GATE
+
+Added `tests/lan-lobby-flow-qa.mjs`, which launches **two separate browser contexts**, runs the actual bundled game UI, stubs only the native Wi-Fi bridge boundary, delivers real lobby packets between contexts, checks no auto-start, default 1v1/zero AI, guest rule visibility/Ready, edited rules revoke Ready, stale revisions blocked, co-op no-opponent guard, explicit start, same maze and exactly two player actors, responsive host/guest rooms at four landscape sizes. GitHub scoped UI workflow now runs it and captures screenshots/JSON. Physical two-phone LAN **not** covered; QA run conclusion pending.
+
+---
+
 # 2026-10-31 — LAN LOBBY UI AND SOURCE TEST GATES
 
 Added neutral tactical host/guest lobby styling at landscape sizes, host-only rule selectors and visible Ready/Start touch actions. Updated original `tests/smoke.mjs` real-game host/guest protocol assertions: default 1v1/0 bots, **no state/simulation before Ready**, correct revision on `ready`, host `start` and real two-human game; guest receives lobby, presses Ready and joins authoritative snapshot before prior movement/interaction tests. Native Java allowlists are role-gated. **GitHub Android + browser verification still pending.** [Audit](LAN_LOBBY_PHASE_1_2026-10-31.md).
