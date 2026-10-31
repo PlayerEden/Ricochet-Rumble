@@ -1698,16 +1698,103 @@ function nativePacket(packet){if(!window.AndroidBridge)return;try{window.Android
 function loop(now){const dt=clamp((now-lastTime)/1000,0,.085);lastTime=now;
  if(mode==='solo'||mode==='duel'||mode==='host'){if(!paused&&state.winner<0){fixedAccumulator=Math.min(.12,fixedAccumulator+dt);let ticks=0;while(fixedAccumulator>=STEP&&ticks++<5){step(STEP);fixedAccumulator-=STEP}}else fixedAccumulator=0;}
  updateVisuals(dt);hudTimer+=dt;if(hudTimer>.15){hudTimer=0;refreshHUD();}
- if(mode==='host'&&connected){snapshotTimer+=dt;if(snapshotTimer>.09){snapshotTimer=0;nativePacket({type:'state',state:serializeState()})}}
- if(mode==='guest'&&connected){sendTimer+=dt;if(sendTimer>.05){sendTimer=0;nativePacket({type:'input',input:menu.classList.contains('hidden')&&!document.hidden?makeControl(true):{moveX:0,moveY:0,fire:false}})}}
+ if(mode==='host'&&connected&&!(lanLobby&&lanLobby.active)){snapshotTimer+=dt;if(snapshotTimer>.09){snapshotTimer=0;nativePacket({type:'state',state:serializeState()})}}
+ if(mode==='guest'&&connected&&!(lanLobby&&lanLobby.active)){sendTimer+=dt;if(sendTimer>.05){sendTimer=0;nativePacket({type:'input',input:menu.classList.contains('hidden')&&!document.hidden?makeControl(true):{moveX:0,moveY:0,fire:false}})}}
  render(dt);drawLobbyPreview(dt);updateMusic();requestAnimationFrame(loop)}
 function bridgeReady(){return !!window.AndroidBridge}
-function host(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('host');setPanel('<div class="eyebrow">NEARBY PLAY</div><h2>HOSTING MATCH</h2><p id="host-status">Starting local game...</p><div class="host-address" id="host-address"></div><button data-action="close">CANCEL</button>');window.AndroidBridge.hostGame()}
+
+/* Nearby LAN lobby v1 — host owns all match rules; guest explicitly readies.
+   No saved Solo/Quick Play options, match scoring or Wi-Fi host authority changes. */
+let lanLobby=null;
+const LAN_SIDES={ffa:'FREE FOR ALL',coop:'CO-OP VS BOTS',teams:'OPPOSING TEAMS'};
+const LAN_SIZE={small:'SMALL',standard:'STANDARD',large:'LARGE'};
+const LAN_SKILL={casual:'RELAXED',normal:'STANDARD',spicy:'CHALLENGE'};
+function sanitizeLanOptions(raw){
+ const v=raw&&typeof raw==='object'?raw:{},base=selectedRules;
+ return {mapSize:LAN_SIZE[v.mapSize]?v.mapSize:base.mapSize,
+  botCount:Number.isInteger(v.botCount)&&v.botCount>=0&&v.botCount<=4?v.botCount:0,
+  teamMode:LAN_SIDES[v.teamMode]?v.teamMode:'ffa',
+  startLives:[2,3,5].includes(v.startLives)?v.startLives:base.startLives,
+  botSkill:LAN_SKILL[v.botSkill]?v.botSkill:base.botSkill};
+}
+function lanDescription(r){return (r.botCount===0?'NO BOTS':r.botCount+' BOT'+(r.botCount===1?'':'S'))+' · '+LAN_SIZE[r.mapSize]+' · '+r.startLives+' LIVES'}
+function lanCanStart(){return !!(lanLobby&&mode==='host'&&connected&&lanLobby.guestReady&&!(lanLobby.rules.teamMode==='coop'&&lanLobby.rules.botCount===0));}
+function lanLobbyHTML(hostRole){
+ const name=hostRole?'HOST MATCH':'JOINED MATCH';
+ const controls=hostRole?'<div class="lan-grid">'+
+ '<label>SIDES<select data-lan-setting="teamMode"><option value="ffa">FREE FOR ALL (1v1)</option><option value="coop">CO-OP VS BOTS</option><option value="teams">OPPOSING TEAMS</option></select></label>'+
+ '<label>AI OPPONENTS<select data-lan-setting="botCount"><option value="0">0 · 1v1 NO BOTS</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>'+
+ '<label>MAZE<select data-lan-setting="mapSize"><option value="small">SMALL</option><option value="standard">STANDARD</option><option value="large">LARGE</option></select></label>'+
+ '<label>PILOT LIVES<select data-lan-setting="startLives"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>'+
+ '<label>BOT SKILL<select data-lan-setting="botSkill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>'+
+ '</div>':'<div class="lan-summary"><strong id="lan-guest-rules">AWAITING HOST RULES</strong><span>Only the host can change the match setup.</span></div>';
+ return '<section class="lan-lobby" aria-label="Local multiplayer waiting room">'+
+ '<header class="lan-lobby-head"><div class="eyebrow">LOCAL WI-FI / PRIVATE MATCH</div><h2>'+name.replace(' ',' <span>')+'</span></h2><p>Two Android phones. The host starts when the guest is ready.</p></header>'+
+ '<div class="lan-presence"><span>PLAYER 1 · HOST</span><strong id="lan-host-presence">CONNECTED</strong><span>PLAYER 2 · GUEST</span><strong id="lan-guest-presence">WAITING</strong></div>'+
+ (hostRole?'<p class="lan-address">HOST ADDRESS · <span id="host-address">STARTING WI-FI ROOM...</span></p>':'')+
+ controls+
+ '<p id="lan-lobby-message" class="lan-lobby-message" role="status">WAITING FOR PLAYER TWO</p>'+
+ '<div class="lan-lobby-actions">'+(hostRole?'<button class="primary" type="button" data-action="lan-start" disabled>START MATCH</button>':'<button class="primary" type="button" data-action="lan-ready" disabled>READY</button>')+
+ '<button type="button" data-action="close">LEAVE MATCH</button></div></section>';
+}
+function refreshLanLobby(){
+ if(!lanLobby||!document.getElementById('lan-lobby-message'))return;
+ const r=lanLobby.rules,hostRole=mode==='host';
+ if(hostRole)for(const el of document.querySelectorAll('[data-lan-setting]'))el.value=String(r[el.dataset.lanSetting]);
+ const guestPresence=document.getElementById('lan-guest-presence');
+ if(guestPresence)guestPresence.textContent=!connected?'WAITING':hostRole?(lanLobby.guestReady?'READY':'NOT READY'):(lanLobby.myReady?'READY':'NOT READY');
+ const hostPresence=document.getElementById('lan-host-presence');
+ if(hostPresence)hostPresence.textContent=connected?'CONNECTED':'HOSTING';
+ const summary=document.getElementById('lan-guest-rules');
+ if(summary)summary.textContent=LAN_SIDES[r.teamMode]+' · '+lanDescription(r);
+ const problem=r.teamMode==='coop'&&r.botCount===0;
+ const message=document.getElementById('lan-lobby-message');
+ if(message)message.textContent=problem?'CO-OP REQUIRES AT LEAST ONE BOT':!connected?'WAITING FOR SECOND PHONE':hostRole?lanLobby.guestReady?'BOTH PLAYERS READY · DEPLOY WHEN READY':'WAIT FOR PLAYER TWO TO PRESS READY':lanLobby.myReady?'READY · WAIT FOR HOST TO START':'CHECK RULES, THEN PRESS READY';
+ const start=document.querySelector('[data-action="lan-start"]');if(start)start.disabled=!lanCanStart();
+ const ready=document.querySelector('[data-action="lan-ready"]');if(ready){ready.disabled=!connected||!lanLobby.hasRules;ready.textContent=lanLobby.myReady?'CANCEL READY':'READY';}
+}
+function publishLanLobby(){
+ if(mode!=='host'||!connected||!lanLobby)return;
+ nativePacket({type:'lobby',version:1,revision:lanLobby.revision,rules:lanLobby.rules});
+}
+function startLanLobby(){
+ lanLobby={rules:sanitizeLanOptions({...selectedRules,botCount:0,teamMode:'ffa'}),revision:1,guestReady:false,myReady:false,hasRules:true,active:true};
+ setPanel(lanLobbyHTML(true));refreshLanLobby();
+}
+function changeLanRule(el){
+ if(!lanLobby||mode!=='host'||!lanLobby.active)return;
+ const key=el.dataset.lanSetting;
+ if(!['teamMode','botCount','mapSize','startLives','botSkill'].includes(key))return;
+ const next=sanitizeLanOptions({...lanLobby.rules,[key]:['botCount','startLives'].includes(key)?Number(el.value):el.value});
+ if(JSON.stringify(next)===JSON.stringify(lanLobby.rules))return;
+ lanLobby.rules=next;lanLobby.revision++;lanLobby.guestReady=false;
+ refreshLanLobby();publishLanLobby();
+}
+function guestLanReady(){
+ if(!lanLobby||mode!=='guest'||!connected||!lanLobby.hasRules)return;
+ lanLobby.myReady=!lanLobby.myReady;
+ nativePacket({type:'ready',revision:lanLobby.revision,ready:lanLobby.myReady});
+ refreshLanLobby();
+}
+function launchLanMatch(){
+ if(!lanCanStart())return;
+ const config={...selectedRules,...lanLobby.rules,pilotMode:true,matchModeId:null,quickPlayMatch:false,customMatch:false};
+ if(config.teamMode==='coop'&&config.botCount===0)return;
+ state=initialState(0,config,freshSectorSeed(state?.mazeSeed));
+ neutralizeGuestInput();camera.zoom=null;roundUnlocks=[];lastRemoteFxId=0;
+ lanLobby.active=false;paused=false;fixedAccumulator=0;refreshHUD();
+ // Separate start event precedes the first authoritative snapshot on TCP.
+ nativePacket({type:'start',revision:lanLobby.revision});
+ nativePacket({type:'state',state:serializeState()});
+ exitMenu();audioCue('deploy');notice('NEW FIELD · FIGHT!',1400);
+}
+
+function host(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('host');startLanLobby();window.AndroidBridge.hostGame()}
 function find(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('guest');setPanel('<div class="eyebrow">NEARBY PLAY</div><h2>FIND A MATCH</h2><p id="find-status">Looking for games on the same Wi-Fi...</p><div id="rooms"></div><button data-action="manual">JOIN BY LOCAL IP</button><button data-action="close">BACK</button>');window.AndroidBridge.findGames()}
 function manual(){if(!bridgeReady()){notice('Manual LAN join requires the Android APK');return}newMatch('guest');setPanel('<div class="eyebrow">FALLBACK</div><h2>JOIN BY ADDRESS</h2><p>Enter the IP:port shown on the host screen, such as 192.168.1.25:47321</p><input id="lan-address" placeholder="192.168.1.25:47321" inputmode="url" autocapitalize="off"><button data-action="ip-join">CONNECT</button><button data-action="find">FIND NEARBY</button>')}
-function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;neutralizeGuestInput();mode='idle';playlistBag=[];lastSoloModeId=null;releaseControls();document.getElementById('mode-label').textContent='NO GAME ACTIVE';panel.innerHTML=originalPanel;applyPrefsToUI();menu.classList.remove('hidden')}
+function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;lanLobby=null;neutralizeGuestInput();mode='idle';playlistBag=[];lastSoloModeId=null;releaseControls();document.getElementById('mode-label').textContent='NO GAME ACTIVE';panel.innerHTML=originalPanel;applyPrefsToUI();menu.classList.remove('hidden')}
 const originalPanel=panel.innerHTML;
-panel.addEventListener('change',e=>{const el=e.target;if(el.id==='custom-preset-select'){pendingPresetDelete='';refreshCustomPresetUI();customPresetStatus('SELECT LOAD TO APPLY SAVED RULES');return;}if(el.id?.startsWith('custom-')){readCustomScreen();refreshCustomUI();return;}if(el.id?.startsWith('pref-')){const key=el.id.slice(5);if(key in comfort)comfort[key]=el.checked;applyPrefsToUI()}savePrefs()});
+panel.addEventListener('change',e=>{const el=e.target;if(el?.dataset?.lanSetting){changeLanRule(el);return;}if(el.id==='custom-preset-select'){pendingPresetDelete='';refreshCustomPresetUI();customPresetStatus('SELECT LOAD TO APPLY SAVED RULES');return;}if(el.id?.startsWith('custom-')){readCustomScreen();refreshCustomUI();return;}if(el.id?.startsWith('pref-')){const key=el.id.slice(5);if(key in comfort)comfort[key]=el.checked;applyPrefsToUI()}savePrefs()});
 loadPrefs();
 dossierStore=window.SectorDossier?.createStore((()=>{try{return window.localStorage}catch(_){return null}})())||null;
 loadPaint(); // Dossier milestones must be available before restoring earned selections.
@@ -1724,7 +1811,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
  if(a==='toggle-sound'||a==='toggle-music'){togglePauseAudio(a==='toggle-sound'?'sound':'music',b);return;}
  if(!['solo','settings-play','cqc','scored_ffa','scored_tdm','custom-play','duel','host','find','custom-preset-save','custom-preset-delete','custom-preset-load','ip-join'].includes(a))
   audioCue(['settings-back','help-back','dossier-back','backup-back','modes-back','custom-back','close','resume'].includes(a)?'ui-back':'ui-select');
- if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest?.('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
+ if(a==='lan-ready'){guestLanReady();return;}else if(a==='lan-start'){launchLanMatch();return;}else if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest?.('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
    const ok=equipPaint(b.dataset.paintId);
    refreshHangar();const status=document.getElementById('hangar-status');
    if(!ok&&status)status.textContent=paintProgress(b.dataset.paintId).eligible?'COULD NOT SAVE PAINT · CURRENT PAINT KEPT':'LOCKED · COMPLETE DOSSIER MILESTONE FIRST';
@@ -1796,12 +1883,30 @@ joystick.addEventListener('pointerdown',e=>{if(stick.pointerId!==null)return;e.p
 joystick.addEventListener('pointermove',e=>{if(stick.pointerId===e.pointerId){e.preventDefault();updateStick(e)}});
 for(const key of ['pointerup','pointercancel','lostpointercapture'])joystick.addEventListener(key,e=>{if(stick.pointerId===e.pointerId){clearStick();try{joystick.releasePointerCapture(e.pointerId)}catch(_){}}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&window.RR?.appPause)window.RR.appPause()});
-window.RR={openMenu(){if(menu.classList.contains('hidden'))showPauseMenu();else if(mode==='idle')stop();else if(mode==='solo'||mode==='duel'||mode==='host'){paused=false;exitMenu()}else exitMenu()},appPause(){releaseControls();if((mode==='solo'||mode==='duel'||mode==='host')&&menu.classList.contains('hidden')){showPauseMenu();if(mode==='host'&&connected)nativePacket({type:'state',state:serializeState()});}
+window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop();return;}if(menu.classList.contains('hidden'))showPauseMenu();else if(mode==='idle')stop();else if(mode==='solo'||mode==='duel'||mode==='host'){paused=false;exitMenu()}else exitMenu()},appPause(){releaseControls();if((mode==='solo'||mode==='duel'||mode==='host')&&menu.classList.contains('hidden')){showPauseMenu();if(mode==='host'&&connected)nativePacket({type:'state',state:serializeState()});}
   if(mode==='guest'&&connected)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}})},nativeMessage(json){let msg;try{msg=JSON.parse(json)}catch(_){return}if(!msg||typeof msg.type!=='string')return;
- switch(msg.type){case 'hosting':{const p=document.getElementById('host-status');if(p)p.textContent='Waiting for another phone to join...';const a=document.getElementById('host-address');if(a)a.textContent=(msg.address||'LOCAL NETWORK')+':'+msg.port;break}
+ switch(msg.type){case 'hosting':{const p=document.getElementById('host-status');if(p)p.textContent='Waiting for another phone to join...';const a=document.getElementById('host-address');if(a)a.textContent=(msg.address||'LOCAL NETWORK')+':'+msg.port;refreshLanLobby();break}
  case 'found':{const r=document.getElementById('rooms');if(r&&!r.querySelector('[data-host="'+msg.host+'"]')){const b=document.createElement('button');b.textContent='JOIN '+(msg.name||'NEARBY GAME');b.dataset.host=msg.host;b.onclick=()=>{window.AndroidBridge.joinGame(msg.host,msg.port);document.getElementById('find-status').textContent='Connecting...'};r.appendChild(b)}break}
- case 'connected':{if(mode==='host')neutralizeGuestInput();connected=true;paused=false;document.getElementById('mode-label').textContent=mode==='guest'?'YOU: CORAL':mode==='host'?'YOU: CYAN':'CONNECTED';exitMenu();notice('Player connected — FIGHT!');if(mode==='host'){state=initialState(state.arenaId,state.config,state.mazeSeed);refreshHUD()}break}
- case 'state':if(mode==='guest'&&msg.state&&Array.isArray(msg.state.tanks)&&msg.state.tanks.length>=2&&msg.state.tanks.length<=6&&Array.isArray(msg.state.lives)&&msg.state.lives.length===msg.state.tanks.length&&Array.isArray(msg.state.kos)&&msg.state.kos.length===msg.state.tanks.length){const upcoming=msg.state;const currentEvents=Array.isArray(upcoming.fxEvents)?upcoming.fxEvents:[];for(const event of currentEvents){if(event.id>lastRemoteFxId&&event.id<lastRemoteFxId+1000&&Number.isFinite(event.x)&&Number.isFinite(event.y)){spawnParticles(event.kind,event.x,event.y,event.color);if(event.kind==='hit'&&event.target===1){damagePulse=.58;screenKick=comfort.shake?3.2:0}if(event.kind==='shot'){
+ case 'connected':{
+ if(mode!=='host'&&mode!=='guest')break;
+ if(mode==='host')neutralizeGuestInput();
+ connected=true;paused=true;
+ document.getElementById('mode-label').textContent=mode==='guest'?'YOU: CORAL':'YOU: CYAN';
+ if(mode==='host'){if(!lanLobby)startLanLobby();lanLobby.guestReady=false;refreshLanLobby();publishLanLobby();}
+ else {lanLobby={rules:sanitizeLanOptions({}),revision:0,guestReady:false,myReady:false,hasRules:false,active:true};setPanel(lanLobbyHTML(false));refreshLanLobby();}
+ break;}
+ case 'lobby':{
+ if(mode!=='guest'||!connected||!lanLobby||!lanLobby.active||msg.version!==1||!Number.isInteger(msg.revision)||msg.revision<1||msg.revision<lanLobby.revision)break;
+ if(msg.revision!==lanLobby.revision)lanLobby.myReady=false;
+ lanLobby.revision=msg.revision;lanLobby.rules=sanitizeLanOptions(msg.rules);lanLobby.hasRules=true;
+ refreshLanLobby();break;}
+ case 'ready':{
+ if(mode!=='host'||!connected||!paused||!lanLobby||!lanLobby.active||msg.revision!==lanLobby.revision||typeof msg.ready!=='boolean')break;
+ lanLobby.guestReady=msg.ready;refreshLanLobby();break;}
+ case 'start':{
+ if(mode!=='guest'||!connected||!lanLobby||!lanLobby.active||!lanLobby.myReady||msg.revision!==lanLobby.revision)break;
+ lanLobby.active=false;paused=false;lastRemoteFxId=0;exitMenu();notice('NEW FIELD · FIGHT!',1400);break;}
+ case 'state':if(mode==='guest'&&(!lanLobby||!lanLobby.active)&&msg.state&&Array.isArray(msg.state.tanks)&&msg.state.tanks.length>=2&&msg.state.tanks.length<=6&&Array.isArray(msg.state.lives)&&msg.state.lives.length===msg.state.tanks.length&&Array.isArray(msg.state.kos)&&msg.state.kos.length===msg.state.tanks.length){const upcoming=msg.state;const currentEvents=Array.isArray(upcoming.fxEvents)?upcoming.fxEvents:[];for(const event of currentEvents){if(event.id>lastRemoteFxId&&event.id<lastRemoteFxId+1000&&Number.isFinite(event.x)&&Number.isFinite(event.y)){spawnParticles(event.kind,event.x,event.y,event.color);if(event.kind==='hit'&&event.target===1){damagePulse=.58;screenKick=comfort.shake?3.2:0}if(event.kind==='shot'){
  const shooter=upcoming.tanks?.[event.owner],vehicle=upcoming.vehicles?.[shooter?.vehicleId];
  audioCue(shooter?.onFoot?'pilot-shot':vehicle?.type==='mech'?'mech-shot':'tank-shot',event.x,event.y);
  }
@@ -1812,7 +1917,7 @@ window.RR={openMenu(){if(menu.classList.contains('hidden'))showPauseMenu();else 
  if(event.kind==='pickup')audioCue('pickup',event.x,event.y);lastRemoteFxId=event.id}}state=upcoming;setArena(0,state.mazeSeed,state.config?.mapSize);refreshHUD()}break;
  case 'input':if(mode==='host'&&connected&&!paused&&state.winner<0&&msg.input){guestInput=normalizeLanInput(msg.input);guestInputAge=0;}break;
  case 'interact':if(mode==='host'&&connected&&!paused)tryInteract(1);break;
- case 'disconnected':connected=false;paused=true;neutralizeGuestInput();clearStick();notice('Other player disconnected');setPanel('<h2>CONNECTION LOST</h2><p>Return to the main menu and reconnect.</p><button data-action="close">MAIN MENU</button>');break;
+ case 'disconnected':connected=false;paused=true;lanLobby=null;neutralizeGuestInput();clearStick();notice('Other player disconnected');setPanel('<h2>CONNECTION LOST</h2><p>Return to the main menu and reconnect.</p><button data-action="close">MAIN MENU</button>');break;
  case 'error':notice(msg.message||'Network error');break;}}};
 resizeArenaCanvas();refreshHUD();requestAnimationFrame(loop);
 })();
