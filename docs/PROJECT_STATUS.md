@@ -1,3 +1,9 @@
+# 2026-10-31 — TWO-CLIENT LOBBY QA LIFECYCLE ASSERTION FIX
+
+[Scoped browser run 41232810752](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41232810752) completed the full original live game flow, 102 responsive scenes, 44 visual screenshots and **all first-match two-client LAN assertions**, then a new screenshot-only loop erroneously tried to press "Disconnect" after the room was already back in lobby (Android Back while waiting correctly leaves immediately). Changed the QA to exit real match only **once**, re-open a real room, and screenshot it at 568x320, 740x360, 915x412, 1280x720. Runtime, Java bridge and Android sources **unchanged** by this fix. Exact APK Preview 100035 was built successfully with same disposable test signer and independently exercised in two local Chromium pages: human-only 1v1, host Ready, co-op with bots, stale revision ignored. Next CI run revalidates the corrected screenshot loop. Phone-to-phone LAN remains untested.
+
+---
+
 # 2026-10-31 — TWO-CLIENT BROWSER TEST CORRECTION
 
 [First full scoped LAN QA 41232356735](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41232356735) passed all legacy real-match, source, visual and geometry suites, then failed because a **new test** incorrectly expected the lobby DOM to be removed after Start; the actual game correctly hides the overlay and retains its markup for existing screen flow. Updated the test to require `.lan-lobby.isVisible()===false` after explicit host Start, preserving the exact runtime. Also incorporated the prior short-screen host Bot Skill hiding improvement from real packaged-APK screenshot review. Re-triggered scoped UI and two-client QA. **Final verdict pending exact-head run.**

@@ -35,9 +35,9 @@ jobs:
           export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           test -n "$CHROME_BIN"
           node tests/quick-play-live-flow-qa.mjs
+          node tests/lan-lobby-flow-qa.mjs
           node tests/ui-layout-geometry-v0948.mjs
           node tests/visual-qa.mjs
-          node tests/lan-lobby-flow-qa.mjs
           node tests/ui-visual-identity-qa.mjs
       - name: Keep inspectable real UI screenshots and layout report
         if: always()

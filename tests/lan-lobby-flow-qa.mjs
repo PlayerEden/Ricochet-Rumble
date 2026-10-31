@@ -98,16 +98,18 @@ try{
  CHECK(!hs.paused&&!gs.paused,'both players are unpaused only after Start');
  CHECK(hs.humans===2&&hs.actors===2&&hs.bots===0&&hs.teams==='ffa','true 1v1 has precisely two humans and zero AI actors');
  CHECK(gs.humans===2&&gs.actors===2&&gs.bots===0&&gs.maze===hs.maze,'guest receives same procedural arena and host-authoritative roster');
+ // Leave the real match ONCE; then inspect the same new waiting room
+ // at four viewports. Never try to exit a second match while still in lobby.
+ await host.evaluate(()=>window.RR.openMenu());await host.locator('button[data-action="close"]').click();
+ await host.locator('#menu button[data-action="nearby"]').click();await host.locator('button[data-action="host"]').click();
+ await guest.evaluate(()=>window.RR.openMenu());await guest.locator('button[data-action="close"]').click();
+ await guest.locator('#menu button[data-action="nearby"]').click();await guest.locator('button[data-action="find"]').click();
+ await receive(guest,{type:'connected'});await receive(host,{type:'connected'});await receive(guest,await lastPacket(host,'lobby'));
+ CHECK(await host.locator('.lan-lobby').isVisible()&&await guest.locator('.lan-lobby').isVisible(),'both waiting rooms accessible after match');
  // End-to-end screenshots of both lobby roles and narrow-layout geometry.
  for(const [w,h] of [[568,320],[740,360],[915,412],[1280,720]]){
   await host.setViewportSize({width:w,height:h});
   await guest.setViewportSize({width:w,height:h});
-  // Return to real menu with an entirely new waiting room to inspect layout.
-  await host.evaluate(()=>window.RR.openMenu());await host.locator('button[data-action="close"]').click();
-  await host.locator('#menu button[data-action="nearby"]').click();await host.locator('button[data-action="host"]').click();
-  await guest.evaluate(()=>window.RR.openMenu());await guest.locator('button[data-action="close"]').click();
-  await guest.locator('#menu button[data-action="nearby"]').click();await guest.locator('button[data-action="find"]').click();
-  await receive(guest,{type:'connected'});await receive(host,{type:'connected'});await receive(guest,await lastPacket(host,'lobby'));
   for(const [page,side] of [[host,'host'],[guest,'guest']]){
    let d=await page.evaluate(()=>({vw:innerWidth,scroll:document.documentElement.scrollWidth,rect:(()=>{let e=document.querySelector('#panel');let b=e.getBoundingClientRect();return {left:b.left,right:b.right,top:b.top,bottom:b.bottom}})()}));
    CHECK(d.scroll<=w+2&&d.rect.left>=-2&&d.rect.right<=w+2,'no horizontal clipping '+side+' '+w+'x'+h);
