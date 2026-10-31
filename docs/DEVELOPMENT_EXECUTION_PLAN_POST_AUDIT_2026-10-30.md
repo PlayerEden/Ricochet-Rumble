@@ -59,6 +59,14 @@ After actual 3,600-seed source QA PASS and complete [Chromium + Android run 4102
 
 ---
 
+## Phase E v0.9.54 fallback correctness follow-up while real LAN testing deferred (2026-10-30)
+
+Added small, reversible [LAN host stale-input safeguard draft #83](https://github.com/PlayerEden/Ricochet-Rumble/pull/83) based on accepted original v0.9.53 input-parity source. Host previously retained FIRE/movement/aim forever during an unclosed guest stream stall. **0.4-second host physics freshness timeout** and neutral resets on pause, lobby, rematch/reconnect guarantee the host stops ghost controls and accepts fresh inputs immediately. [Real source test/score/save/smoke CI PASS 41156162244](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41156162244); full Chrome+Android [41156274497](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41156274497) pending final conclusion. [Detailed source/limits](LAN_GUEST_INPUT_FRESHNESS_v0954.md).
+
+**Release P0 STILL OPEN:** owner two-phone Wi-Fi checks, real measured jitter/lag, durable test-signing with progress-preserving upgrades. Do **NOT** start speculative client interpolation, engine rewrite or unrelated feature creep while owner has no second phone. Maintain stable `main` runtime and original v0.9.53 APK rollback.
+
+---
+
 ## Priority and order
 | Phase | Work package | Purpose / real deliverable | Exit gate | Decision owner |
 |---|---|---|---|---|
