@@ -3,7 +3,7 @@
  * A recovery snapshot is committed before touching existing app storage. */
 (function(root){'use strict';
 const FORMAT='sector-rebound-local-v1',VERSION=1,MAX_INPUT=60000,RECOVERY_KEY='rr-restore-recovery-v1';
-const KEYS=Object.freeze(['rr-options-v06','rr-custom-v1','rr-custom-presets-v1','rr-dossier-v1']);
+const KEYS=Object.freeze(['rr-options-v06','rr-custom-v1','rr-custom-presets-v1','rr-dossier-v1','rr-hangar-paint-v1']);
 const MISSING=Symbol('missing');
 const modeIds=['survival_ffa','survival_teams','cqc','scored_ffa','scored_tdm'];
 function object(x){return !!x&&typeof x==='object'&&!Array.isArray(x)}
@@ -16,6 +16,7 @@ function validJson(key,raw){
   if(obj.playlist!==undefined&&(!object(obj.playlist)||obj.playlist.version!==1||!Array.isArray(obj.playlist.enabled)||obj.playlist.enabled.some(x=>!modeIds.includes(x))))return false;
   return true;
  }
+ if(key==='rr-hangar-paint-v1')return obj.version===1&&['fieldgrid.standard','fieldgrid.moss','fieldgrid.dune','fieldgrid.oxide'].includes(obj.equipped)&&Object.keys(obj).length===2;
  if(key==='rr-custom-v1')return obj.version===1&&object(obj.rules)&&modeIds.includes(obj.rules.modeId);
  if(key==='rr-custom-presets-v1')return obj.version===1&&Array.isArray(obj.entries)&&obj.entries.length<=5&&obj.entries.every(e=>object(e)&&typeof e.name==='string'&&e.name.length<=24&&object(e.rules)&&modeIds.includes(e.rules.modeId));
  if(key==='rr-dossier-v1'){
@@ -29,7 +30,7 @@ function validJson(key,raw){
 }
 function hasUnsupportedVersion(key,raw){
  try{const o=JSON.parse(raw);return key==='rr-dossier-v1'?Number.isInteger(o?.schemaVersion)&&o.schemaVersion>1:
-  ['rr-custom-v1','rr-custom-presets-v1'].includes(key)?Number.isInteger(o?.version)&&o.version>1:
+  ['rr-custom-v1','rr-custom-presets-v1','rr-hangar-paint-v1'].includes(key)?Number.isInteger(o?.version)&&o.version>1:
   key==='rr-options-v06'?Number.isInteger(o?.playlist?.version)&&o.playlist.version>1:false;}catch(_){return false}
 }
 function checkedEntries(text){

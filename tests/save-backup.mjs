@@ -65,3 +65,18 @@ assert.equal(B.validJson('rr-dossier-v1',badDossier),false,'inconsistent stats n
 const unknownFormat=JSON.stringify({format:'other',version:1,entries:{'rr-options-v06':prefs}});
 assert.equal(B.previewImport(fresh,unknownFormat).ok,false);
 console.log('PASS v0.9.40 backup: full roundtrip, all four stores, future versions, corruption, restore snapshot, partial-write rollback, denied backup, invalid input.');
+
+const equipped=JSON.stringify({version:1,equipped:'fieldgrid.moss'});
+const painted=storage({'rr-options-v06':prefs,'rr-dossier-v1':dossier,'rr-hangar-paint-v1':equipped});
+const paintBackup=B.makeBackup(painted);
+assert.equal(paintBackup.ok,true,'free offline Hangar appears in backup');
+assert.equal(paintBackup.count,3);
+const newPhone=storage();
+assert.equal(B.restore(newPhone,paintBackup.text).ok,true);
+assert.equal(newPhone.getItem('rr-hangar-paint-v1'),equipped,'export/restore preserves selected paint');
+for(const invalid of [{version:2,equipped:'fieldgrid.moss'},{version:1,equipped:'fieldgrid.unknown'},{version:1,equipped:'fieldgrid.moss',admin:true}]){
+ assert.equal(B.validJson('rr-hangar-paint-v1',JSON.stringify(invalid)),false,'reject invalid cosmetic IDs and unknown keys');
+}
+const futurePaint=storage({'rr-hangar-paint-v1':JSON.stringify({version:3,equipped:'fieldgrid.moss'})});
+assert.equal(B.previewImport(futurePaint,paintBackup.text).ok,false,'future cosmetic schema never overwritten');
+console.log('PASS local Hangar backup/restore, unknown IDs and future-version protection.');

@@ -712,3 +712,22 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 
 /* Do not leave the inactive scored clock underneath MENU in Survival. */
 .game-hud .score-clock.hidden{display:none!important}
+
+/* Phase 4A — free offline paint Hangar. Never a purchase or entitlement screen. */
+#panel:has(.hangar-screen){width:min(690px,calc(100vw - 20px));max-height:calc(100dvh - 16px);overflow-y:auto;padding:clamp(10px,2dvh,18px)}
+.hangar-screen{display:flex;flex-direction:column;gap:clamp(6px,1.6dvh,12px);color:#e0f2f1}
+.hangar-head .eyebrow{font:800 10px monospace;letter-spacing:1.4px;color:#91b9bf}
+.hangar-head h2{margin:0;font:900 clamp(21px,5dvh,34px)/1.05 'sans-serif-condensed',Arial,sans-serif;color:#edf7f6}
+.hangar-head h2 span{color:#79d5dc}
+.hangar-head p,.hangar-note{margin:0;color:#a8c5c9;font:650 clamp(10px,1.6vw,13px)/1.4 system-ui}
+.hangar-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(5px,1.2vw,10px)}
+.hangar-grid button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:94px;background:#173341;border:2px solid #496976;color:#f0f5f3;border-radius:8px;padding:8px 4px}
+.hangar-grid button.selected{border-color:#ffe0a3;background:#2b4651;box-shadow:inset 0 0 0 2px #c4a57155}
+.hangar-grid button strong{font:850 clamp(10px,1.5vw,13px) monospace;letter-spacing:.5px}
+.hangar-grid button small{font:700 9px system-ui;color:#9dc3c9}
+.paint-swatch{width:clamp(30px,5.4dvh,48px);height:clamp(24px,4.3dvh,38px);display:block;border-radius:5px;border:3px solid #10222b;box-shadow:inset -8px -3px 0 #0003,0 0 0 1px #9bb5ba88}
+.paint-standard{background:#6bcde0}.paint-moss{background:#759376}.paint-dune{background:#c0a675}.paint-oxide{background:#a66d5b}
+.hangar-equipped{margin:0;padding:5px 8px;background:#173541;border-left:3px solid #ffe0a3;color:#f1dab0;font:800 12px monospace}
+.hangar-back{align-self:flex-start;min-height:44px;background:#2d505f;border:1px solid #78a2ad;color:#fff;border-radius:5px;padding:7px 18px;font-weight:850}
+@media(max-height:380px){.hangar-grid button{min-height:74px;gap:3px;padding:4px}.hangar-note{font-size:10px}.hangar-screen{gap:5px}}
+@media(max-width:580px){.hangar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}

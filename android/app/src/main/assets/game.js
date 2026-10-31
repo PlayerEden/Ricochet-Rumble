@@ -23,6 +23,16 @@ function dossierLines(){
  }}
 }
 function openDossier(){setPanel(document.getElementById('dossier-template').innerHTML);dossierLines();}
+function refreshHangar(){
+ const status=document.getElementById('hangar-status');
+ if(status)status.textContent='EQUIPPED · '+HANGAR_PAINTS[equippedPaint].label+' · SOLO ONLY';
+ for(const el of document.querySelectorAll('[data-action="equip-paint"]')){
+  const selected=el.dataset.paintId===equippedPaint;
+  el.classList.toggle('selected',selected);
+  if(typeof el.setAttribute==='function')el.setAttribute('aria-pressed',String(selected));
+ }
+}
+function openHangar(){setPanel(document.getElementById('hangar-template').innerHTML);refreshHangar();}
 let pendingRestoreText='';
 function openBackupScreen(){pendingRestoreText='';setPanel(document.getElementById('backup-template').innerHTML);}
 function backupNotice(message){const el=document.getElementById('backup-message');if(el)el.textContent=message;}
@@ -1155,6 +1165,31 @@ function updateVisuals(dt){visualClock+=dt;if(coachRemaining>0){coachRemaining=M
  // LAB E. Gameplay-only materials, separate from pilot dossier portraits or shop.
  // A skin ID changes three flat paint planes, never gameplay or team ownership.
  // Null armor/trim means: preserve existing per-player painted vehicle color.
+// Four free OFFLINE starter materials. No commerce or network entitlement.
+const HANGAR_KEY='rr-hangar-paint-v1';
+const HANGAR_PAINTS=Object.freeze({
+ 'fieldgrid.standard':{label:'STANDARD'},
+ 'fieldgrid.moss':{label:'MOSS'},
+ 'fieldgrid.dune':{label:'DUNE'},
+ 'fieldgrid.oxide':{label:'OXIDE'}
+});
+let equippedPaint='fieldgrid.standard';
+function normalizePaint(id){return Object.prototype.hasOwnProperty.call(HANGAR_PAINTS,id)?id:'fieldgrid.standard';}
+function loadPaint(){
+ equippedPaint='fieldgrid.standard';
+ try{const raw=JSON.parse(window.localStorage?.getItem(HANGAR_KEY)||'null');
+  if(raw?.version===1)equippedPaint=normalizePaint(raw.equipped);
+ }catch(_){}
+ return equippedPaint;
+}
+function equipPaint(id){
+ if(!Object.prototype.hasOwnProperty.call(HANGAR_PAINTS,id))return false;
+ const data=JSON.stringify({version:1,equipped:id});
+ try{window.localStorage?.setItem(HANGAR_KEY,data);
+  if(window.localStorage?.getItem(HANGAR_KEY)!==data)return false;
+ }catch(_){return false;}
+ equippedPaint=id;return true;
+}
 const FIELDGRID_UNIT_SKINS=Object.freeze({
  'fieldgrid.standard':{
   pilot:{armor:'#607a85',shadow:'#294650',light:'#9fb7bc',trim:'#78949b'},
@@ -1279,8 +1314,8 @@ function drawLobbyPreview(dt){
  c.rotate(-.25+(reduced?0:Math.sin(phase)*.14));
  c.scale(2.55,2.55);
  const amount=!reduced?lobbyPreviewClock:0;
- if(showMech)drawTopMech(c,'#d5bb77',false,Math.sin(amount*2.3)*1.7,0,Math.sin(amount*3)*.5);
- else drawTopTank(c,'#6bcde0',false,amount*10,amount*10,0,.38);
+ if(showMech)drawTopMech(c,'#d5bb77',false,Math.sin(amount*2.3)*1.7,0,Math.sin(amount*3)*.5,equippedPaint);
+ else drawTopTank(c,'#6bcde0',false,amount*10,amount*10,0,.38,equippedPaint);
  c.restore();
  c.fillStyle='#73c7d6';c.globalAlpha=.4;
  c.fillRect(w*.12,h*.26,55,2);c.fillRect(w*.77,h*.66,47,2);
@@ -1460,12 +1495,12 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  if(t.onFoot){
    const stride=Math.sin(visualClock*15+i*1.7)*Math.min(3.5,Math.hypot(t.vx,t.vy)/65);
    // No permanent ring. Fixed world-space FIELDGRID brackets render behind the operator.
-   drawTopPilot(c,paint,t.flash>0,stride,t.recoil||0,Math.sin(visualClock*15+i*1.7)*Math.min(.45,Math.hypot(t.vx,t.vy)/400),'fieldgrid.standard',state.config?.teamMode!=='ffa');
+   drawTopPilot(c,paint,t.flash>0,stride,t.recoil||0,Math.sin(visualClock*15+i*1.7)*Math.min(.45,Math.hypot(t.vx,t.vy)/400),mode==='solo'&&i===0?equippedPaint:'fieldgrid.standard',state.config?.teamMode!=='ffa');
    c.restore();
    if(t.ejectAnim>0){c.save();c.globalAlpha=Math.min(.7,t.ejectAnim/.62);c.strokeStyle='#e5faff';c.lineWidth=2;c.beginPath();c.arc(t.x,t.y,18+(1-t.ejectAnim/.62)*22,0,Math.PI*2);c.stroke();c.restore();}
  }else{
  if(t.shield>0){c.globalAlpha=.65+.25*Math.sin(t.shield*15)}
- (currentVehicle(t)?.type==='mech'?drawTopMech(c,paint,false,Math.sin(visualClock*10+i*1.9)*Math.min(3.2,Math.hypot(t.vx,t.vy)/55),t.recoil||0,Math.sin(visualClock*20+i*3.8)*Math.min(.65,Math.hypot(t.vx,t.vy)/320)):drawTopTank(c,paint,false,t.trackLeft||0,t.trackRight||0,t.recoil||0,Math.min(1,Math.hypot(t.vx,t.vy)/240)));if(t.flash>0){c.fillStyle='#fff3a0';c.beginPath();c.arc(39,0,8+t.flash*70,0,Math.PI*2);c.fill()}c.restore();
+ (currentVehicle(t)?.type==='mech'?drawTopMech(c,paint,false,Math.sin(visualClock*10+i*1.9)*Math.min(3.2,Math.hypot(t.vx,t.vy)/55),t.recoil||0,Math.sin(visualClock*20+i*3.8)*Math.min(.65,Math.hypot(t.vx,t.vy)/320),mode==='solo'&&i===0?equippedPaint:'fieldgrid.standard'):drawTopTank(c,paint,false,t.trackLeft||0,t.trackRight||0,t.recoil||0,Math.min(1,Math.hypot(t.vx,t.vy)/240),mode==='solo'&&i===0?equippedPaint:'fieldgrid.standard'));if(t.flash>0){c.fillStyle='#fff3a0';c.beginPath();c.arc(39,0,8+t.flash*70,0,Math.PI*2);c.fill()}c.restore();
  if(isPilotMatch()){const v=state.vehicles?.[t.vehicleId];if(v){c.fillStyle='#16313b';c.fillRect(t.x-19,t.y+29,38,5);c.fillStyle='#79eab2';c.fillRect(t.x-19,t.y+29,38*v.armor/vehicleDef(v).armor,5);}}}
  if(t.powerType&&t.powerTimer>0&&PICKUPS[t.powerType]){c.fillStyle=PICKUPS[t.powerType].color;c.font='800 10px monospace';c.textAlign='center';c.fillText(PICKUPS[t.powerType].name+' '+Math.ceil(t.powerTimer)+'s',t.x,t.y+49)}
  if(t.shield>0){c.beginPath();c.arc(t.x,t.y,32+Math.sin(t.shield*10)*2,0,Math.PI*2);c.strokeStyle=paint;c.globalAlpha=clamp(t.shield/1.8*(t.onFoot?.42:.8),0,t.onFoot?.42:.8);c.lineWidth=t.onFoot?1.8:3;c.stroke();c.globalAlpha=1}
@@ -1575,13 +1610,18 @@ function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=fa
 const originalPanel=panel.innerHTML;
 panel.addEventListener('change',e=>{const el=e.target;if(el.id==='custom-preset-select'){pendingPresetDelete='';refreshCustomPresetUI();customPresetStatus('SELECT LOAD TO APPLY SAVED RULES');return;}if(el.id?.startsWith('custom-')){readCustomScreen();refreshCustomUI();return;}if(el.id?.startsWith('pref-')){const key=el.id.slice(5);if(key in comfort)comfort[key]=el.checked;applyPrefsToUI()}savePrefs()});
 loadPrefs();
+loadPaint();
 dossierStore=window.SectorDossier?.createStore((()=>{try{return window.localStorage}catch(_){return null}})())||null;
 
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
  if(a==='toggle-sound'||a==='toggle-music'){togglePauseAudio(a==='toggle-sound'?'sound':'music',b);return;}
  if(!['solo','settings-play','cqc','scored_ffa','scored_tdm','custom-play','duel','host','find','custom-preset-save','custom-preset-delete','custom-preset-load','ip-join'].includes(a))
   audioCue(['settings-back','help-back','dossier-back','backup-back','custom-back','close','resume'].includes(a)?'ui-back':'ui-select');
- if(a==='dossier'){openDossier()}else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, point the hull with the movement joystick. Sharp changes pivot the tank before accelerating; tap FIRE when lined up.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){panel.innerHTML=originalPanel;applyPrefsToUI();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
+ if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar()}else if(a==='hangar-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='equip-paint'){
+   const ok=equipPaint(b.dataset.paintId);
+   refreshHangar();const status=document.getElementById('hangar-status');
+   if(!ok&&status)status.textContent='COULD NOT SAVE PAINT · CURRENT PAINT KEPT';
+  }else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, point the hull with the movement joystick. Sharp changes pivot the tank before accelerating; tap FIRE when lined up.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){panel.innerHTML=originalPanel;applyPrefsToUI();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
  else if(a==='custom-reset'){resetCustomDraft();refreshCustomUI();customPresetStatus('DEFAULT RULES RESTORED · SAVED PRESETS KEPT');}
  else if(a==='custom-preset-save'){
   readCustomScreen();const input=document.getElementById('custom-preset-name'),name=cleanPresetName(input?.value);

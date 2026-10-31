@@ -62,7 +62,7 @@
         <div class="home-screen">
           <header class="home-topbar">
             <div class="home-brand"><span class="home-brand-mark" aria-hidden="true">SR</span><div><span class="home-overline">FIELDGRID / COMBAT SIMULATION</span><h2>SECTOR <span>REBOUND</span></h2></div></div>
-            <div class="home-utilities"><button data-action="dossier" aria-label="View local player dossier">DOSSIER</button><button data-action="help" aria-label="How to play Sector Rebound">? <span>HOW TO PLAY</span></button></div>
+            <div class="home-utilities"><button data-action="hangar" aria-label="Choose free Solo paint">HANGAR</button><button data-action="dossier" aria-label="View local player dossier">DOSSIER</button><button data-action="help" aria-label="How to play Sector Rebound">? <span>HOW TO PLAY</span></button></div>
           </header>
           <div class="home-content">
             <section class="home-showcase" aria-label="Tank preview">
@@ -154,6 +154,20 @@
   <div class="custom-actions"><button type="button" data-action="custom-back">BACK</button><button class="primary" type="button" data-action="custom-play">DEPLOY MATCH</button></div>
  </section>
 </template>
+<template id="hangar-template">
+ <section class="hangar-screen" aria-label="Offline Hangar paint choices">
+  <header class="hangar-head"><div class="eyebrow">FIELDGRID / VEHICLE BAY</div><h2>THE <span>HANGAR</span></h2><p>FREE FIELD PAINT · COSMETIC ONLY</p></header>
+  <div class="hangar-grid" role="group" aria-label="Choose a Solo unit paint">
+   <button type="button" data-action="equip-paint" data-paint-id="fieldgrid.standard"><span class="paint-swatch paint-standard" aria-hidden="true"></span><strong>STANDARD</strong><small>FIELD ISSUE</small></button>
+   <button type="button" data-action="equip-paint" data-paint-id="fieldgrid.moss"><span class="paint-swatch paint-moss" aria-hidden="true"></span><strong>MOSS</strong><small>FIELD GREEN</small></button>
+   <button type="button" data-action="equip-paint" data-paint-id="fieldgrid.dune"><span class="paint-swatch paint-dune" aria-hidden="true"></span><strong>DUNE</strong><small>SAND FINISH</small></button>
+   <button type="button" data-action="equip-paint" data-paint-id="fieldgrid.oxide"><span class="paint-swatch paint-oxide" aria-hidden="true"></span><strong>OXIDE</strong><small>RUST FINISH</small></button>
+  </div>
+  <p class="hangar-equipped" id="hangar-status" role="status">EQUIPPED · STANDARD · SOLO ONLY</p>
+  <p class="hangar-note">Paint affects your Solo pilot, tank and mech panels. Team outlines, projectiles, scores and combat performance never change. All four starter paints are free.</p>
+  <button type="button" data-action="hangar-back" class="hangar-back">BACK TO MENU</button>
+ </section>
+</template>
 <template id="dossier-template">
  <section class="dossier-screen" aria-label="Local player dossier">
   <header class="dossier-head"><div class="eyebrow">FIELDGRID / OPERATOR FILE</div><h2>PLAYER <span>DOSSIER</span></h2><p>OFFLINE SERVICE RECORD · THIS DEVICE ONLY</p></header>
@@ -171,7 +185,7 @@
   </div>
   <footer class="dossier-footer">
    <div><strong id="dossier-time">0 MIN</strong> <span>COMBAT TIME</span><p id="dossier-save-status" role="status">LOCAL STORAGE READY</p></div>
-   <div class="dossier-backup-actions"><button type="button" data-action="backup">BACK UP DATA</button><button type="button" data-action="dossier-back">BACK TO MENU</button></div>
+   <div class="dossier-backup-actions"><button type="button" data-action="hangar">HANGAR</button><button type="button" data-action="backup">BACK UP DATA</button><button type="button" data-action="dossier-back">BACK TO MENU</button></div>
   </footer>
   <p class="dossier-note">Only completed Solo matches against bots count. Practice, abandoned matches, and LAN are not recorded. No account or cloud sync. Uninstalling may erase this device's data.</p>
  </section>
