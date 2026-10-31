@@ -27,6 +27,11 @@ def defaultPreviewVersionCode = 50
 def defaultPreviewVersionName = '0.9.54-lan-timeout-test'
 def requestedPreviewCode = providers.gradleProperty('srPreviewVersionCode').orNull
 def requestedPreviewName = providers.gradleProperty('srPreviewVersionName').orNull
+def previewPackageSwitch = providers.gradleProperty('srPreviewPackage').orNull
+if (previewPackageSwitch != null && previewPackageSwitch != 'true')
+    throw new GradleException('srPreviewPackage must be true when present')
+if ((requestedPreviewCode != null) != (previewPackageSwitch == 'true'))
+    throw new GradleException('Preview versions require isolated .preview app identity, and vice versa')
 if ((requestedPreviewCode == null) != (requestedPreviewName == null))
     throw new GradleException('Preview version code and name must be supplied together')
 def previewVersionCode = defaultPreviewVersionCode
@@ -72,6 +77,9 @@ android {
     }
     buildTypes {
         debug {
+            // Owner-signed previews are a separate installable package from Play/stable builds.
+            // CI QA without this flag retains the historical package and version.
+            if (previewPackageSwitch == 'true') applicationIdSuffix '.preview'
             if (hasTestSigning) signingConfig signingConfigs.internalTest
         }
         release {

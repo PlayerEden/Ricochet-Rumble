@@ -1,6 +1,6 @@
-# Sector Rebound — v0.9.57 reliable test APK preparation
+# Sector Rebound — v0.9.57 early preview groundwork (superseded)
 
-**Status (2026-10-30): CODE PREPARED, NOT YET AN OWNER-KEYED OR ON-DEVICE PASS.**
+**Status:** Superseded by [isolated v0.9.58 preview architecture](ISOLATED_ANDROID_PREVIEW_v0958.md). This older plan discussed manual version inputs and same-package previews; do not use its historical instructions in place of the current guarded workflow.
 **Branch:** `integration/v0956-main-rooted-rehearsal` / [draft PR #85](https://github.com/PlayerEden/Ricochet-Rumble/pull/85).
 
 **Owner has uninstalled the previous test APK** (reported in chat). An empty installation now permits a *fresh-install* test with a new durable signing identity; it does not prove prior local saves survive, and old data remains gone unless separately backed up. Never assume a different phone still has no Sector Rebound package.

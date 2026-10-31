@@ -21,5 +21,7 @@ assert.ok(workflow.includes('Erase temporary keystore from CI runner'));
 const head=workflow.split('    steps:')[0];
 assert.ok(!head.includes('secrets.'),'private keys never inherited by all job steps');
 for(const secret of ['SR_TEST_STORE_PASSWORD','SR_TEST_KEY_ALIAS','SR_TEST_KEY_PASSWORD','SR_TEST_KEYSTORE_B64'])assert.ok(workflow.includes('secrets.'+secret));
-assert.ok(!workflow.includes('gh release create'),'signed test workflow must not auto-publish an APK');
+assert.ok(workflow.includes('--draft --prerelease'),'only an unpublished draft release is allowed');
+assert.ok(workflow.includes('inputs.create_draft_release == true'),'release draft must require explicit separate owner checkbox');
+assert.ok(workflow.includes("github.ref == 'refs/heads/main'"),'restrict signing to main');
 console.log('PASS v0.9.43 private manually triggered test signer: complete external env, no PR/push secret exposure, separate production key, pinned cert and no automatic publish.');

@@ -11,6 +11,8 @@ assert.ok(gradle.includes("def defaultPreviewVersionName = '0.9.54-lan-timeout-t
 assert.ok(gradle.includes('Private TEST signer required for preview version overrides'));
 assert.ok(gradle.includes('versionCode previewVersionCode')&&gradle.includes('versionName previewVersionName'));
 assert.ok(gradle.includes('requestedNumber <= defaultPreviewVersionCode'));
+assert.ok(gradle.includes("applicationIdSuffix '.preview'"));
+assert.ok(gradle.includes('Preview versions require isolated .preview app identity'));
 assert.ok(manifest.includes('android:label="Sector Rebound"'));
 assert.ok(manifest.includes('android:allowBackup="false"'),'no automatic OS backup enabled before privacy review');
 assert.ok(manifest.includes('android:usesCleartextTraffic="false"'));
