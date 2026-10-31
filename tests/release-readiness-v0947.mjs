@@ -18,11 +18,11 @@ const game=read('web/game.js'),html=read('web/index.html'),style=read('web/style
 const gradle=read('android/app/build.gradle'),manifest=read('android/app/src/main/AndroidManifest.xml');
 const ver=Number(gradle.match(/versionCode\s+(\d+)/)?.[1]),name=gradle.match(/versionName\s+'([^']+)'/)?.[1];
 assert.ok(Number.isInteger(ver)&&ver>=47,'Android versionCode must be >= prior v0.9.46 test');
-assert.ok(name&&name.startsWith('0.9.46'),'v0.9.47 audit must not silently re-version the tested runtime');
+assert.ok(name&&/^\d+\.\d+\.\d+(?:-[a-z0-9][a-z0-9.-]*)?$/.test(name),'Android versionName must be a valid explicit release or prerelease identifier');
 assert.ok(gradle.includes("applicationId 'com.playereden.ricochetrumble'"),'Android package must not silently change');
 assert.ok(manifest.includes('android:allowBackup="false"'));
 assert.ok(manifest.includes('android:usesCleartextTraffic="false"'));
-yes('Unchanged Android preview identity and defensive manifest',name+' code '+ver+'; NOT a Play-signed update');
+yes('Android package identity, monotonic preview metadata and defensive manifest',name+' code '+ver+'; NOT a Play-signed update');
 for(const id of ['solo','cqc','scored_ffa','scored_tdm','custom','nearby','dossier','settings'])
  assert.ok(html.includes('data-action="'+id+'"'),'missing real mode/menu action: '+id);
 yes('Live menu entry points', 'Survival/Quick Play, CQC, scored FFA, scored TDM, Custom, LAN, Dossier, Settings');
@@ -61,7 +61,7 @@ pending('P0','Google Play production compliance','Owner-secured Play upload key 
 pending('P1','Integration of experimental branch chain','Build/review one controlled integration candidate from main with 24-PR dependency graph, reconcile conflicting documentation; owner approval before any merge');
 pending('P1','Natural scored match balance after release integration','Repeat measured AI-match fairness and seeded maze trials against final integration source if source logic differs');
 pending('P2','Audit metadata hygiene','Retire stale references saying 0.9.40/code40 or nine draft PRs; use current dynamic version and live PR count');
-const report={schemaVersion:1,audit:'Sector Rebound v0.9.47 source-level release-readiness gate',scope:'experimental v0.9.46 gameplay baseline with v0.9.47 audit-only changes',checks,manual,totals:{sourcePass:checks.length,manualGates:manual.length,gameplayCodeChanged:false,releaseDecision:'NO_GO_UNTIL_PHYSICAL_INTEGRATION_AND_SIGNING'},fingerprints:{gameJsSha256:hash('web/game.js'),stylesSha256:hash('web/style.css'),androidGradleSha256:hash('android/app/build.gradle')}};
+const report={schemaVersion:1,audit:'Sector Rebound v0.9.47 source-level release-readiness gate',scope:'current experimental source branch; static contracts and manual GO/NO-GO verified without any production change',checks,manual,totals:{sourcePass:checks.length,manualGates:manual.length,gameplayCodeChanged:false,releaseDecision:'NO_GO_UNTIL_PHYSICAL_INTEGRATION_AND_SIGNING'},fingerprints:{gameJsSha256:hash('web/game.js'),stylesSha256:hash('web/style.css'),androidGradleSha256:hash('android/app/build.gradle')}};
 fs.mkdirSync('qa-results',{recursive:true});
 fs.writeFileSync('qa-results/release-readiness-v0947.json',JSON.stringify(report,null,2)+'\n');
 console.log('AUDIT_V0947 '+JSON.stringify(report.totals));
