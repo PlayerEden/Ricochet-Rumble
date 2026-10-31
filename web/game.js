@@ -752,7 +752,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  const editRules=document.getElementById('custom-edit');if(editRules)editRules.classList.toggle('hidden',!(ended&&mode==='solo'&&!!state.config?.customMatch));
  const lanEdit=document.getElementById('lan-edit-rules');if(lanEdit)lanEdit.classList.toggle('hidden',!(ended&&mode==='host'&&connected));
  const label0=document.getElementById('player0-label');if(label0)label0.textContent=tdm?'BLUE KOs':isScoredMatch()?'YOU KOs':'YOU · LIVES';
- const label1=document.getElementById('player1-label');if(label1)label1.textContent=tdm?'RED KOs':isScoredMatch()?'LEADER':mode==='solo'?'ENEMIES':state.config?.teamMode==='coop'?'BOTS':mode==='guest'?'HOST':'RIVAL';
+ const label1=document.getElementById('player1-label');if(label1)label1.textContent=tdm?'RED KOs':isScoredMatch()?'LEADER':mode==='solo'&&state.config?.teamMode==='teams'?'RED':mode==='solo'?'ENEMIES':state.config?.teamMode==='coop'?'BOTS':mode==='guest'?'HOST':'RIVAL';
  if(mode==='solo'||((mode==='host'||mode==='guest')&&state.config?.teamMode==='coop'))document.getElementById('score1').textContent=botLives;
  const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=foot&&['solo','host','guest'].includes(mode)?'HOLD · DRAG TO AIM':comfort.autoFire?'AUTO ON':'HOLD TO FIRE';
  const clock=document.getElementById('score-clock'),life=document.querySelector('.scorestrip .hud-life');
@@ -1764,11 +1764,11 @@ function refreshLanLobby(){
 }
 function publishLanLobby(){
  if(mode!=='host'||!connected||!lanLobby)return;
- nativePacket({type:'lobby',version:1,revision:lanLobby.revision,rules:lanLobby.rules});
+ nativePacket({type:'lobby',version:1,revision:lanLobby.revision,rules:lanLobby.rules,postMatch:!!lanLobby.postMatch});
 }
 function startLanLobby(fromResults=false){
  const rules=fromResults?sanitizeLanOptions(state.config):sanitizeLanOptions({...selectedRules,botCount:0,teamMode:'ffa'});
- lanLobby={rules,revision:fromResults?(lanLobby?.revision||1)+1:1,guestReady:false,myReady:false,hasRules:true,active:true};
+ lanLobby={rules,revision:fromResults?(lanLobby?.revision||1)+1:1,guestReady:false,myReady:false,hasRules:true,active:true,postMatch:fromResults};
  setPanel(lanLobbyHTML(true));refreshLanLobby();
 }
 function changeLanRule(el){
@@ -1920,7 +1920,7 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
  case 'lobby':{
  if(mode!=='guest'||!connected||!lanLobby||msg.version!==1||!Number.isInteger(msg.revision)||msg.revision<1||msg.revision<lanLobby.revision)break;
  if(!lanLobby.active){
-  if(state.winner<0||msg.revision<=lanLobby.revision)break;
+  if((state.winner<0&&msg.postMatch!==true)||msg.revision<=lanLobby.revision)break;
   paused=true;neutralizeGuestInput();lanLobby.active=true;lanLobby.myReady=false;setPanel(lanLobbyHTML(false));
  }
  if(msg.revision!==lanLobby.revision)lanLobby.myReady=false;

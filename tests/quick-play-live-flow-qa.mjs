@@ -130,8 +130,25 @@ try{
  assert.equal(before.human,1,'solo actual player');
  assert.equal(await page.locator('.hud-life').isVisible(),true,'Survival retains life marker');
  assert.equal(await page.locator('#score-clock').isVisible(),false,'Survival omits scored countdown');
+ assert.ok((await page.locator('#player0-label').textContent()).includes('LIVES'),'survival HUD explicitly identifies remaining lives');
+ const slots=await page.locator('#shell-slots .shell-slot').count();
+ const label=(await page.locator('#shell-meter').textContent()).trim();
+ assert.ok(slots>0&&slots<=12&&label.includes('/'),'projectile availability is visible without new fire controls');
+ const ready=await page.locator('#shell-slots .shell-slot.ready').count();
+ assert.equal(ready,slots,'unused projectile slots start filled');
  assert.ok(['survival_ffa','survival_teams'].includes(before.mode),'supported mode shown');
  assert.equal(await page.locator('#after-action').isVisible(),false,'no premature results');
+ await page.locator('#menu-button').click();
+ assert.equal(await page.locator('button[data-action="restart"]').isVisible(),true,'New Field available in pause');
+ const pausedSeed=await page.evaluate(()=>window.__flowQA.state.mazeSeed);
+ await page.locator('button[data-action="restart"]').click();
+ assert.equal(await page.locator('button[data-action="confirm-restart"]').isVisible(),true,'restart requires explicit confirmation');
+ assert.equal(await page.evaluate(()=>window.__flowQA.state.mazeSeed),pausedSeed,'opening confirmation does not reset match');
+ await page.locator('button[data-action="cancel-restart"]').click();
+ assert.equal(await page.locator('button[data-action="resume"]').isVisible(),true,'cancel returns to pause menu');
+ assert.equal(await page.evaluate(()=>window.__flowQA.state.mazeSeed),pausedSeed,'cancel preserves procedural sector');
+ await page.locator('button[data-action="resume"]').click();
+ await page.evaluate(()=>window.__flowQA.freeze());
  const victory=await page.evaluate(()=>{
   const qa=window.__flowQA,enemy=qa.state.tanks[1];qa.ejectPilot(1);enemy.shield=0;
   const hits=[qa.registerHit(0,1)];enemy.shield=0;hits.push(qa.registerHit(0,1));

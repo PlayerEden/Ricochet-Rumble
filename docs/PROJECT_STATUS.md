@@ -1,3 +1,9 @@
+# 2026-10-31 — IN-GAME QA GATES AND POST-MATCH LAN PHASE
+
+Fixed deliberate Team Survival opponent label regression (still **RED**, not generic enemy). Extended live browser QA to verify Survival LIVES + projectile slot indicators, opening/canceling a destructive pause restart does not regenerate the maze, and host+guest final results show actual deaths/duration before change-rules → guest Ready → host rematch. Post-match lobby packets now carry a strictly newer revision and explicit `postMatch` marker so a guest can transition even if the final state snapshot arrives after the host acts; Java host→guest allowlists still enforce authority. Existing source/Android mirrors kept identical. [Source audit](UI_INGAME_LAN_MATCH_FLOW_2026-10-31.md). Signed APK and full Chromium results still pending.
+
+---
+
 # 2026-10-31 — IN-GAME UI + LAN RESULTS LOOP (candidate, pending QA)
 
 User approved clearer match HUD, subtle projectile readiness visualization, safe confirmation before pause NEW FIELD, and host/guest LAN end-match convenience. Candidate adds a zero-mechanics HUD pass, real LAN death/duration replication, host After Action CHANGE RULES → ready-based rematch lobby, and contextual guest waiting. [Full scope and QA contract](UI_INGAME_LAN_MATCH_FLOW_2026-10-31.md); [immutable 100036 rollback](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-preview-100036-before-ingame-ui-flow) at `ce0969c6555b1dae94b5270bf286a6581ca9cabf`. DO NOT CLAIM BUILD/QA PASSED before exact-source verification. Draft [PR #85](https://github.com/PlayerEden/Ricochet-Rumble/pull/85) still unmerged.

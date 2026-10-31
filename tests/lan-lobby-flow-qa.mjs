@@ -14,7 +14,7 @@ const j=fs.readFileSync(path.join(root,'android','app','src','main','java','com'
 assert.ok(j.includes('"ready".equals(kind)')&&j.includes('"lobby".equals(kind)')&&j.includes('"start".equals(kind)'),'native bridge recognizes only role-scoped lobby controls');
 const original=fs.readFileSync(path.join(web,'game.js'),'utf8'),close=/\}\)\(\);\s*$/;
 assert.ok(close.test(original),'actual game runtime IIFE found');
-const game=original.replace(close,"window.__lanQA={get mode(){return mode},get paused(){return paused},get connected(){return connected},get lobby(){return lanLobby&&{...lanLobby,rules:{...lanLobby.rules}}},get state(){return state}};})();");
+const game=original.replace(close,"window.__lanQA={get mode(){return mode},get paused(){return paused},get connected(){return connected},get lobby(){return lanLobby&&{...lanLobby,rules:{...lanLobby.rules}}},get state(){return state},refresh(){refreshHUD()},snapshot(){return serializeState()}};})();");
 const files={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/game.js':'game.js','/scored-match.js':'scored-match.js','/dossier.js':'dossier.js','/save-backup.js':'save-backup.js'};
 const server=http.createServer((req,resp)=>{let f=files[new URL(req.url,'http://localhost').pathname];if(!f){resp.writeHead(404);resp.end();return}resp.writeHead(200,{'Content-Type':f.endsWith('.js')?'text/javascript':f.endsWith('.css')?'text/css':'text/html'});resp.end(f==='game.js'?game:fs.readFileSync(path.join(web,f)))});
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
@@ -98,6 +98,31 @@ try{
  CHECK(!hs.paused&&!gs.paused,'both players are unpaused only after Start');
  CHECK(hs.humans===2&&hs.actors===2&&hs.bots===0&&hs.teams==='ffa','true 1v1 has precisely two humans and zero AI actors');
  CHECK(gs.humans===2&&gs.actors===2&&gs.bots===0&&gs.maze===hs.maze,'guest receives same procedural arena and host-authoritative roster');
+ // Simulate the authoritative final state at the rendering boundary; KO/win
+ // combat logic is already independently exercised by actual game-flow tests.
+ await host.evaluate(()=>{const qa=window.__lanQA,s=qa.state;s.winner=0;s.winnerTeam=0;s.kos[0]=1;s.deaths[1]=1;s.elapsedSeconds=84;qa.refresh();});
+ await receive(guest,await host.evaluate(()=>({type:'state',state:window.__lanQA.snapshot()})));
+ CHECK(await host.locator('#after-action').isVisible()&&await guest.locator('#after-action').isVisible(),'both human screens show final result');
+ CHECK((await guest.locator('#aa-deaths').textContent()).trim()==='1','guest receives true authoritative death count');
+ CHECK((await guest.locator('#aa-duration').textContent()).trim()==='01:24','guest receives authoritative match duration');
+ CHECK((await guest.locator('#aa-note').textContent()).includes('WAITING FOR HOST'),'guest knows who controls next match');
+ CHECK(await host.locator('#lan-edit-rules').isVisible(),'host can change LAN rules after a finished match');
+ await host.locator('#lan-edit-rules').click();
+ CHECK(await host.locator('.lan-lobby').isVisible(),'host returns to waiting room without disconnecting');
+ const revised=await lastPacket(host,'lobby');
+ CHECK(revised.postMatch===true&&revised.revision>start.revision,'postmatch lobby has strictly newer revision and explicit phase');
+ await receive(guest,revised);
+ CHECK(await guest.locator('.lan-lobby').isVisible(),'guest automatically returns to Ready lobby on new host phase');
+ CHECK(await guest.locator('button[data-action="lan-ready"]').isEnabled(),'guest can ready again without reconnecting');
+ await receive(host,{type:'ready',revision:start.revision,ready:true});
+ CHECK(await host.locator('button[data-action="lan-start"]').isDisabled(),'old ready cannot start rematch');
+ await guest.locator('button[data-action="lan-ready"]').click();
+ await receive(host,await lastPacket(guest,'ready'));
+ CHECK(await host.locator('button[data-action="lan-start"]').isEnabled(),'fresh Ready unlocks host rematch');
+ await host.locator('button[data-action="lan-start"]').click();
+ await receive(guest,await lastPacket(host,'start'));
+ await receive(guest,await lastPacket(host,'state'));
+ CHECK(await guest.locator('.lan-lobby').isVisible()===false,'guest enters new maze after host rematch');
  // Leave the real match ONCE; then inspect the same new waiting room
  // at four viewports. Never try to exit a second match while still in lobby.
  await host.evaluate(()=>window.RR.openMenu());await host.locator('button[data-action="close"]').click();

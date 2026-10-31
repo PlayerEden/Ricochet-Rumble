@@ -1,5 +1,5 @@
 name: Sector Rebound - scoped UI/UX review
-# QA rerun: align scored countdown to scoreboard center with asymmetric left/right HUD reserves
+# QA run: combat clarity + pause confirmation + postmatch LAN host/guest rules and rematch
 on:
   push:
     branches: [integration/v0956-main-rooted-rehearsal]
