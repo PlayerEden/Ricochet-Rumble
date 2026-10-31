@@ -1,3 +1,9 @@
+# 2026-10-31 — PHASE 4D CANDIDATE: NEWLY EARNED HANGAR FEEDBACK
+
+After Phase 4C signed Preview 100014 automated green (manual phone approval pending), preserved [exact 100014 source checkpoint](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-preview-100014-insignia-qa-passed) `674895eedc8c7a68276ca0942e5d9c953e0da277`. Phase 4D on draft [PR #85](https://github.com/PlayerEden/Ricochet-Rumble/pull/85) adds small **NEW IN HANGAR** After Action notice only when a real saved Solo match crosses previously unmet cosmetics eligibility. No invented rewards or new saves, menu blockers, movement/aim/combat/LAN/Play-signing changes. New source has **QA PENDING** until verified; phone acceptance and two-phone LAN still pending. [Exact scope, QA criteria and rollback](PHASE_4D_AFTER_ACTION_REWARDS.md).
+
+---
+
 # LATEST — POST-v0.9.54 THREE AUDITS COMPLETE / INTEGRATION HOLD (2026-10-30)
 
 [Full source-backed GitHub integration, Android/Play package and regression report](POST_V0954_INTEGRATION_RELEASE_REGRESSION_AUDIT_2026-10-30.md): current v0.9.54 candidate **73 commits ahead/41 behind** main, **43 open draft PRs**, foundational PR #71 to main **dirty**; the only changed file shared by their histories since the common ancestor is `docs/PROJECT_STATUS.md`, so reconcile *current main docs* rather than blindly replacing. GitHub main `protected:false`, rulesets `[]` (no settings changed). Original v0.9.54 QA-tested APK **118807 bytes**, public sha256 `c397677cc53466a1e07cf9d9e0d1494b8c82d2e6a8cf1ee4bf5e2b1dc611513b` exactly reverified inside original Actions artifact; six bundled WebView assets, **zero `.so`**; API 36 target current Play minimum. Actual phone signing/upgrades with saved progress, real two-phone LAN, Play Console declarations and human gameplay acceptance still open.

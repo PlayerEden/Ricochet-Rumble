@@ -18,7 +18,7 @@ const instrumented=game.replace(closing,`
 // changes nothing in the bundled game or player-facing features.
 window.__flowQA={
  get state(){return state}, get mode(){return mode},
- get playlist(){return selectedPlaylistIds.slice()},
+ get playlist(){return selectedPlaylistIds.slice()}, unlocksFromResult,
  freeze(){paused=true}, get aim(){return {...fireAim}}, get control(){return makeControl(true)}, registerHit, ejectPilot, refreshHUD, tryCqcRespawn, resetAll,
  expire(seconds=180){paused=false;step(seconds);paused=true;}
 };
@@ -114,6 +114,7 @@ try{
  assert.equal((await page.locator('#aa-kos').textContent()).trim(),'2');
  assert.equal((await page.locator('#aa-deaths').textContent()).trim(),'0');
  assert.equal((await page.locator('#aa-outcome').textContent()).trim(),'VICTORY');
+ assert.equal(await page.locator('#aa-rewards').isVisible(),false,'first Solo match has no unlock');
  assert.equal(await page.locator('#quick-rematch').isVisible(),true,'NEXT MATCH playable');
  result.steps.push('real combat finalization -> HUD victory, KO/deaths and NEXT MATCH button');
 
@@ -208,7 +209,12 @@ try{
  assert.equal((await page.locator('#aa-kos').textContent()).trim(),'10');
  assert.equal((await page.locator('#aa-lives-label').textContent()).trim(),'KO TARGET');
  assert.equal((await page.locator('#aa-outcome').textContent()).trim(),'VICTORY');
- result.steps.push('real CQC score-to-10: pilots-only, exact KO credit and safe respawns, truthful live result');
+ const earnedNow=(await page.locator('#aa-rewards').textContent()).trim();
+ assert.equal(await page.locator('#aa-rewards').isVisible(),true,'third saved Solo match should show new progress');
+ assert.ok(earnedNow.includes('VECTOR INSIGNIA')&&earnedNow.includes('ACE INSIGNIA'),'real 3-match and 10-KO thresholds crossed in CQC');
+ assert.deepEqual(await page.evaluate(()=>window.__flowQA.unlocksFromResult({matches:12,wins:11,kos:40},{matches:13,wins:12,kos:40})),['VETERAN PAINT','◆ COMMAND INSIGNIA'],'real 12th victory edge case');
+ assert.deepEqual(await page.evaluate(()=>window.__flowQA.unlocksFromResult({matches:13,wins:12,kos:40},{matches:14,wins:13,kos:40})),[],'do not repeat already-earned rewards');
+ result.steps.push('actual CQC 3-match VECTOR and 10-KO ACE unlock; verified 12th-win Veteran and Command thresholds');
  await page.locator('#quick-rematch').click();
  await page.evaluate(()=>window.__flowQA.freeze());
  const another=await page.evaluate(()=>({seed:window.__flowQA.state.mazeSeed,matchId:window.__flowQA.state.matchId,mode:window.__flowQA.state.config.matchModeId,score:window.__flowQA.state.scored.operatorKOs[0]}));
@@ -221,6 +227,7 @@ try{
  assert.equal(timed.reason,'time_limit');
  assert.equal((await page.locator('#aa-title').textContent()).trim(),'MATCH DRAW');
  assert.equal((await page.locator('#aa-outcome').textContent()).trim(),'DRAW');
+ assert.equal(await page.locator('#aa-rewards').isVisible(),false,'no new threshold means no reward notice');
  result.steps.push('CQC NEXT MATCH fresh maze and score reset; actual game-clock expiration produced DRAW');
  // True scored vehicle FFA must never credit armor damage or ejection.
  await page.locator('#results-menu').click();
@@ -297,6 +304,8 @@ try{
  assert.ok(ffaResult.vehicleCount>0);
  assert.equal((await page.locator('#aa-mode-label').textContent()).trim(),'SCORED FREE-FOR-ALL');
  assert.equal((await page.locator('#aa-outcome').textContent()).trim(),'VICTORY');
+ assert.ok((await page.locator('#aa-rewards').textContent()).includes('VANGUARD PAINT'),'fifth completed saved Solo match earns Vanguard notice');
+ assert.equal((await page.locator('#aa-rewards').textContent()).includes('ACE'),false,'old badges are not re-announced');
  result.steps.push('real scored vehicle FFA: armor/ejection not KO, actual pilot death to 10, honest winner');
  await page.locator('#quick-rematch').click();
  await page.evaluate(()=>window.__flowQA.freeze());

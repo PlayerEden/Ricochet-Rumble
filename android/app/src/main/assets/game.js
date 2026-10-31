@@ -3,7 +3,7 @@ let W=960,H=600;const START_LIVES=5,STEP=1/60;
 const PREF_KEY='rr-options-v06'; // Preserve existing options across this patch.
 const CUSTOM_PREF_KEY='rr-custom-v1';
 const DOSSIER_SESSION=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
-let dossierStore=null,dossierAttemptedKey='';
+let dossierStore=null,dossierAttemptedKey='',roundUnlocks=[];
 function currentDossier(){return dossierStore?.snapshot()||window.SectorDossier?.empty()||null;}
 function dossierLines(){
  const info=currentDossier(),eligible=dossierStore?.eligibility()||[],modes=window.SectorDossier?.MODE_LABELS||{};
@@ -699,7 +699,11 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  // Count only actual offline Solo-vs-bots final results, once per match.
  if(soloResult&&state.config?.botCount>0&&state.humanCount===1&&dossierStore){
   const key=DOSSIER_SESSION+':'+soloResult.matchId+':'+soloResult.mazeSeed;
-  if(dossierAttemptedKey!==key){dossierAttemptedKey=key;dossierStore.record(soloResult,key)}
+  if(dossierAttemptedKey!==key){
+    dossierAttemptedKey=key;
+    const before=dossierStore.snapshot(),saved=dossierStore.record(soloResult,key);
+    roundUnlocks=saved.ok?unlocksFromResult(before,dossierStore.snapshot()):[];
+   }
  }
  const scoredDraw=!!soloResult&&soloResult.outcome==='draw';
  const localWon=ended&&(soloResult?soloResult.outcome==='victory':state.lives[me]>0&&teamOf(me)===state.winnerTeam);
@@ -708,6 +712,8 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  if(report){
    report.classList.toggle('hidden',!ended);
    report.classList.toggle('lost',ended&&!localWon&&!scoredDraw);
+   const rewardEl=document.getElementById('aa-rewards'),newRewards=ended&&mode==='solo'&&roundUnlocks.length>0;
+   if(rewardEl){rewardEl.classList.toggle('hidden',!newRewards);rewardEl.textContent=newRewards?'NEW IN HANGAR · '+roundUnlocks.join(' · '):'';}
    if(ended){
      const modeTitle=document.getElementById('aa-mode-label');if(modeTitle&&mode==='solo')modeTitle.textContent=(state.config?.customMatch?'CUSTOM · ':'')+soloModeLabel(state.config);
      document.getElementById('aa-title').textContent=scoredDraw?'MATCH DRAW':localWon?'SECTOR CLEARED':'SECTOR LOST';
@@ -743,7 +749,7 @@ function newMatch(which){
  const playlistId=which==='solo'?nextPlaylistMode():null;
  if(bridgeReady())window.AndroidBridge.stopNetwork();mode=scoredLaunch||customLaunch?'solo':which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;neutralizeGuestInput();
  const arena=selectArena(),options=customLaunch?customOptionsFor():scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:which==='scored_tdm'?'teams':'ffa',matchModeId:which,pilotMode:true}:playlistId?quickPlayOptionsFor(playlistId):{...selectedRules,pilotMode:true};
- state=initialState(arena,options,freshSectorSeed(state?.mazeSeed));camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config)):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch){exitMenu();audioCue('deploy');if(mode==='solo')firstMatchHint();}}
+ state=initialState(arena,options,freshSectorSeed(state?.mazeSeed));roundUnlocks=[];camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config)):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch){exitMenu();audioCue('deploy');if(mode==='solo')firstMatchHint();}}
 function resetAll(advancePlaylist=false){
  const previousSeed=state.mazeSeed;
  let options={...state.config};
@@ -757,7 +763,7 @@ function resetAll(advancePlaylist=false){
  state=initialState(0,options,freshSectorSeed(previousSeed));
  if(mode==='host')neutralizeGuestInput();
  if(mode==='solo')document.getElementById('mode-label').textContent=options.botCount===0?'PRACTICE FIELD':(options.customMatch?'CUSTOM · ':'')+soloModeLabel(options);
- camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachRemaining=0;document.getElementById('field-coach')?.classList.add('hidden');fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();clearFireAim();paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();if(mode!=='guest')notice('NEW FIELD GENERATED — GO!');}
+ camera.zoom=null;resultCuePlayed=false;roundUnlocks=[];quietContactSeconds=0;radarReminderShown=false;coachRemaining=0;document.getElementById('field-coach')?.classList.add('hidden');fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();clearFireAim();paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();if(mode!=='guest')notice('NEW FIELD GENERATED — GO!');}
 function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
 function circlesRect(x,y,r,w){const nx=clamp(x,w.x,w.x+w.w),ny=clamp(y,w.y,w.y+w.h);return (x-nx)**2+(y-ny)**2<r*r}
 function blocked(x,y,r=21){return x<r+13||x>worldW-r-13||y<r+13||y>worldH-r-13||nearWall(x,y,r)}
@@ -1219,6 +1225,16 @@ function paintProgress(id,info=currentDossier()){
  if(!def.metric)return {eligible:true,current:0,target:0,metric:'free'};
  const current=Number.isSafeInteger(info?.[def.metric])&&info[def.metric]>=0?info[def.metric]:0;
  return {eligible:current>=def.target,current,target:def.target,metric:def.metric};
+}
+// Reward notices only reflect thresholds crossed by one successfully saved Solo match.
+function unlocksFromResult(before,after){
+ if(!before||!after)return [];
+ const unlocked=[];
+ for(const [id,def] of Object.entries(HANGAR_PAINTS))
+  if(def.metric&&!paintProgress(id,before).eligible&&paintProgress(id,after).eligible)unlocked.push(def.label+' PAINT');
+ for(const [id,def] of Object.entries(OPERATOR_EMBLEMS))
+  if(def.metric&&!emblemProgress(id,before).eligible&&emblemProgress(id,after).eligible)unlocked.push(def.glyph+' '+def.label+' INSIGNIA');
+ return unlocked;
 }
 function normalizePaint(id){return paintProgress(id).eligible?id:'fieldgrid.standard';}
 function normalizeEmblem(id){return emblemProgress(id).eligible?id:'mark.field';}
