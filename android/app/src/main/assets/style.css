@@ -1054,3 +1054,6 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  #menu .lan-grid select{min-height:32px;padding:3px 5px}
  #menu .lan-lobby-actions{gap:6px}
 }
+
+/* Hide AI-only controls completely in human-only 1v1. */
+#menu .lan-grid label[hidden]{display:none!important}

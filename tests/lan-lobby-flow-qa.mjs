@@ -46,6 +46,7 @@ try{
  CHECK(await host.locator('.lan-lobby').isVisible(),'host lobby opens without automatically starting match');
  CHECK(await host.locator('[data-lan-setting="botCount"]').inputValue()==='0','host defaults to no AI');
  CHECK(await host.locator('[data-lan-setting="teamMode"]').inputValue()==='ffa','host defaults to human 1v1');
+ CHECK(await host.locator('[data-lan-setting="botSkill"]').isVisible()===false,'AI-only skill hidden in no-bot 1v1');
  CHECK(await host.locator('button[data-action="lan-start"]').isDisabled(),'host cannot start without guest');
  CHECK(await host.evaluate(()=>window.__lanQA.paused),'host simulation paused during lobby');
  await receive(host,{type:'hosting',address:'192.168.1.20',port:47321});
@@ -70,6 +71,7 @@ try{
  let ready=await lastPacket(guest,'ready');await receive(host,ready);
  CHECK(await host.locator('button[data-action="lan-start"]').isEnabled(),'host can start once guest readies');
  await change(host,'botCount',2);
+ CHECK(await host.locator('[data-lan-setting="botSkill"]').isVisible(),'AI skill appears once bots enabled');
  CHECK(await host.locator('button[data-action="lan-start"]').isDisabled(),'rule edit invalidates guest ready');
  const latestLobby=await lastPacket(host,'lobby');
  await receive(host,ready);
@@ -80,6 +82,7 @@ try{
  await change(host,'teamMode','coop');await change(host,'botCount',0);
  CHECK((await host.locator('#lan-lobby-message').textContent()).includes('REQUIRES AT LEAST ONE BOT'),'co-op cannot start with no enemies');
  await change(host,'teamMode','ffa');await change(host,'mapSize','standard');await change(host,'startLives',3);
+ CHECK(await host.locator('[data-lan-setting="botSkill"]').isVisible()===false,'AI-only control hides again in no-bot duel');
  const safeLobby=await lastPacket(host,'lobby');await receive(guest,safeLobby);
  CHECK((await guest.locator('#lan-guest-rules').textContent()).includes('3 LIVES'),'guest sees host-selected lives');
  await guest.locator('button[data-action="lan-ready"]').click();await receive(host,await lastPacket(guest,'ready'));

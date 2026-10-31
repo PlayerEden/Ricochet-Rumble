@@ -1722,7 +1722,7 @@ function lanCanStart(){return !!(lanLobby&&mode==='host'&&connected&&lanLobby.gu
 function lanLobbyHTML(hostRole){
  const name=hostRole?'HOST MATCH':'JOINED MATCH';
  const controls=hostRole?'<div class="lan-grid">'+
- '<label>SIDES<select data-lan-setting="teamMode"><option value="ffa">FREE FOR ALL (1v1)</option><option value="coop">CO-OP VS BOTS</option><option value="teams">OPPOSING TEAMS</option></select></label>'+
+ '<label>SIDES<select data-lan-setting="teamMode"><option value="ffa">FREE FOR ALL</option><option value="coop">CO-OP VS BOTS</option><option value="teams">OPPOSING TEAMS</option></select></label>'+
  '<label>AI OPPONENTS<select data-lan-setting="botCount"><option value="0">0 · 1v1 NO BOTS</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>'+
  '<label>MAZE<select data-lan-setting="mapSize"><option value="small">SMALL</option><option value="standard">STANDARD</option><option value="large">LARGE</option></select></label>'+
  '<label>PILOT LIVES<select data-lan-setting="startLives"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>'+
@@ -1741,6 +1741,8 @@ function refreshLanLobby(){
  if(!lanLobby||!document.getElementById('lan-lobby-message'))return;
  const r=lanLobby.rules,hostRole=mode==='host';
  if(hostRole)for(const el of document.querySelectorAll('[data-lan-setting]'))el.value=String(r[el.dataset.lanSetting]);
+ const skillLabel=document.querySelector('[data-lan-setting="botSkill"]')?.closest?.('label');
+ if(skillLabel)skillLabel.hidden=r.botCount===0;
  const guestPresence=document.getElementById('lan-guest-presence');
  if(guestPresence)guestPresence.textContent=!connected?'WAITING':hostRole?(lanLobby.guestReady?'READY':'NOT READY'):(lanLobby.myReady?'READY':'NOT READY');
  const hostPresence=document.getElementById('lan-host-presence');
