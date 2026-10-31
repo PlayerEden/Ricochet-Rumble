@@ -60,5 +60,7 @@ jobs:
         run: node tests/android-ci-package-attestation.mjs
       - name: Validate manual private-preview release guard source contracts
         run: node tests/owner-preview-release-guard.mjs
+      - name: Audit OP-style automatic disposable Android preview guard
+        run: node tests/automatic-preview-contract.mjs
       - name: Validate FIELDGRID cosmetic manifest
         run: node tools/validate-cosmetic-catalog.mjs
