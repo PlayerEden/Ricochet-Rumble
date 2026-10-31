@@ -786,3 +786,120 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 .dossier-columns{grid-template-columns:1fr}
 @media(max-height:390px){.home-actions{gap:6px;padding:7px 15px}#panel .home-action-grid button{min-height:43px;padding:5px 8px}#panel .mode-grid button{min-height:60px;padding:7px 10px;gap:4px}.mode-screen{gap:7px}.mode-head h2{font-size:24px}}
 @media(max-width:600px){#panel .home-utilities button{padding:6px 8px;font-size:10px}.home-overline{letter-spacing:.5px}.mode-grid{gap:6px}}
+
+/* SECTOR REBOUND / ARCADE TACTICAL IDENTITY v1
+   Game menu surfaces only: does not touch world colors, armor, team markers,
+   pilot/tank/mech sprites, controls, AI or movement.
+   Amber = launch/confirmation; cyan = selection/information; neutral = structure. */
+#menu{
+ --sr-ink:#151a1e;--sr-deep:#101518;--sr-surface:#222a2f;
+ --sr-raised:#2b343a;--sr-edge:#535f65;--sr-low:#aebbc0;
+ --sr-type:#edf2f2;--sr-cyan:#72c7d2;--sr-amber:#f4b544;
+ --sr-amber-hi:#ffd06d;--sr-amber-shadow:#80571e;
+ background:rgba(10,13,16,.91);
+}
+#menu .panel{color:var(--sr-type);background:linear-gradient(140deg,#283036,#171d22 58%,#12181d);border-color:var(--sr-edge);border-radius:8px;box-shadow:0 22px 50px #000c,inset 0 1px 0 #ffffff12}
+#menu .panel:before,#menu .panel:after{border-color:#77959a;opacity:.65}
+#menu .panel .eyebrow{color:var(--sr-cyan)}
+#menu .panel h2 span{color:#e7b666}
+#menu .panel button{background:linear-gradient(180deg,#303a40,#252d32);color:var(--sr-type);border:1px solid var(--sr-edge);border-radius:6px;box-shadow:inset 0 1px 0 #ffffff0a}
+#menu .panel button:disabled{cursor:not-allowed;opacity:.54}
+#menu .panel button:focus-visible,#menu .panel select:focus-visible,#menu .panel input:focus-visible,#menu .panel summary:focus-visible{outline:2px solid var(--sr-amber-hi);outline-offset:2px}
+#menu .panel button.primary{background:linear-gradient(180deg,#ffcf70 0%,#f0ad3d 100%);color:#251907;border-color:#ffdc8b;box-shadow:inset 0 1px 0 #fff5c789,0 3px 0 var(--sr-amber-shadow);text-shadow:none}
+#menu .panel button.primary:disabled{background:#6c6556;color:#d0c9bd;box-shadow:none}
+#menu .panel :is(select,input[type="text"],textarea){background:#131a1f;color:var(--sr-type);border-color:#65727a;border-radius:5px}
+#menu .panel input[type="checkbox"]{accent-color:var(--sr-cyan)}
+#menu .panel :is(.settings-head p,.custom-head p,.hangar-head p,.dossier-head p,.mode-head p){color:var(--sr-low)}
+#menu .panel :is(.settings-comfort,.extra-rules,.custom-preset-fold){border-color:#495359}
+#menu .panel :is(.extra-rules,.custom-preset-fold){background:#1b2328}
+#menu .panel :is(.extra-rules summary,.custom-preset-fold summary){color:#d9e7e8}
+#menu .panel :is(.custom-grid label,.settings-page label){color:#c2d0d3}
+/* HOME: natural visual focus, genuinely neutral secondary navigation. */
+#menu:has(.home-screen){background:rgba(10,12,14,.94)}
+#menu #panel:has(.home-screen){background:#1b2126;border-color:#59636a;border-radius:8px}
+#menu .home-screen{background:linear-gradient(120deg,#222b30,#181e23 75%);color:var(--sr-type)}
+#menu .home-topbar{background:#171d21;border-bottom-color:#444e54}
+#menu .home-brand-mark{background:#d9a54f;color:#1e1b15;border:1px solid #f5d08b;box-shadow:0 0 0 3px #d9a54f18}
+#menu .home-brand h2{color:#f3f4f1}
+#menu .home-brand h2 span{color:#e5b75d}
+#menu .home-overline{color:#9faeb3}
+#menu #panel .home-utilities button{background:#262e33;color:#d1dee0;border:1px solid #505b62;border-radius:5px;min-height:40px;box-shadow:none}
+#menu .home-content{background:#1c2328}
+#menu .home-showcase{border-right-color:#434e54;background:#151d21}
+#menu .home-stage{background:radial-gradient(ellipse at 50% 52%,#24424a 0%,#1d3035 37%,#101b21 100%)}
+#menu .home-stage:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,#0a111cc0 100%);z-index:1;pointer-events:none}
+#menu .home-stage-title{z-index:2}
+#menu .home-stage-title strong{color:#f3f4ef}
+#menu .home-stage-label{color:#c6d4d6}
+#menu #panel .home-showcase-caption{background:#171e23;color:#b5c2c4;border-top:1px solid #3d474b;letter-spacing:.7px}
+#menu .home-actions{background:linear-gradient(140deg,#282f34,#20262c);box-shadow:inset 1px 0 0 #ffffff0a}
+#menu #panel .home-actions h3{color:#f5f4ef}
+#menu .home-actions h3 span{color:#e8b65b}
+#menu #panel .home-description{color:#b7c2c4}
+#menu #panel .home-deploy{background:linear-gradient(180deg,#ffcf74 0%,#efae3e 100%);color:#231a0e;border-color:#ffe09a;border-radius:7px;box-shadow:inset 0 1px 0 #fff6c48a,0 4px 0 #8f6529,0 12px 24px #0008;letter-spacing:.4px}
+#menu #panel .home-deploy small{color:#65471b}
+#menu #panel .home-deploy:disabled{background:#626265;color:#cac8c5;border-color:#858687;box-shadow:none}
+#menu #panel .home-action-grid button,
+#menu #panel .home-action-grid button.home-modes{background:linear-gradient(180deg,#323b40 0%,#272f34 100%);border-color:#56636b;color:#e9eff0;box-shadow:inset 0 1px 0 #ffffff13;border-radius:6px}
+#menu #panel .home-action-grid button.home-modes{background:linear-gradient(180deg,#3b454a,#2b3339);border-left:3px solid #84bec5}
+#menu #panel .home-action-grid button.home-modes strong{color:#f1f4ef}
+#menu .home-action-grid small{color:#a8b8bd}
+/* MODE SELECT: recognizably different cards, clear hierarchy + distinct glyphs. */
+#menu #panel:has(.mode-screen){background:linear-gradient(140deg,#272f34,#161d21);border-color:#59656b}
+#menu .mode-head h2 span{color:#e8b65b}
+#menu .mode-grid{gap:clamp(7px,1.3vw,12px)}
+#menu #panel .mode-grid button{display:grid;grid-template-columns:clamp(29px,6dvh,44px) minmax(0,1fr) 9px;align-items:center;column-gap:clamp(7px,1.2vw,12px);min-width:0;min-height:clamp(63px,16dvh,96px);padding:9px clamp(8px,1.4vw,15px);background:linear-gradient(180deg,#303a3f,#252e33);border:1px solid #5c686f;border-radius:7px;text-align:left}
+#menu .mode-icon{display:grid;place-items:center;width:clamp(29px,6dvh,44px);height:clamp(29px,6dvh,44px);border:1px solid #788a8f;border-radius:6px;background:#1c282d;color:#bbdce0;font:900 clamp(22px,3.8dvh,31px)/1 monospace}
+#menu .mode-copy{min-width:0;display:flex;flex-direction:column;gap:5px;justify-content:center}
+#menu .mode-grid strong{font-size:clamp(12px,1.7vw,18px);color:#f3f5f2}
+#menu .mode-grid small{font-size:clamp(9px,1.1vw,11px);color:#a9b8be}
+#menu .mode-arrow{font:900 22px/1 sans-serif;color:#94a9b1;text-align:right}
+#menu #panel .mode-back{background:#20282e;border-color:#606c73;color:#d8e3e5}
+/* INFORMATIVE SCREENS: predictable graphite cards and cyan selection. */
+#menu #panel:has(:is(.hangar-screen,.dossier-screen,.backup-screen,.custom-screen,.settings-head)){
+ background:linear-gradient(135deg,#2a3338,#1a2126 72%);border-color:#626e74;
+}
+#menu .hangar-subhead{color:#d5dfdf}
+#menu .hangar-grid button,#menu .emblem-grid button{background:#273137;color:#e6eeed;border-color:#58676d}
+#menu .hangar-grid button.selected,#menu .emblem-grid button.selected{background:#344347;border-color:var(--sr-cyan);box-shadow:0 0 0 1px #72c7d257,inset 0 0 0 1px #72c7d21b}
+#menu .hangar-grid button small,#menu .emblem-grid button small{color:#b5c3c5}
+#menu .emblem-symbol{background:#1b272b;border-color:#647e82;color:#dce4da;text-shadow:none}
+#menu .hangar-equipped{background:#33352f;border-left-color:var(--sr-amber);color:#fae0aa}
+#menu .dossier-stats>div,#menu .dossier-columns>section,#menu .backup-grid section{background:#252f34;border-color:#4e5b61}
+#menu .dossier-stats small,#menu .dossier-mode span{color:#bbc9cc}
+#menu .dossier-stats strong,#menu .dossier-mode strong{color:#f2f4f0}
+#menu .dossier-emblem{background:#333b3f;border-color:#69777d}
+#menu .custom-preview{background:#303a3e;border-left-color:var(--sr-cyan);color:#edf3ed!important}
+#menu .hangar-back,#menu .backup-back{background:#252d33;border-color:#5c6a72}
+#menu #panel .pause-audio button{background:#252f34;border-color:#59676d}
+#menu #panel .pause-audio button[aria-pressed="true"]{background:#304448;border-color:var(--sr-cyan);color:#e7f4f4}
+#menu .dossier-mode{border-top-color:#445157}
+/* RESULTS: neutral card, warm primary replay, original outcome semantics. */
+.after-action{background:#0c1013e9}
+.after-action .aa-panel{background:linear-gradient(140deg,#283137,#1b2328);border:1px solid #68757b;border-radius:8px;box-shadow:0 22px 48px #000b;color:#edf3f2}
+.after-action .aa-panel:before,.after-action .aa-panel:after{border-color:#9da8a5}
+.after-action .aa-rail{border-bottom-color:#566168;color:#b4c5c9}
+.after-action .aa-stats>div{background:#263238;border-color:#52616a;border-radius:4px}
+.after-action .aa-stats span,.after-action .aa-note{color:#b4c0c4}
+.after-action .aa-stats strong{color:#f0f4f2}
+.after-action .quick-rematch{background:linear-gradient(180deg,#ffce70,#eeac3d);color:#291d0e;border-color:#ffdc88;border-radius:6px;box-shadow:0 3px 0 #815719}
+.after-action .aa-actions button:not(.quick-rematch){background:#2e383e;border-color:#697780;color:#edf3f4;border-radius:6px}
+.after-action .aa-rewards{background:#3a3730;border-left-color:#f4b544;color:#f9dfaf}
+/* Interactive polish on devices with hover, plus clear touch feedback. */
+@media(hover:hover){
+ #menu #panel button:not(:disabled):hover{border-color:#a1cbd0;filter:brightness(1.09)}
+ #menu #panel button.primary:not(:disabled):hover,
+ #menu #panel .home-deploy:not(:disabled):hover{filter:brightness(1.07);border-color:#fff0b9}
+ .after-action button:hover{filter:brightness(1.08)}
+}
+#menu #panel button:not(:disabled):active{filter:brightness(.92)}
+#menu #panel .home-deploy:not(:disabled):active{transform:translateY(2px);box-shadow:0 2px 0 #815719,0 4px 12px #0008}
+@media(prefers-reduced-motion:reduce){
+ #menu #panel button,.after-action button{transition:none!important;animation:none!important}
+}
+@media(max-height:390px){
+ #menu #panel .mode-grid button{padding:6px 8px;min-height:60px;column-gap:6px}
+ #menu .mode-copy{gap:3px}
+ #menu .mode-grid strong{font-size:12px}
+ #menu .mode-grid small{font-size:9px}
+}
