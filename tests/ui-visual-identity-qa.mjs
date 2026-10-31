@@ -12,7 +12,7 @@ const dir=path.join('qa-screens','identity');
 fs.mkdirSync(dir,{recursive:true});
 const report={version:1,scope:'Actual rendered app CSS at real landscape viewports; no gameplay behavior changes',screens:[],issues:[]};
 function rgb(value){
- const a=String(value).match(/rgba?\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*(\\d+)/);
+ const a=String(value).match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
  return a?a.slice(1,4).map(Number):null;
 }
 function luminance(c){
