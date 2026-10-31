@@ -288,9 +288,9 @@ const fireAim={pointerId:null,source:null,startX:0,startY:0,x:0,y:0,active:false
 // Thumb-comfort experiment: modestly slower hull, much calmer maximum slew.
 // Keep CQC pilot, shells, normal Survival and LAN on their accepted rules.
 // This pass deliberately slows FFA hulls a little, but aims more than it moves:
-// with the right AIM stick active, use a calmer precision-turn rate so small
-// finger adjustments can settle exact ricochet angles. Old modes stay intact.
-const SCORED_FFA_VEHICLE_PACE=Object.freeze({human:166,bot:136,turnRate:2.6,aimTurnRate:1.8});
+// No separate AIM pad now the movement joystick's center-pivot steering is approved.
+// Preserve the slower scored vehicle pace, turn cap and existing shell mechanics.
+const SCORED_FFA_VEHICLE_PACE=Object.freeze({human:166,bot:136,turnRate:2.6});
 const SOLO_PILOT_TURN_RATE=6.5; // owner-approved CQC speed; experimental parity for offline Solo Survival
 const CQC_PILOT_HIT_RADIUS=17.5; // modestly forgiving for ALL CQC pilots, not homing
 let mode='idle',connected=false,paused=true,lastTime=performance.now(),sendTimer=0,snapshotTimer=0,toastTimer=0,botTimer=0,hudTimer=0;
@@ -342,7 +342,7 @@ function applyPlaylistUI(){
 }
 function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){const st=p.settings||{};selectedRules={mapSize:MAP_SIZES[st.mapSize]?st.mapSize:'small',botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:2,bulletCap:[1,2,3,4,5,8].includes(st.bulletCap)?st.bulletCap:4,startLives:[2,3,5].includes(st.startLives)?st.startLives:2,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key];if(p.playlist?.version===1&&Array.isArray(p.playlist.enabled))setPlaylistModes(p.playlist.enabled)}}catch(_){}loadCustomDraft();loadCustomPresets();applyPrefsToUI()}
 function applyPrefsToUI(){const picks={mapSize:selectedRules.mapSize,botCount:selectedRules.botCount,bulletCap:selectedRules.bulletCap,startLives:selectedRules.startLives,teamMode:selectedRules.teamMode,botSkill:selectedRules.botSkill};const ids={mapSize:'map-size',botCount:'bot-count',bulletCap:'bullet-cap',startLives:'lives-choice',teamMode:'team-choice',botSkill:'bot-skill'};for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(el&&el.options&&[...el.options].some(o=>o.value===String(picks[key])))el.value=String(picks[key])}for(const key of Object.keys(comfort)){const el=document.getElementById('pref-'+key);if(el)el.checked=comfort[key]}const el=document.getElementById('fire-mode');if(el)el.textContent=comfort.autoFire?'AUTO ON':'HOLD TO FIRE';document.querySelector('.battlefield')?.classList.toggle('swap-controls',comfort.leftHanded);applyPlaylistUI();}
-function releaseControls(){touch.clear();pressed.clear();clearStick();clearFireAim();vehicleAimButton?.classList.remove('active');for(const el of document.querySelectorAll('[data-key]'))el.classList.remove('active')}
+function releaseControls(){touch.clear();pressed.clear();clearStick();clearFireAim();for(const el of document.querySelectorAll('[data-key]'))el.classList.remove('active')}
 
 function mazeRandom(seed){let x=(seed>>>0)||1;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296};}
 function createMaze(def,seed){const {cols,rows,cell}=def,rng=mazeRandom(seed),open=Array.from({length:cols*rows},()=>[]),visited=new Set([0]),stack=[0];
@@ -608,9 +608,9 @@ function coachTip(message,seconds=3.8){
 // Do not replay a modal tutorial or show misleading Survival controls in scored modes.
 function firstMatchHint(){
  const cqc=isCqcMatch(),scoredVehicle=isScoredVehicleMatch();
- const key=cqc?'rr-coach-cqc-v1':scoredVehicle?'rr-coach-scored-vehicle-v1':'rr-coach-v0917';
+ const key=cqc?'rr-coach-cqc-v1':scoredVehicle?'rr-coach-scored-vehicle-v2':'rr-coach-v0917';
  const hint=cqc?'DRAG FIRE TO AIM · PILOT KOs SCORE':
-   scoredVehicle?'DRAG AIM TO TURN · TAP FIRE TO SHOOT':
+   scoredVehicle?'MOVE TO STEER · TAP FIRE TO SHOOT':
    'MOVE TO AIM · HOLD FIRE TO SHOOT';
  try{
   if(window.localStorage?.getItem(key))return false;
@@ -628,9 +628,8 @@ function inputFrom(keys,isLocal){const down=k=>menu.classList.contains('hidden')
  // as well; the guest sends its aim vector to the authoritative host.
  const localSeat=mode==='guest'?1:0;
  const localFoot=isLocal&&['solo','host','guest'].includes(mode)&&!!state?.tanks?.[localSeat]?.onFoot;
- const vehicleAim=isLocal&&isScoredVehicleMatch()&&!state?.tanks?.[0]?.onFoot;
- const fineAim=fireAim.active&&((localFoot&&fireAim.source==='fire'&&touch.has('fire'))||(vehicleAim&&fireAim.source==='aim'));
- // AIM never adds a FIRE action; one deliberate shot still uses the FIRE button.
+ const fineAim=fireAim.active&&localFoot&&fireAim.source==='fire'&&touch.has('fire');
+ // Only on-foot pilots use independent FIRE-drag vectors; vehicle steering uses MOVE.
  return {moveX,moveY,aimX:fineAim?fireAim.x:undefined,aimY:fineAim?fireAim.y:undefined,fire:down('fire')||(isLocal&&comfort.autoFire&&mode!=='idle'&&menu.classList.contains('hidden')&&!paused)};}
 function makeControl(isPlayer1){return isPlayer1?inputFrom(keys1,true):inputFrom(keys2,false)}
 function serializeState(){return {tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,vehicleDropTimer:state.vehicleDropTimer,dropIndex:state.dropIndex,vehicleBeacon:state.vehicleBeacon?{...state.vehicleBeacon}:null,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,hostPaused:mode==='host'&&paused};}
@@ -695,8 +694,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  const label0=document.getElementById('player0-label');if(label0)label0.textContent=tdm?'BLUE':isScoredMatch()?'YOU KOs':'YOU';
  const label1=document.getElementById('player1-label');if(label1)label1.textContent=tdm?'RED':isScoredMatch()?'LEADER':mode==='solo'&&state.config?.teamMode==='teams'?'RED':mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';
  if(mode==='solo')document.getElementById('score1').textContent=botLives;
- const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=isScoredVehicleMatch()&&!foot?'AIM / FIRE':foot&&['solo','host','guest'].includes(mode)?'HOLD · DRAG TO AIM':comfort.autoFire?'AUTO ON':'HOLD TO FIRE';
- const aimPad=document.getElementById('vehicle-aim');if(aimPad)aimPad.classList.toggle('hidden',!(isScoredVehicleMatch()&&!foot&&state.lives[me]>0&&state.winner<0));
+ const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=foot&&['solo','host','guest'].includes(mode)?'HOLD · DRAG TO AIM':comfort.autoFire?'AUTO ON':'HOLD TO FIRE';
  const clock=document.getElementById('score-clock'),life=document.querySelector('.scorestrip .hud-life');
  if(clock){clock.classList.toggle('hidden',!isScoredMatch());if(isScoredMatch())clock.textContent=durationLabel(Math.ceil(Math.max(0,state.scored.clockSeconds-state.scored.elapsedSeconds)));}
  if(life)life.classList.toggle('hidden',isScoredMatch());
@@ -740,13 +738,13 @@ function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=c
  // Both human seats in LAN can independently aim a vulnerable pilot.
  // One local player remains seat 0 in offline Solo. No new tank AIM mode.
  const precisionFoot=t.onFoot&&!inp.bot&&((mode==='solo'&&i===0)||(mode==='host'&&(i===0||i===1)));
- const independentAim=precisionFoot||(isScoredMatch()&&i===0&&!inp.bot&&tacticalVehicle);
+ const independentAim=precisionFoot;
  const aimed=independentAim&&Number.isFinite(inp.aimX)&&Number.isFinite(inp.aimY)&&Math.hypot(inp.aimX,inp.aimY)>.6;
- if(mag||aimed){const target=aimed?Math.atan2(inp.aimY,inp.aimX):Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a)),maxTurn=dt*(precisionFoot?SOLO_PILOT_TURN_RATE:tacticalVehicle?(aimed?SCORED_FFA_VEHICLE_PACE.aimTurnRate:SCORED_FFA_VEHICLE_PACE.turnRate):12);t.a+=clamp(diff,-maxTurn,maxTurn)}
+ if(mag||aimed){const target=aimed?Math.atan2(inp.aimY,inp.aimX):Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a)),maxTurn=dt*(precisionFoot?SOLO_PILOT_TURN_RATE:tacticalVehicle?SCORED_FFA_VEHICLE_PACE.turnRate:12);t.a+=clamp(diff,-maxTurn,maxTurn)}
  // Solo human tanks used to slide toward the thumb before the hull faced that
  // direction. During a deliberate, slow turn that appears like an off-center
  // orbit. Throttle forward drive until the tracks align with the requested path.
- // Do not change angular rates, independent AIM, pilot, mech, bots, or LAN.
+ // Do not change angular rates, pilot FIRE-drag, mech, bots, or LAN.
  const soloTankDrive=mode==='solo'&&i===0&&!inp.bot&&!t.onFoot&&currentVehicle(t)?.type==='tank'&&!aimed;
  let driveX=mx,driveY=my,turningToFace=false;
  if(soloTankDrive&&mag){
@@ -1583,7 +1581,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
  if(a==='toggle-sound'||a==='toggle-music'){togglePauseAudio(a==='toggle-sound'?'sound':'music',b);return;}
  if(!['solo','settings-play','cqc','scored_ffa','scored_tdm','custom-play','duel','host','find','custom-preset-save','custom-preset-delete','custom-preset-load','ip-join'].includes(a))
   audioCue(['settings-back','help-back','dossier-back','backup-back','custom-back','close','resume'].includes(a)?'ui-back':'ui-select');
- if(a==='dossier'){openDossier()}else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, drag the large circular AIM pad to turn the hull without firing, then tap FIRE when lined up. The centered AIM thumbstick has a dead zone to ignore jitter.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){panel.innerHTML=originalPanel;applyPrefsToUI();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
+ if(a==='dossier'){openDossier()}else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, point the hull with the movement joystick. Sharp changes pivot the tank before accelerating; tap FIRE when lined up.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){panel.innerHTML=originalPanel;applyPrefsToUI();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
  else if(a==='custom-reset'){resetCustomDraft();refreshCustomUI();customPresetStatus('DEFAULT RULES RESTORED · SAVED PRESETS KEPT');}
  else if(a==='custom-preset-save'){
   readCustomScreen();const input=document.getElementById('custom-preset-name'),name=cleanPresetName(input?.value);
@@ -1620,61 +1618,19 @@ for(const b of document.querySelectorAll('[data-key]')){const k=b.dataset.key;co
  b.addEventListener('pointerdown',e=>{e.preventDefault();touch.add(k);b.classList.add('active');if(k==='fire')beginFireAim(e);b.setPointerCapture(e.pointerId)});
  if(k==='fire')b.addEventListener('pointermove',e=>{if(fireAim.pointerId===e.pointerId){e.preventDefault();updateFireAim(e)}});
  b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);b.addEventListener('lostpointercapture',e=>{touch.delete(k);b.classList.remove('active');if(k==='fire'&&fireAim.pointerId===e.pointerId)clearFireAim()})}
-// Separate scored-vehicle FFA aim touch target: rotate BEFORE committing a
-// shell. Its pointer never enters touch.fire, preserving precious shot slots.
-const vehicleAimButton=document.getElementById('vehicle-aim');
-if(vehicleAimButton){
- vehicleAimButton.addEventListener('pointerdown',e=>{
-  if(!isScoredVehicleMatch()||state.tanks[0].onFoot||fireAim.pointerId!==null)return;
-  e.preventDefault();beginFireAim(e,'aim');vehicleAimButton.classList.add('active');
-  vehicleAimButton.setPointerCapture(e.pointerId);updateVehicleAimPad(e);
- });
- vehicleAimButton.addEventListener('pointermove',e=>{
-  if(fireAim.pointerId===e.pointerId&&fireAim.source==='aim'){e.preventDefault();updateVehicleAimPad(e)}
- });
- const releaseAim=e=>{
-  if(fireAim.pointerId===e.pointerId&&fireAim.source==='aim')clearFireAim();
-  vehicleAimButton.classList.remove('active');
-  try{vehicleAimButton.releasePointerCapture(e.pointerId)}catch(_){}
- };
- vehicleAimButton.addEventListener('pointerup',releaseAim);
- vehicleAimButton.addEventListener('pointercancel',releaseAim);
- vehicleAimButton.addEventListener('lostpointercapture',e=>{if(fireAim.pointerId===e.pointerId&&fireAim.source==='aim')clearFireAim();vehicleAimButton.classList.remove('active')});
-}
 const joystick=document.getElementById('joystick'),knob=document.getElementById('stick-knob');
 function clearStick(){stick.x=stick.y=0;stick.pointerId=null;knob.style.transform='translate(-50%, -50%)';joystick.classList.remove('active')}
-function clearFireAim(){fireAim.pointerId=null;fireAim.source=null;fireAim.x=0;fireAim.y=0;fireAim.active=false;const knob=document.getElementById('vehicle-aim-knob');if(knob)knob.style.transform='translate(-50%, -50%)';}
+function clearFireAim(){fireAim.pointerId=null;fireAim.source=null;fireAim.x=0;fireAim.y=0;fireAim.active=false;}
 function beginFireAim(e,source='fire'){
- if(fireAim.pointerId!==null||!['fire','aim'].includes(source))return;
+ if(fireAim.pointerId!==null||source!=='fire')return;
  // On-foot FIRE-drag works for both LAN seats, with guest state sourced
  // from the latest authoritative host snapshot (seat 1).
  if(source==='fire'&&!(('solo'===mode||'host'===mode||'guest'===mode)&&state?.tanks?.[mode==='guest'?1:0]?.onFoot))return;
- if(source==='aim'&&!(mode==='solo'&&isScoredVehicleMatch()&&!state?.tanks?.[0]?.onFoot))return;
  fireAim.pointerId=e.pointerId;fireAim.source=source;fireAim.startX=Number(e.clientX)||0;fireAim.startY=Number(e.clientY)||0;
  fireAim.x=0;fireAim.y=0;fireAim.active=false;
 }
-// A vehicle aim stick uses the fixed center of its large thumb region,
-// not the initial fingertip point. The dead zone reduces accidental pivots.
-// Keeping the last vector inside the center zone prevents twitching back to
-// movement-facing while the AIM thumb is still held.
-function updateVehicleAimPad(e){
- if(fireAim.source!=='aim'||fireAim.pointerId!==e.pointerId||!isScoredVehicleMatch())return;
- const pad=document.getElementById('vehicle-aim');
- if(!pad||pad.classList.contains('hidden'))return;
- const rect=pad.getBoundingClientRect();
- const dx=(Number(e.clientX)||0)-(rect.left+rect.width/2),dy=(Number(e.clientY)||0)-(rect.top+rect.height/2);
- const d=Math.hypot(dx,dy),size=Math.min(rect.width,rect.height);
- if(!Number.isFinite(d)||size<1||d<Math.max(16,size*.17))return;
- fireAim.x=dx/d;fireAim.y=dy/d;fireAim.active=true;
- const knob=document.getElementById('vehicle-aim-knob');
- if(knob){const radius=size*.28,travel=Math.min(radius,d);knob.style.transform=`translate(calc(-50% + ${fireAim.x*travel}px), calc(-50% + ${fireAim.y*travel}px))`;}
-}
 function updateFireAim(e){
  if(fireAim.pointerId!==e.pointerId)return;
- if(fireAim.source==='aim'){
-  if(!(mode==='solo'&&isScoredVehicleMatch()&&!state?.tanks?.[0]?.onFoot)){clearFireAim();return;}
-  updateVehicleAimPad(e);return;
- }
  if(!(['solo','host','guest'].includes(mode)&&state?.tanks?.[mode==='guest'?1:0]?.onFoot)){clearFireAim();return;}
  const dx=(Number(e.clientX)||0)-fireAim.startX,dy=(Number(e.clientY)||0)-fireAim.startY,d=Math.hypot(dx,dy);
  // Preserve accepted pilot FIRE drag sensitivity without new tuning.

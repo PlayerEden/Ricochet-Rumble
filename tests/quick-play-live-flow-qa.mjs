@@ -204,48 +204,36 @@ try{
  assert.equal(ffaStart.clock,240);
  assert.equal((await page.locator('#mode-label').textContent()).trim(),'SCORED FREE-FOR-ALL');
  assert.equal((await page.locator('#score-clock').textContent()).trim(),'04:00');
- assert.equal(await page.locator('#vehicle-aim').isVisible(),true,'scored vehicle shows deliberate AIM pad');
- // Touch geometry matters more than a screenshot: no overlap, thumb-sized
- // independent controls, and no HUD/edge clipping across phone landscapes.
+ assert.equal(await page.locator('#vehicle-aim').count(),0,'scored vehicles no longer show separate AIM pad');
+ // The simpler two-thumb layout must fit three landscape screen sizes.
  for(const [vw,vh] of [[740,360],[915,412],[1280,720]]){
   await page.setViewportSize({width:vw,height:vh});
   const layout=await page.evaluate(()=>{
    const bounds=id=>{const b=document.querySelector(id)?.getBoundingClientRect();return b?{x:b.x,y:b.y,width:b.width,height:b.height,right:b.right,bottom:b.bottom}:null};
-   return {aim:bounds('#vehicle-aim'),fire:bounds('.fire-btn'),enter:bounds('#interact-btn'),joy:bounds('#joystick'),hud:bounds('#menu-button'),
-    aimPointer:getComputedStyle(document.getElementById('vehicle-aim')).pointerEvents};
+   return {fire:bounds('.fire-btn'),joy:bounds('#joystick'),hud:bounds('#menu-button')};
   });
-  assert.ok(layout.aim.width>=96&&layout.aim.height>=96,'aim thumb pad at least 96px '+vw);
-  assert.ok(layout.fire.width>=64&&layout.fire.height>=64,'FIRE remains large '+vw);
-  assert.ok(layout.enter.height>=42,'vehicle ENTER stays reachable '+vw);
-  assert.ok(layout.aim.right+7<=layout.fire.x,'AIM and FIRE separately spaced for thumb '+vw);
-  assert.ok(layout.aim.y>layout.hud.bottom+20,'main HUD separated from aim controls '+vw);
-  assert.ok(layout.fire.bottom<=vh-2&&layout.aim.bottom<=vh-2,'bottom safe boundary '+vw);
-  assert.ok(layout.joy.right+35<layout.aim.x,'two thumb zones cannot overlap '+vw);
-  assert.equal(layout.aimPointer,'auto','AIM must accept pointer events '+vw);
+  assert.ok(layout.fire?.width>=64&&layout.fire.height>=64,'FIRE target sized for thumb '+vw);
+  assert.ok(layout.joy?.width>=64&&layout.joy.height>=64,'MOVE joystick sized for thumb '+vw);
+  assert.ok(layout.joy.right+35<layout.fire.x,'MOVE and FIRE remain separate thumb zones '+vw);
+  assert.ok(layout.fire.bottom<=vh-2,'FIRE within bottom viewport safe boundary '+vw);
+  assert.ok(layout.fire.y>layout.hud.bottom+12,'no FIRE/menu overlap '+vw);
  }
  await page.setViewportSize({width:915,height:412});
- const aimBounds=await page.locator('#vehicle-aim').boundingBox();
- assert.ok(aimBounds?.width>=96&&aimBounds?.height>=96,'vehicle AIM thumb pad is generously sized');
- const aimX=aimBounds.x+aimBounds.width/2,aimY=aimBounds.y+aimBounds.height/2;
- const initialBullets=await page.evaluate(()=>window.__flowQA.state.bullets.length);
- await page.mouse.move(aimX,aimY);await page.mouse.down();
- const restingAim=await page.evaluate(()=>window.__flowQA.aim);
- assert.equal(restingAim.source,'aim');
- assert.equal(restingAim.active,false,'tap jitter never rotates a tank');
- await page.mouse.move(aimX,aimY-34,{steps:3});
- const activeAim=await page.evaluate(()=>({aim:window.__flowQA.aim,control:window.__flowQA.control,bullets:window.__flowQA.state.bullets.length}));
- assert.equal(activeAim.aim.source,'aim');
- assert.equal(activeAim.aim.active,true,'real AIM pad capture receives pointermove');
- assert.ok(activeAim.control.aimY<-.95,'AIM points vehicle upward');
- assert.equal(activeAim.control.fire,false,'independent vehicle AIM must never press FIRE');
- assert.equal(activeAim.bullets,initialBullets,'AIM never consumes scarce projectiles');
- const moved=await page.locator('#vehicle-aim-knob').evaluate(el=>el.style.transform);
- assert.ok(moved.includes('calc('),'AIM knob visibly tracks the finger direction');
+ const stickBox=await page.locator('#joystick').boundingBox();
+ assert.ok(stickBox?.width>=64&&stickBox?.height>=64,'real MOVE joystick has a thumb-sized hit area');
+ const sx=stickBox.x+stickBox.width/2,sy=stickBox.y+stickBox.height/2;
+ const beforeShells=await page.evaluate(()=>window.__flowQA.state.bullets.length);
+ await page.mouse.move(sx,sy);await page.mouse.down();
+ await page.mouse.move(sx,sy-35,{steps:3});
+ const joystickInput=await page.evaluate(()=>window.__flowQA.control);
+ assert.ok(joystickInput.moveY<-.6,'real MOVE stick points the scored tank');
+ assert.equal(joystickInput.fire,false,'joystick alone cannot fire');
+ assert.equal(joystickInput.aimX,undefined,'no independent vehicle AIM vector emitted');
+ assert.equal(await page.evaluate(()=>window.__flowQA.state.bullets.length),beforeShells,'steering cannot spend shells');
  await page.mouse.up();
- assert.equal((await page.locator('#vehicle-aim-knob').evaluate(el=>el.style.transform)),'translate(-50%, -50%)','release visually centers the aim stick');
- assert.equal((await page.evaluate(()=>window.__flowQA.aim)).active,false,'AIM pointer release resets control');
- assert.equal((await page.evaluate(()=>window.__flowQA.aim)).source,null);
- result.steps.push('real scored FFA vehicle AIM pad touch drag: rotation vector without moving, shooting or losing shells');
+ const neutralInput=await page.evaluate(()=>window.__flowQA.control);
+ assert.ok(Math.abs(neutralInput.moveY)<.01,'joystick release returns to neutral');
+ result.steps.push('scored FFA: real pointer steering with left MOVE and independent FIRE; no AIM pad, three phone layouts');
 
  const vehicleProof=await page.evaluate(()=>{
   const qa=window.__flowQA,s=qa.state,t=s.tanks[1],v=s.vehicles[t.vehicleId],before=v.armor,hits=[];
@@ -302,7 +290,7 @@ try{
  assert.equal(tdmStart.target,15);assert.equal(tdmStart.clock,300);
  assert.equal((await page.locator('#player0-label').textContent()).trim(),'BLUE');
  assert.equal((await page.locator('#player1-label').textContent()).trim(),'RED');
- assert.equal(await page.locator('#vehicle-aim').isVisible(),true);
+ assert.equal(await page.locator('#vehicle-aim').count(),0,'scored TDM also uses two-control layout');
  const tdmResult=await page.evaluate(()=>{
   const qa=window.__flowQA,s=qa.state,enemy=s.tanks[1],v=s.vehicles[enemy.vehicleId],hits=[];
   const friendly=qa.registerHit(0,2);

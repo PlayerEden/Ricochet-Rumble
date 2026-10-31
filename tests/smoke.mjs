@@ -15,7 +15,7 @@ node('bot-skill').value='normal';
 node('bot-count').value='1';node('bullet-cap').value='3';node('lives-choice').value='5';node('team-choice').value='ffa';node('map-size').value='standard';
 let frame=null,tick=0,hostCalled=false,discoverCalled=false,packets=[];
 const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},joinGame(){},stopNetwork(){},sendPacket(p){packets.push(JSON.parse(p))}};
-const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(key){return ['rr-options-v06','rr-custom-v1','rr-custom-presets-v1','rr-coach-cqc-v1','rr-coach-scored-vehicle-v1'].includes(key)?savedStorage.get(key)??null:null},setItem(key,value){if(['rr-options-v06','rr-custom-v1','rr-custom-presets-v1','rr-coach-cqc-v1','rr-coach-scored-vehicle-v1'].includes(key))savedStorage.set(key,String(value))}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(sel){if(sel==='input[data-playlist-mode]')return acceptancePlaylistInputs||[];if(sel==='[data-action="solo"],[data-action="settings-play"]')return acceptancePlayButtons||[];return []}};
+const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(key){return ['rr-options-v06','rr-custom-v1','rr-custom-presets-v1','rr-coach-cqc-v1','rr-coach-scored-vehicle-v2'].includes(key)?savedStorage.get(key)??null:null},setItem(key,value){if(['rr-options-v06','rr-custom-v1','rr-custom-presets-v1','rr-coach-cqc-v1','rr-coach-scored-vehicle-v2'].includes(key))savedStorage.set(key,String(value))}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(sel){if(sel==='input[data-playlist-mode]')return acceptancePlaylistInputs||[];if(sel==='[data-action="solo"],[data-action="settings-play"]')return acceptancePlayButtons||[];return []}};
 let simRand=null;
 const testMath=Object.create(Math);testMath.random=()=>simRand?simRand():Math.random();
 function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5;return(z>>>0)/4294967296;};}
@@ -1735,103 +1735,51 @@ console.log('PASS scored vehicle FFA: tank armor not KO, real ejection, safe pil
  api.tankMove(pilot,{moveX:0,moveY:1,bot:false},dt,0);
  close(pilot.a,6.5*dt,'owner-approved CQC pilot turning unchanged');
 }
-console.log('PASS scored vehicle FFA tactical pacing: 166/136 movement and 2.6rad steering, 1.8rad precision AIM; 415 shell and 2.55s lifetime/4-cap unchanged; original CQC and Survival intact.');
+console.log('PASS scored vehicle FFA tactical pacing: 166/136 movement and 2.6rad joystick steering; 415 shell and 2.55s lifetime/4-cap unchanged; original CQC and Survival intact.');
 
 
-// Scored FFA station-keeping design: a dedicated AIM pointer turns the hull
-// *without* allocating shells or forcing a move-stick input. This matters more
-// when the hull is deliberately slower than its ricocheting shells.
+// Owner-approved simplified vehicle controls: MOVE steers at the existing
+// scored 2.6rad/s cap; FIRE remains separate. Pilot FIRE drag stays intact.
 {
  const api=win.__test,dt=1/60;
- assert.ok(menuHtml.includes('id="vehicle-aim"'),'dedicated scored vehicle AIM control is shipped');
+ assert.ok(!menuHtml.includes('id="vehicle-aim"'),'separate vehicle AIM pad removed');
  api.newMatch('scored_ffa');
- const g=st(),pilot=g.tanks[0];
- assert.equal(node('vehicle-aim').classList.contains('hidden'),false,'vehicle AIM shown only in scored vehicle FFA');
- // When driving, FIRE never occupies the dedicated AIM thumb pointer.
+ const s=st(),t=s.tanks[0],v=s.vehicles[t.vehicleId];
+ assert.equal(v.type,'tank');
+ assert.equal(node('fire-mode').textContent,'HOLD TO FIRE');
+ t.a=0;t.vx=t.vy=0;
+ const px=t.x,py=t.y,originalShells=s.bullets.length;
+ api.tankMove(t,{moveX:0,moveY:1,bot:false},dt,0);
+ assert.ok(Math.abs(t.a-2.6*dt)<1e-6,'scored tank uses approved MOVE turn rate');
+ assert.ok(Math.hypot(t.x-px,t.y-py)<.005,'90 degree turn pivots at hull center');
+ assert.equal(s.bullets.length,originalShells,'steering does not fire');
+ t.a=0;t.vx=t.vy=0;
+ api.tankMove(t,{moveX:0,moveY:1,aimX:1,aimY:0,bot:false},dt,0);
+ assert.ok(Math.abs(t.a-2.6*dt)<1e-6,'old vehicle AIM vectors do not override steering');
+ api.beginFireAim({pointerId:47,clientX:90,clientY:90},'aim');
+ assert.equal(api.fireAim.pointerId,null,'deleted AIM control cannot capture a pointer');
+ assert.equal(api.makeControl(true).aimX,undefined,'vehicle input emits no independent aim vector');
  api.touch.add('fire');
- api.beginFireAim({pointerId:90,clientX:80,clientY:80},'fire');
- assert.equal(api.fireAim.pointerId,null,'vehicle FIRE cannot steal the precision AIM pointer');
+ assert.equal(api.makeControl(true).fire,true,'FIRE still works while driving');
  api.touch.delete('fire');
- pilot.a=0;pilot.vx=0;pilot.vy=0;
- const count=g.bullets.length;
- api.beginFireAim({pointerId:42,clientX:74,clientY:74},'aim');
- assert.equal(api.fireAim.source,'aim');
- api.updateFireAim({pointerId:42,clientX:78,clientY:77});
- assert.equal(api.fireAim.active,false,'small touch jitter does not rotate the stationary tank');
- api.updateFireAim({pointerId:900,clientX:74,clientY:134});
- assert.equal(api.fireAim.active,false,'other touch fingers must not hijack AIM');
- api.updateFireAim({pointerId:42,clientX:74,clientY:134});
- assert.ok(String(node('vehicle-aim-knob').style.transform).includes('calc('),'visual aim-thumb travels in the direction of the gesture');
- assert.equal(api.fireAim.active,true);
- const target=api.makeControl(true);
- assert.equal(target.moveX,0);assert.equal(target.moveY,0);
- assert.equal(target.fire,false,'AIM drag never consumes an in-flight shell slot');
- assert.equal(g.bullets.length,count,'no shell created by setting an aim vector');
- api.touch.add('fire');
- assert.equal(api.makeControl(true).fire,true,'a separate FIRE touch still works while independent AIM is held');
- assert.equal(api.fireAim.source,'aim','FIRE does not hijack an existing AIM pointer');
- api.touch.delete('fire');
- assert.ok(target.aimY>.95&&Math.abs(target.aimX)<.01,'AIM vectors point in chosen direction');
- api.tankMove(pilot,target,dt,0);
- assert.ok(Math.abs(pilot.a-1.8*dt)<.000001,'stationary hull pivots at new fine precision 1.8 rad/s cap');
- assert.equal(pilot.x,g.tanks[0].x,'position is stable when not using movement stick');
- assert.equal(g.bullets.length,count,'hull pivot has no side-effect shot');
- const rotated=pilot.a;
- api.clearFireAim();
- assert.equal(api.fireAim.source,null);
- assert.equal(api.makeControl(true).aimX,undefined,'release holds chosen angle until movement/next aim input');
- assert.equal(api.makeControl(true).fire,false);
- assert.equal(node('vehicle-aim-knob').style.transform,'translate(-50%, -50%)','release re-centers aim indicator');
- assert.equal(api.shoot(0),true,'FIRE independently launches a normal tank shell after aiming');
- assert.equal(g.bullets.length,count+1);
- assert.ok(Math.abs(g.bullets.at(-1).vx-415*Math.cos(rotated))<.000001,'shell direction follows precisely aimed hull');
- assert.ok(Math.abs(g.bullets.at(-1).vy-415*Math.sin(rotated))<.000001);
- const localTank=g.tanks[0],mech=g.vehicles[localTank.vehicleId];
- mech.type='mech';localTank.a=0;localTank.vx=0;localTank.vy=0;
- api.beginFireAim({pointerId:43,clientX:74,clientY:74},'aim');
- api.updateFireAim({pointerId:43,clientX:74,clientY:134});
- api.tankMove(localTank,api.makeControl(true),dt,0);
- assert.ok(Math.abs(localTank.a-1.8*dt)<.000001,'same stationary pivot works when occupying a mech');
- api.releaseControls();
- assert.equal(api.fireAim.active,false);
- assert.equal(api.fireAim.source,null);
+ t.a=0;t.vx=t.vy=0;
+ assert.equal(api.shoot(0),true,'vehicle still shoots ordinary shells');
+ assert.ok(Math.abs(s.bullets.at(-1).vx-415)<1e-6,'shell follows vehicle facing');
+ api.newMatch('scored_tdm');
+ const team=st().tanks[0];team.a=0;team.vx=team.vy=0;
+ api.tankMove(team,{moveX:0,moveY:1,bot:false},dt,0);
+ assert.ok(Math.abs(team.a-2.6*dt)<1e-6,'TDM also uses simple steering');
+ const mech=st().vehicles[team.vehicleId];mech.type='mech';
+ team.a=0;team.vx=team.vy=0;
+ api.tankMove(team,{moveX:0,moveY:1,bot:false},dt,0);
+ assert.ok(Math.abs(team.a-2.6*dt)<1e-6,'mech steering pace is unchanged');
  api.newMatch('cqc');
- assert.equal(node('vehicle-aim').classList.contains('hidden'),true,'vehicle AIM hidden in CQC');
- api.beginFireAim({pointerId:47,clientX:280,clientY:180},'fire');
- assert.equal(api.fireAim.pointerId,47,'CQC pilot FIRE drag capture remains available');
- api.updateFireAim({pointerId:47,clientX:280,clientY:210});
- assert.equal(api.fireAim.active,true,'CQC pilot precision aim still responds to FIRE drag');
+ api.beginFireAim({pointerId:48,clientX:200,clientY:200},'fire');
+ api.updateFireAim({pointerId:48,clientX:200,clientY:240});
+ assert.equal(api.fireAim.active,true,'on-foot FIRE-drag survives AIM pad removal');
  api.clearFireAim();
- api.beginFireAim({pointerId:44,clientX:300,clientY:190},'aim');
- assert.equal(api.fireAim.pointerId,null,'AIM-only gesture prohibited in pilot-only CQC');
- api.newMatch('solo');
- assert.equal(node('vehicle-aim').classList.contains('hidden'),true,'vehicle AIM hidden in ordinary Survival');
- api.beginFireAim({pointerId:45,clientX:300,clientY:190},'aim');
- assert.equal(api.fireAim.pointerId,null,'Survival cannot enter experimental aim state');
 }
-console.log('PASS vehicle tactical stationary AIM: held right AIM rotates hull/mech at 1.8rad/s without shots; FIRE shoots in the chosen direction; modes isolated.');
-
-// A/B test note: CQC pilot feel was already owner-positive. The pilot remains
-// quick; vehicle precision mode is a separate handling family.
-{
- const a=win.__test,dt=1/60;
- a.newMatch('scored_ffa');
- const v=st().tanks[0];v.a=0;v.vx=v.vy=0;
- a.tankMove(v,{moveX:0,moveY:1,bot:false,aimX:1,aimY:0},dt,0);
- assert.equal(v.a,0,'held vehicle AIM overrides movement while aiming exactly east');
- v.a=0;v.vx=v.vy=0;
- a.tankMove(v,{moveX:0,moveY:1,bot:false,aimX:0,aimY:-1},dt,0);
- assert.ok(Math.abs(v.a+1.8*dt)<1e-6,'vehicle AIM+MOVE rotates at the slower 1.8rad/s precision cap');
- a.newMatch('cqc');
- const p=st().tanks[0];p.vx=p.vy=0;
- a.tankMove(p,{moveX:1,moveY:0,bot:false},dt,0);
- assert.ok(Math.abs(p.vx-268*9*dt)<1e-6,'approved CQC pilot sprint speed 268 remains unchanged');
- a.newMatch('solo');
- const survival=st().tanks[0];survival.onFoot=true;survival.vehicleId=null;survival.a=0;
- a.tankMove(survival,{moveX:0,moveY:1,bot:false},dt,0);
- assert.ok(Math.abs(survival.a-6.5*dt)<1e-6,'Solo Survival foot turn now matches accepted CQC');
-}
-console.log('PASS v0.9.32 precision handling: independent 1.8rad/s AIM versus 2.6rad/s steer; FIRE pointer never steals AIM; accepted CQC pilot and legacy Survival isolated.');
+console.log('PASS owner vehicle control simplification: centered MOVE steering, independent FIRE, pilot drag intact.');
 
 // 2026-10-29: experimental pilot-only parity, explicitly NOT a LAN change.
 {
@@ -2203,12 +2151,12 @@ console.log('PASS v0.9.46 presentation: interactive pause SFX/music, persistence
 // appear once per input scheme, and never intrude on later sessions/modes.
 {
  const api=win.__test,overlay=node('field-coach');
- savedStorage.delete('rr-coach-scored-vehicle-v1');
+ savedStorage.delete('rr-coach-scored-vehicle-v2');
  savedStorage.delete('rr-coach-cqc-v1');
  api.newMatch('scored_ffa');
  assert.equal(overlay.classList.contains('hidden'),false,'scored tank entry has a first-time hint');
- assert.ok(overlay.textContent.includes('DRAG AIM TO TURN'),'scored tank hint explains dedicated AIM without firing');
- assert.equal(savedStorage.get('rr-coach-scored-vehicle-v1'),'1','scored tank tip permanently marks one brief per scheme');
+ assert.ok(overlay.textContent.includes('MOVE TO STEER'),'scored tank explains joystick steering without extra button');
+ assert.equal(savedStorage.get('rr-coach-scored-vehicle-v2'),'1','scored tank tip permanently marks one brief per scheme');
  api.newMatch('scored_tdm');
  assert.equal(overlay.classList.contains('hidden'),true,'TDM shares scored vehicle controls: do not nag on next match');
  api.newMatch('cqc');
@@ -2223,5 +2171,5 @@ console.log('PASS v0.9.46 presentation: interactive pause SFX/music, persistence
  assert.equal(overlay.classList.contains('hidden'),true,'Custom scored tank keeps one-time scored briefing state');
  assert.ok(!api.state.tanks[0].onFoot,'custom scored mode still starts in vehicle');
  assert.equal(overlay.classList.contains('hidden'),true);
- console.log('PASS Phase 3A: Survival text preserved, scored AIM and CQC FIRE-drag coached once, repeat modes unblocked');
+ console.log('PASS Phase 3A: Survival text preserved, scored joystick and CQC FIRE-drag coached once, repeat modes unblocked');
 }

@@ -32,9 +32,9 @@ for(const id of ['survival_ffa','survival_teams','cqc','scored_ffa','scored_tdm'
  assert.equal(/\schecked\b/.test(line),id.startsWith('survival_'),'Scored game modes must remain opt-in');
 }
 yes('Quick Play defaults preserve Survival-only baseline','3 scored options explicitly opt-in');
-for(const token of ["const CQC_RULES","const VEHICLE_FFA_RULES","const VEHICLE_TDM_RULES","const SCORED_FFA_VEHICLE_PACE","aimTurnRate:1.8","turnRate:2.6","human:166","bot:136"])
+for(const token of ["const CQC_RULES","const VEHICLE_FFA_RULES","const VEHICLE_TDM_RULES","const SCORED_FFA_VEHICLE_PACE","turnRate:2.6","human:166","bot:136"])
  assert.ok(game.includes(token),'missing scored mode or precision contract: '+token);
-yes('Existing scored modes and deliberate ricochet vehicle controls','10/180 CQC, 10/240 FFA, 15/300 TDM; scored tank 166/136 and precision AIM 1.8rad/s');
+yes('Existing scored modes and deliberate ricochet vehicle controls','10/180 CQC, 10/240 FFA, 15/300 TDM; scored tank 166/136 and MOVE joystick steering 2.6rad/s');
 for(const token of ['FIELDGRID P-03','c.translate(-Math.abs(gait)*.18,gait*.32)','PILOT_MUZZLE_X','PILOT_MUZZLE_Y'])
  assert.ok(game.includes(token),'owner-approved P-03 visual/muzzle contract changed: '+token);
 assert.ok(!game.includes('c.fillRect(-25,7,12,9)'),'rejected crawling boots reintroduced');
