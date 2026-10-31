@@ -1849,18 +1849,19 @@ console.log('PASS v0.9.32 precision handling: independent 1.8rad/s AIM versus 2.
  a.newMatch('host');
  const host=st().tanks[0];host.onFoot=true;host.vehicleId=null;host.a=0;
  a.beginFireAim({pointerId:605,clientX:200,clientY:200},'fire');
- assert.equal(a.fireAim.pointerId,null,'LAN host has no unreplicated independent aim');
+ assert.equal(a.fireAim.pointerId,605,'LAN host now shares Solo on-foot FIRE-drag');
  a.tankMove(host,{moveX:0,moveY:1,bot:false},dt,0);
- assert.ok(Math.abs(host.a-12*dt)<1e-6,'LAN host pilot steering unchanged');
+ assert.ok(Math.abs(host.a-6.5*dt)<1e-6,'LAN host uses accepted on-foot turn rate');
  a.newMatch('guest');
+ st().tanks[1].onFoot=true;st().tanks[1].vehicleId=null;
  a.beginFireAim({pointerId:606,clientX:200,clientY:200},'fire');
- assert.equal(a.fireAim.pointerId,null,'LAN guest aim remains unchanged');
+ assert.equal(a.fireAim.pointerId,606,'LAN guest FIRE-drag uses its own seat-1 pilot');
  a.newMatch('cqc');
  const cqc=st().tanks[0];cqc.a=0;
  a.tankMove(cqc,{moveX:0,moveY:1,bot:false},dt,0);
  assert.ok(Math.abs(cqc.a-6.5*dt)<1e-6,'owner-positive CQC aiming preserved');
 }
-console.log('PASS local Solo pilot FIRE-drag parity, independent heading, ejection reset, LAN isolation, CQC baseline.');
+console.log('PASS Solo and LAN pilot FIRE-drag parity, independent heading, ejection reset and CQC baseline.');
 
 // v0.9.34: true 2v2 team scoring is not renamed last-side-standing survival.
 {
