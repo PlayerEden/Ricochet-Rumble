@@ -976,7 +976,7 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 /* Match clock belongs to the SCORE cluster, not the menu button. */
 .game-hud .score-clock:not(.hidden){
  top:max(49px,calc(env(safe-area-inset-top) + 49px));
- left:50%;right:auto;transform:translateX(-50%);
+ left:calc(50% - 45px);right:auto;transform:translateX(-50%);
  z-index:7;max-width:120px;text-align:center;
  border-color:#78838b;background:#1b2830e8;box-shadow:0 2px 7px #0007;
 }
@@ -1014,3 +1014,5 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 @media(max-width:590px){
  #menu .help-steps{grid-template-columns:1fr}
 }
+/* In narrow landscape the scorestrip has a smaller right-side reserve. */
+@media(max-width:760px){.game-hud .score-clock:not(.hidden){left:calc(50% - 29px)}}

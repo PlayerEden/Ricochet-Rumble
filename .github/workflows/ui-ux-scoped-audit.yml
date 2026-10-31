@@ -1,5 +1,5 @@
 name: Sector Rebound - scoped UI/UX review
-# QA run: final player-facing Help/HUD/Dossier clarity and no-regression phone layout
+# QA rerun: align scored countdown to scoreboard center with asymmetric left/right HUD reserves
 on:
   push:
     branches: [integration/v0956-main-rooted-rehearsal]

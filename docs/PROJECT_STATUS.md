@@ -1,3 +1,9 @@
+# 2026-10-31 — SCORE-CLOCK ALIGNMENT QA REPAIR
+
+[Scoped Chromium run 41230822512](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41230822512) confirmed all source/smoke/gameplay assertions before a NEW exact HUD geometry assertion identified that the centered clock was not actually aligned with the offset scoreboard. Changed countdown alignment **-45px** relative to viewport center on normal landscape and **-29px** on narrow (scorestrip explicitly reserves asymmetric left/right space for Menu/radar), no score/hit/respawn math changes. Re-run full browser geometry/flow, verify at 915×412 and 568×320. [QA design](UI_FINAL_POLISH_2026-10-31.md).
+
+---
+
 # 2026-10-31 — FINAL UI REGRESSION CHECKS ADDED
 
 Added actual Chromium assertions: four concise Help steps, neutral top Back, optional advanced instructions, score-mode heart hidden but Survival heart visible, match timer grouped below center scoreboard and separate from MENU; real 5-viewport layout scenes include Help advanced. Updated mock Help template and scored team labels. Changed test and scoped UI workflow only; **the exact visual/Android QA verdict remains pending**. [Scope/audit](UI_FINAL_POLISH_2026-10-31.md).
