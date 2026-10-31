@@ -1,0 +1,96 @@
+name: Sector Rebound v0.9.54 Full LAN Safety + Chromium + Android QA
+on:
+  push:
+    branches: [fix/lan-guest-input-timeout-v0954]
+    paths:
+      - '.github/workflows/full-v0954.yml'
+permissions:
+  contents: read
+
+jobs:
+  full-qa:
+    # Full Android QA is automatic only for mainline integration branches.
+    # Other PRs use lightweight CI unless their body explicitly opts into [full-qa].
+    if: github.ref == 'refs/heads/fix/lan-guest-input-timeout-v0954'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Install required Android SDK
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" --install "platforms;android-36" "build-tools;35.0.0"
+      - name: Run full headless gameplay and asset parity checks
+        run: |
+          set -euo pipefail
+          node tests/lan-guest-input-timeout-v0954.mjs
+          node tests/lan-pilot-input-parity-v0953.mjs
+          node tests/corridor-recovery-v0951.mjs --seeds=300
+          node tests/smoke.mjs
+          node tests/scored-match-kernel.mjs
+          node tools/validate-cosmetic-catalog.mjs
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/index.html android/app/src/main/assets/index.html
+          cmp web/style.css android/app/src/main/assets/style.css
+          cmp web/scored-match.js android/app/src/main/assets/scored-match.js
+          node --check web/save-backup.js
+          cmp web/save-backup.js android/app/src/main/assets/save-backup.js
+          node tests/save-backup.mjs
+          node tests/android-upgrade-readiness.mjs
+          node tests/test-signer-contract.mjs
+          node tests/scored-browser-parity.mjs
+      - name: Checkout screenshot comparison baseline
+        uses: actions/checkout@v4
+        with:
+          ref: 'dev/sector-rebound-integrated-v0920'
+          path: visual-baseline
+      - name: Capture actual Chromium before/after scenes
+        run: |
+          set -euo pipefail
+          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          export CHROME_BIN
+          test -n "$CHROME_BIN"
+          npm install --no-save --ignore-scripts playwright-core@1.56.1
+          node tests/visual-qa.mjs
+          node tests/quick-play-live-flow-qa.mjs
+          node tests/pilot-art-review.mjs
+          node tests/ui-layout-geometry-v0948.mjs
+      - name: Upload visual and simulation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sector-rebound-qa-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            qa-screens/
+            qa-layout/
+            qa-results/combat-simulation.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Build debug Android APK and unsigned release AAB
+        working-directory: android
+        run: |
+          gradle --no-daemon :app:assembleDebug
+          gradle --no-daemon :app:bundleRelease
+      - name: Upload unsigned AAB - NOT Play signed
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-aab-NOT-FOR-PLAY-${{ github.run_id }}
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload installable debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk-${{ github.run_id }}
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
