@@ -968,3 +968,49 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  #menu .dossier-screen .dossier-head h2{font-size:19px}
  #menu #panel .screen-back{min-width:66px;padding:6px 8px;font-size:11px}
 }
+
+/* 2026-10-31 FINAL USABILITY — presentation only, scoring values untouched.
+   Scored modes never show the Survival lives glyph beside KO totals. */
+.game-hud .scorestrip .hud-life.hidden{display:none!important}
+.game-hud .scorestrip .hud-life:not(.hidden){display:inline-block;font-size:clamp(11px,1.5vw,14px);margin-left:3px}
+/* Match clock belongs to the SCORE cluster, not the menu button. */
+.game-hud .score-clock:not(.hidden){
+ top:max(49px,calc(env(safe-area-inset-top) + 49px));
+ left:50%;right:auto;transform:translateX(-50%);
+ z-index:7;max-width:120px;text-align:center;
+ border-color:#78838b;background:#1b2830e8;box-shadow:0 2px 7px #0007;
+}
+/* Help: show what players need first. Details are opt-in. */
+#menu #panel:has(.help-screen){width:min(870px,calc(100vw - 20px));max-height:calc(100dvh - 16px);overflow-y:auto;padding:clamp(10px,2.3dvh,18px) clamp(12px,2vw,22px)}
+#menu .help-screen{display:flex;flex-direction:column;gap:clamp(7px,1.6dvh,13px);min-width:0}
+#menu .help-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+#menu .help-head h2{font-size:clamp(23px,5dvh,34px);margin:2px 0}
+#menu .help-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(6px,1vw,12px)}
+#menu .help-steps article{display:grid;grid-template-columns:32px minmax(0,1fr);gap:clamp(6px,1vw,11px);align-items:start;min-width:0;padding:clamp(7px,1.7dvh,12px);background:#293339;border:1px solid #55656c;border-radius:6px}
+#menu .help-steps article .help-glyph{display:grid;place-items:center;width:30px;height:30px;border-radius:5px;border:1px solid #5f8c94;background:#1a2b31;color:#9bcfd2;font:900 23px/1 monospace}
+#menu .help-steps h3{font:900 clamp(12px,1.55vw,16px)/1.12 'sans-serif-condensed',Arial,sans-serif;color:#edf5f2;margin:0 0 5px;letter-spacing:.3px}
+#menu #panel .help-steps p{font:600 clamp(10px,1.22vw,13px)/1.32 system-ui,sans-serif;color:#c3d2d5;margin:0}
+#menu .help-more{background:#202a2f;border:1px solid #51616a;border-radius:6px}
+#menu .help-more summary{padding:10px 12px;font:800 clamp(11px,1.25vw,13px)/1.2 monospace;color:#d3e1e1;cursor:pointer;touch-action:manipulation;min-height:39px}
+#menu .help-more[open] summary{border-bottom:1px solid #526267}
+#menu .help-more>div{padding:9px 12px}
+#menu #panel .help-more p{font:600 clamp(10px,1.12vw,12px)/1.4 system-ui,sans-serif;color:#c6d6d9;margin:0 0 8px}
+#menu .help-more strong{color:#a3d8db}
+#menu .dossier-stats>div:nth-child(2),
+#menu .dossier-stats>div:nth-child(5){border-color:#718e92;background:#2b383c}
+#menu .dossier-stats>div:nth-child(2) strong,
+#menu .dossier-stats>div:nth-child(5) strong{color:#b9e5df}
+@media(max-height:365px){
+ #menu .help-screen{gap:5px}
+ #menu .help-head h2{font-size:21px}
+ #menu .help-steps{gap:5px}
+ #menu .help-steps article{padding:6px;grid-template-columns:25px minmax(0,1fr);gap:6px}
+ #menu .help-steps article .help-glyph{width:24px;height:24px;font-size:18px}
+ #menu .help-steps h3{font-size:11px;margin-bottom:3px}
+ #menu #panel .help-steps p{font-size:10px;line-height:1.2}
+ #menu .help-more summary{padding:7px 9px;min-height:34px}
+ .game-hud .score-clock:not(.hidden){top:max(45px,calc(env(safe-area-inset-top) + 45px))}
+}
+@media(max-width:590px){
+ #menu .help-steps{grid-template-columns:1fr}
+}

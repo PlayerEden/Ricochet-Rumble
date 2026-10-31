@@ -1,3 +1,9 @@
+# 2026-10-31 — FINAL TARGETED USABILITY PASS (PENDING EXACT-HEAD QA)
+
+Following owner's real Android screenshots, candidate removes giant gold Help Back CTA and excessive instructions (four quick cards + optional advanced control details), fixes a real missing `.hud-life.hidden` rule that left a heart beside scored KO counts, moves scored countdown beneath center scoreboard away from MENU, and emphasizes Dossier victories/KOs without changing data or combat. [Audited scope and gates](UI_FINAL_POLISH_2026-10-31.md). Immutable [Preview 100026 rollback](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-preview-100026-before-ui-final-polish), baseline SHA `5222063951f42f2bafbee72c276eba3cf855b37a`. Full browser/Android exact-source QA **PENDING** until runs actually pass. Stable `main` gameplay not merged.
+
+---
+
 # 2026-10-31 — HANGAR COMPACT TOUCH TARGET ACCEPTANCE
 
 [Initial live Chromium menu QA](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41188593596) failed the old Hangar 70px minimum card-height test at 740×360: the new compact landscape rules deliberately use **68px** paint cards to reduce scrolling. Adjusted QA threshold to **64px**, still much larger than the 30px minimum UI-geometry warning line, and retained all button width/x boundary checks. No runtime logic/art/CSS change in this commit; exact-head scoped Chromium QA rerun to verify real dimensions, flows and screenshots. **Not yet claimed accepted.**
