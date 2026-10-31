@@ -1331,8 +1331,9 @@ console.log('PASS v0.9.22 acceptance: settings persistence 0/1/2 modes, 7 real r
  assert.equal(locator.filter(x=>x[0]==='line').length,8,'two lines per bracket');
  assert.equal(locator.filter(x=>x[0]==='arc').length,0,'no permanent circular player ring');
  assert.equal(calls.filter(x=>x[0]==='save').length,calls.filter(x=>x[0]==='restore').length,'canvas transforms balanced');
- // Four original shared material families; no runtime/purchase/selection required.
- assert.deepEqual(Object.keys(api.FIELDGRID_UNIT_SKINS),['fieldgrid.standard','fieldgrid.moss','fieldgrid.dune','fieldgrid.oxide']);
+ // Four always-free material families remain; two additional earned palettes
+ // use the exact same geometry and never alter team markers or gameplay rules.
+ assert.deepEqual(Object.keys(api.FIELDGRID_UNIT_SKINS),['fieldgrid.standard','fieldgrid.moss','fieldgrid.dune','fieldgrid.oxide','fieldgrid.vanguard','fieldgrid.veteran']);
  assert.deepEqual(Object.keys(api.resolveUnitMaterials('pilot','#19aaff')).sort(),['armor','light','shadow','team','trim']);
  const normalTank=api.resolveUnitMaterials('tank','#19aaff');
  const normalMech=api.resolveUnitMaterials('mech','#19aaff');
