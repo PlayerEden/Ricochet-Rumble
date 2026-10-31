@@ -23,7 +23,7 @@ const env={window:win,document,performance:{now(){return tick}},requestAnimation
 vm.runInNewContext(fs.readFileSync(new URL('../web/scored-match.js',import.meta.url),'utf8'),env,{filename:'scored-match.js'});
 vm.runInNewContext(fs.readFileSync(new URL('../web/dossier.js',import.meta.url),'utf8'),env,{filename:'dossier.js'});
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,get customDraft(){return {...customDraft}},normalizeCustomDraft,customOptionsFor,setCustomDraft,loadCustomDraft,cleanPresetName,normalizeCustomPresets,loadCustomPresets,saveNamedCustomPreset,loadNamedCustomPreset,deleteNamedCustomPreset,resetCustomDraft,get customPresets(){return customPresets.map(p=>({name:p.name,rules:{...p.rules}}))},freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,projectileHitRadius,beginFireAim,updateFireAim,clearFireAim,get fireAim(){return {...fireAim}},get touch(){return touch},tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,resolveUnitMaterials,get equippedPaint(){return equippedPaint},get dossierStore(){return dossierStore},paintProgress,equipPaint,loadPaint,normalizePaint,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,get customDraft(){return {...customDraft}},normalizeCustomDraft,customOptionsFor,setCustomDraft,loadCustomDraft,cleanPresetName,normalizeCustomPresets,loadCustomPresets,saveNamedCustomPreset,loadNamedCustomPreset,deleteNamedCustomPreset,resetCustomDraft,get customPresets(){return customPresets.map(p=>({name:p.name,rules:{...p.rules}}))},freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,projectileHitRadius,beginFireAim,updateFireAim,clearFireAim,get fireAim(){return {...fireAim}},get touch(){return touch},tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,resolveUnitMaterials,get equippedPaint(){return equippedPaint},get dossierStore(){return dossierStore},setDossierStoreForTest(next){dossierStore=next},paintProgress,equipPaint,loadPaint,normalizePaint,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -2203,8 +2203,13 @@ console.log('PASS v0.9.46 presentation: interactive pause SFX/music, persistence
 
 // Phase 4B: actual local Dossier results, not invented unlock counters.
 {
- const api=win.__test,store=api.dossierStore;
- assert.ok(store?.canWrite,'real Dossier storage available in QA');
+ const api=win.__test,previousDossier=api.dossierStore;
+ // Earlier smoke scenarios have already finished several matches. Isolate
+ // a fresh real Dossier to test zero -> five -> twelve deterministically.
+ const rewardStorage=new Map();
+ const store=win.SectorDossier.createStore({getItem:k=>rewardStorage.get(k)??null,setItem:(k,v)=>rewardStorage.set(k,String(v))});
+ api.setDossierStoreForTest(store);
+ assert.ok(store?.canWrite,'real isolated Dossier storage available in QA');
  const prior=savedStorage.get('rr-hangar-paint-v1');
  assert.equal(api.paintProgress('fieldgrid.moss').eligible,true,'starter finish stays free');
  assert.equal(api.paintProgress('fieldgrid.vanguard').eligible,false,'earned paint starts locked');
@@ -2232,5 +2237,6 @@ console.log('PASS v0.9.46 presentation: interactive pause SFX/music, persistence
  assert.equal(api.paintProgress('fieldgrid.not-a-skin').eligible,false);
  assert.equal(api.equipPaint('fieldgrid.not-a-skin'),false,'unknown IDs rejected');
  assert.equal(api.resolveUnitMaterials('tank','#46d2f5','fieldgrid.standard').armor,'#46d2f5');
- console.log('PASS Phase 4B: live Dossier completion/wins grant cosmetic only; saved paint, no invalid IDs or stat boosts');
+ api.setDossierStoreForTest(previousDossier);
+ console.log('PASS Phase 4B: real isolated Dossier completion/wins grant cosmetics; unchanged underlying gameplay');
 }
