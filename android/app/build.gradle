@@ -1,4 +1,52 @@
 plugins { id 'com.android.application' }
+// Signing material is NEVER committed. Missing env => intentionally unsigned release AAB.
+// Partial env is treated as a configuration error rather than silently switching signer.
+def uploadKeys = ['SR_UPLOAD_STORE_FILE', 'SR_UPLOAD_STORE_PASSWORD', 'SR_UPLOAD_KEY_ALIAS', 'SR_UPLOAD_KEY_PASSWORD']
+def presentKeys = uploadKeys.findAll { System.getenv(it)?.trim() }
+if (!presentKeys.isEmpty() && presentKeys.size() != uploadKeys.size()) {
+    throw new GradleException('Incomplete external upload signing configuration')
+}
+def hasUploadSigning = presentKeys.size() == uploadKeys.size()
+if (hasUploadSigning && !file(System.getenv('SR_UPLOAD_STORE_FILE')).isFile()) {
+    throw new GradleException('Upload keystore file was not found')
+}
+// Private, durable INTERNAL TEST key is distinct from the production Play upload key.
+// Never use the default ephemeral CI debug key for any preview labeled upgrade-safe.
+def testKeys = ['SR_TEST_STORE_FILE', 'SR_TEST_STORE_PASSWORD', 'SR_TEST_KEY_ALIAS', 'SR_TEST_KEY_PASSWORD']
+def presentTestKeys = testKeys.findAll { System.getenv(it)?.trim() }
+if (!presentTestKeys.isEmpty() && presentTestKeys.size() != testKeys.size()) {
+    throw new GradleException('Incomplete private TEST APK signing configuration')
+}
+def hasTestSigning = presentTestKeys.size() == testKeys.size()
+if (hasTestSigning && !file(System.getenv('SR_TEST_STORE_FILE')).isFile()) {
+    throw new GradleException('Private TEST keystore file was not found')
+}
+// Preserve the exact v0.9.54 identity for ordinary QA builds.
+// A manual private TEST-signed preview may use a newer version via paired project properties.
+def defaultPreviewVersionCode = 50
+def defaultPreviewVersionName = '0.9.54-lan-timeout-test'
+def requestedPreviewCode = providers.gradleProperty('srPreviewVersionCode').orNull
+def requestedPreviewName = providers.gradleProperty('srPreviewVersionName').orNull
+def previewPackageSwitch = providers.gradleProperty('srPreviewPackage').orNull
+if (previewPackageSwitch != null && previewPackageSwitch != 'true')
+    throw new GradleException('srPreviewPackage must be true when present')
+if ((requestedPreviewCode != null) != (previewPackageSwitch == 'true'))
+    throw new GradleException('Preview versions require isolated .preview app identity, and vice versa')
+if ((requestedPreviewCode == null) != (requestedPreviewName == null))
+    throw new GradleException('Preview version code and name must be supplied together')
+def previewVersionCode = defaultPreviewVersionCode
+def previewVersionName = defaultPreviewVersionName
+if (requestedPreviewCode != null) {
+    if (!hasTestSigning) throw new GradleException('Private TEST signer required for preview version overrides')
+    if (!(requestedPreviewCode ==~ /[1-9][0-9]*/)) throw new GradleException('Preview version code must be a positive integer')
+    long requestedNumber = requestedPreviewCode.toLong()
+    if (requestedNumber <= defaultPreviewVersionCode || requestedNumber > 2100000000L)
+        throw new GradleException('Preview versionCode must increase above 50 and remain <= 2100000000')
+    if (!(requestedPreviewName ==~ /[0-9]+\.[0-9]+\.[0-9]+-[a-z0-9][a-z0-9.-]*/))
+        throw new GradleException('Preview versionName must be a numeric prerelease identifier')
+    previewVersionCode = requestedNumber.intValue()
+    previewVersionName = requestedPreviewName
+}
 android {
     namespace 'com.playereden.ricochetrumble'
     compileSdk 36
@@ -6,11 +54,38 @@ android {
         applicationId 'com.playereden.ricochetrumble'
         minSdk 26
         targetSdk 36
-        versionCode 38
-        versionName '0.9.21-game-feel'
+        versionCode previewVersionCode
+        versionName previewVersionName
+    }
+    signingConfigs {
+        if (hasUploadSigning) {
+            releaseUpload {
+                storeFile file(System.getenv('SR_UPLOAD_STORE_FILE'))
+                storePassword System.getenv('SR_UPLOAD_STORE_PASSWORD')
+                keyAlias System.getenv('SR_UPLOAD_KEY_ALIAS')
+                keyPassword System.getenv('SR_UPLOAD_KEY_PASSWORD')
+            }
+        }
+        if (hasTestSigning) {
+            internalTest {
+                storeFile file(System.getenv('SR_TEST_STORE_FILE'))
+                storePassword System.getenv('SR_TEST_STORE_PASSWORD')
+                keyAlias System.getenv('SR_TEST_KEY_ALIAS')
+                keyPassword System.getenv('SR_TEST_KEY_PASSWORD')
+            }
+        }
     }
     buildTypes {
-        release { minifyEnabled false }
+        debug {
+            // Owner-signed previews are a separate installable package from Play/stable builds.
+            // CI QA without this flag retains the historical package and version.
+            if (previewPackageSwitch == 'true') applicationIdSuffix '.preview'
+            if (hasTestSigning) signingConfig signingConfigs.internalTest
+        }
+        release {
+            minifyEnabled false
+            if (hasUploadSigning) signingConfig signingConfigs.releaseUpload
+        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

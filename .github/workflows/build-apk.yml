@@ -23,8 +23,8 @@ permissions:
 jobs:
   full-qa:
     # Full Android QA is automatic only for mainline integration branches.
-    # Other PRs use lightweight CI; developers dispatch this manually as needed.
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'integration/')
+    # Other PRs use lightweight CI unless their body explicitly opts into [full-qa].
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'integration/') || contains(github.event.pull_request.body, '[full-qa]')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -46,10 +46,18 @@ jobs:
         run: |
           set -euo pipefail
           node tests/smoke.mjs
+          node tests/scored-match-kernel.mjs
           node tools/validate-cosmetic-catalog.mjs
           cmp web/game.js android/app/src/main/assets/game.js
           cmp web/index.html android/app/src/main/assets/index.html
           cmp web/style.css android/app/src/main/assets/style.css
+          cmp web/scored-match.js android/app/src/main/assets/scored-match.js
+          node --check web/save-backup.js
+          cmp web/save-backup.js android/app/src/main/assets/save-backup.js
+          node tests/save-backup.mjs
+          node tests/android-upgrade-readiness.mjs
+          node tests/test-signer-contract.mjs
+          node tests/scored-browser-parity.mjs
       - name: Checkout screenshot comparison baseline
         uses: actions/checkout@v4
         with:
@@ -63,7 +71,9 @@ jobs:
           test -n "$CHROME_BIN"
           npm install --no-save --ignore-scripts playwright-core@1.56.1
           node tests/visual-qa.mjs
+          node tests/quick-play-live-flow-qa.mjs
           node tests/pilot-art-review.mjs
+          node tests/ui-layout-geometry-v0948.mjs
       - name: Upload visual and simulation evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -71,6 +81,7 @@ jobs:
           name: sector-rebound-qa-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             qa-screens/
+            qa-layout/
             qa-results/combat-simulation.json
           if-no-files-found: warn
           retention-days: 14
@@ -79,6 +90,8 @@ jobs:
         run: |
           gradle --no-daemon :app:assembleDebug
           gradle --no-daemon :app:bundleRelease
+      - name: Attest actual debug APK signer, metadata and packaged WebView assets
+        run: node tools/attest-android-ci-package.mjs
       - name: Upload unsigned AAB - NOT Play signed
         uses: actions/upload-artifact@v4
         with:
@@ -90,6 +103,34 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk-${{ github.run_id }}
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            qa-results/android-ci-package-attestation.json
           if-no-files-found: error
           retention-days: 14
+      - name: PROVE separate .preview package, monotonic versions and SAME ephemeral CI signer
+        # Different from the owner's permanent key. Do not upload this ephemeral preview.
+        env:
+          TEST_DIR: ${{ runner.temp }}/temporary-preview-signing
+        run: |
+          set -euo pipefail
+          trap 'rm -rf "$TEST_DIR"' EXIT
+          mkdir -p "$TEST_DIR"
+          export SR_TEST_STORE_FILE="$TEST_DIR/ephemeral-only.p12"
+          export SR_TEST_STORE_PASSWORD="temporary-only-run-$GITHUB_RUN_ID"
+          export SR_TEST_KEY_PASSWORD="$SR_TEST_STORE_PASSWORD"
+          export SR_TEST_KEY_ALIAS='ci-preview-test'
+          keytool -genkeypair -noprompt -storetype PKCS12 -keystore "$SR_TEST_STORE_FILE"             -storepass "$SR_TEST_STORE_PASSWORD" -keypass "$SR_TEST_KEY_PASSWORD"             -alias "$SR_TEST_KEY_ALIAS" -keyalg RSA -keysize 3072 -validity 2             -dname 'CN=Ephemeral CI Preview, O=Sector Rebound QA, C=US'
+          for code in 100001 100002; do
+            (cd android && gradle --no-daemon :app:assembleDebug               -PsrPreviewPackage=true "-PsrPreviewVersionCode=$code"               "-PsrPreviewVersionName=0.9.57-preview.$code")
+            apk=android/app/build/outputs/apk/debug/app-debug.apk
+            aapt="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/aapt"
+            apksigner="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/apksigner"
+            "$apksigner" verify --min-sdk-version 26 --print-certs "$apk" > "$TEST_DIR/signer-$code.txt"
+            head="$("$aapt" dump badging "$apk" | head -n 1)"
+            [[ "$head" == *"name='com.playereden.ricochetrumble.preview'"* ]] || exit 1
+            [[ "$head" == *"versionCode='$code'"* ]] || exit 1
+            grep 'Signer #1 certificate SHA-256 digest:' "$TEST_DIR/signer-$code.txt" | head -1 > "$TEST_DIR/digest-$code.txt"
+          done
+          cmp "$TEST_DIR/digest-100001.txt" "$TEST_DIR/digest-100002.txt"
+          echo 'PREVIEW_CI_COMPATIBILITY_PASS isolated .preview package, codes 100001 to 100002, identical verified test signer; NO owner key, install or release'

@@ -1,0 +1,187 @@
+name: Sector Rebound - owner-approved stable preview APK (manual only)
+on:
+  workflow_dispatch:
+    inputs:
+      reviewed_source_sha:
+        description: "Reviewed full main commit SHA (40 lowercase hexadecimal characters)"
+        required: true
+        type: string
+      owner_approved:
+        description: "I approve building this exact reviewed commit with my private TEST signing key"
+        required: true
+        default: false
+        type: boolean
+      create_draft_release:
+        description: "Also create an UNPUBLISHED GitHub draft prerelease; publish manually later"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  owner-signed-preview:
+    # Never expose private signing secrets to a pull request or arbitrary branch.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.owner_approved == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Require reviewed HEAD and allocate automatic monotonically increasing preview code
+        id: preview
+        env:
+          REVIEWED_SHA: ${{ inputs.reviewed_source_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$REVIEWED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid reviewed SHA'; exit 1; }
+          [[ "$REVIEWED_SHA" == "$GITHUB_SHA" ]] || { echo 'Reviewed SHA mismatch: refusing signer access'; exit 1; }
+          # A rerun of the same workflow run does not get a new number.
+          [[ "$GITHUB_RUN_ATTEMPT" == "1" ]] || { echo 'For a new preview version, start a NEW manual workflow run'; exit 1; }
+          [[ "$GITHUB_RUN_NUMBER" =~ ^[1-9][0-9]*$ ]] || exit 1
+          code=$((100000 + GITHUB_RUN_NUMBER))
+          (( code > 100000 && code <= 2100000000 )) || exit 1
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "version=0.9.57-preview.$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "Using isolated .preview package, version code $code"
+      - name: Reject missing private TEST signer or certificate pin without fallback
+        env:
+          SR_TEST_STORE_FILE: ${{ runner.temp }}/sr-preview-secret/owner-preview.p12
+          SR_TEST_STORE_PASSWORD: ${{ secrets.SR_TEST_STORE_PASSWORD }}
+          SR_TEST_KEY_ALIAS: ${{ secrets.SR_TEST_KEY_ALIAS }}
+          SR_TEST_KEY_PASSWORD: ${{ secrets.SR_TEST_KEY_PASSWORD }}
+          SR_TEST_KEYSTORE_B64: ${{ secrets.SR_TEST_KEYSTORE_B64 }}
+          SR_TEST_CERT_PIN: ${{ vars.SR_TEST_CERT_SHA256 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          for key in SR_TEST_STORE_PASSWORD SR_TEST_KEY_ALIAS SR_TEST_KEY_PASSWORD SR_TEST_KEYSTORE_B64; do
+            test -n "${!key}" || { echo "Missing private owner-only signer config: $key"; exit 1; }
+          done
+          [[ "$SR_TEST_CERT_PIN" =~ ^[a-fA-F0-9]{64}$ ]] || { echo 'Missing public certificate SHA-256 pin'; exit 1; }
+          mkdir -p "$(dirname "$SR_TEST_STORE_FILE")"
+          printf '%s' "$SR_TEST_KEYSTORE_B64" | base64 --decode > "$SR_TEST_STORE_FILE"
+          chmod 600 "$SR_TEST_STORE_FILE"
+          test -s "$SR_TEST_STORE_FILE"
+      - name: Install official Android SDK tools
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" --install "platforms;android-36" "build-tools;35.0.0"
+      - name: Test source and fixed WebView parity before signing
+        run: |
+          set -euo pipefail
+          node tests/smoke.mjs
+          node tests/dossier.mjs
+          node tests/save-backup.mjs
+          node tests/android-upgrade-readiness.mjs
+          node tests/owner-preview-release-guard.mjs
+          for name in game.js index.html style.css scored-match.js dossier.js save-backup.js; do
+            cmp "web/$name" "android/app/src/main/assets/$name"
+          done
+      - name: Build with ONLY owner's pinned private TEST signer
+        working-directory: android
+        env:
+          SR_TEST_STORE_FILE: ${{ runner.temp }}/sr-preview-secret/owner-preview.p12
+          SR_TEST_STORE_PASSWORD: ${{ secrets.SR_TEST_STORE_PASSWORD }}
+          SR_TEST_KEY_ALIAS: ${{ secrets.SR_TEST_KEY_ALIAS }}
+          SR_TEST_KEY_PASSWORD: ${{ secrets.SR_TEST_KEY_PASSWORD }}
+          PREVIEW_CODE: ${{ steps.preview.outputs.code }}
+          PREVIEW_NAME: ${{ steps.preview.outputs.version }}
+        run: |
+          set -euo pipefail
+          gradle --no-daemon :app:assembleDebug \
+            -PsrPreviewPackage=true "-PsrPreviewVersionCode=$PREVIEW_CODE" "-PsrPreviewVersionName=$PREVIEW_NAME"
+      - name: Verify real APK's preview identity, higher code, owner signer and payload
+        env:
+          PREVIEW_CODE: ${{ steps.preview.outputs.code }}
+          PREVIEW_NAME: ${{ steps.preview.outputs.version }}
+          SR_TEST_CERT_PIN: ${{ vars.SR_TEST_CERT_SHA256 }}
+        run: |
+          set -euo pipefail
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          SIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/apksigner"
+          AAPT="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/aapt"
+          "$SIGNER" verify --min-sdk-version 26 --print-certs "$APK" > "$RUNNER_TEMP/preview-public-signer.txt"
+          actual="$(sed -nE 's/.*Signer #1 certificate SHA-256 digest: ([a-fA-F0-9:]+).*$/\1/p' "$RUNNER_TEMP/preview-public-signer.txt" | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          pin="$(printf '%s' "$SR_TEST_CERT_PIN" | tr '[:upper:]' '[:lower:]')"
+          [[ "$actual" =~ ^[0-9a-f]{64}$ ]] && [[ "$actual" == "$pin" ]] || { echo 'CERTIFICATE MISMATCH: BLOCK PREVIEW DISTRIBUTION'; exit 1; }
+          metadata="$("$AAPT" dump badging "$APK" | head -n 1)"
+          [[ "$metadata" == *"name='com.playereden.ricochetrumble.preview'"* ]] || { echo 'Incorrect preview package'; exit 1; }
+          [[ "$metadata" == *"versionCode='$PREVIEW_CODE'"* ]] || { echo 'Incorrect preview code'; exit 1; }
+          [[ "$metadata" == *"versionName='$PREVIEW_NAME'"* ]] || { echo 'Incorrect preview name'; exit 1; }
+          for name in game.js index.html style.css scored-match.js dossier.js save-backup.js; do
+            cmp "web/$name" <(unzip -p "$APK" "assets/$name") || { echo "APK asset mismatch: $name"; exit 1; }
+          done
+          mkdir -p qa-results
+          {
+            echo "SOURCE_SHA=$GITHUB_SHA"
+            echo "PACKAGE=com.playereden.ricochetrumble.preview"
+            echo "VERSION_CODE=$PREVIEW_CODE"
+            echo "VERSION_NAME=$PREVIEW_NAME"
+            echo "PUBLIC_SIGNER_SHA256=$actual"
+            echo "APK_SHA256=$(sha256sum "$APK" | awk '{print $1}')"
+            echo 'SIGNED_INTERNAL_TEST_PREVIEW_ONLY; NOT PLAY DISTRIBUTION'
+            echo 'NO_PHYSICAL_INSTALL_OR_SAVED_DATA_UPGRADE_VERIFIED'
+          } > qa-results/owner-preview-evidence.txt
+      - name: Upload verified owner preview for internal retrieval
+        uses: actions/upload-artifact@v4
+        with:
+          name: owner-preview-verified-${{ github.run_id }}
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            qa-results/owner-preview-evidence.txt
+          if-no-files-found: error
+          retention-days: 14
+      - name: Erase temporary keystore on runner
+        if: always()
+        env:
+          KEY_DIR: ${{ runner.temp }}/sr-preview-secret
+        run: rm -rf "$KEY_DIR"
+
+  owner-draft-release:
+    # No production release and no automatic public APK. Only a separately authorized DRAFT.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.owner_approved == true && inputs.create_draft_release == true
+    needs: owner-signed-preview
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download verified owner APK and evidence from same run
+        uses: actions/download-artifact@v4
+        with:
+          name: owner-preview-verified-${{ github.run_id }}
+          path: preview/
+      - name: Create DRAFT prerelease with exact checksum; never publish automatically
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          apk="preview/android/app/build/outputs/apk/debug/app-debug.apk"
+          report="preview/qa-results/owner-preview-evidence.txt"
+          test -s "$apk" && test -s "$report"
+          cat "$report"
+          source "$report"
+          [[ "$SOURCE_SHA" == "$GITHUB_SHA" ]] || exit 1
+          [[ "$PACKAGE" == "com.playereden.ricochetrumble.preview" ]] || exit 1
+          echo "$APK_SHA256  $apk" | sha256sum --check
+          tag="sector-rebound-preview-$VERSION_CODE"
+          ! gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1 || { echo 'Release tag already exists: do not overwrite'; exit 1; }
+          printf 'Owner-only Android PREVIEW APK\n\nPackage: %s\nVersion code: %s\nSource: %s\nAPK SHA256: %s\n\nSeparate from production Google Play build. No device upgrade verified.\n' \
+            "$PACKAGE" "$VERSION_CODE" "$SOURCE_SHA" "$APK_SHA256" > preview/release-notes.txt
+          gh release create "$tag" "$apk" "$report" \
+            --repo "$GH_REPO" --draft --prerelease --target "$SOURCE_SHA" \
+            --title "Sector Rebound preview $VERSION_CODE (DRAFT)" \
+            --notes-file preview/release-notes.txt
