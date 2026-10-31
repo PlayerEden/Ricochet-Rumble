@@ -91,7 +91,7 @@ try{
  const start=await lastPacket(host,'start'),state=await lastPacket(host,'state');
  CHECK(start.revision===safeLobby.revision,'start matches exact ready rule revision');
  await receive(guest,start);await receive(guest,state);
- CHECK(await guest.locator('.lan-lobby').count()===0,'guest exits lobby after explicit host start');
+ CHECK(await guest.locator('.lan-lobby').isVisible()===false,'guest exits visible lobby after explicit host start');
  CHECK(await host.locator('#menu').evaluate(el=>el.classList.contains('hidden')),'host enters arena when deploying');
  const hs=await host.evaluate(()=>({paused:window.__lanQA.paused,actors:window.__lanQA.state.tanks.length,bots:window.__lanQA.state.config.botCount,humans:window.__lanQA.state.humanCount,maze:window.__lanQA.state.mazeSeed,teams:window.__lanQA.state.config.teamMode}));
  const gs=await guest.evaluate(()=>({paused:window.__lanQA.paused,actors:window.__lanQA.state.tanks.length,bots:window.__lanQA.state.config.botCount,humans:window.__lanQA.state.humanCount,maze:window.__lanQA.state.mazeSeed}));

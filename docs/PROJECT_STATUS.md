@@ -1,3 +1,9 @@
+# 2026-10-31 — TWO-CLIENT BROWSER TEST CORRECTION
+
+[First full scoped LAN QA 41232356735](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41232356735) passed all legacy real-match, source, visual and geometry suites, then failed because a **new test** incorrectly expected the lobby DOM to be removed after Start; the actual game correctly hides the overlay and retains its markup for existing screen flow. Updated the test to require `.lan-lobby.isVisible()===false` after explicit host Start, preserving the exact runtime. Also incorporated the prior short-screen host Bot Skill hiding improvement from real packaged-APK screenshot review. Re-triggered scoped UI and two-client QA. **Final verdict pending exact-head run.**
+
+---
+
 # 2026-10-31 — REAL TWO-WINDOW LOBBY VISUAL POLISH
 Rendered **the exact Preview 100033 APK's HTML/CSS/JS** in two isolated Chromium pages and verified Host→guest Ready→Start produces 2 human actors / 0 bots. Screenshot at 740×360 showed the default host screen nearly clipped the Start button because BOT SKILL occupied a full extra row despite 0 AI. Changed **Bot Skill to hide for 0 bots and reappear for AI matches**; corrected the misleading FREE FOR ALL (1v1) name when bots might be enabled. New browser test asserts both transitions and narrow-layout visuals. Original Preview 100033 build was structurally green; re-verify exact new head before sign-off. [LAN Phase 1 report](LAN_LOBBY_PHASE_1_2026-10-31.md).
 

@@ -50,3 +50,5 @@ jobs:
             qa-results/
           if-no-files-found: warn
           retention-days: 14
+
+# LAN scoped audit rerun: assert hidden overlay instead of removed DOM
