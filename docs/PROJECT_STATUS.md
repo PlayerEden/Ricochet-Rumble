@@ -1,3 +1,13 @@
+# 2026-10-31 — USER-SUPPLIED PHONE UX FRICTION FIXED / PREVIEW 100026
+
+Owner liked the new arcade-tactical visuals of Preview 100022 but showed actual Android screenshots of unnecessary Hangar and Dossier scrolling. The [active unmerged draft PR #85](https://github.com/PlayerEden/Ricochet-Rumble/pull/85) now contains a convenience pass at source `5222063951f42f2bafbee72c276eba3cf855b37a`: **Hangar Paint/Insignia tabs**, **always-accessible header Back** on Hangar and Dossier, and correct **Dossier → Hangar → Dossier** return without detouring home. All real paints/insignia, unlocks, Dossier stats, saved data formats, game controls, movement, combat and LAN protocols preserved. [Full audit](https://github.com/PlayerEden/Ricochet-Rumble/blob/integration/v0956-main-rooted-rehearsal/docs/UI_CONVENIENCE_AUDIT_2026-10-31.md); immutable [pre-pass Preview 100022 rollback](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-100022-before-usability-pass).
+
+**Actual tests PASSED:** [full real Chromium UI 41188661135](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41188661135) — **97 rendered layout scenes / zero reported issues**, five landscape viewport sizes, authentic Hangar tabs/keyboard + Dossier navigation + in-app save/progression flows; [screenshots and JSON evidence](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41188661135/artifacts/13037429333). [Signed disposable Preview 100026 Android build 41188661154 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41188661154), same test signer as 100022, package `com.playereden.ricochetrumble.preview`, version 100026, APK SHA256 `5997c684dbe2cf3ae09994c80b80c15584c2640a5aa303860bc6147dcaf76d08`; downloaded and independently verified checksum against signed build.
+
+**Still PENDING:** owner actual physical phone comfort/UI sign-off, installed saved-Dossier continuity and two-phone LAN; no private Play signing, no automatic gameplay merge to stable main (main runtime intentionally older). 
+
+---
+
 # 2026-10-31 — FULL UI VISUAL IDENTITY VERIFIED (SIGNED TEST APK 100022)
 
 **Latest user-approved development direction:** full game-menu presentation overhaul where needed, rather than simple blue palette swap. The [draft unmerged PR #85](https://github.com/PlayerEden/Ricochet-Rumble/pull/85) now has charcoal/gunmetal panels, unmistakable amber primary Quick Play/Start/Next Match actions, restrained cyan selection/information, pictographic four-mode game selection, coherent Hangar/Dossier/Settings/Pause/results design and retained real animated tank/mech hero. **No game code, physics, controls, player data schemas, unlocks, or LAN protocol changes** in this style pass; stable `main` runtime stays v0.9.21.
