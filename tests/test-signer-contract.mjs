@@ -14,7 +14,7 @@ assert.ok(!/debug\s*\{[^}]*signingConfigs\.releaseUpload/s.test(gradle),'do not 
 assert.ok(workflow.includes('workflow_dispatch:'),'only authorized manual dispatch may request private test signer');
 assert.ok(!/pull_request:/.test(workflow),'never expose secrets to PRs');
 assert.ok(!/\n\s+push:/.test(workflow),'no automatic secret use on push');
-assert.ok(workflow.includes("CERTIFICATE MISMATCH: refusing to distribute test APK"));
+assert.ok(workflow.includes('CERTIFICATE MISMATCH: BLOCK PREVIEW DISTRIBUTION'));
 assert.ok(workflow.includes('SR_TEST_CERT_SHA256'));
 assert.ok(workflow.includes('base64 --decode'));
 assert.ok(workflow.includes('Erase temporary keystore from CI runner'));
