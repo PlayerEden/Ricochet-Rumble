@@ -1,3 +1,5 @@
+> **Owner update — 2026-10-30:** Sector Rebound is **already uninstalled from the owner's current phone**. Skip the old-installed-app backup and signer-migration steps **for this device only**; absent an earlier external backup, uninstall has already removed its local progress. We should now perform a **fresh clean install using the owner's new permanent private TEST key**, followed by future same-key in-place updates with increasing Android version codes. Other phones may still have installations; don't assume they are empty. The guarded owner-preview version procedure is [staged in draft PR #85](https://github.com/PlayerEden/Ricochet-Rumble/blob/integration/v0956-main-rooted-rehearsal/docs/OWNER_TEST_PREVIEW_SETUP_v0957.md), not available as a working signed release until owner creates/separately stores their private key, configures Actions secrets, and the workflow is reviewed/integrated. **Two phones are only needed for LAN QA, not APK update testing.**
+
 # Sector Rebound — Simple Android APK Update Plan
 
 **Status (2026-10-30): preparation only. No install, no user data changes, no permanent signing key configured or tested yet.**  
