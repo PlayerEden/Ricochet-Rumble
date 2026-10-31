@@ -1,0 +1,49 @@
+name: Sector Rebound - scoped UI/UX review
+on:
+  push:
+    branches: [integration/v0956-main-rooted-rehearsal]
+    paths:
+      - '.github/workflows/ui-ux-scoped-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ui-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify web and Android UI asset parity
+        run: |
+          set -euo pipefail
+          node --check web/game.js
+          for asset in game.js index.html style.css; do
+            cmp "web/$asset" "android/app/src/main/assets/$asset"
+          done
+          node tests/smoke.mjs
+      - name: Install the same browser test dependency as full QA
+        run: npm install --no-save --ignore-scripts playwright-core@1.56.1
+      - name: Run real Chromium game menu, modes, results and landscape geometry
+        run: |
+          set -euo pipefail
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          node tests/quick-play-live-flow-qa.mjs
+          node tests/ui-layout-geometry-v0948.mjs
+          node tests/visual-qa.mjs
+      - name: Keep inspectable real UI screenshots and layout report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sector-rebound-ui-review-${{ github.run_id }}
+          path: |
+            qa-screens/
+            qa-layout/
+            qa-results/
+          if-no-files-found: warn
+          retention-days: 14
