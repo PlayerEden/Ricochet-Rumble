@@ -44,6 +44,30 @@ try{
  assert.equal(await page.locator('.home-screen').isVisible(),true,'real lobby displayed');
  result.steps.push('live game loaded in Chromium, no bundled source instrumentation');
 
+ // Phase 4A actual browser acceptance: paint must select/persist and the
+ // Hangar must remain reachable at compact Android landscape dimensions.
+ await page.locator('#menu button[data-action="hangar"]').click();
+ assert.equal(await page.locator('.hangar-screen').isVisible(),true,'actual Hangar opens from game lobby');
+ assert.equal(await page.locator('.hangar-grid button[data-paint-id]').count(),4,'only four approved free starter paints');
+ await page.locator('button[data-paint-id="fieldgrid.moss"]').click();
+ const equipped=await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-hangar-paint-v1')));
+ assert.deepEqual(equipped,{version:1,equipped:'fieldgrid.moss'},'actual UI saves selected Moss paint');
+ assert.equal(await page.locator('button[data-paint-id="fieldgrid.moss"]').getAttribute('aria-pressed'),'true','selected paint accessible');
+ for(const [vw,vh] of [[740,360],[915,412],[1280,720]]){
+  await page.setViewportSize({width:vw,height:vh});
+  const layout=await page.evaluate(()=>{
+   const p=document.querySelector('#panel').getBoundingClientRect(), buttons=[...document.querySelectorAll('.hangar-grid button')].map(e=>e.getBoundingClientRect());
+   return {panel:{x:p.x,right:p.right,y:p.y,bottom:p.bottom},swatches:buttons.map(x=>({x:x.x,right:x.right,width:x.width,height:x.height}))};
+  });
+  assert.ok(layout.panel.x>=0&&layout.panel.right<=vw+1,'Hangar stays within landscape width '+vw);
+  assert.ok(layout.swatches.every(b=>b.width>=45&&b.height>=70&&b.x>=0&&b.right<=vw+1),'paint swatches reachable and sized '+vw);
+ }
+ await page.setViewportSize({width:915,height:412});
+ await page.locator('#menu button[data-action="hangar-back"]').click();
+ assert.equal(await page.locator('.home-screen').isVisible(),true,'Hangar back returns to lobby');
+ assert.equal((await page.evaluate(()=>localStorage.getItem('rr-hangar-paint-v1'))),JSON.stringify({version:1,equipped:'fieldgrid.moss'}),'back navigation does not reset equipped paint');
+ result.steps.push('Hangar four free paint selectors: real click, saved equip, responsive landscape, safe return');
+
  await page.locator('#menu button[data-action="settings"]').click();
  const advanced=page.locator('details.extra-rules');
  await advanced.locator('summary').click();
