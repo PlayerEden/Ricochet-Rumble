@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/lan-input-parity-v0953.yml'
       - 'tests/lan-pilot-input-parity-v0953.mjs'
+      - 'tests/smoke.mjs'
       - 'web/game.js'
       - 'android/app/src/main/assets/game.js'
 permissions:
