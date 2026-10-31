@@ -1,5 +1,5 @@
 name: Sector Rebound - scoped UI/UX review
-# QA rerun: gracefully handle minimal Node simulated DOM in Hangar back metadata
+# QA rerun: compact 68px short-landscape Hangar touch cards; real scroll reachability visual gate
 on:
   push:
     branches: [integration/v0956-main-rooted-rehearsal]

@@ -88,7 +88,7 @@ try{
    return {panel:{x:p.x,right:p.right,y:p.y,bottom:p.bottom},swatches:buttons.map(x=>({x:x.x,right:x.right,width:x.width,height:x.height}))};
   });
   assert.ok(layout.panel.x>=0&&layout.panel.right<=vw+1,'Hangar stays within landscape width '+vw);
-  assert.ok(layout.swatches.every(b=>b.width>=45&&b.height>=70&&b.x>=0&&b.right<=vw+1),'paint swatches reachable and sized '+vw);
+  assert.ok(layout.swatches.every(b=>b.width>=45&&b.height>=64&&b.x>=0&&b.right<=vw+1),'paint swatches reachable and sized '+vw);
  }
  await page.setViewportSize({width:915,height:412});
  await page.locator('#menu button[data-action="hangar-back"]').click();

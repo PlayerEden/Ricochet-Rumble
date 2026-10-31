@@ -1,3 +1,9 @@
+# 2026-10-31 — HANGAR COMPACT TOUCH TARGET ACCEPTANCE
+
+[Initial live Chromium menu QA](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41188593596) failed the old Hangar 70px minimum card-height test at 740×360: the new compact landscape rules deliberately use **68px** paint cards to reduce scrolling. Adjusted QA threshold to **64px**, still much larger than the 30px minimum UI-geometry warning line, and retained all button width/x boundary checks. No runtime logic/art/CSS change in this commit; exact-head scoped Chromium QA rerun to verify real dimensions, flows and screenshots. **Not yet claimed accepted.**
+
+---
+
 # 2026-10-31 — CONVENIENCE PASS SMOKE HARNESS FIX
 
 Initial [UI QA 41188501994](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41188501994) stopped in the original Node-only mock because its simulated button lacks native `.closest()`. Guarded `b.closest?.()` in Hangar launch so real browser handles Dossier context and mock click still works. No game controls/physics/art/saves changed. Source and Android assets mirrored. New [UI QA workflow](https://github.com/PlayerEden/Ricochet-Rumble/actions/workflows/ui-ux-scoped-audit.yml) retriggered; owner phone acceptance pending.
