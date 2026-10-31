@@ -727,7 +727,7 @@ function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=c
  if(mag>1){mx/=mag;my/=mag;mag=1}if(mag<.09){mx=0;my=0;mag=0}
  const tacticalVehicle=isScoredVehicleMatch()&&!t.onFoot;
  const baseVehicleSpeed=tacticalVehicle?(inp.bot?SCORED_FFA_VEHICLE_PACE.bot:SCORED_FFA_VEHICLE_PACE.human):(inp.bot?178:222);
- const speed=(t.onFoot?(inp.bot?194:268):baseVehicleSpeed*vehicleDef(currentVehicle(t)).speed)*(t.powerType==='turbo'&&t.powerTimer>0?1.48:1),blend=Math.min(1,dt*(mag?9:13));t.vx+=(mx*speed-t.vx)*blend;t.vy+=(my*speed-t.vy)*blend;
+ const speed=(t.onFoot?(inp.bot?194:268):baseVehicleSpeed*vehicleDef(currentVehicle(t)).speed)*(t.powerType==='turbo'&&t.powerTimer>0?1.48:1);
  // Apply CQC's accepted 6.5rad/s aim to the local Solo Survival pilot too.
  // AI, guest/host LAN, duel, and all vehicles retain their existing behavior.
  // Both human seats in LAN can independently aim a vulnerable pilot.
@@ -736,6 +736,22 @@ function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=c
  const independentAim=precisionFoot||(isScoredMatch()&&i===0&&!inp.bot&&tacticalVehicle);
  const aimed=independentAim&&Number.isFinite(inp.aimX)&&Number.isFinite(inp.aimY)&&Math.hypot(inp.aimX,inp.aimY)>.6;
  if(mag||aimed){const target=aimed?Math.atan2(inp.aimY,inp.aimX):Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a)),maxTurn=dt*(precisionFoot?SOLO_PILOT_TURN_RATE:tacticalVehicle?(aimed?SCORED_FFA_VEHICLE_PACE.aimTurnRate:SCORED_FFA_VEHICLE_PACE.turnRate):12);t.a+=clamp(diff,-maxTurn,maxTurn)}
+ // Solo human tanks used to slide toward the thumb before the hull faced that
+ // direction. During a deliberate, slow turn that appears like an off-center
+ // orbit. Throttle forward drive until the tracks align with the requested path.
+ // Do not change angular rates, independent AIM, pilot, mech, bots, or LAN.
+ const soloTankDrive=mode==='solo'&&!inp.bot&&!t.onFoot&&currentVehicle(t)?.type==='tank'&&!aimed;
+ let driveX=mx,driveY=my,turningToFace=false;
+ if(soloTankDrive&&mag){
+  const intended=Math.atan2(my,mx);
+  const diff=Math.atan2(Math.sin(intended-t.a),Math.cos(intended-t.a));
+  const alignment=clamp((Math.cos(diff)-.3)/.7,0,1);
+  driveX=Math.cos(t.a)*mag*alignment;
+  driveY=Math.sin(t.a)*mag*alignment;
+  turningToFace=alignment<.5;
+ }
+ const blend=Math.min(1,dt*(turningToFace?17:mag?9:13));
+ t.vx+=(driveX*speed-t.vx)*blend;t.vy+=(driveY*speed-t.vy)*blend;
  const nx=t.x+t.vx*dt,ny=t.y+t.vy*dt;
  const radius=t.onFoot?10:21;
  const collides=(x,y)=>blocked(x,y,radius)||state.tanks.some((other,j)=>{

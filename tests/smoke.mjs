@@ -430,6 +430,30 @@ assert.equal(node('arena').height,576);
 win.innerWidth=915;win.innerHeight=412;win.devicePixelRatio=1;
 assert.equal(win.__test.resizeArenaCanvas(),true);
 assert.equal(node('arena').width,915);assert.equal(node('arena').height,412);
+// Owner phone feel: an offline human tank should rotate around its center,
+ // without sideways drift while the hull has yet to face the joystick.
+{
+ click('solo');
+ const pivot=st().tanks[0],vehicle=st().vehicles[pivot.vehicleId];
+ assert.equal(vehicle.type,'tank');
+ const px=pivot.x,py=pivot.y;
+ pivot.a=0;pivot.vx=pivot.vy=0;
+ win.__test.tankMove(pivot,{moveX:0,moveY:1},1/60,0);
+ assert.ok(pivot.a>0,'tank responds immediately to a 90-degree turn command');
+ assert.ok(Math.hypot(pivot.x-px,pivot.y-py)<.005,'far-off heading rotates at a fixed hull center');
+ assert.ok(Math.hypot(pivot.vx,pivot.vy)<.001,'no lateral sliding during stationary pivot');
+ // An already aligned tank retains the old maximum driving acceleration.
+ pivot.a=Math.PI/2;pivot.vx=pivot.vy=0;
+ win.__test.tankMove(pivot,{moveX:0,moveY:1},1/60,0);
+ assert.ok(pivot.vy>20&&Math.abs(pivot.vx)<.001,'aligned tank accelerates normally');
+ // Mechs and bots remain world-directional by design.
+ vehicle.type='mech';pivot.a=0;pivot.vx=pivot.vy=0;
+ win.__test.tankMove(pivot,{moveX:0,moveY:1},1/60,0);
+ assert.ok(pivot.vy>0,'mech movement remains unaffected');
+ vehicle.type='tank';pivot.a=0;pivot.vx=pivot.vy=0;
+ win.__test.tankMove(pivot,{moveX:0,moveY:1,bot:true},1/60,0);
+ assert.ok(pivot.vy>0,'bot movement remains unaffected');
+}
 click('solo');
 const driving=st().tanks[0],origTracks=[driving.trackLeft,driving.trackRight];
 win.__test.tankMove(driving,{moveX:1,moveY:0},1/60,0);
