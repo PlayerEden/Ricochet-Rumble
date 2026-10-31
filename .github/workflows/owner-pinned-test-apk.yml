@@ -47,7 +47,7 @@ jobs:
           [[ "$OWNER_APPROVED" == 'true' ]] || { echo 'Owner approval required'; exit 1; }
           [[ "$REVIEWED_SHA" =~ ^[0-9a-f]{40}$ ]] && [[ "$REVIEWED_SHA" == "$GITHUB_SHA" ]] || { echo 'Reviewed SHA differs from selected branch HEAD'; exit 1; }
           [[ "$PREVIEW_CODE" =~ ^[1-9][0-9]*$ ]] && (( PREVIEW_CODE > 50 && PREVIEW_CODE <= 2100000000 )) || { echo 'Version code must exceed 50'; exit 1; }
-          [[ "$PREVIEW_NAME" =~ ^[0-9]+\\.[0-9]+\\.[0-9]+-[a-z0-9][a-z0-9.-]*$ ]] || { echo 'Invalid test version name'; exit 1; }
+          [[ "$PREVIEW_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+-[a-z0-9][a-z0-9.-]*$ ]] || { echo 'Invalid test version name'; exit 1; }
       - name: Reject missing private test signer or public digest (NEVER auto-fallback)
         env:
           SR_TEST_STORE_FILE: ${{ runner.temp }}/sr-test-credentials/test-only-keystore.jks
