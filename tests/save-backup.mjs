@@ -80,3 +80,11 @@ for(const invalid of [{version:2,equipped:'fieldgrid.moss'},{version:1,equipped:
 const futurePaint=storage({'rr-hangar-paint-v1':JSON.stringify({version:3,equipped:'fieldgrid.moss'})});
 assert.equal(B.previewImport(futurePaint,paintBackup.text).ok,false,'future cosmetic schema never overwritten');
 console.log('PASS local Hangar backup/restore, unknown IDs and future-version protection.');
+
+assert.equal(B.validJson('rr-hangar-paint-v1',JSON.stringify({version:1,equipped:'fieldgrid.vanguard'})),true,'earned Vanguard allowed by strict offline backup');
+assert.equal(B.validJson('rr-hangar-paint-v1',JSON.stringify({version:1,equipped:'fieldgrid.veteran'})),true,'earned Veteran allowed by strict offline backup');
+const earnedBackup=B.makeBackup(storage({'rr-dossier-v1':dossier,'rr-hangar-paint-v1':JSON.stringify({version:1,equipped:'fieldgrid.vanguard'})}));
+assert.equal(earnedBackup.ok,true);
+const recoveredEarned=storage();
+assert.equal(B.restore(recoveredEarned,earnedBackup.text).ok,true);
+assert.equal(JSON.parse(recoveredEarned.getItem('rr-hangar-paint-v1')).equipped,'fieldgrid.vanguard','earned finish remains saveable and restorable');

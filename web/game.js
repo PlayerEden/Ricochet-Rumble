@@ -27,9 +27,16 @@ function refreshHangar(){
  const status=document.getElementById('hangar-status');
  if(status)status.textContent='EQUIPPED · '+HANGAR_PAINTS[equippedPaint].label+' · SOLO ONLY';
  for(const el of document.querySelectorAll('[data-action="equip-paint"]')){
-  const selected=el.dataset.paintId===equippedPaint;
+  const id=el.dataset.paintId,selected=id===equippedPaint,unlock=paintProgress(id);
   el.classList.toggle('selected',selected);
-  if(typeof el.setAttribute==='function')el.setAttribute('aria-pressed',String(selected));
+  el.classList.toggle('locked',!unlock.eligible);
+  el.disabled=!unlock.eligible;
+  if(typeof el.setAttribute==='function'){
+   el.setAttribute('aria-pressed',String(selected));
+   el.setAttribute('aria-label',HANGAR_PAINTS[id]?.label+' · '+(unlock.eligible?'AVAILABLE':'LOCKED · '+unlock.current+' OF '+unlock.target+' '+unlock.metric.toUpperCase()));
+  }
+  const label=el.querySelector?.('small');
+  if(label&&unlock.target)label.textContent=unlock.eligible?'UNLOCKED':unlock.current+' / '+unlock.target+' '+unlock.metric.toUpperCase();
  }
 }
 function openHangar(){setPanel(document.getElementById('hangar-template').innerHTML);refreshHangar();}
@@ -1171,10 +1178,19 @@ const HANGAR_PAINTS=Object.freeze({
  'fieldgrid.standard':{label:'STANDARD'},
  'fieldgrid.moss':{label:'MOSS'},
  'fieldgrid.dune':{label:'DUNE'},
- 'fieldgrid.oxide':{label:'OXIDE'}
+ 'fieldgrid.oxide':{label:'OXIDE'},
+ 'fieldgrid.vanguard':{label:'VANGUARD',metric:'matches',target:5},
+ 'fieldgrid.veteran':{label:'VETERAN',metric:'wins',target:12}
 });
 let equippedPaint='fieldgrid.standard';
-function normalizePaint(id){return Object.prototype.hasOwnProperty.call(HANGAR_PAINTS,id)?id:'fieldgrid.standard';}
+function paintProgress(id,info=currentDossier()){
+ const def=Object.prototype.hasOwnProperty.call(HANGAR_PAINTS,id)?HANGAR_PAINTS[id]:null;
+ if(!def)return {eligible:false,current:0,target:0,metric:'unknown'};
+ if(!def.metric)return {eligible:true,current:0,target:0,metric:'free'};
+ const current=Number.isSafeInteger(info?.[def.metric])&&info[def.metric]>=0?info[def.metric]:0;
+ return {eligible:current>=def.target,current,target:def.target,metric:def.metric};
+}
+function normalizePaint(id){return paintProgress(id).eligible?id:'fieldgrid.standard';}
 function loadPaint(){
  equippedPaint='fieldgrid.standard';
  try{const raw=JSON.parse(window.localStorage?.getItem(HANGAR_KEY)||'null');
@@ -1183,7 +1199,7 @@ function loadPaint(){
  return equippedPaint;
 }
 function equipPaint(id){
- if(!Object.prototype.hasOwnProperty.call(HANGAR_PAINTS,id))return false;
+ if(!paintProgress(id).eligible)return false;
  const data=JSON.stringify({version:1,equipped:id});
  try{window.localStorage?.setItem(HANGAR_KEY,data);
   if(window.localStorage?.getItem(HANGAR_KEY)!==data)return false;
@@ -1206,7 +1222,15 @@ const FIELDGRID_UNIT_SKINS=Object.freeze({
  'fieldgrid.oxide':{
   pilot:{armor:'#9e6858',shadow:'#512f31',light:'#d9a18c',trim:'#bf795f'},
   tank:{armor:'#a66d5b',shadow:'#573637',light:'#e5b5a2',trim:'#c4836f'},
-  mech:{armor:'#a46c64',shadow:'#573940',light:'#dfaaa1',trim:'#be8479'}}
+  mech:{armor:'#a46c64',shadow:'#573940',light:'#dfaaa1',trim:'#be8479'}},
+ 'fieldgrid.vanguard':{
+  pilot:{armor:'#648f9d',shadow:'#253f4d',light:'#a5cbd1',trim:'#80b5bd'},
+  tank:{armor:'#5d8899',shadow:'#254454',light:'#afd5db',trim:'#78aebe'},
+  mech:{armor:'#688c9d',shadow:'#2b4359',light:'#b9d4e1',trim:'#80acbb'}},
+ 'fieldgrid.veteran':{
+  pilot:{armor:'#9e9070',shadow:'#514a3b',light:'#dbcaa0',trim:'#d1b873'},
+  tank:{armor:'#9a8b67',shadow:'#4b4639',light:'#e0d5ac',trim:'#c0a468'},
+  mech:{armor:'#a09470',shadow:'#534a3d',light:'#dfd1a6',trim:'#c4af77'}}
 });
 function resolveUnitMaterials(unit,teamPaint,skinId='fieldgrid.standard'){
  const preset=FIELDGRID_UNIT_SKINS[skinId]||FIELDGRID_UNIT_SKINS['fieldgrid.standard'];
@@ -1610,8 +1634,8 @@ function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=fa
 const originalPanel=panel.innerHTML;
 panel.addEventListener('change',e=>{const el=e.target;if(el.id==='custom-preset-select'){pendingPresetDelete='';refreshCustomPresetUI();customPresetStatus('SELECT LOAD TO APPLY SAVED RULES');return;}if(el.id?.startsWith('custom-')){readCustomScreen();refreshCustomUI();return;}if(el.id?.startsWith('pref-')){const key=el.id.slice(5);if(key in comfort)comfort[key]=el.checked;applyPrefsToUI()}savePrefs()});
 loadPrefs();
-loadPaint();
 dossierStore=window.SectorDossier?.createStore((()=>{try{return window.localStorage}catch(_){return null}})())||null;
+loadPaint(); // Dossier milestones must be available before restoring earned selections.
 
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
  if(a==='toggle-sound'||a==='toggle-music'){togglePauseAudio(a==='toggle-sound'?'sound':'music',b);return;}
@@ -1620,7 +1644,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
  if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar()}else if(a==='hangar-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='equip-paint'){
    const ok=equipPaint(b.dataset.paintId);
    refreshHangar();const status=document.getElementById('hangar-status');
-   if(!ok&&status)status.textContent='COULD NOT SAVE PAINT · CURRENT PAINT KEPT';
+   if(!ok&&status)status.textContent=paintProgress(b.dataset.paintId).eligible?'COULD NOT SAVE PAINT · CURRENT PAINT KEPT':'LOCKED · COMPLETE DOSSIER MILESTONE FIRST';
   }else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, point the hull with the movement joystick. Sharp changes pivot the tank before accelerating; tap FIRE when lined up.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){panel.innerHTML=originalPanel;applyPrefsToUI();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
  else if(a==='custom-reset'){resetCustomDraft();refreshCustomUI();customPresetStatus('DEFAULT RULES RESTORED · SAVED PRESETS KEPT');}
  else if(a==='custom-preset-save'){

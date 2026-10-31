@@ -16,7 +16,7 @@ function validJson(key,raw){
   if(obj.playlist!==undefined&&(!object(obj.playlist)||obj.playlist.version!==1||!Array.isArray(obj.playlist.enabled)||obj.playlist.enabled.some(x=>!modeIds.includes(x))))return false;
   return true;
  }
- if(key==='rr-hangar-paint-v1')return obj.version===1&&['fieldgrid.standard','fieldgrid.moss','fieldgrid.dune','fieldgrid.oxide'].includes(obj.equipped)&&Object.keys(obj).length===2;
+ if(key==='rr-hangar-paint-v1')return obj.version===1&&['fieldgrid.standard','fieldgrid.moss','fieldgrid.dune','fieldgrid.oxide','fieldgrid.vanguard','fieldgrid.veteran'].includes(obj.equipped)&&Object.keys(obj).length===2;
  if(key==='rr-custom-v1')return obj.version===1&&object(obj.rules)&&modeIds.includes(obj.rules.modeId);
  if(key==='rr-custom-presets-v1')return obj.version===1&&Array.isArray(obj.entries)&&obj.entries.length<=5&&obj.entries.every(e=>object(e)&&typeof e.name==='string'&&e.name.length<=24&&object(e.rules)&&modeIds.includes(e.rules.modeId));
  if(key==='rr-dossier-v1'){

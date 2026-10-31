@@ -15,14 +15,15 @@ node('bot-skill').value='normal';
 node('bot-count').value='1';node('bullet-cap').value='3';node('lives-choice').value='5';node('team-choice').value='ffa';node('map-size').value='standard';
 let frame=null,tick=0,hostCalled=false,discoverCalled=false,packets=[];
 const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},joinGame(){},stopNetwork(){},sendPacket(p){packets.push(JSON.parse(p))}};
-const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(key){return ['rr-options-v06','rr-custom-v1','rr-custom-presets-v1','rr-coach-cqc-v1','rr-coach-scored-vehicle-v2','rr-hangar-paint-v1'].includes(key)?savedStorage.get(key)??null:null},setItem(key,value){if(['rr-options-v06','rr-custom-v1','rr-custom-presets-v1','rr-coach-cqc-v1','rr-coach-scored-vehicle-v2','rr-hangar-paint-v1'].includes(key))savedStorage.set(key,String(value))}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(sel){if(sel==='input[data-playlist-mode]')return acceptancePlaylistInputs||[];if(sel==='[data-action="solo"],[data-action="settings-play"]')return acceptancePlayButtons||[];return []}};
+const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(key){return ['rr-options-v06','rr-custom-v1','rr-custom-presets-v1','rr-coach-cqc-v1','rr-coach-scored-vehicle-v2','rr-hangar-paint-v1','rr-dossier-v1'].includes(key)?savedStorage.get(key)??null:null},setItem(key,value){if(['rr-options-v06','rr-custom-v1','rr-custom-presets-v1','rr-coach-cqc-v1','rr-coach-scored-vehicle-v2','rr-hangar-paint-v1','rr-dossier-v1'].includes(key))savedStorage.set(key,String(value))}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(sel){if(sel==='input[data-playlist-mode]')return acceptancePlaylistInputs||[];if(sel==='[data-action="solo"],[data-action="settings-play"]')return acceptancePlayButtons||[];return []}};
 let simRand=null;
 const testMath=Object.create(Math);testMath.random=()=>simRand?simRand():Math.random();
 function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5;return(z>>>0)/4294967296;};}
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math:testMath,Number,Set,JSON,String};
 vm.runInNewContext(fs.readFileSync(new URL('../web/scored-match.js',import.meta.url),'utf8'),env,{filename:'scored-match.js'});
+vm.runInNewContext(fs.readFileSync(new URL('../web/dossier.js',import.meta.url),'utf8'),env,{filename:'dossier.js'});
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,get customDraft(){return {...customDraft}},normalizeCustomDraft,customOptionsFor,setCustomDraft,loadCustomDraft,cleanPresetName,normalizeCustomPresets,loadCustomPresets,saveNamedCustomPreset,loadNamedCustomPreset,deleteNamedCustomPreset,resetCustomDraft,get customPresets(){return customPresets.map(p=>({name:p.name,rules:{...p.rules}}))},freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,projectileHitRadius,beginFireAim,updateFireAim,clearFireAim,get fireAim(){return {...fireAim}},get touch(){return touch},tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,resolveUnitMaterials,get equippedPaint(){return equippedPaint},equipPaint,loadPaint,normalizePaint,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,get customDraft(){return {...customDraft}},normalizeCustomDraft,customOptionsFor,setCustomDraft,loadCustomDraft,cleanPresetName,normalizeCustomPresets,loadCustomPresets,saveNamedCustomPreset,loadNamedCustomPreset,deleteNamedCustomPreset,resetCustomDraft,get customPresets(){return customPresets.map(p=>({name:p.name,rules:{...p.rules}}))},freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,projectileHitRadius,beginFireAim,updateFireAim,clearFireAim,get fireAim(){return {...fireAim}},get touch(){return touch},tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,resolveUnitMaterials,get equippedPaint(){return equippedPaint},get dossierStore(){return dossierStore},paintProgress,equipPaint,loadPaint,normalizePaint,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -2197,4 +2198,38 @@ console.log('PASS v0.9.46 presentation: interactive pause SFX/music, persistence
  click('hangar-back');
  assert.equal(node('panel').innerHTML,node('menu').innerHTML===null?'':node('panel').innerHTML,'return action does not crash');
  console.log('PASS Phase 4A Hangar: four free fixed palettes, local-only saved selection, no gameplay effects');
+}
+
+// Phase 4B: actual local Dossier results, not invented unlock counters.
+{
+ const api=win.__test,store=api.dossierStore;
+ assert.ok(store?.canWrite,'real Dossier storage available in QA');
+ const prior=savedStorage.get('rr-hangar-paint-v1');
+ assert.equal(api.paintProgress('fieldgrid.moss').eligible,true,'starter finish stays free');
+ assert.equal(api.paintProgress('fieldgrid.vanguard').eligible,false,'earned paint starts locked');
+ assert.equal(api.paintProgress('fieldgrid.veteran').eligible,false);
+ assert.equal(api.equipPaint('fieldgrid.vanguard'),false,'locked paint cannot equip');
+ assert.equal(savedStorage.get('rr-hangar-paint-v1'),prior,'locked attempt cannot overwrite user selection');
+ for(let n=0;n<5;n++){
+  assert.equal(store.record({version:1,matchModeId:'survival_ffa',matchId:100+n,mazeSeed:800+n,
+   durationSeconds:32,operatorKOs:1,deaths:0,outcome:'victory'},'paint-milestone-'+n).ok,true);
+ }
+ assert.equal(api.paintProgress('fieldgrid.vanguard').eligible,true,'five real completed matches unlock Vanguard');
+ assert.equal(api.paintProgress('fieldgrid.veteran').eligible,false,'five wins not twelve');
+ assert.equal(api.equipPaint('fieldgrid.vanguard'),true);
+ assert.equal(savedStorage.get('rr-hangar-paint-v1'),JSON.stringify({version:1,equipped:'fieldgrid.vanguard'}));
+ assert.equal(api.loadPaint(),'fieldgrid.vanguard','earned paint restores after reload');
+ assert.equal(api.resolveUnitMaterials('mech','#46d2f5','fieldgrid.vanguard').armor,'#688c9d');
+ for(let n=5;n<12;n++){
+  assert.equal(store.record({version:1,matchModeId:'scored_ffa',matchId:100+n,mazeSeed:800+n,
+   durationSeconds:48,operatorKOs:2,deaths:0,outcome:'victory'},'paint-milestone-'+n).ok,true);
+ }
+ assert.equal(api.paintProgress('fieldgrid.veteran').eligible,true,'12 wins unlock Veteran');
+ assert.equal(api.equipPaint('fieldgrid.veteran'),true);
+ assert.equal(api.loadPaint(),'fieldgrid.veteran');
+ assert.equal(api.resolveUnitMaterials('tank','#46d2f5','fieldgrid.veteran').armor,'#9a8b67');
+ assert.equal(api.paintProgress('fieldgrid.not-a-skin').eligible,false);
+ assert.equal(api.equipPaint('fieldgrid.not-a-skin'),false,'unknown IDs rejected');
+ assert.equal(api.resolveUnitMaterials('tank','#46d2f5','fieldgrid.standard').armor,'#46d2f5');
+ console.log('PASS Phase 4B: live Dossier completion/wins grant cosmetic only; saved paint, no invalid IDs or stat boosts');
 }

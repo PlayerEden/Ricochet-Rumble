@@ -731,3 +731,9 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 .hangar-back{align-self:flex-start;min-height:44px;background:#2d505f;border:1px solid #78a2ad;color:#fff;border-radius:5px;padding:7px 18px;font-weight:850}
 @media(max-height:380px){.hangar-grid button{min-height:74px;gap:3px;padding:4px}.hangar-note{font-size:10px}.hangar-screen{gap:5px}}
 @media(max-width:580px){.hangar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Phase 4B progression: six total presets; locked rewards remain visible but cannot equip. */
+.paint-vanguard{background:#5d8899}.paint-veteran{background:#9a8b67}
+.hangar-grid button.locked,.hangar-grid button:disabled{opacity:.65;border-style:dashed;cursor:not-allowed}
+.hangar-grid button.locked .paint-swatch{filter:grayscale(.58) brightness(.8)}
+.hangar-grid button:not(:disabled):focus-visible{outline:3px solid #f3d69b;outline-offset:2px}

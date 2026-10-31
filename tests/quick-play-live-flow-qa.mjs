@@ -48,7 +48,10 @@ try{
  // Hangar must remain reachable at compact Android landscape dimensions.
  await page.locator('#menu button[data-action="hangar"]').click();
  assert.equal(await page.locator('.hangar-screen').isVisible(),true,'actual Hangar opens from game lobby');
- assert.equal(await page.locator('.hangar-grid button[data-paint-id]').count(),4,'only four approved free starter paints');
+ assert.equal(await page.locator('.hangar-grid button[data-paint-id]').count(),6,'four free and two earned finishes in Hangar');
+ assert.equal(await page.locator('button[data-paint-id="fieldgrid.vanguard"]').isDisabled(),true,'five-match reward locked before play');
+ assert.equal(await page.locator('button[data-paint-id="fieldgrid.veteran"]').isDisabled(),true,'twelve-win reward locked before play');
+ assert.equal((await page.locator('button[data-paint-id="fieldgrid.vanguard"] small').textContent()).trim(),'0 / 5 MATCHES');
  await page.locator('button[data-paint-id="fieldgrid.moss"]').click();
  const equipped=await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-hangar-paint-v1')));
  assert.deepEqual(equipped,{version:1,equipped:'fieldgrid.moss'},'actual UI saves selected Moss paint');
@@ -526,7 +529,7 @@ try{
  const saveText=await page.locator('#backup-output').inputValue();
  const parsedSave=JSON.parse(saveText);
  assert.equal(parsedSave.format,'sector-rebound-local-v1');
- assert.deepEqual(Object.keys(parsedSave.entries).sort(),['rr-custom-presets-v1','rr-custom-v1','rr-dossier-v1','rr-options-v06']);
+ assert.deepEqual(Object.keys(parsedSave.entries).sort(),['rr-custom-presets-v1','rr-custom-v1','rr-dossier-v1','rr-hangar-paint-v1','rr-options-v06']);
  for(const [vw,vh] of [[740,360],[915,412],[1280,720]]){
   await page.setViewportSize({width:vw,height:vh});
   const geom=await page.locator('#panel').evaluate(el=>({w:el.clientWidth,sw:el.scrollWidth}));
