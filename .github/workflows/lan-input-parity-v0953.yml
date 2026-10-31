@@ -1,0 +1,36 @@
+name: Sector Rebound v0.9.53 — LAN pilot input parity
+on:
+  push:
+    branches: [feature/lan-pilot-input-parity-v0953]
+    paths:
+      - '.github/workflows/lan-input-parity-v0953.yml'
+      - 'tests/lan-pilot-input-parity-v0953.mjs'
+      - 'tests/smoke.mjs'
+      - 'web/game.js'
+      - 'android/app/src/main/assets/game.js'
+permissions:
+  contents: read
+jobs:
+  lan-input-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check production JavaScript syntax and byte-identical Android assets
+        run: |
+          set -euo pipefail
+          node --check web/game.js
+          node --check tests/lan-pilot-input-parity-v0953.mjs
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/style.css android/app/src/main/assets/style.css
+      - name: Execute actual host-authoritative LAN pilot control and packet probes
+        run: node tests/lan-pilot-input-parity-v0953.mjs
+      - name: Guard scoring, saves and full gameplay regression
+        run: |
+          set -euo pipefail
+          node tests/scored-match-kernel.mjs
+          node tests/save-backup.mjs
+          node tests/smoke.mjs

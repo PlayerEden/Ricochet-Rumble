@@ -296,6 +296,19 @@ const CQC_PILOT_HIT_RADIUS=17.5; // modestly forgiving for ALL CQC pilots, not h
 let mode='idle',connected=false,paused=true,lastTime=performance.now(),sendTimer=0,snapshotTimer=0,toastTimer=0,botTimer=0,hudTimer=0;
 const botBrains=new Map();
 let state=null;let guestInput={moveX:0,moveY:0,fire:false};
+// Host-authoritative LAN pilot input. Explicit axes are accepted only as a
+// finite unit vector; malformed/partial aim can NEVER cause NaN rotation.
+function normalizeLanInput(raw){
+ const axis=k=>Number.isFinite(raw?.[k])?clamp(raw[k],-1,1):0;
+ let moveX=axis('moveX'),moveY=axis('moveY');
+ const mag=Math.hypot(moveX,moveY);if(mag>1){moveX/=mag;moveY/=mag;}
+ const input={moveX,moveY,fire:raw?.fire===true};
+ if(Number.isFinite(raw?.aimX)&&Number.isFinite(raw?.aimY)){
+  const x=clamp(raw.aimX,-1,1),y=clamp(raw.aimY,-1,1),size=Math.hypot(x,y);
+  if(size>.6){input.aimX=x/size;input.aimY=y/size;}
+ }
+ return input;
+}
 let particles=[],screenKick=0,damagePulse=0,fxSeq=0,lastRemoteFxId=0,visualClock=0;
 const keys1={up:'KeyW',down:'KeyS',left:'KeyA',right:'KeyD',fire:'Space'},keys2={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight',fire:'Enter'};
 const fireCooldown=Array(6).fill(0);
@@ -595,9 +608,10 @@ function exitMenu(){menu.classList.add('hidden');refreshHUD()}
 function inputFrom(keys,isLocal){const down=k=>menu.classList.contains('hidden')&&(pressed.has(keys[k])||(isLocal&&touch.has(k)));let moveX=Number(down('right'))-Number(down('left')),moveY=Number(down('down'))-Number(down('up'));
  if(isLocal&&stick.pointerId!==null){moveX=stick.x;moveY=stick.y}
  const length=Math.hypot(moveX,moveY);if(length>1){moveX/=length;moveY/=length}
- // Only offline Solo foot pilots gain the accepted FIRE-drag. Scored vehicle
- // AIM keeps its own pointer; LAN input must not gain unreplicated aim axes.
- const localFoot=isLocal&&mode==='solo'&&!!state?.tanks?.[0]?.onFoot;
+ // Keep Solo's accepted FIRE-drag for the local on-foot pilot in nearby LAN
+ // as well; the guest sends its aim vector to the authoritative host.
+ const localSeat=mode==='guest'?1:0;
+ const localFoot=isLocal&&['solo','host','guest'].includes(mode)&&!!state?.tanks?.[localSeat]?.onFoot;
  const vehicleAim=isLocal&&isScoredVehicleMatch()&&!state?.tanks?.[0]?.onFoot;
  const fineAim=fireAim.active&&((localFoot&&fireAim.source==='fire'&&touch.has('fire'))||(vehicleAim&&fireAim.source==='aim'));
  // AIM never adds a FIRE action; one deliberate shot still uses the FIRE button.
@@ -665,7 +679,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  const label0=document.getElementById('player0-label');if(label0)label0.textContent=tdm?'BLUE':isScoredMatch()?'YOU KOs':'YOU';
  const label1=document.getElementById('player1-label');if(label1)label1.textContent=tdm?'RED':isScoredMatch()?'LEADER':mode==='solo'&&state.config?.teamMode==='teams'?'RED':mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';
  if(mode==='solo')document.getElementById('score1').textContent=botLives;
- const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=isScoredVehicleMatch()&&!foot?'AIM / FIRE':mode==='solo'&&foot?'HOLD · DRAG TO AIM':comfort.autoFire?'AUTO ON':'HOLD TO FIRE';
+ const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=isScoredVehicleMatch()&&!foot?'AIM / FIRE':foot&&['solo','host','guest'].includes(mode)?'HOLD · DRAG TO AIM':comfort.autoFire?'AUTO ON':'HOLD TO FIRE';
  const aimPad=document.getElementById('vehicle-aim');if(aimPad)aimPad.classList.toggle('hidden',!(isScoredVehicleMatch()&&!foot&&state.lives[me]>0&&state.winner<0));
  const clock=document.getElementById('score-clock'),life=document.querySelector('.scorestrip .hud-life');
  if(clock){clock.classList.toggle('hidden',!isScoredMatch());if(isScoredMatch())clock.textContent=durationLabel(Math.ceil(Math.max(0,state.scored.clockSeconds-state.scored.elapsedSeconds)));}
@@ -706,10 +720,12 @@ function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=c
  const speed=(t.onFoot?(inp.bot?194:268):baseVehicleSpeed*vehicleDef(currentVehicle(t)).speed)*(t.powerType==='turbo'&&t.powerTimer>0?1.48:1),blend=Math.min(1,dt*(mag?9:13));t.vx+=(mx*speed-t.vx)*blend;t.vy+=(my*speed-t.vy)*blend;
  // Apply CQC's accepted 6.5rad/s aim to the local Solo Survival pilot too.
  // AI, guest/host LAN, duel, and all vehicles retain their existing behavior.
- const soloFoot=mode==='solo'&&t.onFoot&&i===0&&!inp.bot;
- const independentAim=soloFoot||(isScoredMatch()&&i===0&&!inp.bot&&tacticalVehicle);
+ // Both human seats in LAN can independently aim a vulnerable pilot.
+ // One local player remains seat 0 in offline Solo. No new tank AIM mode.
+ const precisionFoot=t.onFoot&&!inp.bot&&((mode==='solo'&&i===0)||(mode==='host'&&(i===0||i===1)));
+ const independentAim=precisionFoot||(isScoredMatch()&&i===0&&!inp.bot&&tacticalVehicle);
  const aimed=independentAim&&Number.isFinite(inp.aimX)&&Number.isFinite(inp.aimY)&&Math.hypot(inp.aimX,inp.aimY)>.6;
- if(mag||aimed){const target=aimed?Math.atan2(inp.aimY,inp.aimX):Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a)),maxTurn=dt*(soloFoot?SOLO_PILOT_TURN_RATE:tacticalVehicle?(aimed?SCORED_FFA_VEHICLE_PACE.aimTurnRate:SCORED_FFA_VEHICLE_PACE.turnRate):12);t.a+=clamp(diff,-maxTurn,maxTurn)}
+ if(mag||aimed){const target=aimed?Math.atan2(inp.aimY,inp.aimX):Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a)),maxTurn=dt*(precisionFoot?SOLO_PILOT_TURN_RATE:tacticalVehicle?(aimed?SCORED_FFA_VEHICLE_PACE.aimTurnRate:SCORED_FFA_VEHICLE_PACE.turnRate):12);t.a+=clamp(diff,-maxTurn,maxTurn)}
  const nx=t.x+t.vx*dt,ny=t.y+t.vy*dt;
  const radius=t.onFoot?10:21;
  const collides=(x,y)=>blocked(x,y,radius)||state.tanks.some((other,j)=>{
@@ -1587,9 +1603,9 @@ function clearStick(){stick.x=stick.y=0;stick.pointerId=null;knob.style.transfor
 function clearFireAim(){fireAim.pointerId=null;fireAim.source=null;fireAim.x=0;fireAim.y=0;fireAim.active=false;const knob=document.getElementById('vehicle-aim-knob');if(knob)knob.style.transform='translate(-50%, -50%)';}
 function beginFireAim(e,source='fire'){
  if(fireAim.pointerId!==null||!['fire','aim'].includes(source))return;
- // FIRE drag belongs only to the local Solo foot pilot, scored or Survival.
- // Separate vehicle AIM remains scored FFA only; LAN/duel stay unchanged.
- if(source==='fire'&&!(mode==='solo'&&state?.tanks?.[0]?.onFoot))return;
+ // On-foot FIRE-drag works for both LAN seats, with guest state sourced
+ // from the latest authoritative host snapshot (seat 1).
+ if(source==='fire'&&!(('solo'===mode||'host'===mode||'guest'===mode)&&state?.tanks?.[mode==='guest'?1:0]?.onFoot))return;
  if(source==='aim'&&!(mode==='solo'&&isScoredVehicleMatch()&&!state?.tanks?.[0]?.onFoot))return;
  fireAim.pointerId=e.pointerId;fireAim.source=source;fireAim.startX=Number(e.clientX)||0;fireAim.startY=Number(e.clientY)||0;
  fireAim.x=0;fireAim.y=0;fireAim.active=false;
@@ -1616,7 +1632,7 @@ function updateFireAim(e){
   if(!(mode==='solo'&&isScoredVehicleMatch()&&!state?.tanks?.[0]?.onFoot)){clearFireAim();return;}
   updateVehicleAimPad(e);return;
  }
- if(!(mode==='solo'&&state?.tanks?.[0]?.onFoot)){clearFireAim();return;}
+ if(!(['solo','host','guest'].includes(mode)&&state?.tanks?.[mode==='guest'?1:0]?.onFoot)){clearFireAim();return;}
  const dx=(Number(e.clientX)||0)-fireAim.startX,dy=(Number(e.clientY)||0)-fireAim.startY,d=Math.hypot(dx,dy);
  // Preserve accepted pilot FIRE drag sensitivity without new tuning.
  if(d<14)return;
@@ -1643,7 +1659,7 @@ window.RR={openMenu(){if(menu.classList.contains('hidden'))showPauseMenu();else 
  if(event.kind==='eject')audioCue('eject',event.x,event.y);
  if(event.kind==='guard')audioCue('barrier',event.x,event.y);
  if(event.kind==='pickup')audioCue('pickup',event.x,event.y);lastRemoteFxId=event.id}}state=upcoming;setArena(0,state.mazeSeed,state.config?.mapSize);refreshHUD()}break;
- case 'input':if(mode==='host'&&msg.input){guestInput.moveX=clamp(Number(msg.input.moveX)||0,-1,1);guestInput.moveY=clamp(Number(msg.input.moveY)||0,-1,1);guestInput.fire=msg.input.fire===true}break;
+ case 'input':if(mode==='host'&&connected&&msg.input)guestInput=normalizeLanInput(msg.input);break;
  case 'interact':if(mode==='host'&&connected&&!paused)tryInteract(1);break;
  case 'disconnected':connected=false;paused=true;guestInput={moveX:0,moveY:0,fire:false};clearStick();notice('Other player disconnected');setPanel('<h2>CONNECTION LOST</h2><p>Return to the main menu and reconnect.</p><button data-action="close">MAIN MENU</button>');break;
  case 'error':notice(msg.message||'Network error');break;}}};
