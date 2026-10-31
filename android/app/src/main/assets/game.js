@@ -6,7 +6,7 @@ const DOSSIER_SESSION=Date.now().toString(36)+'-'+Math.random().toString(36).sli
 let dossierStore=null,dossierAttemptedKey='',roundUnlocks=[];
 function currentDossier(){return dossierStore?.snapshot()||window.SectorDossier?.empty()||null;}
 function dossierLines(){
- const info=currentDossier(),eligible=dossierStore?.eligibility()||[],modes=window.SectorDossier?.MODE_LABELS||{};
+ const info=currentDossier(),modes=window.SectorDossier?.MODE_LABELS||{};
  if(!info)return;
  for(const key of ['matches','wins','losses','draws','kos','deaths']){const el=document.getElementById('dossier-'+key);if(el)el.textContent=String(info[key]||0)}
  const time=document.getElementById('dossier-time');if(time)time.textContent=Math.floor((info.seconds||0)/60)+' MIN';
@@ -16,11 +16,7 @@ function dossierLines(){
   const score=document.createElement('strong'),stats=info.byMode[id]||{};score.textContent=(stats.matches||0)+' MATCHES · '+(stats.wins||0)+' WINS';
   row.append(name,score);list.appendChild(row);
  }}
- const goals=document.getElementById('dossier-eligibility');if(goals){goals.replaceChildren();for(const entry of eligible){
-  const row=document.createElement('div');row.className='dossier-mode';const name=document.createElement('span');name.textContent=entry.name;
-  const progress=document.createElement('strong');progress.textContent=entry.current===null?'TRACKING NOT AVAILABLE':entry.current+'/'+entry.target+(entry.eligible?' · REQUIREMENT MET':'');
-  row.append(name,progress);goals.appendChild(row);
- }}
+
 }
 function openDossier(){setPanel(document.getElementById('dossier-template').innerHTML);dossierLines();
  const mark=document.getElementById('dossier-emblem-mark'),name=document.getElementById('dossier-emblem-name');
@@ -56,6 +52,7 @@ function refreshHangar(){
  }
 }
 function openHangar(){setPanel(document.getElementById('hangar-template').innerHTML);refreshHangar();}
+function openModes(){setPanel(document.getElementById('modes-template').innerHTML);}
 let pendingRestoreText='';
 function openBackupScreen(){pendingRestoreText='';setPanel(document.getElementById('backup-template').innerHTML);}
 function backupNotice(message){const el=document.getElementById('backup-message');if(el)el.textContent=message;}
@@ -1701,8 +1698,8 @@ loadPaint(); // Dossier milestones must be available before restoring earned sel
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
  if(a==='toggle-sound'||a==='toggle-music'){togglePauseAudio(a==='toggle-sound'?'sound':'music',b);return;}
  if(!['solo','settings-play','cqc','scored_ffa','scored_tdm','custom-play','duel','host','find','custom-preset-save','custom-preset-delete','custom-preset-load','ip-join'].includes(a))
-  audioCue(['settings-back','help-back','dossier-back','backup-back','custom-back','close','resume'].includes(a)?'ui-back':'ui-select');
- if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar()}else if(a==='hangar-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='equip-paint'){
+  audioCue(['settings-back','help-back','dossier-back','backup-back','modes-back','custom-back','close','resume'].includes(a)?'ui-back':'ui-select');
+ if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar()}else if(a==='hangar-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='equip-paint'){
    const ok=equipPaint(b.dataset.paintId);
    refreshHangar();const status=document.getElementById('hangar-status');
    if(!ok&&status)status.textContent=paintProgress(b.dataset.paintId).eligible?'COULD NOT SAVE PAINT · CURRENT PAINT KEPT':'LOCKED · COMPLETE DOSSIER MILESTONE FIRST';
@@ -1710,7 +1707,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
    const ok=equipEmblem(b.dataset.emblemId);refreshHangar();
    const status=document.getElementById('emblem-status');
    if(!ok&&status)status.textContent=emblemProgress(b.dataset.emblemId).eligible?'COULD NOT SAVE INSIGNIA':'INSIGNIA LOCKED · COMPLETE DOSSIER MILESTONE';
-  }else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, point the hull with the movement joystick. Sharp changes pivot the tank before accelerating; tap FIRE when lined up.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){panel.innerHTML=originalPanel;applyPrefsToUI();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
+  }else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right. When on foot in SOLO, drag FIRE to aim independently. In SCORED VEHICLE FFA or TEAM DEATHMATCH, point the hull with the movement joystick. Sharp changes pivot the tank before accelerating; tap FIRE when lined up.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){openModes();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
  else if(a==='custom-reset'){resetCustomDraft();refreshCustomUI();customPresetStatus('DEFAULT RULES RESTORED · SAVED PRESETS KEPT');}
  else if(a==='custom-preset-save'){
   readCustomScreen();const input=document.getElementById('custom-preset-name'),name=cleanPresetName(input?.value);
@@ -1726,7 +1723,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
   const outcome=deleteNamedCustomPreset(name);customPresetStatus(outcome.message);
   if(outcome.ok)refreshCustomPresetUI();
  }
- else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
+ else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">LOCAL WI-FI / BETA</div><h2>PLAY <span>TOGETHER</span></h2><p>Two Android phones on the same Wi-Fi. One hosts, the other joins.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
  const s=document.getElementById('lan-address').value.trim(),m=s.match(/^([\da-fA-F:.]+):(\d{1,5})$/);
  if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';window.AndroidBridge.joinGame(m[1],Number(m[2]));}});
 function showPauseMenu(){releaseControls();if(mode==='idle')return;

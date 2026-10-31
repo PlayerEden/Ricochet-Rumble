@@ -62,8 +62,8 @@
       <div class="panel" id="panel" role="dialog" aria-label="Sector Rebound game menu">
         <div class="home-screen">
           <header class="home-topbar">
-            <div class="home-brand"><span class="home-brand-mark" aria-hidden="true">SR</span><div><span class="home-overline">FIELDGRID / COMBAT SIMULATION</span><h2>SECTOR <span>REBOUND</span></h2></div></div>
-            <div class="home-utilities"><button data-action="hangar" aria-label="Choose free Solo paint">HANGAR</button><button data-action="dossier" aria-label="View local player dossier">DOSSIER</button><button data-action="help" aria-label="How to play Sector Rebound">? <span>HOW TO PLAY</span></button></div>
+            <div class="home-brand"><span class="home-brand-mark" aria-hidden="true">SR</span><div><span class="home-overline">FIELDGRID</span><h2>SECTOR <span>REBOUND</span></h2></div></div>
+            <div class="home-utilities"><button data-action="hangar" aria-label="Customize Solo paint and insignia">HANGAR</button><button data-action="dossier" aria-label="View local player dossier">DOSSIER</button><button data-action="help" aria-label="How to play Sector Rebound">HELP</button></div>
           </header>
           <div class="home-content">
             <section class="home-showcase" aria-label="Tank preview">
@@ -75,45 +75,54 @@
             </section>
             <section class="home-actions" aria-label="Start playing">
               
-              <h3>ENTER THE <span>SECTOR.</span></h3>
-              <p class="home-description">Fast arena battles. Ricochet shots through new mazes every match.</p>
-              <button class="home-deploy primary" data-action="solo"><span class="home-deploy-symbol" aria-hidden="true">▶</span><strong>QUICK PLAY</strong><small>SOLO / AI</small></button>
+              <h3>DEPLOY <span>SOLO</span></h3>
+              <p class="home-description">A new maze every match. Make your shots count.</p>
+              <button class="home-deploy primary" data-action="solo"><span class="home-deploy-symbol" aria-hidden="true">▶</span><strong>QUICK PLAY</strong><small>VS BOTS</small></button>
               <div class="home-action-grid">
-                <button data-action="nearby"><strong>PLAY TOGETHER</strong><small>LOCAL WI-FI</small></button>
-                <button data-action="settings"><strong>MATCH SETTINGS</strong><small>RULES &amp; CONTROLS</small></button>
-                <button data-action="cqc" class="home-cqc"><strong>CLOSE QUARTERS</strong><small>PILOT-ONLY · SCORE TEST</small></button>
-                <button data-action="scored_ffa" class="home-ffa"><strong>SCORED FREE-FOR-ALL</strong><small>VEHICLES · KO TARGET · TEST</small></button>
-                <button data-action="scored_tdm" class="home-tdm"><strong>TEAM DEATHMATCH</strong><small>2v2 · TEAM KOs · TEST</small></button>
-                <button data-action="custom" class="home-custom"><strong>CUSTOM MATCH</strong><small>OFFLINE · CHOOSE RULES</small></button>
+                <button data-action="modes" class="home-modes"><strong>CHOOSE MODE</strong><small>CQC · FFA · TDM · CUSTOM</small></button>
+                <button data-action="nearby"><strong>LOCAL PLAY</strong><small>WI-FI · BETA</small></button>
+                <button data-action="settings"><strong>SETTINGS</strong><small>PLAYLIST &amp; CONTROLS</small></button>
               </div>
             </section>
           </div>
-          <footer class="home-footer"><span>NEW MAZE. NEW FIGHT.</span><span>FIELDGRID</span></footer>
+
         </div>
       </div>
     </div>
     <div class="rotate-prompt" aria-hidden="true"><div class="rotate-symbol">↻</div><strong>ROTATE TO LANDSCAPE</strong><span>Sector Rebound is played sideways.</span></div>
   </main>
+<template id="modes-template">
+ <section class="mode-screen" aria-label="Choose a game mode">
+  <header class="mode-head"><div class="eyebrow">SOLO / VS BOTS</div><h2>CHOOSE <span>MODE</span></h2><p>Every match generates a new arena.</p></header>
+  <div class="mode-grid">
+   <button type="button" data-action="cqc"><strong>CLOSE QUARTERS</strong><small>PILOT-ONLY · FIRST TO 10 KOs</small></button>
+   <button type="button" data-action="scored_ffa"><strong>FREE-FOR-ALL</strong><small>VEHICLE COMBAT · 10 KOs</small></button>
+   <button type="button" data-action="scored_tdm"><strong>TEAM DEATHMATCH</strong><small>2V2 · TEAM KOs</small></button>
+   <button type="button" data-action="custom"><strong>CUSTOM MATCH</strong><small>CHOOSE YOUR OWN RULES</small></button>
+  </div>
+  <button type="button" class="mode-back" data-action="modes-back">BACK TO MENU</button>
+ </section>
+</template>
 <template id="settings-template">
-  <div class="settings-head"><div class="eyebrow">FIELDGRID // DEPLOYMENT</div><h2>MATCH <span>SETTINGS</span></h2><p>Solo modes rotate between matches. Nearby sides are separate.</p></div>
+  <div class="settings-head"><div class="eyebrow">FIELDGRID // DEPLOYMENT</div><h2>MATCH <span>SETTINGS</span></h2><p>Set up your Quick Play rotation and controls.</p></div>
   <div class="settings-grid settings-page">
     <label>FIELD SIZE<select id="map-size"><option value="small">QUICK · CLOSE COMBAT</option><option value="standard">STANDARD</option><option value="large">WIDE · EXPLORE</option></select></label>
     <label>BOTS<select id="bot-count"><option value="0">0 · PRACTICE</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>
     <label>NEARBY SIDES<select id="team-choice"><option value="ffa">FREE FOR ALL</option><option value="coop">HUMANS VS BOTS</option><option value="teams">TWO TEAMS</option></select></label>
   </div>
-  <details class="extra-rules"><summary>QUICK PLAY MODES + ADVANCED <span>Survival defaults · scoring trials opt-in</span></summary>
+  <details class="extra-rules"><summary>PLAYLIST &amp; ADVANCED RULES <span>QUICK PLAY ROTATION</span></summary>
     <div class="settings-grid settings-page">
       <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="survival_ffa" checked> FREE-FOR-ALL SURVIVAL</label>
       <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="survival_teams" checked> TEAM SURVIVAL (BLUE + AI VS RED)</label>
     </div>
-    <p class="settings-mode-status">OPTIONAL SCORING TRIALS · OFF BY DEFAULT</p>
+    <p class="settings-mode-status">OPTIONAL MODES · OFF BY DEFAULT</p>
     <div class="settings-grid settings-page quick-scored-modes">
       <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="cqc"> CLOSE QUARTERS · 10 KOs / 3 MIN</label>
       <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="scored_ffa"> SCORED VEHICLE FFA · 10 KOs / 4 MIN</label>
       <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="scored_tdm"> TEAM DEATHMATCH · 15 KOs / 5 MIN</label>
     </div>
     <p id="playlist-status" class="settings-mode-status">2 SELECTED · SURVIVAL MODES ONLY</p>
-    <p class="settings-mode-status">SCORED TRIALS USE LOCKED MAPS, BOTS AND KO/TIMER RULES. SURVIVAL USES YOUR ADVANCED SETTINGS. EACH MATCH CREATES A NEW MAZE.</p>
+    <p class="settings-mode-status">SCORED MODES USE FIXED RULES. SURVIVAL USES YOUR SELECTED SETTINGS.</p>
     <div class="settings-grid settings-page">
       <label>PILOT LIVES<select id="lives-choice"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>
       <label>TANK SHELL LIMIT<select id="bullet-cap"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4 · STANDARD</option><option value="5">5</option><option value="8">8</option></select></label>
@@ -125,7 +134,7 @@
 </template>
 <template id="custom-template">
  <section id="custom-match" class="custom-screen" aria-label="Custom Match">
-  <header class="custom-head"><div class="eyebrow">FIELDGRID / CASUAL OPERATIONS</div><h2>CUSTOM <span>MATCH</span></h2><p>Choose a real mode and deploy into a fresh procedural sector.</p></header>
+  <header class="custom-head"><div class="eyebrow">SOLO / CUSTOM RULES</div><h2>CUSTOM <span>MATCH</span></h2><p>Build your own match.</p></header>
   <div class="custom-grid">
    <label>MODE<select id="custom-mode"><option value="survival_ffa">SOLO SURVIVAL</option><option value="survival_teams">TEAM SURVIVAL</option><option value="cqc">CLOSE QUARTERS · SCORED</option><option value="scored_ffa">VEHICLE FFA · SCORED</option><option value="scored_tdm">TEAM DEATHMATCH · SCORED</option></select></label>
    <label>MAZE SIZE<select id="custom-size"><option value="small">SMALL</option><option value="standard">STANDARD</option><option value="large">LARGE</option></select></label>
@@ -157,7 +166,7 @@
 </template>
 <template id="hangar-template">
  <section class="hangar-screen" aria-label="Offline Hangar paint choices">
-  <header class="hangar-head"><div class="eyebrow">FIELDGRID / VEHICLE BAY</div><h2>THE <span>HANGAR</span></h2><p>FREE FIELD PAINT · COSMETIC ONLY</p></header>
+  <header class="hangar-head"><div class="eyebrow">SOLO / CUSTOMIZATION</div><h2>THE <span>HANGAR</span></h2><p>PAINT AND OPERATOR INSIGNIA</p></header>
   <h3 class="hangar-subhead">UNIT PAINT</h3>
   <div class="hangar-grid" role="group" aria-label="Choose a Solo unit paint">
    <button type="button" data-action="equip-paint" data-paint-id="fieldgrid.standard"><span class="paint-swatch paint-standard" aria-hidden="true"></span><strong>STANDARD</strong><small>FIELD ISSUE</small></button>
@@ -176,13 +185,13 @@
    <button type="button" data-action="equip-emblem" data-emblem-id="mark.command" disabled><span class="emblem-symbol" aria-hidden="true">◆</span><strong>COMMAND</strong><small>0 / 12 WINS</small></button>
   </div>
   <p class="hangar-equipped" id="emblem-status" role="status">OPERATOR INSIGNIA · ◇ FIELD</p>
-  <p class="hangar-note">Paint only changes your Solo unit's panels; insignia identify your local Dossier. All four starter paints and FIELD insignia are free. Earn others from genuine Solo matches, wins and KOs. No combat bonuses or online profile.</p>
+  <p class="hangar-note">Cosmetic only. Earn finishes and insignia by completing Solo matches.</p>
   <button type="button" data-action="hangar-back" class="hangar-back">BACK TO MENU</button>
  </section>
 </template>
 <template id="dossier-template">
  <section class="dossier-screen" aria-label="Local player dossier">
-  <header class="dossier-head"><div class="eyebrow">FIELDGRID / OPERATOR FILE</div><div class="dossier-identity-row"><div><h2>PLAYER <span>DOSSIER</span></h2><p>OFFLINE SERVICE RECORD · THIS DEVICE ONLY</p></div><div class="dossier-emblem" aria-label="Equipped operator insignia"><span id="dossier-emblem-mark" aria-hidden="true">◇</span><strong id="dossier-emblem-name">FIELD</strong></div></div></header>
+  <header class="dossier-head"><div class="eyebrow">FIELDGRID / OPERATOR FILE</div><div class="dossier-identity-row"><div><h2>PLAYER <span>DOSSIER</span></h2><p>YOUR SOLO MATCH RECORD</p></div><div class="dossier-emblem" aria-label="Equipped operator insignia"><span id="dossier-emblem-mark" aria-hidden="true">◇</span><strong id="dossier-emblem-name">FIELD</strong></div></div></header>
   <div class="dossier-stats">
    <div><small>MATCHES</small><strong id="dossier-matches">0</strong></div>
    <div><small>VICTORIES</small><strong id="dossier-wins">0</strong></div>
@@ -193,13 +202,12 @@
   </div>
   <div class="dossier-columns">
    <section><h3>MODE RECORD</h3><div id="dossier-modes"></div></section>
-   <section><h3>FUTURE OPERATOR MILESTONES</h3><div id="dossier-eligibility"></div><p class="dossier-guard">These are future concepts, separate from the real insignia in HANGAR. They do not grant items.</p></section>
   </div>
   <footer class="dossier-footer">
    <div><strong id="dossier-time">0 MIN</strong> <span>COMBAT TIME</span><p id="dossier-save-status" role="status">LOCAL STORAGE READY</p></div>
    <div class="dossier-backup-actions"><button type="button" data-action="hangar">HANGAR</button><button type="button" data-action="backup">BACK UP DATA</button><button type="button" data-action="dossier-back">BACK TO MENU</button></div>
   </footer>
-  <p class="dossier-note">Only completed Solo matches against bots count. Practice, abandoned matches, and LAN are not recorded. No account or cloud sync. Uninstalling may erase this device's data.</p>
+  <p class="dossier-note">Saved on this device. Only completed Solo matches count; back up your record before uninstalling.</p>
  </section>
 </template>
   <template id="backup-template">

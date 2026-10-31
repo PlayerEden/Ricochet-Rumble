@@ -1,3 +1,13 @@
+# 2026-10-31 — UI/UX AUDIT + STREAMLINED MAIN MENU (CANDIDATE, QA PENDING)
+
+**User directive:** audit and refine the *existing* game, especially making the main menu feel like a genuine streamlined mobile game, removing unnecessary experimental labels and cleaning up whole-game navigation. Baseline [Preview 100016](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41181927198), source `cb9928c2e7c52a29fd44bd8deb942f56de7c20ae`, saved at [immutable 100016 pre-refinement rollback](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-preview-100016-before-ui-streamline).
+
+**Actual candidate source:** active draft [PR #85](https://github.com/PlayerEden/Ricochet-Rumble/pull/85) now gives main menu one-tap **Quick Play**, three secondary buttons (**Choose Mode**, **Local Play / Wi-Fi Beta**, **Settings**) and topbar Hangar/Dossier/Help. Separate Choose Mode page retains original CQC, scored FFA, TDM and Custom. Custom Back returns to mode selection; unshipped future milestones removed from visible Dossier (no saved metrics, eligibility or real rewards deleted). Shorter Hangar/Settings/Custom/Dossier copy; same animated tank/mech hero and actual gameplay. Updated browser flow/layout and source smoke tests. **Automated QA and physical phone acceptance pending** for this exact candidate; do not claim passed until actual evidence. No stable-main gameplay merge or new Play release.
+
+**Full audit and next test gates:** [2026-10-31 UI/UX report](UI_UX_MENU_REFINEMENT_2026-10-31.md). Next: exact-head smoke/parity/Android build, visually inspect phone landscape 568×320/640×360/740×360/915×412/1280×720, navigation to all screens, real preserved data and controls. Long-deferred 2-phone LAN acceptance pending.
+
+---
+
 # 2026-10-31 — PHASE 4E TARGETED AFTER ACTION CTA VISIBILITY REPAIR
 
 **Evidence from actual Preview 100015 APK:** Extracted packaged `assets/{game.js,index.html,style.css,dossier.js,save-backup.js,scored-match.js}` and ran test-hook-only Chromium with the exact built JS/CSS and real `registerHit`, `tryCqcRespawn`, Solo results, Dossier writes, unlock/selection logic. 12 live CQC results tested. All **30 checks passed** on the pre-fix Phase 4D reward progression / 740×360, 915×412, 1280×720 reward panel bounds / Hangar unlock selections. Screenshot review discovered a **separate real bug**: EDIT RULES wrongly visible in ordinary CQC after-action despite JS setting `hidden`, because `.aa-actions button {display:block}` wins over the generic hidden style. This is a UI bug, not a failed reward unlock.

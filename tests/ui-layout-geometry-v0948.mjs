@@ -120,7 +120,7 @@ try{
   if(scrollable){
    await homeScroller.evaluate(el=>{el.scrollTop=el.scrollHeight;});
    await page.waitForTimeout(75);
-   const last=await page.locator('#menu button[data-action="custom"]').boundingBox();
+   const last=await page.locator('#menu button[data-action="modes"]').boundingBox();
    const scroller=await homeScroller.boundingBox();
    if(!last||!scroller||last.y<scroller.y-2||last.y+last.height>scroller.y+scroller.height+2){
     report.issues.push({level:'fail',type:'home-last-button-not-scroll-reachable',viewport:vp});
@@ -133,10 +133,10 @@ try{
   if(await details.count()){await details.locator('summary').evaluate(el=>el.click());await scene('settings-expanded');}
   await clickAction('settings-back');
   await clickAction('help');await scene('help');await clickAction('help-back');
-  await clickAction('custom');await scene('custom');
+  await clickAction('modes');await scene('modes');await clickAction('custom');await scene('custom');
   const preset=page.locator('details.custom-preset-fold');
   if(await preset.count()){await preset.locator('summary').evaluate(el=>el.click());await scene('custom-presets');}
-  await clickAction('custom-back');
+  await clickAction('custom-back');await scene('modes-return');await clickAction('modes-back');
   await clickAction('dossier');await scene('dossier');
   await clickAction('backup');await scene('backup');
   await clickAction('backup-back');await clickAction('dossier-back');
@@ -147,7 +147,7 @@ try{
   await page.locator('#menu-button').evaluate(el=>el.click());await scene('pause');await clickAction('resume');
   await page.locator('#interact-btn').evaluate(el=>el.click());await scene('pilot-hud',{gameplay:true});
   await page.locator('#menu-button').evaluate(el=>el.click());await clickAction('close');
-  await clickAction('scored_ffa');await page.waitForTimeout(180);await scene('scored-aim-hud',{gameplay:true});
+  await clickAction('modes');await clickAction('scored_ffa');await page.waitForTimeout(180);await scene('scored-aim-hud',{gameplay:true});
   await page.locator('#menu-button').evaluate(el=>el.click());await scene('scored-pause');
   await clickAction('resume');
   // Actual after-action HTML/CSS; deterministic presentation fixture only.

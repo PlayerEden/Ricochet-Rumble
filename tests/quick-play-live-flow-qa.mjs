@@ -42,6 +42,12 @@ try{
  await page.goto(base,{waitUntil:'load'});
  await page.waitForFunction(()=>!!window.__flowQA);
  assert.equal(await page.locator('.home-screen').isVisible(),true,'real lobby displayed');
+ assert.equal(await page.locator('#menu .home-action-grid button').count(),3,'home has only three secondary game choices');
+ assert.equal(await page.locator('#menu .home-action-grid button[data-action="cqc"]').count(),0,'specialist modes are organized off the home screen');
+ await page.locator('#menu button[data-action="modes"]').click();
+ assert.equal(await page.locator('.mode-grid button').count(),4,'all original specialist modes remain accessible');
+ await page.locator('#menu button[data-action="modes-back"]').click();
+ assert.equal(await page.locator('.home-screen').isVisible(),true,'mode select back returns to the home screen');
  result.steps.push('live game loaded in Chromium, no bundled source instrumentation');
 
  // Phase 4A actual browser acceptance: paint must select/persist and the
@@ -165,7 +171,8 @@ try{
  // pollute the saved Survival Quick Play playlist or masquerade as Survival.
  await page.locator('button[data-action="settings-back"]').click();
  assert.equal(await page.locator('.home-screen').isVisible(),true);
- await page.locator('button[data-action="cqc"]').click();
+ await page.locator('#menu button[data-action="modes"]').click();
+ await page.locator('#menu button[data-action="cqc"]').click();
  await page.evaluate(()=>window.__flowQA.freeze());
  const pilotStart=await page.evaluate(()=>{const s=window.__flowQA.state;return {seed:s.mazeSeed,matchId:s.matchId,mode:s.config.matchModeId,vehicles:s.vehicles.length,bots:s.config.botCount,allFoot:s.tanks.every(t=>t.onFoot),clock:s.scored.clockSeconds}});
  assert.equal(pilotStart.mode,'cqc');
@@ -234,7 +241,8 @@ try{
  // True scored vehicle FFA must never credit armor damage or ejection.
  await page.locator('#results-menu').click();
  assert.equal(await page.locator('.home-screen').isVisible(),true);
- await page.locator('button[data-action="scored_ffa"]').click();
+ await page.locator('#menu button[data-action="modes"]').click();
+ await page.locator('#menu button[data-action="scored_ffa"]').click();
  await page.evaluate(()=>window.__flowQA.freeze());
  const ffaStart=await page.evaluate(()=>{const s=window.__flowQA.state;return {mode:s.config.matchModeId,seed:s.mazeSeed,matchId:s.matchId,bots:s.config.botCount,vehicles:s.vehicles.length,inTanks:s.tanks.every(t=>!t.onFoot),limit:s.scored.scoreTarget,clock:s.scored.clockSeconds,hasMech:s.vehicles.some(v=>v.type==='mech')}});
  assert.equal(ffaStart.mode,'scored_ffa');
@@ -327,6 +335,7 @@ try{
 
  // New v0.9.34 real Chromium scored 2v2 Team Deathmatch audit.
  await page.locator('#results-menu').click();
+ await page.locator('#menu button[data-action="modes"]').click();
  await page.locator('#menu button[data-action="scored_tdm"]').click();
  await page.evaluate(()=>window.__flowQA.freeze());
  const tdmStart=await page.evaluate(()=>{const s=window.__flowQA.state;return {mode:s.config.matchModeId,teams:[...s.scored.teamIds],target:s.scored.scoreTarget,clock:s.scored.clockSeconds,seed:s.mazeSeed};});
@@ -367,6 +376,7 @@ try{
  
  // v0.9.35: real Custom Match browser journey and independent Quick Play storage.
  await page.locator('#results-menu').click();
+ await page.locator('#menu button[data-action="modes"]').click();
  await page.locator('#menu button[data-action="custom"]').click();
  assert.equal(await page.locator('#custom-match').isVisible(),true);
  // Save -> collision protection -> reset -> reload -> load -> two-stage delete.
@@ -390,6 +400,7 @@ try{
  assert.ok((await page.locator('#custom-preset-count').textContent()).includes('1/5'),'reset keeps presets');
  await page.reload({waitUntil:'load'});
  await page.waitForFunction(()=>!!window.__flowQA);
+ await page.locator('#menu button[data-action="modes"]').click();
  await page.locator('#menu button[data-action="custom"]').click();
  await page.locator('.custom-preset-fold summary').click();
  assert.equal(await page.locator('#custom-preset-select option').count(),2,'preset persists across browser reload');
@@ -496,6 +507,7 @@ try{
  }
  assert.equal(new Set(roundModes).size,3,'3 scored choices appear once each before bag repeats');
  await page.locator('#results-menu').click();
+ await page.locator('#menu button[data-action="modes"]').click();
  await page.locator('#menu button[data-action="cqc"]').click();
  await page.evaluate(()=>window.__flowQA.freeze());
  const standalone=await page.evaluate(()=>window.__flowQA.state.config);

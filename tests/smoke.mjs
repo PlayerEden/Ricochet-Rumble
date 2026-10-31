@@ -517,7 +517,7 @@ console.log('PASS v0.9.10b: zoom-out, perimeter fill, softer tank motion, mech g
  const fs=await import('node:fs');
  const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
  const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
- assert.ok(html.includes('FIELDGRID / COMBAT SIMULATION')&&html.includes('class="home-screen"'),'home is a recognizable game lobby');
+ assert.ok(html.includes('class="home-overline">FIELDGRID')&&html.includes('class="home-screen"'),'home is a recognizable game lobby');
  assert.ok(html.includes('home-topbar')&&html.includes('home-showcase')&&html.includes('home-actions'),'game lobby has identity, actual game unit and primary play region');
  assert.ok(html.includes('HOW TO PLAY')&&html.includes('SECTOR <span>REBOUND</span>'),'brand and help preserved');
  assert.ok(css.includes('FIELDGRID COMMAND CONSOLE')&&css.includes('sans-serif-condensed'));
