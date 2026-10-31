@@ -1,3 +1,13 @@
+## FINAL AUTOMATED QA AND IMMUTABLE ORIGINAL TEST APK — SUCCESS (2026-10-30)
+
+- [**Original completed real Chromium, full gameplay regression, Android debug APK and unsigned AAB QA PASS, run 41149116261**](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41149116261), exact source-tested SHA `746816a14e27d18edfed3daecdace5cf520d633f`. The original source pass also included actual host/guest pilot input tests, previous corridor-recovery 300 seeded regression, offline saves, score kernel, Web/Android asset parity, 80-state UI layout and visual screenshots. Debug APK is **not** signed for Play.
+- [**Original QA APK, Chromium screenshot ZIP and public SHA256 checksum published as v0.9.53 experimental GitHub prerelease**](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.53-lan-pilot-parity-test). Original APK SHA256 `c26a9cd759588df905631345bc605caa7a5a49d6c06607d984c5500ee16edeeb`, **118,495 bytes**, copied unchanged from original QA run. [One-use archiver 41149702893 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41149702893); archiver workflow removed afterward. Tag target matches the exact tested source.
+- [Focused host/guest input, malformed-input and total scored/save/smoke tests run 41148986844 — PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41148986844). Original code-level defect fixed; actual Wi-Fi jitter, two Android phones and guest visual smoothness still **NOT PHYSICALLY VERIFIED**.
+- **INSTALLATION WARNING:** experimental CI debug signing certificate can differ from prior APKs. The previous [real v0.9.46 vs v0.9.51 signer mismatch](ANDROID_UPDATE_PREFLIGHT_v0952.md) is proven. **Do not uninstall any existing game containing progress merely to try v0.9.53.** Permanent owner TEST signer and two in-place same-key saved-data upgrades still required.
+- Draft [PR #82](https://github.com/PlayerEden/Ricochet-Rumble/pull/82) and its prior draft parent chain remain **UNMERGED**; stable main and original v0.9.51 recovery prototype rollback preserved. NO production/Google Play GO.
+
+---
+
 # Sector Rebound — v0.9.53 LAN Host/Guest Pilot Input Parity
 
 **Date:** 2026-10-30. **Status:** focused real-game input/regression QA PASS; full Chromium/Android QA run pending; **real two-phone LAN PENDING**. This is a **focused gameplay/network correctness change** on [draft PR #82](https://github.com/PlayerEden/Ricochet-Rumble/pull/82), based on the tested [v0.9.52 Android update-preflight PR #81](https://github.com/PlayerEden/Ricochet-Rumble/pull/81). **NOT merged to stable main.**
