@@ -1,0 +1,119 @@
+name: Sector Rebound - automatic disposable preview APK
+on:
+  push:
+    branches: [integration/v0956-main-rooted-rehearsal]
+    paths:
+      - '.github/workflows/automatic-preview-apk.yml'
+      - 'android/**'
+      - 'web/**'
+      - 'tests/**'
+      - 'game-data/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sr-disposable-preview-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  disposable-preview-apk:
+    if: github.ref == 'refs/heads/integration/v0956-main-rooted-rehearsal'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Install required Android SDK
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" --install "platforms;android-36" "build-tools;35.0.0"
+      - name: Check game and source parity
+        run: |
+          set -euo pipefail
+          node tests/smoke.mjs
+          node tests/dossier.mjs
+          node tests/save-backup.mjs
+          node tests/android-upgrade-readiness.mjs
+          node tests/test-signer-contract.mjs
+          for asset in game.js index.html style.css scored-match.js dossier.js save-backup.js; do
+            cmp "web/$asset" "android/app/src/main/assets/$asset"
+          done
+      - name: Recover immutable public AOSP development key (never production)
+        env:
+          SR_TEST_STORE_FILE: ${{ runner.temp }}/sr-aosp-preview/public-testkey.p12
+        run: |
+          set -euo pipefail
+          mkdir -p "$(dirname "$SR_TEST_STORE_FILE")"
+          base="https://android.googlesource.com/platform/build/+/refs/heads/main/target/product/security"
+          for name in testkey.pk8 testkey.x509.pem; do
+            curl --fail --show-error --silent --location --retry 3 "$base/$name?format=TEXT" | base64 --decode > "$RUNNER_TEMP/$name"
+            test -s "$RUNNER_TEMP/$name"
+          done
+          [[ "$(git hash-object "$RUNNER_TEMP/testkey.pk8")" == '586c1bd5cf96f9358f36b37ea98fef93f4d0a8e3' ]] || exit 1
+          [[ "$(git hash-object "$RUNNER_TEMP/testkey.x509.pem")" == 'e242d83e2bf72169ab0abd5280d4d455caef71eb' ]] || exit 1
+          openssl pkcs8 -inform DER -nocrypt -in "$RUNNER_TEMP/testkey.pk8" -out "$RUNNER_TEMP/testkey.key.pem"
+          openssl pkcs12 -export -inkey "$RUNNER_TEMP/testkey.key.pem" -in "$RUNNER_TEMP/testkey.x509.pem" -out "$SR_TEST_STORE_FILE" -name aosp-public-testkey -passout pass:disposable-preview-only
+          test -s "$SR_TEST_STORE_FILE"
+      - name: Build signed Android preview with automatically increasing version code
+        working-directory: android
+        env:
+          SR_TEST_STORE_FILE: ${{ runner.temp }}/sr-aosp-preview/public-testkey.p12
+          SR_TEST_STORE_PASSWORD: disposable-preview-only
+          SR_TEST_KEY_ALIAS: aosp-public-testkey
+          SR_TEST_KEY_PASSWORD: disposable-preview-only
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_RUN_ATTEMPT" == '1' ]] || { echo 'Start a new workflow run for a newer preview'; exit 1; }
+          [[ "$GITHUB_RUN_NUMBER" =~ ^[1-9][0-9]*$ ]] || exit 1
+          code=$((100000 + GITHUB_RUN_NUMBER))
+          (( code > 100000 && code <= 2100000000 )) || exit 1
+          gradle --no-daemon :app:assembleDebug -PsrPreviewPackage=true "-PsrPreviewVersionCode=$code" "-PsrPreviewVersionName=0.9.58-preview.$GITHUB_RUN_NUMBER"
+      - name: Verify real APK signer, application ID, version and embedded game assets
+        run: |
+          set -euo pipefail
+          apk=android/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$apk"
+          signer="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/apksigner"
+          aapt="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/aapt"
+          "$signer" verify --min-sdk-version 26 --print-certs "$apk" > "$RUNNER_TEMP/apk-cert.txt"
+          actual="$(sed -nE 's/.*Signer #1 certificate SHA-256 digest: ([a-fA-F0-9:]+).*$/\1/p' "$RUNNER_TEMP/apk-cert.txt" | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          expected="$(openssl x509 -in "$RUNNER_TEMP/testkey.x509.pem" -outform DER | sha256sum | awk '{print $1}')"
+          [[ "$actual" =~ ^[0-9a-f]{64}$ && "$actual" == "$expected" ]] || { echo 'Unexpected preview signer; reject APK'; exit 1; }
+          metadata="$("$aapt" dump badging "$apk" | head -n 1)"
+          code=$((100000 + GITHUB_RUN_NUMBER))
+          [[ "$metadata" == *"name='com.playereden.ricochetrumble.preview'"* ]] || exit 1
+          [[ "$metadata" == *"versionCode='$code'"* ]] || exit 1
+          [[ "$metadata" == *"versionName='0.9.58-preview.$GITHUB_RUN_NUMBER'"* ]] || exit 1
+          for asset in game.js index.html style.css scored-match.js dossier.js save-backup.js; do
+            cmp "web/$asset" <(unzip -p "$apk" "assets/$asset") || exit 1
+          done
+          mkdir -p dist
+          cp "$apk" "dist/sector-rebound-preview-$code.apk"
+          {
+            echo "SOURCE_SHA=$GITHUB_SHA"
+            echo "APP_ID=com.playereden.ricochetrumble.preview"
+            echo "VERSION_CODE=$code"
+            echo "PUBLIC_TEST_SIGNER_SHA256=$actual"
+            echo "APK_SHA256=$(sha256sum "dist/sector-rebound-preview-$code.apk" | awk '{print $1}')"
+            echo "DISPOSABLE_AOSP_TEST_KEY_NOT_FOR_PLAY"
+          } > dist/verification.txt
+          echo "VERIFIED_PREVIEW_APK code=$code cert=$actual; no local PC configuration"
+      - name: Upload installable preview APK for testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: sector-rebound-preview-${{ github.run_number }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Clean test signing files from runner
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/sr-aosp-preview" "$RUNNER_TEMP/testkey.pk8" "$RUNNER_TEMP/testkey.x509.pem" "$RUNNER_TEMP/testkey.key.pem"
