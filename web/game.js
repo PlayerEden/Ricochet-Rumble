@@ -67,7 +67,7 @@ function openHangar(fromDossier=false){
  hangarReturnToDossier=!!fromDossier;
  setPanel(document.getElementById('hangar-template').innerHTML);refreshHangar();showHangarTab('paint');
  const back=document.querySelector('.hangar-screen button[data-action="hangar-back"]');
- if(back)back.setAttribute('aria-label',hangarReturnToDossier?'Back to Dossier':'Back to main menu');
+ back?.setAttribute?.('aria-label',hangarReturnToDossier?'Back to Dossier':'Back to main menu');
 }
 function openModes(){setPanel(document.getElementById('modes-template').innerHTML);}
 let pendingRestoreText='';

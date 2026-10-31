@@ -1,5 +1,5 @@
 name: Sector Rebound - scoped UI/UX review
-# QA rerun: browser DOM optional closest for simulated smoke buttons, then exact-source mobile UX
+# QA rerun: gracefully handle minimal Node simulated DOM in Hangar back metadata
 on:
   push:
     branches: [integration/v0956-main-rooted-rehearsal]
