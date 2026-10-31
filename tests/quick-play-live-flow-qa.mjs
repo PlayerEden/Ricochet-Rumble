@@ -111,6 +111,7 @@ try{
  assert.equal(victory.state.deaths,0);
  assert.equal(await page.locator('#after-action').isVisible(),true,'actual match result panel displayed');
  assert.equal((await page.locator('#aa-title').textContent()).trim(),'SECTOR CLEARED');
+ assert.equal(await page.locator('#custom-edit').isVisible(),false,'ordinary Survival win must not show EDIT RULES');
  assert.equal((await page.locator('#aa-kos').textContent()).trim(),'2');
  assert.equal((await page.locator('#aa-deaths').textContent()).trim(),'0');
  assert.equal((await page.locator('#aa-outcome').textContent()).trim(),'VICTORY');
@@ -208,6 +209,7 @@ try{
  assert.equal(earned.vehicles,0);
  assert.equal((await page.locator('#aa-kos').textContent()).trim(),'10');
  assert.equal((await page.locator('#aa-lives-label').textContent()).trim(),'KO TARGET');
+ assert.equal(await page.locator('#custom-edit').isVisible(),false,'pilot-only CQC must not show EDIT RULES');
  assert.equal((await page.locator('#aa-outcome').textContent()).trim(),'VICTORY');
  const earnedNow=(await page.locator('#aa-rewards').textContent()).trim();
  assert.equal(await page.locator('#aa-rewards').isVisible(),true,'third saved Solo match should show new progress');
@@ -303,6 +305,7 @@ try{
  assert.equal(ffaResult.score,10);
  assert.ok(ffaResult.vehicleCount>0);
  assert.equal((await page.locator('#aa-mode-label').textContent()).trim(),'SCORED FREE-FOR-ALL');
+ assert.equal(await page.locator('#custom-edit').isVisible(),false,'ordinary scored FFA must not show EDIT RULES');
  assert.equal((await page.locator('#aa-outcome').textContent()).trim(),'VICTORY');
  assert.ok((await page.locator('#aa-rewards').textContent()).includes('VANGUARD PAINT'),'fifth completed saved Solo match earns Vanguard notice');
  assert.equal((await page.locator('#aa-rewards').textContent()).includes('ACE'),false,'old badges are not re-announced');
