@@ -42,13 +42,13 @@ assert.ok(icons.cosmetics.every(c=>c.selectable!==true),'concept-only cosmetics 
 pass('Cosmetic economy remains concept-only',icons.cosmetics.length+' proposed assets, zero authorized');
 const pkg='com.playereden.ricochetrumble';
 assert.ok(gradle.includes("applicationId '"+pkg+"'"));assert.ok(gradle.includes("namespace '"+pkg+"'"));
-assert.ok(gradle.includes('versionCode 50'));assert.ok(gradle.includes("versionName '0.9.54-lan-timeout-test'"));
+assert.ok(gradle.includes('defaultPreviewVersionCode = 50'));assert.ok(gradle.includes("defaultPreviewVersionName = '0.9.54-lan-timeout-test'"));
 assert.ok(manifest.includes('android:label="Sector Rebound"'));
 assert.ok(manifest.includes('android:allowBackup="false"'));
 assert.ok(manifest.includes('android:usesCleartextTraffic="false"'));
 assert.ok(manifest.includes('android:screenOrientation="sensorLandscape"'));
-const auditedCode=Number(gradle.match(/versionCode\s+(\d+)/)?.[1]);
-const auditedName=gradle.match(/versionName\s+'([^']+)'/)?.[1];
+const auditedCode=Number(gradle.match(/defaultPreviewVersionCode\s*=\s*(\d+)/)?.[1]);
+const auditedName=gradle.match(/defaultPreviewVersionName\s*=\s*'([^']+)'/)?.[1];
 assert.ok(Number.isInteger(auditedCode)&&auditedCode>0&&auditedName,'installed version metadata must be parseable');
 pass('Android app identity, version, backup posture and landscape',pkg+' / '+auditedName+' / code '+auditedCode);
 for(const k of ['SR_UPLOAD_STORE_FILE','SR_UPLOAD_STORE_PASSWORD','SR_UPLOAD_KEY_ALIAS','SR_UPLOAD_KEY_PASSWORD','SR_TEST_STORE_FILE','SR_TEST_STORE_PASSWORD','SR_TEST_KEY_ALIAS','SR_TEST_KEY_PASSWORD'])
