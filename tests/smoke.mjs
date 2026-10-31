@@ -337,7 +337,7 @@ const live=st().tanks[1];live.x=vacant.x;live.y=vacant.y;live.vx=live.vy=0;
 lone.x=vacant.x-37;lone.y=vacant.y;lone.vx=lone.vy=0;
 win.__test.tankMove(lone,{moveX:1,moveY:0},.13,0);
 assert.ok(lone.x<=vacant.x-37+1,'living occupied actors still block vehicles');
-assert.ok(menuHtml.includes('PLAY TOGETHER')&&menuHtml.includes('QUICK PLAY MODES + ADVANCED'));
+assert.ok(menuHtml.includes('data-action="modes"')&&menuHtml.includes('PLAYLIST &amp; ADVANCED RULES'),'streamlined menu still leads to selectable modes and full rules');
 console.log('PASS v0.9.8: vacant vehicle is passable and non-cover; occupied actors block; UI hierarchy present.');
 
 // v0.9.8.1 entry-clearance regression. Empty deployments never block movement,
@@ -374,7 +374,7 @@ console.log('PASS v0.9.8.1: entry clearance, Android asset parity and offline he
  const fs=await import('node:fs');
  const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
  const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
- for(const metadata of ['SOLO / AI','LOCAL WI-FI','ARMORED RESPONSE','NEW MAZE. NEW FIGHT.'])
+ for(const metadata of ['VS BOTS','WI-FI · BETA','ARMORED RESPONSE','CHOOSE MODE'])
    assert.ok(html.includes(metadata),'missing purposeful action/context label: '+metadata);
  assert.ok(css.includes('.scorestrip .middle.on-foot')&&css.includes('.interact-btn.busy'),'semantic HUD and bay-busy states must have authored styles');
  assert.ok(css.includes('max-width:760px')&&css.includes('max-height:390px'),'responsive phone-landscape thresholds retained');
@@ -519,7 +519,7 @@ console.log('PASS v0.9.10b: zoom-out, perimeter fill, softer tank motion, mech g
  const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
  assert.ok(html.includes('class="home-overline">FIELDGRID')&&html.includes('class="home-screen"'),'home is a recognizable game lobby');
  assert.ok(html.includes('home-topbar')&&html.includes('home-showcase')&&html.includes('home-actions'),'game lobby has identity, actual game unit and primary play region');
- assert.ok(html.includes('HOW TO PLAY')&&html.includes('SECTOR <span>REBOUND</span>'),'brand and help preserved');
+ assert.ok(html.includes('data-action="help"')&&html.includes('SECTOR <span>REBOUND</span>'),'brand and help preserved');
  assert.ok(css.includes('FIELDGRID COMMAND CONSOLE')&&css.includes('sans-serif-condensed'));
  assert.ok(css.includes('monospace'),'technical micro-label font is available offline');
 }

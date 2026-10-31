@@ -1,3 +1,9 @@
+# 2026-10-31 — UI REFACTOR FIRST CI: LEGACY MENU EXPECTATIONS CORRECTED
+
+[Initial UI refactor source 5e3a37e](https://github.com/PlayerEden/Ricochet-Rumble/commit/5e3a37e72a8c8cbb205f60cb68c7ca3ddf57b641) hit an automated smoke assertion at tests/smoke.mjs line 340, where the old test specifically demanded the removed "PLAY TOGETHER" button and old Quick Play copy. Investigation also found two similar old text/Help assertions later in this test file. Corrected only *test expectations* to assert the real new Choose Mode entry, playlist controls, existing help action and truthful Wi-Fi Beta label; runtime/web/android code unchanged in this follow-up commit. Re-run exact head; do not treat previous CI failure as passed. Full visual/phone acceptance still pending. [Audit details](UI_UX_MENU_REFINEMENT_2026-10-31.md).
+
+---
+
 # 2026-10-31 — UI/UX AUDIT + STREAMLINED MAIN MENU (CANDIDATE, QA PENDING)
 
 **User directive:** audit and refine the *existing* game, especially making the main menu feel like a genuine streamlined mobile game, removing unnecessary experimental labels and cleaning up whole-game navigation. Baseline [Preview 100016](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41181927198), source `cb9928c2e7c52a29fd44bd8deb942f56de7c20ae`, saved at [immutable 100016 pre-refinement rollback](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-preview-100016-before-ui-streamline).
