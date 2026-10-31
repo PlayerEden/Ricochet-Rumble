@@ -137,6 +137,10 @@ try{
   const preset=page.locator('details.custom-preset-fold');
   if(await preset.count()){await preset.locator('summary').evaluate(el=>el.click());await scene('custom-presets');}
   await clickAction('custom-back');await scene('modes-return');await clickAction('modes-back');
+  await clickAction('hangar');await scene('hangar-paint');
+  await page.locator('button[data-hangar-tab="insignia"]').evaluate(el=>el.click());
+  await scene('hangar-insignia');
+  await clickAction('hangar-back');
   await clickAction('dossier');await scene('dossier');
   await clickAction('backup');await scene('backup');
   await clickAction('backup-back');await clickAction('dossier-back');

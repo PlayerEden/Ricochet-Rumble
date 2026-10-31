@@ -54,6 +54,10 @@ try{
  // Hangar must remain reachable at compact Android landscape dimensions.
  await page.locator('#menu button[data-action="hangar"]').click();
  assert.equal(await page.locator('.hangar-screen').isVisible(),true,'actual Hangar opens from game lobby');
+ assert.equal(await page.locator('#hangar-paints').isVisible(),true,'paint category opens immediately');
+ assert.equal(await page.locator('#hangar-insignia').isVisible(),false,'unselected insignia category does not lengthen the page');
+ assert.equal((await page.locator('button[data-action="hangar-back"]').count()),1,'always visible header Back, no extra bottom scroll');
+ assert.equal((await page.locator('button[data-hangar-tab]').count()),2,'paint and insignia have direct one-tap tabs');
  assert.equal(await page.locator('.hangar-grid button[data-paint-id]').count(),6,'four free and two earned finishes in Hangar');
  assert.equal(await page.locator('button[data-paint-id="fieldgrid.vanguard"]').isDisabled(),true,'five-match reward locked before play');
  assert.equal(await page.locator('button[data-paint-id="fieldgrid.veteran"]').isDisabled(),true,'twelve-win reward locked before play');
@@ -63,6 +67,15 @@ try{
  assert.equal(await page.locator('button[data-emblem-id="mark.ace"]').isDisabled(),true,'ACE locked until ten recorded KOs');
  assert.equal(await page.locator('button[data-emblem-id="mark.command"]').isDisabled(),true,'COMMAND locked until twelve wins');
  assert.ok((await page.locator('#emblem-status').textContent()).includes('FIELD'));
+ await page.locator('button[data-hangar-tab="insignia"]').click();
+ assert.equal(await page.locator('#hangar-insignia').isVisible(),true,'insignia reached with one tap');
+ assert.equal(await page.locator('#hangar-paints').isVisible(),false,'paint hidden while customizing insignia');
+ assert.equal(await page.locator('button[data-hangar-tab="insignia"]').getAttribute('aria-selected'),'true');
+ await page.locator('button[data-hangar-tab="paint"]').focus();
+ await page.keyboard.press('ArrowRight');
+ assert.equal(await page.locator('#hangar-insignia').isVisible(),true,'keyboard arrow navigation stays in the insignia category');
+ await page.keyboard.press('Home');
+ assert.equal(await page.locator('#hangar-paints').isVisible(),true,'Home key moves focus to paint');
  assert.equal((await page.locator('button[data-paint-id="fieldgrid.vanguard"] small').textContent()).trim(),'0 / 5 MATCHES');
  await page.locator('button[data-paint-id="fieldgrid.moss"]').click();
  const equipped=await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-hangar-paint-v1')));
@@ -542,7 +555,8 @@ try{
    assert.equal(await page.locator('#dossier-emblem-mark').textContent(),'◇','default identity visible in Dossier');
   const geometry=await page.locator('#panel').evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth}));
   assert.ok(geometry.scrollWidth<=geometry.width+3,'dossier has no horizontal overflow at '+vw);
-  await page.locator('button[data-action="dossier-back"]').scrollIntoViewIfNeeded();
+  const back=await page.locator('button[data-action="dossier-back"]').boundingBox();
+  assert.ok(back&&back.y>=-1&&back.y+back.height<=vh+1,'Dossier Back is immediately visible without scroll at '+vw);
   await page.locator('button[data-action="dossier-back"]').click();
  }
  await page.setViewportSize({width:915,height:412});
@@ -554,6 +568,8 @@ try{
  // The real finalized match record earns VECTOR, which remains available after reload.
  assert.ok(afterDossier.matches>=3,'real completed Solo matches reached VECTOR threshold');
  await page.locator('button[data-action="hangar"]').click();
+ assert.equal(await page.locator('button[data-action="hangar-back"]').getAttribute('aria-label'),'Back to Dossier','Hangar knows where player entered');
+ await page.locator('button[data-hangar-tab="insignia"]').click();
  assert.equal(await page.locator('button[data-emblem-id="mark.vector"]').isDisabled(),false,'stored Dossier automatically unlocks VECTOR');
  await page.locator('button[data-emblem-id="mark.vector"]').click();
  assert.equal(await page.locator('button[data-emblem-id="mark.vector"]').getAttribute('aria-pressed'),'true');
@@ -561,7 +577,7 @@ try{
  assert.equal(operatorChoice.emblem,'mark.vector','operator insignia saved alongside existing paint');
  assert.equal(operatorChoice.equipped,'fieldgrid.moss','selecting emblem keeps previous tank paint');
  await page.locator('button[data-action="hangar-back"]').click();
- await page.locator('#menu button[data-action="dossier"]').click();
+ assert.equal(await page.locator('.dossier-screen').isVisible(),true,'Hangar Back returns to originating Dossier, no home-menu detour');
  assert.equal(await page.locator('#dossier-emblem-mark').textContent(),'△','Dossier shows equipped VECTOR');
  assert.equal(await page.locator('#dossier-emblem-name').textContent(),'VECTOR');
  result.steps.push('completed Solo match -> saved Dossier -> earned insignia -> persistent Hangar equip -> Dossier identity');

@@ -903,3 +903,68 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  #menu .mode-grid strong{font-size:12px}
  #menu .mode-grid small{font-size:9px}
 }
+
+/* 2026-10-31 / convenience pass: no forced scroll just to leave a screen.
+   Compact two-category Hangar; all original actual cosmetics/save IDs intact. */
+#menu .hangar-screen .hangar-head,
+#menu .dossier-screen .dossier-head{
+ position:sticky;top:0;z-index:4;
+ background:linear-gradient(180deg,#263035 0%,#222a2f 90%);
+ padding:5px 0 7px;margin:-4px 0 1px;
+ border-bottom:1px solid #505f65;
+}
+#menu .hangar-screen .hangar-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#menu .hangar-head .hangar-title{min-width:0}
+#menu .hangar-head h2{font-size:clamp(20px,4.5dvh,29px)}
+#menu .hangar-head p{font-size:10px}
+#menu #panel .screen-back{
+ flex:none;min-width:78px;width:auto;min-height:39px;max-height:46px;
+ margin:0;padding:5px 12px;
+ background:#30383e;color:#e5ebea;border:1px solid #66777e;
+ border-radius:6px;box-shadow:none;font:850 clamp(11px,1.35vw,14px)/1 sans-serif;
+}
+#menu .hangar-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#menu #panel .hangar-tabs button{
+ margin:0;min-height:39px;padding:6px 12px;
+ background:#242d32;border:1px solid #59666b;color:#aebfc2;
+ font:850 clamp(11px,1.5vw,14px)/1.1 sans-serif;letter-spacing:.9px;
+}
+#menu #panel .hangar-tabs button.active{
+ background:#33454a;border-color:#77c9d4;color:#f3f5ef;
+ box-shadow:inset 0 -3px 0 #72c7d2;
+}
+#menu .hangar-screen .hangar-pane{display:flex;flex-direction:column;gap:7px;min-width:0}
+#menu .hangar-screen .hangar-pane[hidden]{display:none!important}
+#menu .hangar-screen .hangar-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+#menu .hangar-screen .emblem-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+#menu .hangar-screen :is(.hangar-grid,.emblem-grid) button{margin:0}
+#menu .hangar-screen .hangar-subhead{font-size:10px;color:#a6b9bc;margin:2px 0 0}
+#menu .hangar-screen .hangar-equipped{margin:1px 0 0;padding:5px 9px}
+#menu .hangar-screen .hangar-note{font-size:10px;margin:0}
+#menu .dossier-screen .dossier-identity-row{gap:clamp(6px,1.2vw,13px)}
+#menu .dossier-screen .dossier-identity-row>div:first-child{min-width:0;flex:1}
+#menu .dossier-screen .dossier-emblem{flex:none;white-space:nowrap}
+#menu .dossier-screen .dossier-head h2{font-size:clamp(19px,4.2dvh,31px)}
+#menu .dossier-screen .dossier-head .eyebrow{font-size:10px}
+#menu .dossier-screen .dossier-backup-actions button{min-width:105px}
+@media(max-height:390px){
+ #menu .hangar-screen{gap:5px}
+ #menu .hangar-screen .hangar-head{padding:3px 0 5px}
+ #menu .hangar-screen .hangar-head h2{font-size:20px}
+ #menu .hangar-screen .hangar-head p{display:none}
+ #menu #panel .hangar-tabs button{min-height:34px}
+ #menu .hangar-screen .hangar-grid button{min-height:68px;gap:2px;padding:3px 4px}
+ #menu .hangar-screen .emblem-grid button{min-height:70px}
+ #menu .hangar-screen .paint-swatch{height:23px;width:32px}
+ #menu .hangar-screen .hangar-pane{gap:5px}
+ #menu .dossier-screen .dossier-head{padding:3px 0 5px}
+ #menu .dossier-screen .dossier-head p{display:none}
+ #menu #panel .screen-back{min-height:36px}
+}
+@media(max-width:620px){
+ #menu .dossier-screen .dossier-emblem{padding:3px 5px;gap:3px}
+ #menu .dossier-screen .dossier-emblem span{font-size:22px}
+ #menu .dossier-screen .dossier-emblem strong{font-size:9px}
+ #menu .dossier-screen .dossier-head h2{font-size:19px}
+ #menu #panel .screen-back{min-width:66px;padding:6px 8px;font-size:11px}
+}

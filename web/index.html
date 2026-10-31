@@ -166,7 +166,9 @@
 </template>
 <template id="hangar-template">
  <section class="hangar-screen" aria-label="Offline Hangar paint choices">
-  <header class="hangar-head"><div class="eyebrow">SOLO / CUSTOMIZATION</div><h2>THE <span>HANGAR</span></h2><p>PAINT AND OPERATOR INSIGNIA</p></header>
+  <header class="hangar-head"><div class="hangar-title"><div class="eyebrow">SOLO / CUSTOMIZATION</div><h2>THE <span>HANGAR</span></h2><p>Choose your look</p></div><button type="button" data-action="hangar-back" class="screen-back">← BACK</button></header>
+  <div class="hangar-tabs" role="tablist" aria-label="Hangar category"><button type="button" class="active" role="tab" aria-controls="hangar-paints" aria-selected="true" data-action="hangar-tab" data-hangar-tab="paint">PAINT</button><button type="button" role="tab" aria-controls="hangar-insignia" aria-selected="false" data-action="hangar-tab" data-hangar-tab="insignia">INSIGNIA</button></div>
+  <div id="hangar-paints" class="hangar-pane" role="tabpanel" aria-label="Unit paint">
   <h3 class="hangar-subhead">UNIT PAINT</h3>
   <div class="hangar-grid" role="group" aria-label="Choose a Solo unit paint">
    <button type="button" data-action="equip-paint" data-paint-id="fieldgrid.standard"><span class="paint-swatch paint-standard" aria-hidden="true"></span><strong>STANDARD</strong><small>FIELD ISSUE</small></button>
@@ -177,6 +179,8 @@
    <button type="button" data-action="equip-paint" data-paint-id="fieldgrid.veteran" disabled><span class="paint-swatch paint-veteran" aria-hidden="true"></span><strong>VETERAN</strong><small>0 / 12 WINS</small></button>
   </div>
   <p class="hangar-equipped" id="hangar-status" role="status">EQUIPPED · STANDARD · SOLO ONLY</p>
+  </div>
+  <div id="hangar-insignia" class="hangar-pane" role="tabpanel" aria-label="Pilot insignia" hidden>
   <h3 class="hangar-subhead">PILOT INSIGNIA</h3>
   <div class="emblem-grid" role="group" aria-label="Choose operator insignia for local Dossier">
    <button type="button" data-action="equip-emblem" data-emblem-id="mark.field"><span class="emblem-symbol" aria-hidden="true">◇</span><strong>FIELD</strong><small>STANDARD ISSUE</small></button>
@@ -185,13 +189,13 @@
    <button type="button" data-action="equip-emblem" data-emblem-id="mark.command" disabled><span class="emblem-symbol" aria-hidden="true">◆</span><strong>COMMAND</strong><small>0 / 12 WINS</small></button>
   </div>
   <p class="hangar-equipped" id="emblem-status" role="status">OPERATOR INSIGNIA · ◇ FIELD</p>
-  <p class="hangar-note">Cosmetic only. Earn finishes and insignia by completing Solo matches.</p>
-  <button type="button" data-action="hangar-back" class="hangar-back">BACK TO MENU</button>
+  </div>
+  <p class="hangar-note">Cosmetic only · Unlock more by completing Solo matches.</p>
  </section>
 </template>
 <template id="dossier-template">
  <section class="dossier-screen" aria-label="Local player dossier">
-  <header class="dossier-head"><div class="eyebrow">FIELDGRID / OPERATOR FILE</div><div class="dossier-identity-row"><div><h2>PLAYER <span>DOSSIER</span></h2><p>YOUR SOLO MATCH RECORD</p></div><div class="dossier-emblem" aria-label="Equipped operator insignia"><span id="dossier-emblem-mark" aria-hidden="true">◇</span><strong id="dossier-emblem-name">FIELD</strong></div></div></header>
+  <header class="dossier-head"><div class="eyebrow">FIELDGRID / OPERATOR FILE</div><div class="dossier-identity-row"><div><h2>PLAYER <span>DOSSIER</span></h2><p>YOUR SOLO MATCH RECORD</p></div><div class="dossier-emblem" aria-label="Equipped operator insignia"><span id="dossier-emblem-mark" aria-hidden="true">◇</span><strong id="dossier-emblem-name">FIELD</strong></div><button type="button" class="screen-back" data-action="dossier-back">← BACK</button></div></header>
   <div class="dossier-stats">
    <div><small>MATCHES</small><strong id="dossier-matches">0</strong></div>
    <div><small>VICTORIES</small><strong id="dossier-wins">0</strong></div>
@@ -205,7 +209,7 @@
   </div>
   <footer class="dossier-footer">
    <div><strong id="dossier-time">0 MIN</strong> <span>COMBAT TIME</span><p id="dossier-save-status" role="status">LOCAL STORAGE READY</p></div>
-   <div class="dossier-backup-actions"><button type="button" data-action="hangar">HANGAR</button><button type="button" data-action="backup">BACK UP DATA</button><button type="button" data-action="dossier-back">BACK TO MENU</button></div>
+   <div class="dossier-backup-actions"><button type="button" data-action="hangar">HANGAR</button><button type="button" data-action="backup">BACK UP DATA</button></div>
   </footer>
   <p class="dossier-note">Saved on this device. Only completed Solo matches count; back up your record before uninstalling.</p>
  </section>

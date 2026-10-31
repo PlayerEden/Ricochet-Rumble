@@ -1,5 +1,5 @@
 name: Sector Rebound - scoped UI/UX review
-# QA run: arcade-tactical visual identity, computed colors and responsive navigation
+# QA run: real owner screenshot convenience findings; add Hangar tab and Dossier back regression scenes
 on:
   push:
     branches: [integration/v0956-main-rooted-rehearsal]

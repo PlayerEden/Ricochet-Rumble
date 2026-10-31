@@ -51,7 +51,24 @@ function refreshHangar(){
   if(small)small.textContent=progress.target?(progress.eligible?'UNLOCKED':progress.current+' / '+progress.target+' '+progress.metric.toUpperCase()):'STANDARD ISSUE';
  }
 }
-function openHangar(){setPanel(document.getElementById('hangar-template').innerHTML);refreshHangar();}
+let hangarReturnToDossier=false;
+function showHangarTab(which){
+ const selected=which==='insignia'?'insignia':'paint';
+ for(const tab of document.querySelectorAll('.hangar-tabs [data-hangar-tab]')){
+  const active=tab.dataset.hangarTab===selected;
+  tab.classList.toggle('active',active);tab.setAttribute('aria-selected',String(active));tab.tabIndex=active?0:-1;
+ }
+ for(const [name,id] of [['paint','hangar-paints'],['insignia','hangar-insignia']]){
+  const el=document.getElementById(id);if(el)el.hidden=name!==selected;
+ }
+ const p=document.getElementById('panel');if(p)p.scrollTop=0;
+}
+function openHangar(fromDossier=false){
+ hangarReturnToDossier=!!fromDossier;
+ setPanel(document.getElementById('hangar-template').innerHTML);refreshHangar();showHangarTab('paint');
+ const back=document.querySelector('.hangar-screen button[data-action="hangar-back"]');
+ if(back)back.setAttribute('aria-label',hangarReturnToDossier?'Back to Dossier':'Back to main menu');
+}
 function openModes(){setPanel(document.getElementById('modes-template').innerHTML);}
 let pendingRestoreText='';
 function openBackupScreen(){pendingRestoreText='';setPanel(document.getElementById('backup-template').innerHTML);}
@@ -1695,11 +1712,19 @@ loadPrefs();
 dossierStore=window.SectorDossier?.createStore((()=>{try{return window.localStorage}catch(_){return null}})())||null;
 loadPaint(); // Dossier milestones must be available before restoring earned selections.
 
+menu.addEventListener('keydown',e=>{
+ const tab=e.target.closest?.('.hangar-tabs [role="tab"]');
+ if(!tab||!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
+ e.preventDefault();
+ const next=e.key==='Home'?'paint':e.key==='End'?'insignia':tab.dataset.hangarTab==='paint'?'insignia':'paint';
+ showHangarTab(next);
+ document.querySelector('.hangar-tabs [data-hangar-tab="'+next+'"]')?.focus();
+});
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
  if(a==='toggle-sound'||a==='toggle-music'){togglePauseAudio(a==='toggle-sound'?'sound':'music',b);return;}
  if(!['solo','settings-play','cqc','scored_ffa','scored_tdm','custom-play','duel','host','find','custom-preset-save','custom-preset-delete','custom-preset-load','ip-join'].includes(a))
   audioCue(['settings-back','help-back','dossier-back','backup-back','modes-back','custom-back','close','resume'].includes(a)?'ui-back':'ui-select');
- if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar()}else if(a==='hangar-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='equip-paint'){
+ if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
    const ok=equipPaint(b.dataset.paintId);
    refreshHangar();const status=document.getElementById('hangar-status');
    if(!ok&&status)status.textContent=paintProgress(b.dataset.paintId).eligible?'COULD NOT SAVE PAINT · CURRENT PAINT KEPT':'LOCKED · COMPLETE DOSSIER MILESTONE FIRST';
