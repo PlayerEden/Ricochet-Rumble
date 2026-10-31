@@ -604,13 +604,20 @@ function coachTip(message,seconds=3.8){
  coachRemaining=seconds;
  return true;
 }
+// Once-per-control-scheme briefing, shown only when an actual Solo match begins.
+// Do not replay a modal tutorial or show misleading Survival controls in scored modes.
 function firstMatchHint(){
+ const cqc=isCqcMatch(),scoredVehicle=isScoredVehicleMatch();
+ const key=cqc?'rr-coach-cqc-v1':scoredVehicle?'rr-coach-scored-vehicle-v1':'rr-coach-v0917';
+ const hint=cqc?'DRAG FIRE TO AIM · PILOT KOs SCORE':
+   scoredVehicle?'DRAG AIM TO TURN · TAP FIRE TO SHOOT':
+   'MOVE TO AIM · HOLD FIRE TO SHOOT';
  try{
-  if(window.localStorage?.getItem('rr-coach-v0917'))return;
-  window.localStorage?.setItem('rr-coach-v0917','1');
+  if(window.localStorage?.getItem(key))return false;
+  window.localStorage?.setItem(key,'1');
  }catch(_){}
  coachEnabled=true;
- coachTip('MOVE TO AIM · HOLD FIRE TO SHOOT',4);
+ return coachTip(hint,cqc||scoredVehicle?4.6:4);
 }
 function setPanel(html){releaseControls();panel.innerHTML=html;menu.classList.remove('hidden')}
 function exitMenu(){menu.classList.add('hidden');refreshHUD()}
@@ -705,7 +712,7 @@ function newMatch(which){
  const playlistId=which==='solo'?nextPlaylistMode():null;
  if(bridgeReady())window.AndroidBridge.stopNetwork();mode=scoredLaunch||customLaunch?'solo':which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;neutralizeGuestInput();
  const arena=selectArena(),options=customLaunch?customOptionsFor():scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:which==='scored_tdm'?'teams':'ffa',matchModeId:which,pilotMode:true}:playlistId?quickPlayOptionsFor(playlistId):{...selectedRules,pilotMode:true};
- state=initialState(arena,options,freshSectorSeed(state?.mazeSeed));camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config)):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch){exitMenu();audioCue('deploy');if(which==='solo')firstMatchHint();}}
+ state=initialState(arena,options,freshSectorSeed(state?.mazeSeed));camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config)):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch){exitMenu();audioCue('deploy');if(mode==='solo')firstMatchHint();}}
 function resetAll(advancePlaylist=false){
  const previousSeed=state.mazeSeed;
  let options={...state.config};
