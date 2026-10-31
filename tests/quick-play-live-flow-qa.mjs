@@ -48,7 +48,18 @@ try{
  assert.equal(await page.locator('.mode-grid button').count(),4,'all original specialist modes remain accessible');
  await page.locator('#menu button[data-action="modes-back"]').click();
  assert.equal(await page.locator('.home-screen').isVisible(),true,'mode select back returns to the home screen');
- result.steps.push('live game loaded in Chromium, no bundled source instrumentation');
+ // Help must be optional, short, and have neutral immediately reachable Back.
+ await page.locator('#menu button[data-action="help"]').click();
+ assert.equal(await page.locator('.help-steps article').count(),4,'four concise visible first-time instructions');
+ assert.equal(await page.locator('.help-more').getAttribute('open'),null,'advanced manual collapsed by default');
+ assert.equal(await page.locator('.help-screen .screen-back').isVisible(),true,'Help Back in compact top header');
+ const backBG=await page.locator('.help-screen .screen-back').evaluate(el=>getComputedStyle(el).backgroundImage);
+ assert.ok(!backBG.includes('255, 207'),'Help Back is neutral, not golden primary CTA');
+ await page.locator('.help-more summary').click();
+ assert.equal(await page.locator('.help-more').getAttribute('open'),'','advanced details can expand on demand');
+ await page.locator('.help-screen .screen-back').click();
+ assert.equal(await page.locator('.home-screen').isVisible(),true,'Help Back returns directly home');
+ result.steps.push('live game loaded; short Help, accessible neutral Back and optional advanced control guide verified');
 
  // Phase 4A actual browser acceptance: paint must select/persist and the
  // Hangar must remain reachable at compact Android landscape dimensions.
@@ -117,6 +128,8 @@ try{
  const before=await page.evaluate(()=>({id:window.__flowQA.state.matchId,seed:window.__flowQA.state.mazeSeed,mode:window.__flowQA.state.config.matchModeId,human:window.__flowQA.state.humanCount,bots:window.__flowQA.state.config.botCount}));
  assert.equal(before.bots,before.mode==='survival_teams'?2:1,'one-bot Team Survival adds one ally without affecting FFA');
  assert.equal(before.human,1,'solo actual player');
+ assert.equal(await page.locator('.hud-life').isVisible(),true,'Survival retains life marker');
+ assert.equal(await page.locator('#score-clock').isVisible(),false,'Survival omits scored countdown');
  assert.ok(['survival_ffa','survival_teams'].includes(before.mode),'supported mode shown');
  assert.equal(await page.locator('#after-action').isVisible(),false,'no premature results');
  const victory=await page.evaluate(()=>{
@@ -194,6 +207,12 @@ try{
  assert.equal(pilotStart.allFoot,true);
  assert.equal(pilotStart.clock,180);
  assert.equal((await page.locator('#score-clock').textContent()).trim(),'03:00');
+ assert.equal(await page.locator('.hud-life').isVisible(),false,'scored CQC must not show Survival heart next to KO score');
+ assert.equal(await page.locator('#score-clock').isVisible(),true,'scored timer visible');
+ const clockLayout=await page.evaluate(()=>{const a=document.querySelector('#score-clock').getBoundingClientRect(),b=document.querySelector('#menu-button').getBoundingClientRect(),s=document.querySelector('.scorestrip').getBoundingClientRect();return {clockX:a.x+a.width/2,scoreX:s.x+s.width/2,clockTop:a.top,scoreBottom:s.bottom,menuRight:b.right,clockLeft:a.left};});
+ assert.ok(Math.abs(clockLayout.clockX-clockLayout.scoreX)<28,'scored countdown is centered with score strip');
+ assert.ok(clockLayout.clockTop>=clockLayout.scoreBottom-2,'countdown sits immediately below score strip');
+ assert.ok(clockLayout.clockLeft>=clockLayout.menuRight-2,'countdown clears MENU');
  assert.equal((await page.locator('#player0-label').textContent()).trim(),'YOU KOs');
  assert.equal((await page.locator('#interact-btn').isVisible()),false);
  assert.equal((await page.locator('#fire-mode').textContent()).trim(),'HOLD · DRAG TO AIM');
@@ -355,8 +374,8 @@ try{
  assert.equal(tdmStart.mode,'scored_tdm');
  assert.deepEqual(tdmStart.teams,[0,1,0,1]);
  assert.equal(tdmStart.target,15);assert.equal(tdmStart.clock,300);
- assert.equal((await page.locator('#player0-label').textContent()).trim(),'BLUE');
- assert.equal((await page.locator('#player1-label').textContent()).trim(),'RED');
+ assert.equal((await page.locator('#player0-label').textContent()).trim(),'BLUE KOs');
+ assert.equal((await page.locator('#player1-label').textContent()).trim(),'RED KOs');
  assert.equal(await page.locator('#vehicle-aim').count(),0,'scored TDM also uses two-control layout');
  const tdmResult=await page.evaluate(()=>{
   const qa=window.__flowQA,s=qa.state,enemy=s.tanks[1],v=s.vehicles[enemy.vehicleId],hits=[];

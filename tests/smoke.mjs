@@ -31,6 +31,8 @@ function runFrames(count,ms=16.667){for(let i=0;i<count;i++){tick+=ms;const fn=f
 const st=()=>win.__test.state;
 // One gameplay loop, no duplicate public modes.
 const menuHtml=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
+node('help-template').innerHTML=menuHtml.match(/<template id="help-template">([\s\S]*?)<\/template>/)?.[1]||'';
+assert.ok(node('help-template').innerHTML.includes('HOW TO <span>PLAY</span>'),'Help template is bundled in the local HTML');
 assert.equal(menuHtml.includes('data-action="pilot"'),false);
 assert.equal(menuHtml.includes('data-action="solo"'),true);
 assert.equal(menuHtml.includes('data-action="nearby"'),true);
@@ -1856,8 +1858,8 @@ console.log('PASS Solo and LAN pilot FIRE-drag parity, independent heading, ejec
  assert.ok(m.vehicles.some(v=>v.type==='mech'),'mech recovery is preserved');
  assert.equal(api.teamOf(2),0);assert.equal(api.teamOf(3),1);
  assert.equal(api.combatColor(2),'#46d2f5');assert.equal(api.combatColor(3),'#fc856e');
- assert.equal(node('player0-label').textContent,'BLUE');
- assert.equal(node('player1-label').textContent,'RED');
+ assert.equal(node('player0-label').textContent,'BLUE KOs');
+ assert.equal(node('player1-label').textContent,'RED KOs');
  assert.equal(node('score0').textContent,0);assert.equal(node('score1').textContent,0);
  assert.equal(node('score-clock').textContent,'05:00');
  assert.ok(!menuHtml.includes('id="vehicle-aim"'),'TDM uses simple MOVE and FIRE without extra AIM button');

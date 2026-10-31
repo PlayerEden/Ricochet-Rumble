@@ -1,3 +1,9 @@
+# 2026-10-31 — FINAL UI REGRESSION CHECKS ADDED
+
+Added actual Chromium assertions: four concise Help steps, neutral top Back, optional advanced instructions, score-mode heart hidden but Survival heart visible, match timer grouped below center scoreboard and separate from MENU; real 5-viewport layout scenes include Help advanced. Updated mock Help template and scored team labels. Changed test and scoped UI workflow only; **the exact visual/Android QA verdict remains pending**. [Scope/audit](UI_FINAL_POLISH_2026-10-31.md).
+
+---
+
 # 2026-10-31 — FINAL TARGETED USABILITY PASS (PENDING EXACT-HEAD QA)
 
 Following owner's real Android screenshots, candidate removes giant gold Help Back CTA and excessive instructions (four quick cards + optional advanced control details), fixes a real missing `.hud-life.hidden` rule that left a heart beside scored KO counts, moves scored countdown beneath center scoreboard away from MENU, and emphasizes Dossier victories/KOs without changing data or combat. [Audited scope and gates](UI_FINAL_POLISH_2026-10-31.md). Immutable [Preview 100026 rollback](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-preview-100026-before-ui-final-polish), baseline SHA `5222063951f42f2bafbee72c276eba3cf855b37a`. Full browser/Android exact-source QA **PENDING** until runs actually pass. Stable `main` gameplay not merged.

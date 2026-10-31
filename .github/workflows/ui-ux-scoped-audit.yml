@@ -1,5 +1,5 @@
 name: Sector Rebound - scoped UI/UX review
-# QA rerun: compact 68px short-landscape Hangar touch cards; real scroll reachability visual gate
+# QA run: final player-facing Help/HUD/Dossier clarity and no-regression phone layout
 on:
   push:
     branches: [integration/v0956-main-rooted-rehearsal]

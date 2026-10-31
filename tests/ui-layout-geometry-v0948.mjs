@@ -132,7 +132,10 @@ try{
   const details=page.locator('details.extra-rules');
   if(await details.count()){await details.locator('summary').evaluate(el=>el.click());await scene('settings-expanded');}
   await clickAction('settings-back');
-  await clickAction('help');await scene('help');await clickAction('help-back');
+  await clickAction('help');await scene('help');
+  const helpMore=page.locator('.help-more');
+  if(await helpMore.count()){await helpMore.locator('summary').evaluate(el=>el.click());await scene('help-advanced');}
+  await clickAction('help-back');
   await clickAction('modes');await scene('modes');await clickAction('custom');await scene('custom');
   const preset=page.locator('details.custom-preset-fold');
   if(await preset.count()){await preset.locator('summary').evaluate(el=>el.click());await scene('custom-presets');}
