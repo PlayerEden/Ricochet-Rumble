@@ -36,6 +36,7 @@ assert.equal(input.fire,true);
 close(input.moveX,0.6,'move x');close(input.aimY,1,'aim y');
 const guestTurn=lan.moveHostSeat(1,input);
 close(guestTurn.turn,6.5/60,'guest on-foot precision turn under host authority');
+for(let i=0;i<15;i++)lan.moveHostSeat(1,input);
 assert.equal(lan.fireHostSeat(1),true,'guest pilot can shoot after authoritative aim');
 const projectile=host.bullets.at(-1);
 assert.equal(projectile.owner,1,'guest owns authoritative shot');
