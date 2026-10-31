@@ -1095,11 +1095,14 @@ console.log('PASS v0.9.22 Slice A versioned playlist selection, shuffle-bag boun
  const beforeArmor=next.vehicles[next.tanks[0].vehicleId].armor;
  assert.equal(api.registerHit(1,0),true,'vehicle armor hit accepted');
  assert.equal(next.vehicles[next.tanks[0].vehicleId].armor,beforeArmor-1);
+ assert.equal(next.fxEvents.at(-1)?.kind,'armor','armor damage has a different effect from pilot KO');
+ assert.equal(api.serializeState().fxEvents.at(-1)?.kind,'armor','LAN guest receives the same armor impact event');
  assert.equal(next.deaths[0],0,'armor hit cannot be a pilot death');
  assert.equal(next.kos[1],0,'armor hit cannot be an operator KO');
  api.ejectPilot(0);assert.equal(next.deaths[0],0,'vehicle ejection is not a pilot death');
  next.tanks[0].shield=0;
  assert.equal(api.registerHit(1,0),true);
+ assert.equal(next.fxEvents.at(-1)?.kind,'hit','on-foot actual pilot damage retains a separate hit FX');
  assert.equal(next.deaths[0],1);
  assert.equal(next.respawns[0],1);
  assert.equal(next.winner,-1,'losing one life does not end match');

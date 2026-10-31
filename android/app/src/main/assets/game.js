@@ -580,9 +580,9 @@ function durationLabel(seconds){
  const n=Math.max(0,Math.floor(seconds));
  return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');
 }
-function emitFx(kind,x,y,color,owner=-1,target=-1){const id=++fxSeq;state.fxEvents.push({id,kind,x,y,color,owner,target,ttl:kind==='shot'?1.8:kind==='hit'?.75:kind==='eject'?.8:kind==='guard'?.5:.4});if(state.fxEvents.length>12)state.fxEvents.shift();spawnParticles(kind,x,y,color);lastRemoteFxId=id}
-function spawnParticles(kind,x,y,color){const count=kind==='hit'?24:kind==='eject'?20:kind==='pickup'?17:kind==='bounce'?5:kind==='shot'?7:12;const speed=kind==='hit'?205:kind==='bounce'?95:kind==='shot'?115:135;
- for(let i=0;i<count;i++){const a=(i/count)*Math.PI*2+Math.random()*.4,velocity=speed*(.28+Math.random()*.72),life=(kind==='shot'?.17:kind==='bounce'?.14:.42)+Math.random()*.26;particles.push({x,y,vx:Math.cos(a)*velocity,vy:Math.sin(a)*velocity,life,maxLife:life,color,size:kind==='hit'?2.5+Math.random()*3:1.5+Math.random()*2.2})}if(particles.length>260)particles.splice(0,particles.length-260);}
+function emitFx(kind,x,y,color,owner=-1,target=-1){const id=++fxSeq;state.fxEvents.push({id,kind,x,y,color,owner,target,ttl:kind==='shot'?1.8:kind==='hit'?.75:kind==='armor'?.55:kind==='eject'?.8:kind==='guard'?.5:.4});if(state.fxEvents.length>12)state.fxEvents.shift();spawnParticles(kind,x,y,color);lastRemoteFxId=id}
+function spawnParticles(kind,x,y,color){const count=kind==='hit'?24:kind==='armor'?12:kind==='eject'?20:kind==='pickup'?17:kind==='bounce'?5:kind==='shot'?7:12;const speed=kind==='hit'?205:kind==='armor'?145:kind==='bounce'?95:kind==='shot'?115:135;
+ for(let i=0;i<count;i++){const a=(i/count)*Math.PI*2+Math.random()*.4,velocity=speed*(.28+Math.random()*.72),life=(kind==='shot'?.17:kind==='bounce'?.14:.42)+Math.random()*.26;particles.push({x,y,vx:Math.cos(a)*velocity,vy:Math.sin(a)*velocity,life,maxLife:life,color,size:kind==='hit'?2.5+Math.random()*3:kind==='armor'?2+Math.random()*1.7:1.5+Math.random()*2.2})}if(particles.length>260)particles.splice(0,particles.length-260);}
 function spawnPickup(){if(state.pickups.length||state.winner>=0)return;
  const spots=mazeGrid?Array.from({length:mazeGrid.cols*mazeGrid.rows},(_,i)=>[((i%mazeGrid.cols)+.5)*mazeGrid.cell,(Math.floor(i/mazeGrid.cols)+.5)*mazeGrid.cell]):pickupSpots;
  const candidates=spots.filter(([x,y])=>!blocked(x,y,32)&&state.tanks.every((t,i)=>state.lives[i]===0||Math.hypot(t.x-x,t.y-y)>83));if(!candidates.length)return;
@@ -914,7 +914,7 @@ function registerHit(attacker,victim){if(state.winner>=0||state.lives[victim]<=0
  quietContactSeconds=0;const target=state.tanks[victim];if(target.powerType==='guard'&&target.powerTimer>0){target.powerType=null;target.powerTimer=0;emitFx('guard',target.x,target.y,'#b59aff');audioCue('barrier',target.x,target.y);state.event='BARRIER BLOCKED THE HIT!';state.eventTimer=.8;return false;}
  if(isScoredMatch()&&target.onFoot)return creditScoredPilotKO(attacker,victim);
  if(isPilotMatch()&&!target.onFoot){const vehicle=state.vehicles?.[target.vehicleId];if(vehicle&&vehicle.armor>0){
-   vehicle.armor--;emitFx('hit',target.x,target.y,combatColor(victim),attacker,victim);
+   vehicle.armor--;emitFx('armor',target.x,target.y,combatColor(victim),attacker,victim);
    if(victim===0){screenKick=comfort.shake?2.3:0;damagePulse=.28;}
    if(vehicle.armor===0)ejectPilot(victim);else{state.event=label(victim)+' '+vehicleDef(vehicle).name+' ARMOR '+vehicle.armor+'/'+vehicleDef(vehicle).armor;state.eventTimer=.75;}
    audioCue('armor-hit',target.x,target.y);refreshHUD();return true;
@@ -1485,14 +1485,17 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  }
  // Short, readable impact rings; effects are serialized for nearby-play guests.
  for(const fx of state.fxEvents||[]){
-   if(fx.kind!=='hit'&&fx.kind!=='eject'&&fx.kind!=='bounce'&&fx.kind!=='guard')continue;
-   const span=fx.kind==='eject'?.8:fx.kind==='hit'?.75:fx.kind==='guard'?.5:.4;const progress=1-clamp((fx.ttl||0)/span,0,1);
-   const radius=fx.kind==='eject'?20+progress*48:fx.kind==='hit'?8+progress*33:fx.kind==='guard'?18+progress*29:4+progress*12;
-   c.save();c.globalAlpha=(fx.kind==='bounce'?.5:.75)*(1-progress);c.strokeStyle=fx.kind==='eject'?'#f6e4bd':fx.kind==='hit'?'#fff0bf':fx.kind==='guard'?'#bfa6ff':'#9fd9f3';
-   c.lineWidth=fx.kind==='eject'?4:2.5;c.beginPath();c.arc(fx.x,fx.y,radius,0,Math.PI*2);c.stroke();
-   // Directional impact ticks read as armor strikes rather than soft bubbles.
-   if((fx.kind==='hit'||fx.kind==='eject')&&progress<.76){
-    const rays=fx.kind==='eject'?9:7;
+   if(fx.kind!=='hit'&&fx.kind!=='armor'&&fx.kind!=='eject'&&fx.kind!=='bounce'&&fx.kind!=='guard')continue;
+   const span=fx.kind==='eject'?.8:fx.kind==='hit'?.75:fx.kind==='armor'?.55:fx.kind==='guard'?.5:.4;const progress=1-clamp((fx.ttl||0)/span,0,1);
+   const radius=fx.kind==='eject'?20+progress*48:fx.kind==='hit'?8+progress*33:fx.kind==='armor'?15+progress*19:fx.kind==='guard'?18+progress*29:4+progress*12;
+   c.save();c.globalAlpha=(fx.kind==='bounce'?.5:.75)*(1-progress);c.strokeStyle=fx.kind==='eject'?'#f6e4bd':fx.kind==='hit'?'#fff0bf':fx.kind==='armor'?'#a8ecfa':fx.kind==='guard'?'#bfa6ff':'#9fd9f3';
+   c.lineWidth=fx.kind==='eject'?4:2.5;c.beginPath();
+   // Angular armor plate strike versus the rounded operator-hit pulse.
+   if(fx.kind==='armor'){c.moveTo(fx.x,fx.y-radius);c.lineTo(fx.x+radius,fx.y);c.lineTo(fx.x,fx.y+radius);c.lineTo(fx.x-radius,fx.y);c.closePath();}
+   else c.arc(fx.x,fx.y,radius,0,Math.PI*2);
+   c.stroke();
+   if((fx.kind==='armor'||fx.kind==='hit'||fx.kind==='eject')&&progress<.76){
+    const rays=fx.kind==='eject'?9:fx.kind==='armor'?4:7;
     c.lineWidth=fx.kind==='eject'?3:2;
     for(let n=0;n<rays;n++){
      const a=n*Math.PI*2/rays,inner=radius+5,outer=inner+(1-progress)*12;
@@ -1688,7 +1691,8 @@ window.RR={openMenu(){if(menu.classList.contains('hidden'))showPauseMenu();else 
  const shooter=upcoming.tanks?.[event.owner],vehicle=upcoming.vehicles?.[shooter?.vehicleId];
  audioCue(shooter?.onFoot?'pilot-shot':vehicle?.type==='mech'?'mech-shot':'tank-shot',event.x,event.y);
  }
- if(event.kind==='hit')audioCue('armor-hit',event.x,event.y);
+ if(event.kind==='armor')audioCue('armor-hit',event.x,event.y);
+  if(event.kind==='hit')audioCue('pilot-hit',event.x,event.y);
  if(event.kind==='eject')audioCue('eject',event.x,event.y);
  if(event.kind==='guard')audioCue('barrier',event.x,event.y);
  if(event.kind==='pickup')audioCue('pickup',event.x,event.y);lastRemoteFxId=event.id}}state=upcoming;setArena(0,state.mazeSeed,state.config?.mapSize);refreshHUD()}break;
