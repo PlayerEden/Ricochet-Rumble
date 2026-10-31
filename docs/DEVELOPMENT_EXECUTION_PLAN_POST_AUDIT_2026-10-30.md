@@ -51,6 +51,14 @@ After actual 3,600-seed source QA PASS and complete [Chromium + Android run 4102
 
 ---
 
+## Phase E v0.9.53 code-level LAN pilot parity complete / physical two-phone gate open (2026-10-30)
+
+[Source PR #82](https://github.com/PlayerEden/Ricochet-Rumble/pull/82) fixes missing guest on-foot independent FIRE-drag direction, host authoritative finite input normalization, and equal on-foot pilot heading turn for the two human LAN seats. [Focused actual game-engine + score/save/smoke PASS 41148986844](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41148986844); [real Chromium visual + Android debug APK/unsigned AAB FULL PASS 41149116261](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41149116261), exact original tested source `746816a14e27d18edfed3daecdace5cf520d633f`. [Original archived debug APK and screenshots](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.53-lan-pilot-parity-test), APK SHA256 `c26a9cd759588df905631345bc605caa7a5a49d6c06607d984c5500ee16edeeb`. [Full technical and manual testing report](LAN_PILOT_INPUT_PARITY_v0953.md).
+
+**Explicitly not done:** any physical Wi-Fi LAN two-phone acceptance, jitter/latency instrumentation and smoothing, reconnect across devices, durable same-signer APK upgrade/data preservation, Play production signing or stable main merge. Next separate LAN work should be measured actual Wi-Fi synchronization; no spontaneous network protocol rewrite. Owner-approved graphics, game-feel and test APK rollback protected. **CLEAN-INSTALL EXPERIMENTAL DEBUG ONLY** and never uninstall older game with valuable saves.
+
+---
+
 ## Priority and order
 | Phase | Work package | Purpose / real deliverable | Exit gate | Decision owner |
 |---|---|---|---|---|
