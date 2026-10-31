@@ -90,6 +90,8 @@ jobs:
         run: |
           gradle --no-daemon :app:assembleDebug
           gradle --no-daemon :app:bundleRelease
+      - name: Attest actual debug APK signer, metadata and packaged WebView assets
+        run: node tools/attest-android-ci-package.mjs
       - name: Upload unsigned AAB - NOT Play signed
         uses: actions/upload-artifact@v4
         with:
@@ -101,6 +103,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk-${{ github.run_id }}
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            qa-results/android-ci-package-attestation.json
           if-no-files-found: error
           retention-days: 14

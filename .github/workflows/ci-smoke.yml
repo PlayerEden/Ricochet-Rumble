@@ -56,5 +56,7 @@ jobs:
         run: node tests/dossier.mjs
       - name: Verify pure scored KO, team timeouts and spawn ranking contract
         run: node tests/scored-match-kernel.mjs
+      - name: Check APK package attestation guard logic (no SDK or phone needed)
+        run: node tests/android-ci-package-attestation.mjs
       - name: Validate FIELDGRID cosmetic manifest
         run: node tools/validate-cosmetic-catalog.mjs
