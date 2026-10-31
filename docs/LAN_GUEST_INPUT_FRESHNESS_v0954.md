@@ -1,6 +1,14 @@
+## FULL AUTOMATED QA + PERMANENT EXACT TESTED APK — PASS (2026-10-30)
+
+- [Full real Chromium menu/gameplay/pilot/layout screenshots, scored/save/smoke tests, Android debug APK + unsigned AAB **SUCCESS** run 41156274497](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41156274497), **exact original QA-tested source SHA `e4cb3e2e9351f1c2a354b35100f23bf0bd9e45a0`**. [Focused actual host input freshness and prior guest aim regression PASS 41156162244](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41156162244).
+- [Original QA-tested v0.9.54 debug APK, actual Chromium screenshot ZIP and public SHA256 checksum permanent GitHub prerelease](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.54-lan-ghost-input-test). Original APK SHA256 `c397677cc53466a1e07cf9d9e0d1494b8c82d2e6a8cf1ee4bf5e2b1dc611513b`. Byte-identical from successful original run; **not rebuilt or re-signed**. [One-use archiver run 41156802424 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41156802424) subsequently removed from the branch.
+- **This is NOT two-phone LAN acceptance**, validated jitter behavior, permanent signing/upgrade safety, Play Store release or stable-main approval. Actual phone test still deferred by owner. Draft #83 and ancestor experimental PRs remain unmerged. **Do not uninstall an installed APK holding valuable saves to install a differently signed debug APK.**
+
+---
+
 # Sector Rebound v0.9.54 — LAN Host Guest-Input Freshness Safety
 
-**Date:** 2026-10-30. **Status:** focused actual-game source/input and full regression PASS; full Chromium/Android run awaits final verification. **Not merged into stable main.** [Draft PR #83](https://github.com/PlayerEden/Ricochet-Rumble/pull/83) branches from [v0.9.53 draft PR #82](https://github.com/PlayerEden/Ricochet-Rumble/pull/82). Original [v0.9.53 QA-tested APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.53-lan-pilot-parity-test) remains immutable and is the rollback checkpoint.
+**Date:** 2026-10-30. **Status:** focused actual-game source/input and full regression PASS; full original Chromium/Android QA PASS and permanent APK archived. **Not merged into stable main.** [Draft PR #83](https://github.com/PlayerEden/Ricochet-Rumble/pull/83) branches from [v0.9.53 draft PR #82](https://github.com/PlayerEden/Ricochet-Rumble/pull/82). Original [v0.9.53 QA-tested APK](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.53-lan-pilot-parity-test) remains immutable and is the rollback checkpoint.
 
 ## Why this work was possible without a second phone
 
@@ -19,7 +27,7 @@ The actual `web/game.js` host retained the latest normalized guest `{moveX,moveY
 
 - [Focused original game-source + prior LAN input parity + scored/save/smoke regression **PASS**, run 41156162244](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41156162244) at source SHA `8db3ca8accb7ed35f36813e88a148f1510d11d89`.
 - `tests/lan-guest-input-timeout-v0954.mjs` loads the **actual bundled game engine**, triggers the real `window.RR.nativeMessage` host input handler and `step()`, and verifies: 300 ms stale-window tolerance, neutral after ~467 ms, no ghost FIRE indefinitely, immediate valid packet recovery, no acceptance while paused, neutral host pause/new match/rejoin/disconnect. Web and Android game JS/CSS source parity PASS.
-- Full Chromium/screenshots + Android APK and unsigned AAB [run 41156274497](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41156274497) **running at document creation**. Do not mark complete until verified. Debug preview metadata versionCode **50**, versionName `0.9.54-lan-timeout-test`.
+- Full Chromium/screenshots + Android APK and unsigned AAB [run 41156274497](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41156274497) **SUCCESS**, exact SHA and original binary release linked above. Debug preview metadata versionCode **50**, versionName `0.9.54-lan-timeout-test`.
 - Physical Android two-phone same-Wi-Fi latency, ease of aiming, actual pause/recovery, guest snapshot jitter and correct update/signing remains **PENDING**. The 0.4-second timeout is conservative for a nominal 20Hz input stream but is not calibrated from a packet-loss study; validate with real humans before final release.
 
 ## Human checkpoint and release gate
