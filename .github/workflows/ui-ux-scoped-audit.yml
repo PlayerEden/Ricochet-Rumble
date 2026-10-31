@@ -1,4 +1,5 @@
 name: Sector Rebound - scoped UI/UX review
+# QA rerun: remove outdated future-Dossier copy assertion after purposeful UI cleanup
 on:
   push:
     branches: [integration/v0956-main-rooted-rehearsal]

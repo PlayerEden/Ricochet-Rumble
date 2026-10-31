@@ -1,3 +1,9 @@
+# 2026-10-31 — SCOPED CHROMIUM UI QA: FIRST TEST ASSERTION REPAIRED
+
+[Actual UI browser run 41183031192](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41183031192) reached real Dossier UI then failed on the *old QA expectation* for removed `.dossier-guard` future-only copy at quick-play-live-flow-qa.mjs line 541. Source / Android-parity and fast game smoke were PASS before this point. Test now checks that the speculative `#dossier-eligibility` is absent while real matches/draws/emblem persist. No runtime/gameplay code modified in this correction. Scope-specific browser QA will rerun, and verdict remains PENDING until it passes. Existing [Preview 100018 APK build PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41182919392) retains unchanged game source. **Phone review pending.**
+
+---
+
 # 2026-10-31 — UI REFACTOR FIRST CI: LEGACY MENU EXPECTATIONS CORRECTED
 
 [Initial UI refactor source 5e3a37e](https://github.com/PlayerEden/Ricochet-Rumble/commit/5e3a37e72a8c8cbb205f60cb68c7ca3ddf57b641) hit an automated smoke assertion at tests/smoke.mjs line 340, where the old test specifically demanded the removed "PLAY TOGETHER" button and old Quick Play copy. Investigation also found two similar old text/Help assertions later in this test file. Corrected only *test expectations* to assert the real new Choose Mode entry, playlist controls, existing help action and truthful Wi-Fi Beta label; runtime/web/android code unchanged in this follow-up commit. Re-run exact head; do not treat previous CI failure as passed. Full visual/phone acceptance still pending. [Audit details](UI_UX_MENU_REFINEMENT_2026-10-31.md).

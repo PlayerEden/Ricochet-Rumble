@@ -538,7 +538,7 @@ try{
   assert.equal(await page.locator('.dossier-screen').isVisible(),true);
   assert.equal(await page.locator('#dossier-matches').textContent(),String(afterDossier.matches));
   assert.equal(await page.locator('#dossier-draws').textContent(),String(afterDossier.draws));
-  assert.ok((await page.locator('.dossier-guard').textContent()).includes('future concepts'),'unreleased Dossier concepts are distinct from selectable badges');
+  assert.equal(await page.locator('#dossier-eligibility').count(),0,'nonfunctional future milestones are no longer shown next to real Dossier rewards');
    assert.equal(await page.locator('#dossier-emblem-mark').textContent(),'◇','default identity visible in Dossier');
   const geometry=await page.locator('#panel').evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth}));
   assert.ok(geometry.scrollWidth<=geometry.width+3,'dossier has no horizontal overflow at '+vw);
