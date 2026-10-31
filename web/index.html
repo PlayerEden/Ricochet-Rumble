@@ -46,6 +46,7 @@
              <div class="aa-actions">
               <button id="quick-rematch" class="quick-rematch hidden" type="button" aria-label="Start a new match in a newly generated maze">↻ NEXT MATCH</button>
               <button id="custom-edit" class="hidden" type="button">EDIT RULES</button>
+              <button id="lan-edit-rules" class="hidden" type="button">CHANGE RULES</button>
               <button id="results-menu" type="button">MAIN MENU</button>
             </div>
             <p id="aa-note" class="aa-note">NEW PROCEDURAL SECTOR AVAILABLE</p>
@@ -55,7 +56,7 @@
       <div class="touch-zone touch-right overlay-control" aria-label="Fire control">
         <button class="interact-btn hidden" id="interact-btn" aria-label="Enter or exit a nearby vehicle">ENTER</button>
         <button class="fire-btn" data-key="fire" aria-label="Hold to fire"><span class="fire-icon">◎</span><span>FIRE</span></button>
-        <span class="control-caption" id="fire-mode">HOLD / FIRE</span><span class="shell-meter" id="shell-meter">3/3 READY</span>
+        <span class="control-caption" id="fire-mode">HOLD / FIRE</span><span class="shell-availability" aria-label="Available shots"><span class="shell-slots" id="shell-slots" aria-hidden="true"></span><span class="shell-meter" id="shell-meter">3/3 READY</span></span>
       </div>
     </div>
     <div class="overlay" id="menu">

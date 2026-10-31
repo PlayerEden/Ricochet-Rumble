@@ -1,3 +1,9 @@
+# 2026-10-31 — IN-GAME UI + LAN RESULTS LOOP (candidate, pending QA)
+
+User approved clearer match HUD, subtle projectile readiness visualization, safe confirmation before pause NEW FIELD, and host/guest LAN end-match convenience. Candidate adds a zero-mechanics HUD pass, real LAN death/duration replication, host After Action CHANGE RULES → ready-based rematch lobby, and contextual guest waiting. [Full scope and QA contract](UI_INGAME_LAN_MATCH_FLOW_2026-10-31.md); [immutable 100036 rollback](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-preview-100036-before-ingame-ui-flow) at `ce0969c6555b1dae94b5270bf286a6581ca9cabf`. DO NOT CLAIM BUILD/QA PASSED before exact-source verification. Draft [PR #85](https://github.com/PlayerEden/Ricochet-Rumble/pull/85) still unmerged.
+
+---
+
 # 2026-10-31 — LOCAL WI-FI ROOM READY: PREVIEW 100036 + COMPLETE QA GREEN
 
 **Exact gameplay/Android source** `2a9f311e4b46a9663e917531682ff0d8121976c9` / signed [Preview 100036 build run 41233345951 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41233345951); versionCode `100036`, app ID `com.playereden.ricochetrumble.preview`, APK SHA256 `94f1919409f4779b625948d4b3a2d0ae7692a95c0ccb1994ba91faf7851dac13`, same disposable public AOSP test signer SHA256 `a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc` as Preview 100030. Downloaded final artifact, extracted APK and verified its source fields/checksum/signing.
