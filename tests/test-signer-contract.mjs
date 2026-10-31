@@ -17,7 +17,7 @@ assert.ok(!/\n\s+push:/.test(workflow),'no automatic secret use on push');
 assert.ok(workflow.includes('CERTIFICATE MISMATCH: BLOCK PREVIEW DISTRIBUTION'));
 assert.ok(workflow.includes('SR_TEST_CERT_SHA256'));
 assert.ok(workflow.includes('base64 --decode'));
-assert.ok(workflow.includes('Erase temporary keystore from CI runner'));
+assert.ok(workflow.includes('Erase temporary keystore on runner'));
 const head=workflow.split('    steps:')[0];
 assert.ok(!head.includes('secrets.'),'private keys never inherited by all job steps');
 for(const secret of ['SR_TEST_STORE_PASSWORD','SR_TEST_KEY_ALIAS','SR_TEST_KEY_PASSWORD','SR_TEST_KEYSTORE_B64'])assert.ok(workflow.includes('secrets.'+secret));
