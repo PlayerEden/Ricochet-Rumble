@@ -1,5 +1,5 @@
 name: Sector Rebound - scoped UI/UX review
-# QA run: combat clarity + pause confirmation + postmatch LAN host/guest rules and rematch
+# QA exact-head rerun: full-width LAN rematch CTA and 102-layout plus 53-client regression
 on:
   push:
     branches: [integration/v0956-main-rooted-rehearsal]

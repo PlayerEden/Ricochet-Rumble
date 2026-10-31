@@ -107,6 +107,7 @@ try{
  CHECK((await guest.locator('#aa-duration').textContent()).trim()==='01:24','guest receives authoritative match duration');
  CHECK((await guest.locator('#aa-note').textContent()).includes('WAITING FOR HOST'),'guest knows who controls next match');
  CHECK(await host.locator('#lan-edit-rules').isVisible(),'host can change LAN rules after a finished match');
+ CHECK((await host.locator('#quick-rematch').evaluate(el=>getComputedStyle(el).gridColumnEnd))==='-1','LAN host rematch is full-width primary action above Change Rules and Main Menu');
  await host.locator('#lan-edit-rules').click();
  CHECK(await host.locator('.lan-lobby').isVisible(),'host returns to waiting room without disconnecting');
  const revised=await lastPacket(host,'lobby');

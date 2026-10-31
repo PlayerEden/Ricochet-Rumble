@@ -1,3 +1,9 @@
+# 2026-10-31 — FINAL LAN RESULT ACTION HIERARCHY
+
+[Prior signed Preview 100038](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41235213067) at `cedfd7b3f558fb771bbf483fff92b7daaaf5b7d3` passed the full [real UI and two-client browser suite 41235213036](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41235213036): **53 real LAN checks; 102 geometry layouts, 0 warnings/failures; 44 visual screens; 25 style screenshots**. Inspected the actual packaged APK in local Chromium at 568×320 and 915×412 and verified pause cancel keeps maze, projectile indicator and actual host results. The host result panel's three buttons showed an awkward third button alone on the lower left; final candidate makes primary **New Sector span the first row**, with secondary **Change Rules / Main Menu side-by-side** on row two. Added actual Chromium computed-grid regression; re-run exact-source Android + scoped UI QA before declaring final PASS. [Details](UI_INGAME_LAN_MATCH_FLOW_2026-10-31.md). [Pre-polish rollback](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-preview-100038-ingame-ui-green).
+
+---
+
 # 2026-10-31 — IN-GAME QA GATES AND POST-MATCH LAN PHASE
 
 Fixed deliberate Team Survival opponent label regression (still **RED**, not generic enemy). Extended live browser QA to verify Survival LIVES + projectile slot indicators, opening/canceling a destructive pause restart does not regenerate the maze, and host+guest final results show actual deaths/duration before change-rules → guest Ready → host rematch. Post-match lobby packets now carry a strictly newer revision and explicit `postMatch` marker so a guest can transition even if the final state snapshot arrives after the host acts; Java host→guest allowlists still enforce authority. Existing source/Android mirrors kept identical. [Source audit](UI_INGAME_LAN_MATCH_FLOW_2026-10-31.md). Signed APK and full Chromium results still pending.

@@ -1071,3 +1071,8 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 /* Long survival labels must stay legible without covering the radar. */
 .game-hud .scorestrip .blue-tag,.game-hud .scorestrip .pink-tag{letter-spacing:0;gap:2px}
 @media(max-width:760px){.game-hud .scorestrip .blue-tag,.game-hud .scorestrip .pink-tag{font-size:clamp(9px,1.4vw,11px)}}
+
+/* Three LAN host-result actions: one obvious rematch, two neutral exits.
+   No changes to the existing Solo and scored After Action layout. */
+.after-action .aa-actions:has(#lan-edit-rules:not(.hidden)){grid-template-columns:repeat(2,minmax(0,1fr))}
+.after-action .aa-actions:has(#lan-edit-rules:not(.hidden)) #quick-rematch{grid-column:1/-1}
