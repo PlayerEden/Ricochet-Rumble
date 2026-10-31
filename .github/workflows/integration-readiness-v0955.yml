@@ -1,0 +1,54 @@
+name: Sector Rebound v0.9.55 — integration readiness and historical fast gate
+on:
+  push:
+    branches: [audit/integration-fast-gate-v0955]
+    paths:
+      - '.github/workflows/integration-readiness-v0955.yml'
+      - 'tests/release-readiness-v0947.mjs'
+permissions:
+  contents: read
+jobs:
+  integrated-fast-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Full mirror and syntax check on candidate exact bytes
+        run: |
+          set -euo pipefail
+          node --check web/game.js
+          node --check tests/release-readiness-v0947.mjs
+          for asset in game.js index.html style.css scored-match.js dossier.js save-backup.js; do
+            cmp "web/$asset" "android/app/src/main/assets/$asset"
+          done
+      - name: Verify formerly stale historical integration and owner-locked contracts
+        run: |
+          set -euo pipefail
+          node tests/release-readiness-v0947.mjs
+          node tests/first-plan-contract-audit.mjs
+      - name: Exercise current live combat, LAN and save regressions
+        run: |
+          set -euo pipefail
+          node tests/lan-guest-input-timeout-v0954.mjs
+          node tests/lan-pilot-input-parity-v0953.mjs
+          node tests/scored-match-kernel.mjs
+          node tests/smoke.mjs
+          node tests/dossier.mjs
+          node tests/save-backup.mjs
+          node tests/android-upgrade-readiness.mjs
+          node tests/test-signer-contract.mjs
+          node tests/scored-browser-parity.mjs
+          node tools/validate-cosmetic-catalog.mjs
+      - name: Archive read-only integration readiness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-readiness-audit-v0955-${{ github.run_id }}
+          path: |
+            qa-results/release-readiness-v0947.json
+            qa-results/first-plan-cross-system-audit.json
+          if-no-files-found: warn
+          retention-days: 30
