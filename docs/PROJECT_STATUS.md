@@ -1,3 +1,9 @@
+# 2026-10-31 — LAN LOBBY UI AND SOURCE TEST GATES
+
+Added neutral tactical host/guest lobby styling at landscape sizes, host-only rule selectors and visible Ready/Start touch actions. Updated original `tests/smoke.mjs` real-game host/guest protocol assertions: default 1v1/0 bots, **no state/simulation before Ready**, correct revision on `ready`, host `start` and real two-human game; guest receives lobby, presses Ready and joins authoritative snapshot before prior movement/interaction tests. Native Java allowlists are role-gated. **GitHub Android + browser verification still pending.** [Audit](LAN_LOBBY_PHASE_1_2026-10-31.md).
+
+---
+
 # 2026-10-31 — LOCAL WI-FI PRE-MATCH LOBBY PROTOTYPE (QA PENDING)
 **Owner request:** host creates a rule-selected lobby; joiner sees setup, presses Ready; host starts. Defaults to **1v1 / 0 bots**, other proven survival LAN modes include FFA, human co-op vs AI, opposing teams. New strict revisioned control packets (`lobby`, `ready`, `start`) added to Android WebView TCP allowlists, no changes to combat physics, bots, aim, procedural generator, save schema or the Solo match playlist. Scored LAN variants deliberately deferred until protocol testing. [Detailed QA and rollback](LAN_LOBBY_PHASE_1_2026-10-31.md). Base [Preview 100030 checkpoint](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-preview-100030-before-lan-lobby). Browser/Android builds and physical two-phone acceptance **PENDING**. [Draft PR #85](https://github.com/PlayerEden/Ricochet-Rumble/pull/85) remains unmerged.
 
