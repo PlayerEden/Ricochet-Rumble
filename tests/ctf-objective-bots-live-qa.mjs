@@ -53,7 +53,15 @@ try{
  const stress=await page.evaluate(()=>window.__ctfBotsQA.stress(45));
  assert.equal(stress.count,45);assert.equal(stress.frames,360);
  assert.deepEqual(stress.failures,[],'45 real maps/360 steps valid bot movement');
- const dossier=await page.evaluate(()=>localStorage.getItem('rr-dossier-v1'));
+ // Remove the QA pilot from Coral's flag: otherwise Cyan steals it while
+ // Coral attempts a capture, correctly blocking the score as designed.
+ await page.evaluate(()=>{
+  const qa=window.__ctfBotsQA,s=qa.state,blue=s.ctf.flags[0].home,red=s.ctf.flags[1].home;
+  const midX=(blue.x+red.x)/2,midY=(blue.y+red.y)/2;
+  qa.relocate(0,midX,midY);
+  qa.relocate(2,midX+100,midY+100);
+ });
+  const dossier=await page.evaluate(()=>localStorage.getItem('rr-dossier-v1'));
  const initialMatch=await page.evaluate(()=>window.__ctfBotsQA.state.matchId);
  for(let n=1;n<=3;n++){
   const homes=await page.evaluate(()=>window.__ctfBotsQA.state.ctf.flags.map(f=>f.home));
