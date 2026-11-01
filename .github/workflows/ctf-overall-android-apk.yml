@@ -90,8 +90,14 @@ jobs:
           actual="$(sed -nE 's/.*Signer #1 certificate SHA-256 digest: ([a-fA-F0-9:]+).*$/\1/p' "$RUNNER_TEMP/apk-cert.txt" | tr -d ':' | tr '[:upper:]' '[:lower:]')"
           expected="$(openssl x509 -in "$RUNNER_TEMP/testkey.x509.pem" -outform DER | sha256sum | awk '{print $1}')"
           [[ "$actual" =~ ^[0-9a-f]{64}$ && "$actual" == "$expected" ]] || { echo 'Unexpected preview signer; reject APK'; exit 1; }
+          # Installed Preview 100061: certificate verified from its exact CI build, run 41279138843.
+          # The PUBLIC AOSP development signer (not the owner's private key) is the actual
+          # existing upgrade identity; never silently switch to another signer.
+          installed_preview_cert="a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+          [[ "$actual" == "$installed_preview_cert" ]] || { echo 'INCOMPATIBLE SIGNATURE: would force uninstall of Preview 100061'; exit 1; }
           metadata="$("$aapt" dump badging "$apk" | head -n 1)"
           code=$((200000 + GITHUB_RUN_NUMBER))
+          (( code > 200002 && code <= 2100000000 )) || { echo 'VERSION DOWNGRADE: must be above previously verified CTF APK 200002'; exit 1; }
           [[ "$metadata" == *"name='com.playereden.ricochetrumble.preview'"* ]] || exit 1
           [[ "$metadata" == *"versionCode='$code'"* ]] || exit 1
           [[ "$metadata" == *"versionName='0.9.59-ctftest.$GITHUB_RUN_NUMBER'"* ]] || exit 1
