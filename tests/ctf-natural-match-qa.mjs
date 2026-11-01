@@ -98,7 +98,11 @@ try{
  const page=await browser.newPage({viewport:{width:740,height:360}});
  page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:'+server.address().port+'/',{waitUntil:'load'});
- await page.waitForFunction(()=>!!window.SectorCtfAI&&!!window.SectorFlags);
+ // The CTF modules are intentionally lazy-loaded only when selecting CTF.
+ await page.locator('button[data-action="modes"]').click();
+ await page.locator('.bay-exercise-fold summary').click();
+ await page.locator('button[data-action="ctf"]').click();
+ await page.waitForFunction(()=>!!window.SectorCtfAI&&!!window.SectorFlags&&!!window.__ctfNaturalQA.state.ctf);
  for(const c of cases){
   const start=await page.evaluate(c=>window.__ctfNaturalQA.begin(c.seed,c.mapSize),c);
   assert.deepEqual(start.roles,['runner','escort','defender']);
@@ -109,6 +113,9 @@ try{
   }
   const result=await page.evaluate(()=>window.__ctfNaturalQA.result());
   results.push(result);
+  fs.mkdirSync('qa-results',{recursive:true});
+  fs.writeFileSync('qa-results/ctf-natural-match-telemetry.json',
+   JSON.stringify({source:'unassisted game.js physics and CTF rules',cases:results},null,2));
   console.log('NATURAL_CTF_CASE '+JSON.stringify(result));
   assert.deepEqual(result.invalid,[],'bounded and finite unassisted actors');
   assert.ok(result.frames>=1000,'meaningful natural match time');
