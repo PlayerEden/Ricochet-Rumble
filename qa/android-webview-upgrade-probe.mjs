@@ -28,11 +28,12 @@ if(mode==='patch'){
   console.log('WEBVIEW_CI_DEBUG_INSTRUMENTATION_READY: only two temporary build worktrees');
   process.exit(0);
 }
-assert.ok(mode==='seed'||mode==='verify','expected seed/verify');
+assert.ok(['seed','baseline','verify'].includes(mode),'expected seed/baseline/verify');
 assert.ok(typeof WebSocket==='function','Node 22 built-in WebSocket is required');
 fs.mkdirSync(out,{recursive:true});
 const beforeFile=path.join(out,'webview-before.json');
 const afterFile=path.join(out,'webview-after.json');
+const relaunchFile=path.join(out,'webview-baseline-relaunch.json');
 
 async function pageTarget(){
   let lastError='';
@@ -116,7 +117,7 @@ try{
   // After the Android install-over, the WebView is a brand-new process and
   // the game must load the persisted Dossier state into its actual interface.
   let visible=null;
-  if(mode==='verify'){
+  if(mode!=='seed'){
     visible=await session.eval('(() => {const btn=document.querySelector(\'button[data-action="dossier"]\');btn.click();return {matches:document.querySelector("#dossier-matches")?.textContent?.trim(),kos:document.querySelector("#dossier-kos")?.textContent?.trim()};})()');
     assert.equal(visible.matches,'6','Upgraded WebView Dossier UI did not recover matches');
     assert.equal(visible.kos,'11','Upgraded WebView Dossier UI did not recover KOs');
@@ -124,7 +125,8 @@ try{
   const result={status:'PASS',stage:mode,package:'com.playereden.ricochetrumble.preview',
     origin:state.href,records:keys.length,keys:state.keys,visibleDossier:visible,
     note:'Synthetic values only. Test-instrumented debug APKs; not physical phone evidence.'};
-  fs.writeFileSync(mode==='seed'?beforeFile:afterFile,JSON.stringify(result,null,2)+'\n');
-  console.log(mode==='seed'?'ANDROID_WEBVIEW_LOCAL_SAVE_SEEDED':'ANDROID_WEBVIEW_LOCAL_SAVE_UPGRADE_PASS',
-    mode==='seed'?'five exact localStorage records seeded':'five exact records retained; upgraded Dossier UI matches 6, KOs 11');
+  const resultPath=mode==='seed'?beforeFile:(mode==='baseline'?relaunchFile:afterFile);
+  fs.writeFileSync(resultPath,JSON.stringify(result,null,2)+'\n');
+  const line=mode==='seed'?'ANDROID_WEBVIEW_LOCAL_SAVE_SEEDED':(mode==='baseline'?'ANDROID_WEBVIEW_LOCAL_SAVE_RELAUNCH_PASS':'ANDROID_WEBVIEW_LOCAL_SAVE_UPGRADE_PASS');
+  console.log(line,mode==='seed'?'five exact localStorage records seeded':'five exact records retained; reopened Dossier UI matches 6, KOs 11');
 }finally{session.close()}

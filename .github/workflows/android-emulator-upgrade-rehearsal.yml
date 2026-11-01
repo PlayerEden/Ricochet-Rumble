@@ -100,6 +100,8 @@ jobs:
             qa-results/emulator-upgrade/before-update.png
             qa-results/emulator-upgrade/after-update.png
             qa-results/emulator-upgrade/webview-before.json
+            qa-results/emulator-upgrade/webview-baseline-relaunch.json
+            qa-results/emulator-upgrade/baseline-relaunch.txt
             qa-results/emulator-upgrade/webview-after.json
           if-no-files-found: warn
           retention-days: 14

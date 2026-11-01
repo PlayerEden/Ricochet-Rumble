@@ -50,6 +50,17 @@ if adb shell "run-as $PKG ls app_webview" >/dev/null 2>&1; then before_profile=1
 adb shell screencap -p /sdcard/sector-qa-before.png
 adb pull /sdcard/sector-qa-before.png "$OUT/before-update.png" >/dev/null
 webview_storage_probe seed
+# Give Chromium's asynchronous storage writer time to commit; go Home so the
+# real WebView receives a normal pause/stop rather than sudden process kill.
+sleep 4
+adb shell input keyevent KEYCODE_HOME
+sleep 3
+adb shell am force-stop "$PKG"
+# Control group: prove the *same* APK can reload five real WebView values after
+# a process restart BEFORE attributing any failure to Android install-over.
+adb shell am start -W -n "$PKG/$ACTIVITY" | tee "$OUT/baseline-relaunch.txt"
+sleep 9
+webview_storage_probe baseline
 adb shell am force-stop "$PKG"
 
 # Real Android package-manager upgrade: no uninstall, data reset, or cert change.
