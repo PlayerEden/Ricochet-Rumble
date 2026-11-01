@@ -40,6 +40,18 @@ try{
  assert.equal(first.state.config.botCount,3);
  assert.equal(first.state.forwardBays.bays.length,2);
  assert.match(first.body,/FORWARD BAY/);
+ // Screenshots of the ACTUAL active FOB gameplay, not static CSS fixtures.
+ // Cover cramped Android landscape, mid-sized phone and desktop/tablet width.
+ fs.mkdirSync('qa-screens',{recursive:true});
+ await page.evaluate(()=>window.__bayQA.freeze());
+ for(const [width,height] of [[740,360],[915,412],[1280,720]]){
+  await page.setViewportSize({width,height});
+  const bounds=await page.locator('#arena').boundingBox();
+  assert.ok(bounds&&bounds.width>=width-2&&bounds.height>=height-2,'FOB canvas fills '+width+'x'+height);
+  assert.equal(await page.locator('#menu').evaluate(el=>el.classList.contains('hidden')),true);
+  await page.screenshot({path:'qa-screens/forward-bays-'+width+'x'+height+'.png',animations:'disabled'});
+ }
+ await page.setViewportSize({width:740,height:360});
  assert.equal(first.state.forwardBays.bays[0].team,0);
  assert.equal(first.state.forwardBays.bays[1].team,1);
  assert.equal(first.state.vehicles.filter(v=>v.occupant===-1).length,3,'existing spare vehicle count preserved');
