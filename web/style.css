@@ -1095,3 +1095,7 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 
 /* Keep the accessible Back action anchored in short landscape mode picker. */
 #menu #panel:has(.mode-screen) .mode-back{position:sticky;bottom:0;z-index:4;box-shadow:0 -4px 12px #17232a}
+
+/* CTF pilot-only objective hint: compact, pointer-transparent, no new overlay menu. */
+#ctf-status{position:absolute;z-index:3;top:clamp(47px,10dvh,72px);left:50%;transform:translateX(-50%);width:max-content;max-width:min(90vw,600px);padding:4px 9px;border:1px solid #9d8a61;border-radius:3px;background:#111e26db;color:#f1dfb7;font:800 clamp(9px,1.8dvh,12px)/1.2 monospace;white-space:normal;text-align:center;pointer-events:none;letter-spacing:.25px}
+#ctf-status.hidden{display:none}

@@ -31,6 +31,7 @@
         <canvas id="arena" width="960" height="600" aria-label="Top-down pilot and vehicle arena"></canvas>
         <div id="toast" class="toast" role="status" aria-live="polite"></div>
         <div id="field-coach" class="field-coach hidden" role="status" aria-live="polite" aria-atomic="true"></div>
+        <div id="ctf-status" class="ctf-status hidden" role="status" aria-live="off"></div>
         <section id="after-action" class="after-action hidden" aria-label="After-action match report">
           <div class="aa-panel">
             <div class="aa-rail"><span id="aa-mode-label">FIELDGRID // OPERATIONS</span><span id="aa-outcome">AFTER ACTION</span></div>
@@ -102,7 +103,7 @@
    <button type="button" data-action="custom"><span class="mode-icon" aria-hidden="true">☷</span><span class="mode-copy"><strong>CUSTOM MATCH</strong><small>YOUR RULES · YOUR ARENA</small></span><span class="mode-arrow" aria-hidden="true">›</span></button>
   </div>
   <button type="button" class="daily-launch" data-action="daily"><strong>DAILY SECTOR</strong><span>ONE UTC MAP PER DAY · LOCAL BEST · EXPERIMENTAL</span></button>
-  <details class="bay-exercise-fold"><summary>FIELD EXERCISES · EXPERIMENTAL</summary><button type="button" class="bay-exercise-launch" data-action="forwardbay">FORWARD BAYS · 2 TEAMS / VEHICLE DEPOTS</button></details>
+  <details class="bay-exercise-fold"><summary>FIELD EXERCISES · EXPERIMENTAL</summary><button type="button" class="bay-exercise-launch" data-action="forwardbay">FORWARD BAYS · 2 TEAMS / VEHICLE DEPOTS</button><button type="button" class="bay-exercise-launch" data-action="ctf">CAPTURE THE FLAG · PILOTS CARRY / 3 FLAGS</button></details>
   <button type="button" class="mode-back" data-action="modes-back">BACK TO MENU</button>
  </section>
 </template>
