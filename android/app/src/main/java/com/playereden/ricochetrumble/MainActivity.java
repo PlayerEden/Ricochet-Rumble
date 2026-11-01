@@ -260,8 +260,7 @@ public final class MainActivity extends Activity {
             signalType("connected");
             BufferedReader reader = new BufferedReader(new InputStreamReader(sock.getInputStream(), StandardCharsets.UTF_8));
             String line;
-            while (myGen == generation.get() && (line = reader.readLine()) != null) {
-                if (line.length() > MAX_PACKET) break;
+            while (myGen == generation.get() && (line = BoundedLanReader.readPacket(reader, MAX_PACKET)) != null) {
                 try {
                     JSONObject packet = new JSONObject(line);
                     String kind = packet.optString("type", "");

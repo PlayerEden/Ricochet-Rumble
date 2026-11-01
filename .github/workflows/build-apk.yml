@@ -58,6 +58,12 @@ jobs:
           node tests/android-upgrade-readiness.mjs
           node tests/test-signer-contract.mjs
           node tests/scored-browser-parity.mjs
+      - name: Verify bounded LAN peer-frame reader on real JVM
+        run: |
+          set -euo pipefail
+          mkdir -p qa-results/lan-wire-jvm
+          javac -d qa-results/lan-wire-jvm android/app/src/main/java/com/playereden/ricochetrumble/BoundedLanReader.java tests/java/BoundedLanReaderTest.java
+          java -cp qa-results/lan-wire-jvm com.playereden.ricochetrumble.BoundedLanReaderTest
       - name: Checkout screenshot comparison baseline
         uses: actions/checkout@v4
         with:
