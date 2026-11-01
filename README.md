@@ -14,6 +14,8 @@
 
 ## Start here when resuming development
 
+- [CTF pilot-only flag prototype — audited experimental branch](https://github.com/PlayerEden/Ricochet-Rumble/tree/experiment/ctf-pilot-flags-v1) — [pure rules + live capture/scoring + full regression PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41285942743). Objective-aware AI, physical Android and actual LAN CTF are **NOT IMPLEMENTED**; experimental code is **not merged**.
+
 - [Forward Bay / FOB foundation — audited experimental branch](https://github.com/PlayerEden/Ricochet-Rumble/tree/experiment/forward-bays-foundation-v1) — two connected procedural team depots, real team starting slots and existing parked tanks; [300-seed audit + actual game screenshots PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41284724938). **Not merged, no flags or owner phone test.**
 
 - [Godot 4.7.2 Ricochet Trials experimental project](https://github.com/PlayerEden/Ricochet-Rumble/tree/experiment/godot-ricochet-trials-spike/experiments/godot-ricochet-spike) — separate source-only engine feasibility trial; headless Godot smoke passed, no migration approved
