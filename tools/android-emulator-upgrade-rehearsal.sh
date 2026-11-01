@@ -9,6 +9,17 @@ OUT=qa-results/emulator-upgrade
 AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
 SIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
 mkdir -p "$OUT"
+# CDP listens on localhost on the GitHub runner, forwarded through ADB to
+# a debug-only WebView in the emulator. Any failure aborts this rehearsal.
+webview_storage_probe() {
+  local stage="$1"
+  local pid
+  pid="$(adb shell pidof "$PKG" | tr -d '\r' | awk '{print $1}')"
+  [[ "$pid" =~ ^[0-9]+$ ]]
+  adb forward tcp:9222 "localabstract:webview_devtools_remote_$pid" >/dev/null
+  node qa/android-webview-upgrade-probe.mjs "$stage"
+  adb forward --remove tcp:9222 >/dev/null
+}
 test -s "$BASE_APK"
 test -s "$NEXT_APK"
 "$SIGNER" verify --min-sdk-version 26 --print-certs "$BASE_APK" > "$OUT/baseline-signer.txt"
@@ -38,6 +49,7 @@ before_profile=0
 if adb shell "run-as $PKG ls app_webview" >/dev/null 2>&1; then before_profile=1; fi
 adb shell screencap -p /sdcard/sector-qa-before.png
 adb pull /sdcard/sector-qa-before.png "$OUT/before-update.png" >/dev/null
+webview_storage_probe seed
 adb shell am force-stop "$PKG"
 
 # Real Android package-manager upgrade: no uninstall, data reset, or cert change.
@@ -49,6 +61,7 @@ adb shell am start -W -n "$PKG/$ACTIVITY" | tee "$OUT/current-launch.txt"
 sleep 9
 adb shell pidof "$PKG" >/dev/null
 test "$(adb shell "run-as $PKG cat files/android-update-canary.txt" | tr -d '\r')" = "$before"
+webview_storage_probe verify
 after_profile=0
 if adb shell "run-as $PKG ls app_webview" >/dev/null 2>&1; then after_profile=1; fi
 adb shell screencap -p /sdcard/sector-qa-after.png
@@ -61,6 +74,7 @@ VERSION 100041 -> 100050
 CERT SHA256 IDENTICAL: $next_cert
 REAL adb install -r, no uninstall/data clearing: PASS
 APP-PRIVATE CANARY PERSISTED: YES
+REAL WEBVIEW 5-SAVE RECORDS + DOSSIER UI PERSISTED: YES (synthetic test fixtures)
 WEBVIEW PROFILE DIRECTORY BEFORE: $before_profile
 WEBVIEW PROFILE DIRECTORY AFTER: $after_profile
 BOTH ACTIVITY LAUNCHES: PASS

@@ -6,6 +6,7 @@ on:
       - '.github/workflows/android-emulator-upgrade-rehearsal.yml'
       - 'tools/android-emulator-upgrade-rehearsal.sh'
       - 'tests/emulator-upgrade-source-contract.mjs'
+      - 'qa/android-webview-upgrade-probe.mjs'
   workflow_dispatch:
 
 permissions:
@@ -28,6 +29,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
@@ -62,6 +66,8 @@ jobs:
           set -euo pipefail
           mkdir -p qa-results/emulator-upgrade
           git worktree add --detach "$RUNNER_TEMP/sector-old-source" 55c91024eb2d76f120bc9203dfc228fe7e333757
+          # Test-only debug WebView instrumentation in runner worktrees. No source file committed.
+          node qa/android-webview-upgrade-probe.mjs patch "$RUNNER_TEMP/sector-old-source" .
           (cd "$RUNNER_TEMP/sector-old-source/android" && gradle --no-daemon :app:assembleDebug -PsrPreviewPackage=true -PsrPreviewVersionCode=100041 -PsrPreviewVersionName=0.9.58-preview.100041)
           cp "$RUNNER_TEMP/sector-old-source/android/app/build/outputs/apk/debug/app-debug.apk" qa-results/emulator-upgrade/baseline-100041.apk
           (cd android && gradle --no-daemon :app:assembleDebug -PsrPreviewPackage=true -PsrPreviewVersionCode=100050 -PsrPreviewVersionName=0.9.58-preview.100050)
@@ -93,6 +99,8 @@ jobs:
             qa-results/emulator-upgrade/installed-version.txt
             qa-results/emulator-upgrade/before-update.png
             qa-results/emulator-upgrade/after-update.png
+            qa-results/emulator-upgrade/webview-before.json
+            qa-results/emulator-upgrade/webview-after.json
           if-no-files-found: warn
           retention-days: 14
       - name: Erase downloaded public test signer
