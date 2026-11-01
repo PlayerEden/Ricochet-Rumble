@@ -45,10 +45,27 @@ function hooks(){
    camera.x=0;
    const seen=pilotBotFireFair(bot,human);
    const botFire=botInput(1,1/60).fire;
+   const reaction={};
+   for(const skill of ['casual','normal','spicy']){
+    state.config.botSkill=skill;botBrains.delete(1);
+    let first=-1;
+    for(let n=1;n<=30;n++)if(botInput(1,1/60).fire&&first<0)first=n;
+    camera.x=bot.x-5;
+    const occluded=botInput(1,1/60).fire;
+    camera.x=0;
+    const instantAfterCover=botInput(1,1/60).fire;
+    let reacquired=-1;
+    for(let n=2;n<=30;n++)if(botInput(1,1/60).fire&&reacquired<0)reacquired=n;
+    reaction[skill]={first,occluded,instantAfterCover,reacquired};
+   }
+   // A tank opponent is not subject to pilot-specific reaction tuning.
+   human.onFoot=false;botBrains.delete(1);state.config.botSkill='normal';
+   const vehicleImmediate=botInput(1,1/60).fire;human.onFoot=true;
    const old=mode;mode='host';
    const hostSame=pilotBotFireFair(bot,human);mode=old;
    return {off,assisted,outside,vehicle,shield,distant,offscreen,headed,
-    fired,bulletAngle,cooled,unseen,seen,botFire,hostSame,kind:bullet?.kind};
+    fired,bulletAngle,cooled,unseen,seen,botFire,hostSame,kind:bullet?.kind,
+    reaction,vehicleImmediate};
   }
  };
 }
@@ -99,6 +116,14 @@ try{
    assert.equal(x.unseen,false,'offscreen bot cannot fire at human pilot');
    assert.equal(x.seen,true);
    assert.equal(x.hostSame,true,'LAN host behavior unchanged');
+   assert.equal(x.vehicleImmediate,true,'vehicle targeting retains old immediate fire');
+   for(const [skill,min,max] of [['casual',19,21],['normal',14,16],['spicy',9,11]]){
+    const r=x.reaction[skill];
+    assert.ok(r.first>=min&&r.first<=max,skill+' reaction delay within skill band');
+    assert.equal(r.occluded,false,skill+' stops shooting when out of view');
+    assert.equal(r.instantAfterCover,false,skill+' must reacquire after cover');
+    assert.ok(r.reacquired>=min&&r.reacquired<=max,skill+' reacquisition is consistent');
+   }
   }
   await page.close();
  }
@@ -107,5 +132,6 @@ try{
  fs.writeFileSync('qa-results/pilot-combat-fairness.json',JSON.stringify({cases},null,2));
  console.log('PILOT_COMBAT_FAIRNESS_REAL_BROWSER_PASS '+JSON.stringify({
   cases:cases.length,viewports:3,seeds:3,defaultOff:true,maxNudgeDegrees:2,
-  offscreenBotSuppressed:true,projectileUnchanged:true,lanUntouched:true}));
+  offscreenBotSuppressed:true,projectileUnchanged:true,lanUntouched:true,
+  difficultyReactionWindowsVerified:true,occlusionReacquisitionVerified:true}));
 }finally{await browser.close();await new Promise(ok=>server.close(ok));}
