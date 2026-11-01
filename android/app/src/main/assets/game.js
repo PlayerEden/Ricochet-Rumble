@@ -70,6 +70,16 @@ function openHangar(fromDossier=false){
  back?.setAttribute?.('aria-label',hangarReturnToDossier?'Back to Dossier':'Back to main menu');
 }
 function openModes(){setPanel(document.getElementById('modes-template').innerHTML);}
+let loadingForwardBay=false;
+function launchForwardBayExercise(){
+ if(window.SectorForwardBays)return newMatch('forwardbay');
+ if(loadingForwardBay)return false;
+ loadingForwardBay=true;
+ const tag=document.createElement('script');tag.src='forward-bays.js';
+ tag.onload=()=>{loadingForwardBay=false;if(panel.querySelector('.mode-screen')&&!menu.classList.contains('hidden'))launchForwardBayExercise();};
+ tag.onerror=()=>{loadingForwardBay=false;notice('FORWARD BAY MODULE UNAVAILABLE');};
+ document.head.appendChild(tag);return false;
+}
 // Lazy-load Daily Sector only when explicitly chosen. Ordinary Quick Play,
 // native LAN, and pre-existing browser QA boot without a sixth script.
 let dailyScriptLoading=false;
@@ -607,13 +617,35 @@ function initialState(arena=0,options=null,seed=null){const config={...readSetti
  // Zero bots is a legitimate free-roam practice setting; don't silently add an enemy.
  const mazeSeed=seed||Math.floor(Math.random()*0x7fffffff)||1,id=setArena(0,mazeSeed,config.mapSize);
  const numBots=config.botCount,humans=count,total=humans+numBots,tanks=Array.from({length:total},(_,i)=>freshTank(i));
+ // In this opt-in team exercise each side starts at its own open, connected
+ // Forward Bay; ordinary Survival / TDM / LAN use the original spawn points.
+ const forwardBays=config.forwardBayExercise&&window.SectorForwardBays?
+  window.SectorForwardBays.plan(mazeGrid,mazeSeed):null;
+ if(config.forwardBayExercise&&!forwardBays)throw Error('Forward Bay layout unavailable');
+ if(forwardBays)for(let i=0;i<tanks.length;i++){
+  const slots=forwardBays.bays[i%2].spawnSlots;
+  const pos=slots[Math.floor(i/2)%slots.length];
+  tanks[i].x=pos.x;tanks[i].y=pos.y;
+ }
  const cqc=config.matchModeId==='cqc',scoredRules=SCORED_MATCH_RULES[config.matchModeId]||null;
  const vehicles=cqc?[]:config.pilotMode?spawnVehicles(tanks,humans,mazeSeed,config):[];
+ if(forwardBays){
+  const spares=vehicles.filter(v=>v.occupant===-1&&v.armor>0);
+  if(spares.length<2)throw Error('Forward Bay requires two parked vehicles');
+  for(let team=0;team<2;team++){
+   const v=spares[team],bay=forwardBays.bays[team];
+   const spot=vehicleSite(bay.parking.x,bay.parking.y,vehicles.filter(q=>q!==v),tanks);
+   if(!spot||Math.hypot(spot[0]-bay.x,spot[1]-bay.y)>220)
+    throw Error('No nearby vehicle berth in Forward Bay');
+   v.x=spot[0];v.y=spot[1];v.type='tank';v.armor=VEHICLE_TYPES.tank.armor;
+   bay.parking={x:v.x,y:v.y};bay.vehicleId=v.id;
+  }
+ }
  if(cqc)for(const t of tanks){t.onFoot=true;t.vehicleId=null;t.shield=1.5;t.respawnWait=0;}
  const matchId=++matchSerial;
  // Shared real scoring system for both on-foot CQC and tank/mech Free-for-All.
  const scored=scoredRules?window.SectorScored.createScoredMatch({mode:scoredRules.mode,playerCount:total,teamIds:scoredRules.mode==='teams'?Array.from({length:total},(_,i)=>i%2):null,scoreTarget:scoredRules.scoreTarget,clockSeconds:scoredRules.clockSeconds,matchId}):null;
- camera.x=0;camera.y=0;botBrains.clear();return {tanks,vehicles,vehicleDropTimer:28,dropIndex:0,vehicleBeacon:null,bullets:[],pickups:[],pickupTimer:5.5,arenaId:id,mazeSeed,config,humanCount:humans,fxEvents:[],lives:Array(total).fill(scoredRules?1:config.startLives),kos:Array(total).fill(0),winner:-1,winnerTeam:-1,event:'',eventTimer:0,matchId,elapsedSeconds:0,deaths:Array(total).fill(0),respawns:Array(total).fill(0),scored,scoreSerial:0,finalResult:null};}
+ camera.x=0;camera.y=0;botBrains.clear();return {tanks,vehicles,forwardBays,vehicleDropTimer:28,dropIndex:0,vehicleBeacon:null,bullets:[],pickups:[],pickupTimer:5.5,arenaId:id,mazeSeed,config,humanCount:humans,fxEvents:[],lives:Array(total).fill(scoredRules?1:config.startLives),kos:Array(total).fill(0),winner:-1,winnerTeam:-1,event:'',eventTimer:0,matchId,elapsedSeconds:0,deaths:Array(total).fill(0),respawns:Array(total).fill(0),scored,scoreSerial:0,finalResult:null};}
 state=initialState();
 function teamOf(i,st=state){
  const rules=st.config?.teamMode||'ffa';
@@ -762,7 +794,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
    }
  }
  // Daily attempts are *not* normal Dossier matches and cannot farm unlocks.
- if(soloResult&&!state.config?.dailySector&&state.config?.botCount>0&&state.humanCount===1&&dossierStore){
+ if(soloResult&&!state.config?.dailySector&&!state.config?.forwardBayExercise&&state.config?.botCount>0&&state.humanCount===1&&dossierStore){
   const key=DOSSIER_SESSION+':'+soloResult.matchId+':'+soloResult.mazeSeed;
   if(dossierAttemptedKey!==key){
     dossierAttemptedKey=key;
@@ -780,7 +812,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
    const rewardEl=document.getElementById('aa-rewards'),newRewards=ended&&mode==='solo'&&roundUnlocks.length>0;
    if(rewardEl){rewardEl.classList.toggle('hidden',!newRewards);rewardEl.textContent=newRewards?'NEW IN HANGAR · '+roundUnlocks.join(' · ')+' · VIEW HANGAR':'';}
    if(ended){
-     const modeTitle=document.getElementById('aa-mode-label');if(modeTitle){if(mode==='solo')modeTitle.textContent=(state.config?.dailySector?'DAILY SECTOR · '+state.config.dailyDate+' UTC':(state.config?.customMatch?'CUSTOM · ':'')+soloModeLabel(state.config));else if(mode==='host'||mode==='guest')modeTitle.textContent='LOCAL MATCH · '+(state.config?.teamMode==='coop'?'CO-OP':state.config?.teamMode==='teams'?'TEAMS':'FREE FOR ALL');}
+     const modeTitle=document.getElementById('aa-mode-label');if(modeTitle){if(mode==='solo')modeTitle.textContent=(state.config?.forwardBayExercise?'FORWARD BAY EXERCISE':state.config?.dailySector?'DAILY SECTOR · '+state.config.dailyDate+' UTC':(state.config?.customMatch?'CUSTOM · ':'')+soloModeLabel(state.config));else if(mode==='host'||mode==='guest')modeTitle.textContent='LOCAL MATCH · '+(state.config?.teamMode==='coop'?'CO-OP':state.config?.teamMode==='teams'?'TEAMS':'FREE FOR ALL');}
      document.getElementById('aa-title').textContent=scoredDraw?'MATCH DRAW':localWon?'SECTOR CLEARED':'SECTOR LOST';
      document.getElementById('aa-event').textContent=soloResult?.event??String(state.event||'EXERCISE COMPLETE');
      document.getElementById('aa-kos').textContent=String(soloResult?.operatorKOs??state.kos[me]??0);
@@ -789,7 +821,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
      document.getElementById('aa-lives').textContent=String(isScoredMatch()?state.scored.scoreTarget:soloResult?.livesRemaining??state.lives[me]??0);
      const metric=document.getElementById('aa-lives-label');if(metric)metric.textContent=isScoredMatch()?(state.scored.mode==='teams'?'TEAM KO TARGET':'KO TARGET'):'LIVES LEFT';
      document.getElementById('aa-outcome').textContent=scoredDraw?'DRAW':localWon?'VICTORY':'DEFEAT';
-     document.getElementById('aa-note').textContent=state.config?.dailySector?(dailyLastRecord?.ok&&dailyLastRecord?.entry?('DAILY · BEST '+dailyLastRecord.entry.best.outcome.toUpperCase()+' '+dailyLastRecord.entry.best.kos+' KOs · '+dailyLastRecord.entry.attempts+' ATTEMPT'+(dailyLastRecord.entry.attempts===1?'':'S')+' · UTC'):'DAILY RESULT NOT SAVED · CHECK STORAGE'):mode==='guest'?'WAITING FOR HOST · REMATCH OR NEW RULES':mode==='host'?'HOST CHOOSES REMATCH OR NEW RULES':state.config?.customMatch?'SAME RULES · FRESH MAZE':mode==='solo'&&state.config?.botCount===0?'PRACTICE · NO DOSSIER RECORD':state.config?.quickPlayMatch?(selectedPlaylistIds.length>1?'NEXT MATCH · ROTATING MODES':'NEXT MATCH · SAME MODE, NEW MAZE'):'NEW MAZE · SAME MODE';
+     document.getElementById('aa-note').textContent=state.config?.forwardBayExercise?'TEAM DEPOT TEST · NO DOSSIER PROGRESS':state.config?.dailySector?(dailyLastRecord?.ok&&dailyLastRecord?.entry?('DAILY · BEST '+dailyLastRecord.entry.best.outcome.toUpperCase()+' '+dailyLastRecord.entry.best.kos+' KOs · '+dailyLastRecord.entry.attempts+' ATTEMPT'+(dailyLastRecord.entry.attempts===1?'':'S')+' · UTC'):'DAILY RESULT NOT SAVED · CHECK STORAGE'):mode==='guest'?'WAITING FOR HOST · REMATCH OR NEW RULES':mode==='host'?'HOST CHOOSES REMATCH OR NEW RULES':state.config?.customMatch?'SAME RULES · FRESH MAZE':mode==='solo'&&state.config?.botCount===0?'PRACTICE · NO DOSSIER RECORD':state.config?.quickPlayMatch?(selectedPlaylistIds.length>1?'NEXT MATCH · ROTATING MODES':'NEXT MATCH · SAME MODE, NEW MAZE'):'NEW MAZE · SAME MODE';
    }
  }
  const replay=document.getElementById('quick-rematch');if(replay){replay.textContent=state.config?.dailySector?'↻ RETRY SAME SECTOR':state.config?.customMatch?'↻ SAME RULES · NEW SECTOR':mode==='solo'?'↻ NEXT MATCH':'↻ NEW SECTOR';replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));}
@@ -810,13 +842,13 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
 }
 function newMatch(which,dailyOptions=null){
  savePrefs();
- const scoredLaunch=!!SCORED_MATCH_RULES[which],customLaunch=which==='custom',cqcLaunch=which==='cqc',dailyLaunch=which==='daily';
+ const scoredLaunch=!!SCORED_MATCH_RULES[which],customLaunch=which==='custom',cqcLaunch=which==='cqc',dailyLaunch=which==='daily',bayLaunch=which==='forwardbay';
  if(dailyLaunch&&(!dailyOptions||!window.SectorDaily||dailyOptions.dailySeed!==window.SectorDaily.seedFor(dailyOptions.dailyDate)))return false;
  if(which==='solo'&&!selectedPlaylistIds.length){notice('SELECT A QUICK PLAY MODE IN MATCH SETTINGS',2300);return false;}
  const playlistId=which==='solo'?firstQuickPlayMode():null;
- if(bridgeReady())window.AndroidBridge.stopNetwork();mode=scoredLaunch||customLaunch||dailyLaunch?'solo':which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;neutralizeGuestInput();
- const arena=selectArena(),options=dailyLaunch?dailyOptions:customLaunch?customOptionsFor():scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:which==='scored_tdm'?'teams':'ffa',matchModeId:which,pilotMode:true}:playlistId?quickPlayOptionsFor(playlistId):{...selectedRules,pilotMode:true};
- state=initialState(arena,options,dailyLaunch?options.dailySeed:freshSectorSeed(state?.mazeSeed));dailyAttemptedKey='';dailyLastRecord=null;roundUnlocks=[];camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch||dailyLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(dailyLaunch?'DAILY SECTOR':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config))):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch||dailyLaunch){exitMenu();audioCue('deploy');if(mode==='solo')firstMatchHint();}}
+ if(bridgeReady())window.AndroidBridge.stopNetwork();mode=scoredLaunch||customLaunch||dailyLaunch||bayLaunch?'solo':which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;neutralizeGuestInput();
+ const arena=selectArena(),options=bayLaunch?{...selectedRules,matchModeId:'scored_tdm',mapSize:'standard',teamMode:'teams',botCount:3,botSkill:'normal',pilotMode:true,forwardBayExercise:true,quickPlayMatch:false}:dailyLaunch?dailyOptions:customLaunch?customOptionsFor():scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:which==='scored_tdm'?'teams':'ffa',matchModeId:which,pilotMode:true}:playlistId?quickPlayOptionsFor(playlistId):{...selectedRules,pilotMode:true};
+ state=initialState(arena,options,dailyLaunch?options.dailySeed:freshSectorSeed(state?.mazeSeed));dailyAttemptedKey='';dailyLastRecord=null;roundUnlocks=[];camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(bayLaunch?'FORWARD BAY · TEAM EXERCISE':dailyLaunch?'DAILY SECTOR':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config))):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch){exitMenu();audioCue('deploy');if(mode==='solo')firstMatchHint();}}
 function resetAll(advancePlaylist=false){
  const previousSeed=state.mazeSeed;
  let options={...state.config};
@@ -829,7 +861,7 @@ function resetAll(advancePlaylist=false){
  }
  state=initialState(0,options,options.dailySector?options.dailySeed:freshSectorSeed(previousSeed));dailyAttemptedKey='';dailyLastRecord=null;
  if(mode==='host')neutralizeGuestInput();
- if(mode==='solo')document.getElementById('mode-label').textContent=options.botCount===0?'PRACTICE FIELD':options.dailySector?'DAILY SECTOR':(options.customMatch?'CUSTOM · ':'')+soloModeLabel(options);
+ if(mode==='solo')document.getElementById('mode-label').textContent=options.botCount===0?'PRACTICE FIELD':options.dailySector?'DAILY SECTOR':options.forwardBayExercise?'FORWARD BAY · TEAM EXERCISE':(options.customMatch?'CUSTOM · ':'')+soloModeLabel(options);
  camera.zoom=null;resultCuePlayed=false;roundUnlocks=[];quietContactSeconds=0;radarReminderShown=false;coachRemaining=0;document.getElementById('field-coach')?.classList.add('hidden');fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();clearFireAim();paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();if(mode!=='guest')notice(options.dailySector?'SAME DAILY SECTOR · RETRY':'NEW FIELD GENERATED — GO!');}
 function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
 function circlesRect(x,y,r,w){const nx=clamp(x,w.x,w.x+w.w),ny=clamp(y,w.y,w.y+w.h);return (x-nx)**2+(y-ny)**2<r*r}
@@ -1616,6 +1648,25 @@ function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick
    if(hash===2){c.fillStyle='#564f3b';for(let stripe=0;stripe<4;stripe++)c.fillRect(x+65+stripe*12,y+tile-22,7,3)}
    if(hash===10){c.strokeStyle='#345261';c.lineWidth=2;c.strokeRect(x+tile-40,y+tile-40,24,24)}
  }
+ // Forward Bay markings sit UNDER solid walls, leaving collision and
+ // ricochet gameplay untouched. These are not capture flags or safe zones.
+ for(const bay of state.forwardBays?.bays||[]){
+  const clr=bay.team===0?'#64d5e9':'#ff9b85';
+  c.fillStyle=bay.team===0?'#183b48':'#45302d';
+  c.fillRect(bay.x-47,bay.y-47,94,94);
+  c.strokeStyle=clr;c.lineWidth=3;c.strokeRect(bay.x-47,bay.y-47,94,94);
+  c.setLineDash([7,5]);c.lineWidth=1.5;c.strokeRect(bay.x-35,bay.y-35,70,70);c.setLineDash([]);
+  c.fillStyle=clr;c.font='bold 12px monospace';c.textAlign='center';
+  c.fillText(bay.team===0?'CYAN FOB':'CORAL FOB',bay.x,bay.y-10);
+  c.fillStyle='#d9e8e4';c.font='10px monospace';c.fillText('DEPLOY',bay.x,bay.y+12);
+  for(const gate of bay.entrances){
+   const dx=gate.x-bay.x,dy=gate.y-bay.y,len=Math.hypot(dx,dy)||1;
+   c.beginPath();c.moveTo(bay.x+dx/len*48,bay.y+dy/len*48);
+   c.lineTo(bay.x+dx/len*62,bay.y+dy/len*62);c.stroke();
+  }
+  c.strokeStyle=clr;c.strokeRect(bay.parking.x-23,bay.parking.y-23,46,46);
+  c.fillStyle=clr;c.fillText('P',bay.parking.x,bay.parking.y+5);
+ }
  // Facility perimeter is solid in play and visually signals a different layer than floor tiles.
  c.fillStyle='#253f4e';c.fillRect(0,0,worldW,15);c.fillRect(0,worldH-15,worldW,15);c.fillRect(0,0,15,worldH);c.fillRect(worldW-15,0,15,worldH);
  c.fillStyle='#66a7b3';c.fillRect(0,0,worldW,3);c.fillRect(0,worldH-3,worldW,3);c.fillRect(0,0,3,worldH);c.fillRect(worldW-3,0,3,worldH);
@@ -1914,7 +1965,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
    const ok=equipEmblem(b.dataset.emblemId);refreshHangar();
    const status=document.getElementById('emblem-status');
    if(!ok&&status)status.textContent=emblemProgress(b.dataset.emblemId).eligible?'COULD NOT SAVE INSIGNIA':'INSIGNIA LOCKED · COMPLETE DOSSIER MILESTONE';
-  }else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel(document.getElementById('help-template').innerHTML)}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='daily')launchDailySector();else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){openModes();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
+  }else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel(document.getElementById('help-template').innerHTML)}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='daily')launchDailySector();else if(a==='forwardbay')launchForwardBayExercise();else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){openModes();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
  else if(a==='custom-reset'){resetCustomDraft();refreshCustomUI();customPresetStatus('DEFAULT RULES RESTORED · SAVED PRESETS KEPT');}
  else if(a==='custom-preset-save'){
   readCustomScreen();const input=document.getElementById('custom-preset-name'),name=cleanPresetName(input?.value);
