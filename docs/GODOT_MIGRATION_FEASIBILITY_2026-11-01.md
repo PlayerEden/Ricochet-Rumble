@@ -4,6 +4,14 @@
 
 The user suggested Godot while physical Android acceptance is deferred. Prototype only in branch experiment/godot-ricochet-trials-spike and directory experiments/godot-ricochet-spike. Existing JavaScript/Android integration remains on draft PR #85; current known working test preview 100061, all three automated QA workflows passed, physical acceptance pending. Stable main unchanged.
 
+## Confirmed engine execution — 2026-11-01
+
+**Godot 4.7.2 headless import and smoke: PASS.** [GitHub Actions 41280737168](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41280737168), exact source `df5520b7ab183865832db1d6728ac2bc45f11263`: official engine `4.7.2.stable.official.ed1daf0bf` downloaded and executed; project imported; GDScript scene loaded, seven static-wall bodies/target collider initialized, deterministic reflection/medal rules, one-active-shell and reset smoke passed. No Godot parser errors observed in smoke run. This is **not** real gameplay handling, Android APK, touch, visual render, or multiplayer acceptance. Existing JS game, its package and saves still completely unchanged.
+
+**Recommended next experiment after owner phone is available:** compare ricochet responsiveness and actual visual output; prototype independently signed Godot Android test package, then decide whether any more porting work is justified. Do not label this spike a port or advertise it as the released game.
+
+---
+
 ## Engine choice
 
 Pin **Godot 4.7.2 stable**, GDScript and Compatibility 2D; Godot 4.8 is beta in November 2026. A standalone real top-down Ricochet Trials experiment demonstrates wall colliders, 2D physics raycast shell reflection, touch and keyboard input, one-shell cap, simple medals and reset.
