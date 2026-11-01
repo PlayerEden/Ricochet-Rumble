@@ -1,0 +1,55 @@
+name: Sector Rebound - One-time Quick Desktop Source Bundle
+on:
+  push:
+    branches:
+      - experiment/godot-ricochet-trials-spike
+    paths:
+      - .github/workflows/export-quick-handoff.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export-three-revisions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Archive exact GitHub revisions and compare source
+        shell: bash
+        run: |
+          set -euo pipefail
+          MAIN="9f67b2bea83d552cdbae8af1964c30eecf49022c"
+          INTEGRATION="c4b73339d609195c345bdb54e771bde123a9bebd"
+          GODOT="7f9f478a0635cafe25b1feb09ac7cf0c544de229"
+          ROOT="$RUNNER_TEMP/quick-sector-rebound-source-snapshots"
+          mkdir -p "$ROOT/snapshots" "$ROOT/comparison"
+          for pair in "01_stable_main:$MAIN" "02_latest_integration:$INTEGRATION" "03_godot_experiment:$GODOT"; do
+            LABEL="${pair%%:*}"
+            SHA="${pair#*:}"
+            test "$(git cat-file -t "$SHA")" = commit
+            mkdir -p "$ROOT/snapshots/$LABEL"
+            git archive "$SHA" | tar -x -C "$ROOT/snapshots/$LABEL"
+            printf '%s %s\n' "$LABEL" "$SHA" >> "$ROOT/REVISION_MANIFEST.txt"
+          done
+          git diff --stat "$MAIN" "$INTEGRATION" > "$ROOT/comparison/main_vs_integration_stat.txt"
+          git diff --name-status "$MAIN" "$INTEGRATION" > "$ROOT/comparison/main_vs_integration_file_list.txt"
+          git diff --stat "$INTEGRATION" "$GODOT" > "$ROOT/comparison/integration_vs_godot_stat.txt"
+          git diff --name-status "$INTEGRATION" "$GODOT" > "$ROOT/comparison/integration_vs_godot_file_list.txt"
+          git log --oneline "$MAIN..$INTEGRATION" -n 100 > "$ROOT/comparison/integration_recent_commits.txt"
+          git diff --check "$INTEGRATION" "$GODOT"
+          printf '%s\n'             "Exact source snapshots for PlayerEden/Ricochet-Rumble."             "The stable app is in snapshots/01_stable_main."             "The current approved-for-QA (NOT merged) JavaScript app is snapshots/02_latest_integration."             "The standalone Godot experiment is snapshots/03_godot_experiment/experiments/godot-ricochet-spike."             "These are READ-ONLY Git archives without .git folders. To push later, clone GitHub and use a reviewable branch."             "See REVISION_MANIFEST.txt for exact SHA identities."             > "$ROOT/READ_FIRST.txt"
+          cd "$RUNNER_TEMP"
+          zip -qr "$GITHUB_WORKSPACE/source-snapshots-for-quick.zip" quick-sector-rebound-source-snapshots
+          test -s "$GITHUB_WORKSPACE/source-snapshots-for-quick.zip"
+          unzip -tq "$GITHUB_WORKSPACE/source-snapshots-for-quick.zip" | tail -1
+          du -h "$GITHUB_WORKSPACE/source-snapshots-for-quick.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sector-rebound-full-sources-for-quick
+          path: source-snapshots-for-quick.zip
+          if-no-files-found: error
+          retention-days: 14
