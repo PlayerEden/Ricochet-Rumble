@@ -47,6 +47,18 @@ jobs:
           node tests/scored-browser-parity.mjs
       - name: Validate owner-approved adaptive launcher icon assets
         run: node tests/launcher-icon-a.mjs
+      - name: Audit Google Play release gates (NO-GO is expected before owner evidence)
+        run: |
+          set -euo pipefail
+          node tests/play-release-preflight.mjs
+          node tools/play-release-preflight.mjs --output=qa-results/play-release-preflight.json
+      - name: Keep inspectable Play release gate report
+        uses: actions/upload-artifact@v4
+        with:
+          name: sector-rebound-play-preflight-${{ github.run_id }}
+          path: qa-results/play-release-preflight.json
+          if-no-files-found: error
+          retention-days: 30
       - name: Game regression and seeded combat tests
         run: node tests/smoke.mjs
       - name: Audit approved art, UI audio, runtime/source and explicit release blockers
