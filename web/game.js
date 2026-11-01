@@ -79,8 +79,9 @@ function doBackupAction(action){
  if(!backups){backupNotice('BACKUP MODULE NOT AVAILABLE');return}
  if(action==='backup-export'){
   const result=backups.makeBackup(localBackupStorage());
-  if(!result.ok){backupNotice(result.error);return}
-  const el=document.getElementById('backup-output');if(el)el.value=result.text;
+  const el=document.getElementById('backup-output');
+  if(!result.ok){if(el)el.value='';backupNotice(result.error);return}
+  if(el)el.value=result.text;
   backupNotice('READY: '+result.count+' SAVED RECORDS · COPY AND STORE THIS TEXT BEFORE UNINSTALL');
  }
  if(action==='backup-copy'){

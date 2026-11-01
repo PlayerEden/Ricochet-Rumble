@@ -73,6 +73,7 @@ jobs:
           node tests/visual-qa.mjs
           node tests/quick-play-live-flow-qa.mjs
           node tests/game-lifecycle-interruption-qa.mjs
+          node tests/backup-stale-export-browser-qa.mjs
           node tests/preview-to-play-transfer-browser-qa.mjs
           node tests/pilot-art-review.mjs
           node tests/ui-layout-geometry-v0948.mjs

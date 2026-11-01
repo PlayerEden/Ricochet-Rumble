@@ -17,3 +17,7 @@ Real API35 emulator run 41267204053 passed Android Preview 100041 -> 100050 inst
 
 ## Finding Q-01 — oversized manual export could not be reimported (FIXED, new QA pending)
 An actual source replay found that three individually valid storage records of about 23K characters each produced a 69,333-character backup, while the importer rejected text over 60,000. The export path did not previously compare the complete generated text with MAX_INPUT. Fixed with a fail-closed export check: user gets a clear error instead of deceptively unusable backup text; existing storage is never changed. Added regression for oversized refusal, unmodified originals and a moderately large valid roundtrip in tests/save-backup.mjs. Save format v1, storage keys, normal export text, restore, and gameplay remain identical. Recheck exact-head fast regression and Android/WebView source parity before calling green.
+
+
+## Finding Q-02 — stale export text on failure (FIXED; UI QA pending)
+The existing Backup screen retained the previous generated backup text after a later export failure, allowing the Copy button to select outdated data. On any export failure the output text is now cleared, and a clear error is shown. A dedicated actual-browser QA verifies valid export, then deliberately grows all three source records past the import cap, verifies export failure clears old output, and Copy rejects missing text. The entire game.js and Android bundled mirror stay byte-identical; no gameplay, format or player progress data altered.
