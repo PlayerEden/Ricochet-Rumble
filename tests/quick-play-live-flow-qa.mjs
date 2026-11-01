@@ -24,7 +24,7 @@ window.__flowQA={
 };
 })();`);
 assert.notEqual(instrumented,game,'QA hook injected into transient HTTP response');
-const sources={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/game.js':'game.js','/scored-match.js':'scored-match.js','/dossier.js':'dossier.js','/save-backup.js':'save-backup.js'};
+const sources={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/game.js':'game.js','/scored-match.js':'scored-match.js','/forward-bays.js':'forward-bays.js','/dossier.js':'dossier.js','/save-backup.js':'save-backup.js'};
 const server=http.createServer((req,res)=>{
  const name=sources[new URL(req.url,'http://localhost').pathname];
  if(!name){res.writeHead(404);res.end();return}
