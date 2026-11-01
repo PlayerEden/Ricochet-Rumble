@@ -1,3 +1,9 @@
+## Godot parallel feasibility lane — 2026-11-01
+
+A separate **non-production Godot 4.7.2 GDScript 2D** proof-of-concept now exists on [experiment/godot-ricochet-trials-spike](https://github.com/PlayerEden/Ricochet-Rumble/tree/experiment/godot-ricochet-trials-spike). Real [Godot headless import + trial scene smoke PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41280737168) at source `df5520b7`: collision walls, target, shot cap, reflection/medal rules, restart. The [experiment decision record](https://github.com/PlayerEden/Ricochet-Rumble/blob/experiment/godot-ricochet-trials-spike/docs/GODOT_MIGRATION_FEASIBILITY_2026-11-01.md) explicitly requires real Android/gameplay comparison before any engine selection. **This is not a Godot port of Sector Rebound, not an APK, not production gameplay, not multiplayer-tested, and not owner acceptance.** Keep the current JS app, preview signing, local saves, PR #85 and stable `main` intact. Current [future roadmap](FUTURE_ROADMAP_2026-11-01_PROPOSAL.md) remains a discussion draft; Godot is only one engineering option.
+
+---
+
 # 2026-11-01 — FUTURE ROADMAP DISCUSSION DRAFT (NO IMPLEMENTATION)
 
 Created [future roadmap and idea bank](FUTURE_ROADMAP_2026-11-01_PROPOSAL.md) on the active draft integration branch; **concept planning only**. Prioritize physical owner acceptance and honest Solo-first/verified-LAN v1 scope, then one small replayability prototype (recommended Ricochet Trials), harden local 1v1, and evaluate paid-hosted authoritative internet 1v1 only after reliable local play. Earned-only cosmetics for v1; direct-sale cosmetics / accounts / ranked / clans much later. See doc for phase gates, complexity and owner decisions. No UI, physics, network, signing or store files altered. Stable `main` untouched. The 2026-11-01 latest technical QA above remains canonical for what **actually exists**.
