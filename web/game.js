@@ -1058,6 +1058,34 @@ function botInput(i,dt){
   Math.hypot(bot.x-choice.point.x,bot.y-choice.point.y)<105&&
   hasLineOfSight(bot.x,bot.y,choice.point.x,choice.point.y))tryInteract(i);
  let objective=choice.point;
+ // CTF-only congestion recovery: an actual long-stalled friendly runner has
+ // priority through the flag-return lane. The nearby defender physically
+ // steps into a clear side pocket using ordinary maze movement and collisions.
+ // This only operates after >2 seconds of runner stall, inside its own bay.
+ if(ctfDecision?.kind==='defend'){
+  const teammates=ctfActors();
+  const jamIndex=state.tanks.findIndex((other,j)=>j>=state.humanCount&&j!==i&&
+   state.lives[j]>0&&friendly(i,j)&&
+   window.SectorCtfAI.roleFor(j,state.humanCount,teammates)==='runner'&&
+   (botBrains.get(j)?.stuckFor||0)>2&&Math.hypot(other.x-bot.x,other.y-bot.y)<90);
+  if(jamIndex>=0){
+   const other=state.tanks[jamIndex],angle=Math.atan2(bot.y-other.y,bot.x-other.x);
+   const home=state.forwardBays.bays[teamOf(i)],radius=bot.onFoot?10:21;
+   let cleared=false;
+   for(const turn of [0,Math.PI/3,-Math.PI/3,Math.PI/2,-Math.PI/2,Math.PI]){
+    if(cleared)break;
+    for(const distance of [85,65,45]){
+     const candidate={x:bot.x+Math.cos(angle+turn)*distance,
+      y:bot.y+Math.sin(angle+turn)*distance};
+     if(Math.hypot(candidate.x-home.x,candidate.y-home.y)>165||
+      blocked(candidate.x,candidate.y,radius)||
+      !hasLineOfSight(bot.x,bot.y,candidate.x,candidate.y)||
+      Math.hypot(candidate.x-other.x,candidate.y-other.y)<68)continue;
+     objective=candidate;cleared=true;break;
+    }
+   }
+  }
+ }
  if(choice.kind==='recovery'&&Math.hypot(objective.x-bot.x,objective.y-bot.y)<58&&hasLineOfSight(bot.x,bot.y,objective.x,objective.y)){
   tryInteract(i);
   if(!bot.onFoot){objective=target;}
