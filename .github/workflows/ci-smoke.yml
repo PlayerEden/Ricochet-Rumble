@@ -45,6 +45,8 @@ jobs:
           node --check web/dossier.js
           cmp web/dossier.js android/app/src/main/assets/dossier.js
           node tests/scored-browser-parity.mjs
+      - name: Validate owner-approved adaptive launcher icon assets
+        run: node tests/launcher-icon-a.mjs
       - name: Game regression and seeded combat tests
         run: node tests/smoke.mjs
       - name: Audit approved art, UI audio, runtime/source and explicit release blockers
