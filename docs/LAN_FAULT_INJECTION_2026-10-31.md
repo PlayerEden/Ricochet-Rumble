@@ -9,3 +9,5 @@ This is a release-hardening pass to reduce failure risk when two phones finally 
 **Evidence limits:** A single Chromium process cannot demonstrate actual phone Wi-Fi routing, latency, two-phone disconnect/reconnect, or low-end device performance. A full Android/visual QA and native JVM test MUST pass at this exact source SHA before marking both changes verified. Keep 0-bot 1v1, host-authoritative rules, and prior 54 real-browser LAN checks intact.
 
 **Rollback:** revert the bounded reader + validator commit independently if real Wi-Fi tests reveal an interoperability issue. Stable main unchanged, PR #85 remains DRAFT, no Play release.
+
+**Additional framing guard:** Treat internal/carriage-return bytes as packet characters until a terminal CRLF; previously ignoring every `\r` could keep consuming a stream of repeated carriage returns without advancing the size counter. The native decoder now strips only the final CR of a CRLF line and tests an oversized all-CR stream. Re-run the native JVM and Android QA at the new source commit before claiming full LAN acceptance.

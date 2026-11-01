@@ -15,8 +15,11 @@ final class BoundedLanReader {
         StringBuilder line = new StringBuilder(Math.min(maxChars, 512));
         int value;
         while ((value = reader.read()) != -1) {
-            if (value == '\n') return line.toString();
-            if (value == '\r') continue; // Android sender writes LF, permit CRLF peers.
+            if (value == '\n') {
+                // Only a trailing CR is a CRLF delimiter; every other CR counts.
+                if (line.length() > 0 && line.charAt(line.length() - 1) == '\r') line.setLength(line.length() - 1);
+                return line.toString();
+            }
             if (line.length() >= maxChars) throw new IOException("LAN packet exceeds maximum length");
             line.append((char) value);
         }

@@ -16,7 +16,7 @@ public final class BoundedLanReaderTest {
         check("half".equals(BoundedLanReader.readPacket(reader("half"), 32768)), "partial EOF same as readLine");
         check(BoundedLanReader.readPacket(reader(""), 32768) == null, "empty EOF");
         check("A".repeat(32768).equals(BoundedLanReader.readPacket(reader("A".repeat(32768)+"\n"),32768)), "exact limit accepted");
-        for (String oversized : new String[]{"A".repeat(32769)+"\n", "B".repeat(150000)}) {
+        for (String oversized : new String[]{"A".repeat(32769)+"\n", "B".repeat(150000), "\\r".repeat(150000)}) {
             boolean rejected = false;
             try { BoundedLanReader.readPacket(reader(oversized),32768); }
             catch(IOException expected) { rejected = true; }
