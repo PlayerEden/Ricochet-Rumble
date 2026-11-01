@@ -1027,7 +1027,7 @@ function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=c
  if(mag||aimed){const target=aimed?Math.atan2(inp.aimY,inp.aimX):Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a)),maxTurn=dt*(precisionFoot?SOLO_PILOT_TURN_RATE:tacticalVehicle?SCORED_FFA_VEHICLE_PACE.turnRate:12);t.a+=clamp(diff,-maxTurn,maxTurn)}
  // Local Solo pilot only: tiny optional heading nudge when already shooting
  // almost directly at an on-screen enemy pilot. No auto-fire or homing shell.
- if(inp.fire&&precisionFoot&&mode==='solo')t.a+=softPilotAimOffset(t,i);
+ if(inp.fire&&precisionFoot&&mode==='solo'&&(fireCooldown[i]||0)<=dt)t.a+=softPilotAimOffset(t,i);
  // Solo human tanks used to slide toward the thumb before the hull faced that
  // direction. During a deliberate, slow turn that appears like an off-center
  // orbit. Throttle forward drive until the tracks align with the requested path.
