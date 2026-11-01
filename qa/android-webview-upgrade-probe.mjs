@@ -100,9 +100,8 @@ try{
     const values=JSON.stringify(raw);
     const result=await session.eval('(() => {for(const [k,v] of Object.entries('+values+'))localStorage.setItem(k,v); return true;})()');
     assert.equal(result,true,'initial seed failed');
-    // Reload the actual bundled game, so its own save loaders consume the data.
-    await session.eval('location.reload(); true').catch(()=>{});
-    await pause(1700);
+    // The page was initialized before seeding; its Dossier in-memory cache is
+    // expected to remain old. Only test UI *after the upgraded app restarts*.
   }
   let state=null,error='';
   for(let i=0;i<22;i++){
@@ -114,14 +113,18 @@ try{
   assert.equal(state.gameTitle,'Sector Rebound');
   const expected=mode==='seed'?raw:JSON.parse(fs.readFileSync(beforeFile,'utf8')).keys;
   for(const k of keys)assert.equal(state.keys[k],expected[k],'real WebView storage mismatch '+mode+' '+k);
-  // Click the game's real Dossier entry and inspect its rendered totals.
-  const visible=await session.eval('(() => {const btn=document.querySelector(\'button[data-action="dossier"]\');btn.click();return {matches:document.querySelector("#dossier-matches")?.textContent?.trim(),kos:document.querySelector("#dossier-kos")?.textContent?.trim()};})()');
-  assert.equal(visible.matches,'6','Dossier UI did not recover matches');
-  assert.equal(visible.kos,'11','Dossier UI did not recover KOs');
+  // After the Android install-over, the WebView is a brand-new process and
+  // the game must load the persisted Dossier state into its actual interface.
+  let visible=null;
+  if(mode==='verify'){
+    visible=await session.eval('(() => {const btn=document.querySelector(\'button[data-action="dossier"]\');btn.click();return {matches:document.querySelector("#dossier-matches")?.textContent?.trim(),kos:document.querySelector("#dossier-kos")?.textContent?.trim()};})()');
+    assert.equal(visible.matches,'6','Upgraded WebView Dossier UI did not recover matches');
+    assert.equal(visible.kos,'11','Upgraded WebView Dossier UI did not recover KOs');
+  }
   const result={status:'PASS',stage:mode,package:'com.playereden.ricochetrumble.preview',
     origin:state.href,records:keys.length,keys:state.keys,visibleDossier:visible,
     note:'Synthetic values only. Test-instrumented debug APKs; not physical phone evidence.'};
   fs.writeFileSync(mode==='seed'?beforeFile:afterFile,JSON.stringify(result,null,2)+'\n');
   console.log(mode==='seed'?'ANDROID_WEBVIEW_LOCAL_SAVE_SEEDED':'ANDROID_WEBVIEW_LOCAL_SAVE_UPGRADE_PASS',
-    'five exact localStorage records and real Dossier UI matches 6, KOs 11');
+    mode==='seed'?'five exact localStorage records seeded':'five exact records retained; upgraded Dossier UI matches 6, KOs 11');
 }finally{session.close()}
