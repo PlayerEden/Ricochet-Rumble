@@ -30,12 +30,18 @@ jobs:
           node tests/smoke.mjs
       - name: Install the same browser test dependency as full QA
         run: npm install --no-save --ignore-scripts playwright-core@1.56.1
+      - name: Checkout immutable previous approved runtime for update comparison
+        uses: actions/checkout@v4
+        with:
+          ref: 10e182acc75bc7d461c4f93221b7b846ccde277c
+          path: before-preview
       - name: Run real Chromium game menu, modes, results and landscape geometry
         run: |
           set -euo pipefail
           export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           test -n "$CHROME_BIN"
           node tests/quick-play-live-flow-qa.mjs
+          node tests/preview-upgrade-browser-qa.mjs before-preview/web
           node tests/lan-lobby-flow-qa.mjs
           node tests/ui-layout-geometry-v0948.mjs
           node tests/visual-qa.mjs
