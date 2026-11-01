@@ -8,7 +8,7 @@ import {chromium} from 'playwright-core';
 
 assert.ok(process.env.CHROME_BIN,'CHROME_BIN required: do not skip browser QA');
 const root=path.resolve('web');
-const names=new Set(['index.html','style.css','game.js','scored-match.js','dossier.js','save-backup.js']);
+const names=new Set(['index.html','style.css','game.js','scored-match.js','forward-bays.js','dossier.js','save-backup.js']);
 const server=http.createServer((req,res)=>{
  const pathname=new URL(req.url,'http://127.0.0.1').pathname.slice(1)||'index.html';
  if(!names.has(pathname)){res.writeHead(404);res.end();return}
@@ -45,7 +45,6 @@ try{
  // After that first exposure, the original shuffle algorithm remains in
  // control; deterministic random=0 chooses Team Survival from the two options.
  await page.locator('.home-deploy[data-action="solo"]').click();
- console.log('TEAM_RETURNING_PLAYER_DIAGNOSTIC '+JSON.stringify({view:await page.evaluate(()=>({label:document.querySelector('#mode-label')?.textContent,mode:document.querySelector('#menu')?.className})),errors:errors.map(x=>x.message||String(x))}));
  assert.equal((await page.locator('#mode-label').textContent()).trim(),'TEAM SURVIVAL',
    'returning player uses unchanged shuffled playlist instead of forced Solo');
  assert.equal(await page.locator('#menu').evaluate(e=>e.classList.contains('hidden')),true);
