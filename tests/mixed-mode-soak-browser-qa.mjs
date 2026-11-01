@@ -11,6 +11,7 @@ const game=source.replace(/\}\)\(\);\s*$/,hook);
 const names=new Set(['index.html','style.css','game.js','scored-match.js','dossier.js','save-backup.js']);
 const server=http.createServer((req,res)=>{
  const name=new URL(req.url,'http://127.0.0.1/').pathname.replace(/^\/+/,'')||'index.html';
+ if(name==='favicon.ico'){res.writeHead(204);res.end();return;}
  if(!names.has(name)){res.writeHead(404);res.end();return;}
  res.writeHead(200,{'Content-Type':name.endsWith('.js')?'text/javascript':name.endsWith('.css')?'text/css':'text/html','Cache-Control':'no-store'});
  res.end(name==='game.js'?game:fs.readFileSync(path.join(root,name)));
