@@ -1,3 +1,9 @@
+# 2026-11-01 — RELEASE-CANDIDATE INTEGRATION AUDIT / STABLE MAIN UNTOUCHED
+
+**Audit verdict:** automated integration evidence PASS; physical Android acceptance PENDING; Google Play release **NO-GO**. [Read complete report](RELEASE_CANDIDATE_AUDIT_2026-11-01.md). Reviewed PR #85 head `19ebede4f66a32c021605dd31f56a38a7bd4a7c0`: 97 commits ahead / 0 behind `main`, mergeable, draft, and 119 changed files. No production game/source changes in this audit. CI for that exact PR head [fast 41272978351](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41272978351), [full 41272978493](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41272978493), [emulator 41272978476](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41272978476) all SUCCESS. Actual fixed-source test-preview `100059` is [run 41272296788](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41272296788), same public AOSP test signer and `.preview` package, NOT production signing or guaranteed safe update for unknown installed code. **Google Play preflight 9 PASS / 10 PENDING**; two actual Wi-Fi phones, physical data continuity, signed Play AAB and hosted privacy URL are missing. See report for exact gaps/rollback and next action. No auto-merge or Play publication.
+
+---
+
 # 2026-10-31 — NO-PHONE LAN FAULT & RENDER PERFORMANCE AUDITS VERIFIED
 
 **Owner situation:** physical Android testing not available yet; do not change approved vehicle/pilot handling, input feel, art or map visuals unnecessarily. Both priority code hardening issues and new stress metrics were completed on draft PR #85, with last game/native/test source commit **[`a008d01`](https://github.com/PlayerEden/Ricochet-Rumble/commit/a008d01f89823ee95b09e845d3cffed0f9b0f0b3)**. Stable `main` remains untouched.
