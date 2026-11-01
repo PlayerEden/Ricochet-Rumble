@@ -1,4 +1,5 @@
 name: Sector Rebound - scoped UI/UX review
+# QA exact head first-session audit: Solo settings, playlist description, and FIRE guide
 # QA exact-head rerun: full-width LAN rematch CTA and 102-layout plus 53-client regression
 on:
   push:
