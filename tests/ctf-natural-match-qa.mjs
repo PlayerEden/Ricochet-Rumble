@@ -24,7 +24,7 @@ window.__ctfNaturalQA={
    closestRunnerToFlag:Infinity,runnerDistance:0,
    runnerMaxDisplacement:0,escortCloseFrames:0,defenderHomeFrames:0,
    escortDecisions:{},defenderDecisions:{},runnerDecisions:{},
-   runnerPilotFrames:0,invalid:[],maxFrameMotion:0,
+   runnerPilotFrames:0,invalid:[],maxFrameMotion:0,samples:[],
    prior:state.tanks.map(t=>({x:t.x,y:t.y})),
    start:state.tanks.map(t=>({x:t.x,y:t.y})),lastEventSeq:state.ctf.seq};
   return {roles:[1,2,3].map(i=>window.SectorCtfAI.roleFor(i,state.humanCount,ctfActors())),
@@ -65,6 +65,14 @@ window.__ctfNaturalQA={
     if(m.invalid.length>10)break;
    }
   }finally{paused=true;}
+  const t=state.tanks[1],br=botBrains.get(1)||{},grid=mazeGrid,
+   cell=grid?Math.floor(t.y/grid.cell)*grid.cols+Math.floor(t.x/grid.cell):null;
+  m.samples.push({s:Number(m.seconds.toFixed(1)),x:Number(t.x.toFixed(1)),
+   y:Number(t.y.toFixed(1)),onFoot:t.onFoot,alive:state.lives[1]>0,
+   cell,goal:br.goal,waypoint:br.path?.[0]??null,
+   pathHead:br.path?.slice(0,5),stuckFor:Number((br.stuckFor||0).toFixed(2)),
+   blocked:blocked(t.x,t.y,t.onFoot?10:21),
+   movement:m.runnerDistance});
   return {frames:m.frames,seconds:m.seconds,finished:state.ctf.finished,invalid:m.invalid.length};
  },
  result(){
