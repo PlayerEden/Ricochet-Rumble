@@ -49,7 +49,7 @@ try{
  assert.equal(resultOne?.reason,'time_limit','real scored match ends at clock');
  assert.match(await page.locator('#aa-mode-label').textContent(),/DAILY SECTOR · .* UTC/);
  assert.match(await page.locator('#aa-note').textContent(),/BEST .* 1 ATTEMPT · UTC/);
- assert.match(await page.locator('#quick-rematch').textContent(),/RETRY TODAY/);
+ assert.match(await page.locator('#quick-rematch').textContent(),/RETRY SAME SECTOR/);
  const dailyKey='rr-daily-sector-v1',day=first.config.dailyDate;
  const firstSave=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),dailyKey);
  assert.equal(firstSave.days[day].attempts,1);
@@ -61,6 +61,15 @@ try{
  assert.equal(replay.seed,first.seed,'retry keeps same maze');
  assert.notEqual(replay.id,first.id,'retry is new match');
  assert.equal(await page.locator('#after-action').isVisible(),false);
+ // The pause restart confirmation must not pretend Daily generates a new maze.
+ await page.locator('#menu-button').click();
+ assert.equal(await page.locator('button[data-action="restart"]').textContent(),'RETRY SECTOR');
+ await page.locator('button[data-action="restart"]').click();
+ assert.match(await page.locator('.pause-hint').textContent(),/daily maze stays the same/);
+ await page.locator('button[data-action="cancel-restart"]').click();
+ await page.locator('button[data-action="resume"]').click();
+ assert.equal((await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),dailyKey)).days[day].attempts,1,'aborted restart dialog must not count an attempt');
+ assert.equal((await page.evaluate(()=>window.__dailyQA.state.mazeSeed)),first.seed,'pause and cancel do not reseed');
  assert.equal((await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),dailyKey)).days[day].attempts,1,'no attempt before result');
  await page.evaluate(()=>window.__dailyQA.expire(241));
  assert.equal((await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),dailyKey)).days[day].attempts,2);

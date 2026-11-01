@@ -1,3 +1,17 @@
+# Daily Sector — implementation audit and acceptance record (2026-11-01)
+
+**Current status:** full scoped browser QA success at source `0a97879058e682d23da4b3c9f2c16b898e2e1f74` — [run 41282417257](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41282417257). The exact-script full run included:
+
+- Deterministic UTC-day seed, leap/date validations, same-date fixed scored vehicle FFA, 31-day bounded and future-version-fail-closed personal best store. PASS.
+- Live Chromium: choose mode at 740×360, original four specialist choices unchanged, proper Back, daily start, real 4-minute scored match termination, daily result and exactly-once record, same-seed rematch, no Dossier rewards, direct manual backup export/preview, reload. PASS.
+- Existing fast gameplay/physics smoke, backup regression, Quick Play live flow, first-session mode, stale-export protection, responsive layout QA. PASS. HTML/JS/CSS Android mirror parity preserved for all changed assets. No owner physical Android evidence.
+
+**Audit-driven correction now in progress:** Daily retries keep the *same* maze, so pausing/restarting/rematching should never say a “new field” or “today's sector” when an attempt can cross midnight UTC. Replace the relevant prompts with “RETRY SAME SECTOR / SAME DAILY SECTOR”; run the live Chromium checks including cancelled restart confirmation. Daily launch from the main menu always selects the new UTC day; retries of a session begun before midnight intentionally retain their original date to avoid reassigning completed attempts.
+
+**Remaining gates:** run exact-head CI after wording changes, full Android build/API and physical phone install, touch comfort/save migration, owner approval of Daily as a new player-facing mode; then consider a separately signed preview. Stable `main`, existing Preview 100061 and draft integration PR #85 are not touched by this experimental branch. No global ranking or server-backed fairness claims.
+
+---
+
 ## 2026-11-01 — Daily full gameplay and UI regression expansion
 
 The experiment's dedicated CI now includes the existing *actual* Quick Play live combat flow, fresh first-match entry, backup-stale-export protection and three-landscape-size visual scenes in addition to its daily mode end-to-end. The new Daily Sector results note names the actual saved best outcome and uses a correct singular/plural attempt count. Remaining acceptance: full CI on exact source, Android test build (not yet created), physical owner input and phone save validation. This remains opt-in experimental and cannot affect stable main or PR #85.
