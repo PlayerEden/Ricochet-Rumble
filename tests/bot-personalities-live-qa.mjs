@@ -68,6 +68,7 @@ try{
  assert.equal(await page.locator('#custom-skill').inputValue(),'varied','Custom style persisted');
  const quick=await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-options-v06')));
  assert.notEqual(quick.settings.botSkill,'varied','Quick Play preferences independent');
+ await page.locator('.custom-preset-fold summary').click();
  await page.locator('#custom-reset').click();
  assert.equal(await page.locator('#custom-skill').inputValue(),'normal','reset restores classic');
  assert.deepEqual(errors,[],'no page errors');
