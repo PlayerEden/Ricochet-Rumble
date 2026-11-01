@@ -1082,6 +1082,16 @@ function pilotBotFireFair(bot,target){
  return mode!=='solo'||!state?.tanks?.[0]?.onFoot||target!==state.tanks[0]||
   (pilotInLocalView(bot.x,bot.y)&&pilotInLocalView(target.x,target.y));
 }
+// Acquiring an on-foot human requires continuous real screen visibility and LOS.
+// Bots still navigate normally; this changes only the FIRST eligible shot.
+function pilotBotReactionReady(brain,target,skill,dt,visible){
+ const humanPilot=mode==='solo'&&state?.tanks?.[0]?.onFoot&&target===state.tanks[0];
+ if(!humanPilot){brain.pilotAcquire=0;return true;}
+ if(!visible){brain.pilotAcquire=0;return false;}
+ const delay=skill==='casual'?.32:skill==='spicy'?.16:.24;
+ brain.pilotAcquire=Math.min(delay,Math.max(0,Number(brain.pilotAcquire)||0)+clamp(dt,0,.05));
+ return brain.pilotAcquire+1e-8>=delay;
+}
 function softPilotAimOffset(t,owner){
  if(owner!==0||mode!=='solo'||!t.onFoot||!comfort.pilotAssist||!pilotInLocalView(t.x,t.y))return 0;
  let candidate=null;
@@ -1271,13 +1281,14 @@ function botInput(i,dt){
  const enemyDist=Math.hypot(bot.x-target.x,bot.y-target.y);
  const hasLine=enemyDist<(mazeGrid?385:750)&&hasLineOfSight(bot.x,bot.y,target.x,target.y)&&
    pilotBotFireFair(bot,target);
+ const acquired=pilotBotReactionReady(brain,target,skill,dt,hasLine);
  // Base defense and teammate escort hold a sensible standoff distance.
  const ctfHold=!!ctfDecision&&!ctfYield&&
   ((choice.kind==='defend'&&objectiveDistance<34)||
    (choice.kind==='escort'&&objectiveDistance<90));
  const chasePace=ctfHold||choice.kind==='hold'?0:
   choice.kind==='engage'&&hasLine&&enemyDist<115?pace*(role==='hunter'?.72:.34):pace;
- return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,fire:Math.abs(delta)<aim&&hasLine,bot:true};
+ return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,fire:Math.abs(delta)<aim&&hasLine&&acquired,bot:true};
 }
 // One shared local-space pistol muzzle anchor, used by BOTH art and physics.
 // +X is actor facing; +Y is the tiny visual hand offset in top-down view.
