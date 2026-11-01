@@ -181,6 +181,7 @@ try{
  assert.equal((await page.locator('#aa-outcome').textContent()).trim(),'VICTORY');
  assert.equal(await page.locator('#aa-rewards').isVisible(),false,'first Solo match has no unlock');
  assert.equal(await page.locator('#quick-rematch').isVisible(),true,'NEXT MATCH playable');
+ assert.match(await page.locator('#aa-note').textContent(),/NEXT MATCH · ROTATING MODES/,'player knows next Quick Play match rotates modes');
  result.steps.push('real combat finalization -> HUD victory, KO/deaths and NEXT MATCH button');
 
  await page.locator('#quick-rematch').click();
@@ -284,6 +285,8 @@ try{
  assert.equal((await page.locator('#aa-outcome').textContent()).trim(),'VICTORY');
  const earnedNow=(await page.locator('#aa-rewards').textContent()).trim();
  assert.equal(await page.locator('#aa-rewards').isVisible(),true,'third saved Solo match should show new progress');
+ assert.equal(await page.locator('#aa-rewards').evaluate(el=>el.tagName),'BUTTON','earned cosmetic is an actual accessible action');
+ assert.match(earnedNow,/VIEW HANGAR/,'reward button identifies its destination');
  assert.ok(earnedNow.includes('VECTOR INSIGNIA')&&earnedNow.includes('ACE INSIGNIA'),'real 3-match and 10-KO thresholds crossed in CQC');
  assert.deepEqual(await page.evaluate(()=>window.__flowQA.unlocksFromResult({matches:12,wins:11,kos:40},{matches:13,wins:12,kos:40})),['VETERAN PAINT','◆ COMMAND INSIGNIA'],'real 12th victory edge case');
  assert.deepEqual(await page.evaluate(()=>window.__flowQA.unlocksFromResult({matches:13,wins:12,kos:40},{matches:14,wins:13,kos:40})),[],'do not repeat already-earned rewards');
@@ -674,6 +677,38 @@ try{
 
 
 
+
+ // A genuine fifth stored match unlocks VANGUARD on the actual result UI;
+ // the reward CTA must navigate directly to the real Hangar.
+ const bonusContext=await browser.newContext({viewport:{width:740,height:360},deviceScaleFactor:1});
+ const bonusPage=await bonusContext.newPage();
+ bonusPage.on('pageerror',e=>{throw e});
+ await bonusPage.goto(base,{waitUntil:'load'});
+ await bonusPage.evaluate(()=>{
+  const s={schemaVersion:1,matches:4,wins:0,losses:0,draws:4,kos:0,deaths:0,seconds:720,byMode:{},recentKeys:[]};
+  localStorage.setItem('rr-dossier-v1',JSON.stringify(s));
+ });
+ await bonusPage.reload({waitUntil:'load'});
+ await bonusPage.waitForFunction(()=>!!window.__flowQA);
+ await bonusPage.locator('button[data-action="modes"]').click();
+ await bonusPage.locator('button[data-action="cqc"]').click();
+ await bonusPage.evaluate(()=>window.__flowQA.expire(180));
+ assert.equal(await bonusPage.locator('#after-action').isVisible(),true);
+ assert.equal(await bonusPage.locator('#aa-rewards').isVisible(),true,'earned 5th-match reward appears');
+ assert.match(await bonusPage.locator('#aa-rewards').textContent(),/VANGUARD PAINT · VIEW HANGAR/);
+ assert.equal((await bonusPage.locator('#aa-outcome').textContent()).trim(),'DRAW');
+ assert.equal((await bonusPage.evaluate(()=>JSON.parse(localStorage.getItem('rr-dossier-v1')))).matches,5);
+ await bonusPage.locator('#aa-rewards').click();
+ assert.equal(await bonusPage.locator('.hangar-screen').isVisible(),true,'reward shortcut opens Hangar');
+ assert.equal(await bonusPage.locator('button[data-paint-id="fieldgrid.vanguard"]').isDisabled(),false);
+ await bonusPage.locator('button[data-paint-id="fieldgrid.vanguard"]').click();
+ assert.equal(await bonusPage.locator('button[data-paint-id="fieldgrid.vanguard"]').getAttribute('aria-pressed'),'true');
+ assert.equal((await bonusPage.evaluate(()=>JSON.parse(localStorage.getItem('rr-hangar-paint-v1')))).equipped,'fieldgrid.vanguard');
+ await bonusPage.locator('button[data-action="hangar-back"]').click();
+ assert.equal(await bonusPage.locator('.home-screen').isVisible(),true,'one-tap reward path returns home');
+ assert.equal((await bonusPage.evaluate(()=>JSON.parse(localStorage.getItem('rr-dossier-v1')))).matches,5,'reward navigation cannot duplicate results');
+ await bonusContext.close();
+ result.steps.push('real 5-match reward -> result button -> Hangar equip -> Home; no double score');
 
  console.log('PASS live Chromium Quick Play: '+JSON.stringify(result));
 }finally{

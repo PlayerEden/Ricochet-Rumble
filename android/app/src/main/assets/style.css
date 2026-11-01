@@ -1076,3 +1076,8 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
    No changes to the existing Solo and scored After Action layout. */
 .after-action .aa-actions:has(#lan-edit-rules:not(.hidden)){grid-template-columns:repeat(2,minmax(0,1fr))}
 .after-action .aa-actions:has(#lan-edit-rules:not(.hidden)) #quick-rematch{grid-column:1/-1}
+
+/* Earned cosmetics become one-tap destinations without a third match-action row. */
+.after-action button.aa-rewards{display:block;width:100%;min-height:38px;text-align:left;cursor:pointer;touch-action:manipulation}
+.after-action button.aa-rewards.hidden{display:none}
+.after-action button.aa-rewards:focus-visible{outline:2px solid #f3dc91;outline-offset:2px}

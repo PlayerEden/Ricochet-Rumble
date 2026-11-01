@@ -1,3 +1,11 @@
+# 2026-11-01 — AFTER ACTION / EARNED REWARD SHORTCUT (PENDING CURRENT-HEAD QA)
+
+**Player loop refinement:** Actual saved Solo cosmetic unlocks now render as a tappable **VIEW HANGAR** result reward. One tap opens the real Hangar, where the milestone is truly equipable; Back returns Home. Unearned/unsaved/practice/LAN rewards remain hidden. The result footer clarifies Quick Play rotation vs same-mode rematch, Custom rules replay, and zero-bot practice. Scored DRAW plays a neutral UI cue rather than the DEFEAT sting. KO/death/result math, one-tap rematches, gameplay rules, visual palette, WebView identifiers, and save formats are unchanged.
+
+**Evidence plan:** Real Chromium quick-play result flow plus actual fifth recorded match/VANGUARD reward click, equip, persistent storage and no duplicate match. Android WebView asset mirrors patched identically. Await exact-head CI, test APK and owner-phone verification. Stable main remains untouched, PR #85 DRAFT.
+
+---
+
 # 2026-11-01 — FIRST-MATCH QUICK PLAY ENTRY REFINEMENT (PENDING CI)
 
 **Goal:** initial Quick Play becomes a predictable introduction to vehicle ricochet combat, without a tutorial modal or balance changes. On a genuinely fresh Solo player profile, if `survival_ffa` is part of the chosen playlist, first Quick Play starts **Solo Survival**. Existing `rr-coach-v0917` and Dossier history prevent applying it to returning players. If the player selects only Team Survival, that choice is honored. The shuffle bag preserves the displaced option so later rounds still rotate normally. The real game already has a brief nonblocking MOVE/FIRE hint, genuine After Action and one-tap Next Match; no extra UI needed.
