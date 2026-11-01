@@ -68,6 +68,16 @@ add('public_privacy_policy_url','policy',
  /^https:\/\/[^\s/]+\.[^\s/]+\/\S*$/.test(privacyUrl),
  'Google Play requires a public privacy policy URL; HTTPS URL file '+(privacyUrl?'present':'missing')+'. Availability/content MUST be manually checked even if present.',
  'Host an app-specific privacy policy accessible worldwide; record its HTTPS URL in store-listing/privacy-policy-url.txt.');
+const listingData=(()=>{try{return JSON.parse(read('store-listing/metadata.en-US.json'))}catch(_){return null}})();
+add('store_listing_draft_valid','automatic',
+ !!listingData&&listingData.title==='Sector Rebound'&&listingData.title.length<=30&&listingData.shortDescription?.length<=80&&listingData.fullDescription?.length<=4000&&listingData.fullDescription?.length>=300&&listingData.approval==='DRAFT_NOT_FOR_PLAY',
+ 'English listing fields meet store limits and remain marked for owner review.',
+ 'Add accurate draft listing metadata and confirm limits.');
+const page=read('store-listing/privacy-policy.html');
+add('staged_privacy_policy_html','automatic',
+ page.includes('<title>Sector Rebound')&&page.includes('Nearby Wi-Fi play')&&page.includes('Retention and deletion')&&page.includes('[[PUBLIC_CONTACT_REQUIRED]]'),
+ 'Self-contained, source-backed policy HTML draft staged with deliberately unfilled contact.',
+ 'Create an app-specific static policy draft; do not publish placeholders.');
 add('privacy_in_app','policy',
  /PRIVACY POLICY/i.test(html),"App's HTML "+(/PRIVACY POLICY/i.test(html)?'includes':'does not include')+' a privacy policy entry or text.',
  'Provide accessible in-game privacy text or an in-app link to the policy before publishing.');

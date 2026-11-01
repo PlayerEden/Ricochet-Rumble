@@ -9,6 +9,7 @@ assert.ok(metadata.shortDescription.length<=80&&metadata.shortDescription.length
 assert.ok(metadata.fullDescription.length<=4000&&metadata.fullDescription.length>=300);
 assert.ok(metadata.fullDescription.includes('Survival'));
 assert.ok(metadata.fullDescription.includes('Close Quarters'));
+assert.equal(/Nearby Wi-Fi|LAN|beta multiplayer/i.test(metadata.fullDescription),false,'unaccepted LAN beta should not be in public copy');
 for(const claim of [/online ranked/i,/global matchmaking/i,/cross-platform/i,/unlimited multiplayer/i]){
  assert.equal(claim.test(metadata.fullDescription),false,'unsupported promotional claim: '+claim);
 }
