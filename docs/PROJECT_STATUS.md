@@ -1,3 +1,13 @@
+# 2026-11-01 — FIRST-MATCH + AFTER-ACTION POLISH VERIFIED (ALL EXACT-SOURCE CI GREEN)
+
+**Accepted automated scope:** source commit [3ecc7d3](https://github.com/PlayerEden/Ricochet-Rumble/commit/3ecc7d3cd0080c1ab94e8fbb890ae628e9ef8c60) on draft PR #85. [Fast regression 41279142670](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41279142670) **SUCCESS**, [full Chromium/Android QA 41279142730](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41279142730) **SUCCESS**, [real Android emulator update 41279142701](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41279142701) **SUCCESS**. [Automatic test-only preview 100061](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41279138843/artifacts/13072283427) built with `.preview` package and pinned PUBLIC AOSP test signer (not production signing). **Do not assume compatibility with the owner's installed version until versionCode, package and certificate are checked.** Previous 100060 remains a rollback/baseline test artifact for an eligible matching preview identity.
+
+**Specific player-loop proof:** actual source's first-time Quick Play Solo Survival setup, returning shuffle and explicit Team-only choice pass real browser checks; actual scored/Survival results, unchanged frozen round score, Next Match behavior, newly earned 5th-match VANGUARD reward button -> real Hangar equip -> Home, no duplicate local match, and user backup roundtrip all passed. `LAYOUT_DIAGNOSTIC` **102 scenes, 0 warnings, 0 failures**. Android emulator retained five game localStorage records and exact Dossier UI after restart and in-place update; this is not proof of the owner's physical-device save persistence.
+
+**Remaining release gates:** owner's actual phone match controls and in-place update, two physical LAN phones or explicit Solo-first scope, private Google Play signing and listing/privacy/console completion. PR #85 stays DRAFT, stable `main` v0.9.21 untouched, no public Google Play release.
+
+---
+
 # 2026-11-01 — AFTER ACTION / EARNED REWARD SHORTCUT (PENDING CURRENT-HEAD QA)
 
 **Player loop refinement:** Actual saved Solo cosmetic unlocks now render as a tappable **VIEW HANGAR** result reward. One tap opens the real Hangar, where the milestone is truly equipable; Back returns Home. Unearned/unsaved/practice/LAN rewards remain hidden. The result footer clarifies Quick Play rotation vs same-mode rematch, Custom rules replay, and zero-bot practice. Scored DRAW plays a neutral UI cue rather than the DEFEAT sting. KO/death/result math, one-tap rematches, gameplay rules, visual palette, WebView identifiers, and save formats are unchanged.
