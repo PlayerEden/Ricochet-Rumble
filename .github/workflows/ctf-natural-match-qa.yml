@@ -1,0 +1,53 @@
+name: Sector Rebound - CTF natural match traversal audit
+on:
+  push:
+    branches: [experiment/ctf-natural-match-qa-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  natural-ctf:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Enforce Web/Android gameplay byte parity
+        run: |
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/ctf-ai.js android/app/src/main/assets/ctf-ai.js
+          cmp web/ctf-rules.js android/app/src/main/assets/ctf-rules.js
+          cmp web/forward-bays.js android/app/src/main/assets/forward-bays.js
+      - name: Verify CTF rules, AI and legacy smoke
+        run: |
+          node tests/ctf-rules.mjs
+          node tests/ctf-objective-ai.mjs
+          node tests/smoke.mjs
+          node tests/save-backup.mjs
+      - name: Run real browser traversal, flag behavior and gameplay regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          npm install --no-save --ignore-scripts playwright-core@1.56.1
+          node tests/ctf-natural-match-qa.mjs
+          node tests/ctf-objective-bots-live-qa.mjs
+          node tests/forward-bays-live-qa.mjs
+          node tests/ctf-live-qa.mjs
+          node tests/quick-play-live-flow-qa.mjs
+          node tests/backup-stale-export-browser-qa.mjs
+          node tests/first-match-entry-browser-qa.mjs
+          node tests/visual-qa.mjs
+      - name: Preserve natural-match telemetry and original UI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sector-rebound-ctf-natural-match-qa
+          path: |
+            qa-results/ctf-natural-match-telemetry.json
+            qa-screens/
+          if-no-files-found: ignore
+          retention-days: 14
