@@ -16,11 +16,12 @@
 
 1. [Latest handoff / PROJECT_STATUS](docs/PROJECT_STATUS.md) — detailed chronology and blockers; recent entries at the top
 2. [Integration rehearsal and rollback](docs/INTEGRATION_REHEARSAL_v0956.md) and [draft PR #85](https://github.com/PlayerEden/Ricochet-Rumble/pull/85) — current candidate, differences from `main`
-3. [Latest release-candidate audit (2026-11-01)](docs/RELEASE_CANDIDATE_AUDIT_2026-11-01.md) — integration findings, exact QA, remaining P0 gates
-4. [Owner Android acceptance checklist](docs/OWNER_ANDROID_ACCEPTANCE_2026-10-31.md) — real saved progress, controls, two-device Wi-Fi
-5. [Competitive + measured performance audit](docs/COMPETITIVE_PERFORMANCE_DELTA_2026-11-01.md) — grounded optimization priorities and full QA verification
-6. [Repository rename playbook](docs/REPOSITORY_RENAME_PLAN_2026-11-01.md) — proposed `PlayerEden/Sector-Rebound` rename; **not performed**
-7. [Development protocol](docs/DEVELOPMENT_PROTOCOL.md), [Google Play roadmap](docs/ROADMAP_TO_GOOGLE_PLAY_V1.md) and [identity](docs/SECTOR_REBOUND_IDENTITY.md)
+3. [Android WebView save continuity (2026-11-01)](docs/ANDROID_WEBVIEW_PERSISTENCE_2026-11-01.md) — actual emulator restart + install-over persistence PASS; owner phone pending
+4. [Latest release-candidate audit (2026-11-01)](docs/RELEASE_CANDIDATE_AUDIT_2026-11-01.md) — integration findings, exact QA, remaining P0 gates
+5. [Owner Android acceptance checklist](docs/OWNER_ANDROID_ACCEPTANCE_2026-10-31.md) — real saved progress, controls, two-device Wi-Fi
+6. [Competitive + measured performance audit](docs/COMPETITIVE_PERFORMANCE_DELTA_2026-11-01.md) — grounded optimization priorities and full QA verification
+7. [Repository rename playbook](docs/REPOSITORY_RENAME_PLAN_2026-11-01.md) — proposed `PlayerEden/Sector-Rebound` rename; **not performed**
+8. [Development protocol](docs/DEVELOPMENT_PROTOCOL.md), [Google Play roadmap](docs/ROADMAP_TO_GOOGLE_PLAY_V1.md) and [identity](docs/SECTOR_REBOUND_IDENTITY.md)
 
 ## What exists in the experimental integration candidate
 
