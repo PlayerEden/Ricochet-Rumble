@@ -72,6 +72,7 @@ jobs:
           npm install --no-save --ignore-scripts playwright-core@1.56.1
           node tests/visual-qa.mjs
           node tests/quick-play-live-flow-qa.mjs
+          node tests/preview-to-play-transfer-browser-qa.mjs
           node tests/pilot-art-review.mjs
           node tests/ui-layout-geometry-v0948.mjs
       - name: Build honest Play Store artwork candidates from actual game QA captures
