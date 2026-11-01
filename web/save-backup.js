@@ -59,7 +59,9 @@ function makeBackup(storage){
   }
  }catch(_){return {ok:false,error:'STORAGE READ FAILED'}}
  if(!Object.keys(entries).length)return {ok:false,error:'NO SAVED SETTINGS OR MATCH DATA YET'};
- return {ok:true,text:JSON.stringify({format:FORMAT,version:VERSION,entries},null,2),count:Object.keys(entries).length};
+ const text=JSON.stringify({format:FORMAT,version:VERSION,entries},null,2);
+ if(text.length>MAX_INPUT)return {ok:false,error:'BACKUP TOO LARGE TO RESTORE SAFELY · SAVED DATA UNCHANGED'};
+ return {ok:true,text,count:Object.keys(entries).length};
 }
 function previewImport(storage,text){
  const parsed=checkedEntries(text);if(!parsed.ok)return parsed;

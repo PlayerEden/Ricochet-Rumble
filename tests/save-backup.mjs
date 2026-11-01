@@ -104,3 +104,27 @@ for(const bad of [
  {version:1,equipped:'fieldgrid.moss',emblem:42}
 ]) assert.equal(B.validJson('rr-hangar-paint-v1',JSON.stringify(bad)),false,'unknown emblem fields never accepted');
 console.log('PASS Phase 4C backup optional emblem, v1 paint-only compatibility and unknown-badge rejection');
+
+
+// Quality audit regression: exporter must never produce valid-looking text that
+// its own checkedEntries rejects because of the 60,000-character import cap.
+const oversizedEntries={
+ 'rr-options-v06':JSON.stringify({settings:{extra:'A'.repeat(23000)},comfort:{sound:true}}),
+ 'rr-custom-v1':JSON.stringify({version:1,rules:{modeId:'survival_ffa',extra:'B'.repeat(23000)}}),
+ 'rr-custom-presets-v1':JSON.stringify({version:1,entries:[],extra:'C'.repeat(23000)})
+};
+const oversizedStore=storage(oversizedEntries);
+for(const [key,raw] of Object.entries(oversizedEntries))assert.equal(B.validJson(key,raw),true,'individual large record is structurally valid');
+const rejected=B.makeBackup(oversizedStore);
+assert.equal(rejected.ok,false,'oversized export must fail closed rather than creating nonimportable text');
+assert.match(rejected.error,/TOO LARGE TO RESTORE SAFELY/);
+for(const [key,raw] of Object.entries(oversizedEntries))assert.equal(oversizedStore.getItem(key),raw,'oversized export never mutates existing progress');
+const modestEntries={
+ 'rr-options-v06':JSON.stringify({settings:{extra:'A'.repeat(14000)},comfort:{sound:true}}),
+ 'rr-custom-v1':JSON.stringify({version:1,rules:{modeId:'survival_ffa',extra:'B'.repeat(14000)}}),
+ 'rr-custom-presets-v1':JSON.stringify({version:1,entries:[],extra:'C'.repeat(14000)})
+};
+const modest=B.makeBackup(storage(modestEntries));
+assert.equal(modest.ok,true,'within-limit backup continues to work');
+assert.equal(B.checkedEntries(modest.text).ok,true,'generated backup must be accepted by the same importer');
+console.log('PASS fail-closed export cap: no un-restorable oversized backup, saved values intact and regular large records roundtrip.');
