@@ -91,7 +91,7 @@ jobs:
           expected="$(openssl x509 -in "$RUNNER_TEMP/testkey.x509.pem" -outform DER | sha256sum | awk '{print $1}')"
           [[ "$actual" =~ ^[0-9a-f]{64}$ && "$actual" == "$expected" ]] || { echo 'Unexpected preview signer; reject APK'; exit 1; }
           metadata="$("$aapt" dump badging "$apk" | head -n 1)"
-          code=$((100000 + GITHUB_RUN_NUMBER))
+          code=$((200000 + GITHUB_RUN_NUMBER))
           [[ "$metadata" == *"name='com.playereden.ricochetrumble.preview'"* ]] || exit 1
           [[ "$metadata" == *"versionCode='$code'"* ]] || exit 1
           [[ "$metadata" == *"versionName='0.9.59-ctftest.$GITHUB_RUN_NUMBER'"* ]] || exit 1
