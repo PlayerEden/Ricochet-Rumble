@@ -4,7 +4,7 @@ import {spawnSync} from 'node:child_process';
 const cli=['tools/play-release-preflight.mjs','--json'];
 const run=args=>spawnSync(process.execPath,args,{encoding:'utf8',timeout:25000});
 const review=run(cli);
-assert.equal(review.status,0,'audit command must be safe in development CI');
+assert.equal(review.status,0,'audit command must be safe in development CI: '+review.stderr);
 const line=review.stdout.split('\n').find(x=>x.startsWith('{"project":"Sector Rebound"'));
 assert.ok(line,'readable JSON report exists');
 const report=JSON.parse(line);
