@@ -6,7 +6,7 @@ import http from 'node:http';
 import {chromium} from 'playwright-core';
 assert.ok(process.env.CHROME_BIN,'real Chromium required');
 const root=path.resolve('web');
-const allowed=new Set(['index.html','game.js','style.css','dossier.js','scored-match.js','save-backup.js']);
+const allowed=new Set(['index.html','game.js','style.css','dossier.js','scored-match.js','save-backup.js','forward-bays.js']);
 const server=http.createServer((req,res)=>{
  const name=new URL(req.url,'http://127.0.0.1/').pathname.replace(/^\/+/,'')||'index.html';
  if(!allowed.has(name)){res.writeHead(404);res.end();return}

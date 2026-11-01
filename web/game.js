@@ -652,7 +652,32 @@ function ejectPilot(i){const t=state.tanks[i],v=state.vehicles?.[t.vehicleId];if
  if(i===0&&mode==='solo')clearFireAim(); // no vehicle AIM leaking into pilot FIRE drag
  t.ejectAnim=.62;if(i===0&&coachEnabled&&!coachPilotShown){coachPilotShown=true;coachTip('ON FOOT · FOLLOW THE VEHICLE ARROW · ENTER TO BOARD',4.4);}audioCue('eject',v.x,v.y);state.event=label(i)+' EJECTED · FIND COVER!';state.eventTimer=1.15;emitFx('eject',v.x,v.y,combatColor(i),-1,i);
 }
+// Forward Bay staging and scored respawns share a single team assignment.
+function teamForDeployment(i,config,humans){
+ return config.teamMode==='coop'?(i<humans?0:1):i%2;
+}
+function deploySquadsAtBays(tanks,config,humans,bays){
+ const {open,cols,cell}=mazeGrid;
+ for(let team=0;team<2;team++){
+  const members=tanks.map((_,i)=>i).filter(i=>teamForDeployment(i,config,humans)===team);
+  const bay=bays[team],queue=[bay.cellIndex],seen=new Set(queue);
+  for(let k=0;k<queue.length;k++)for(const next of open[queue[k]])
+   if(!seen.has(next)){seen.add(next);queue.push(next);}
+  const locate=n=>({x:((n%cols)+.5)*cell,y:(Math.floor(n/cols)+.5)*cell});
+  const candidates=[...bay.spawnSlots,...queue.filter(n=>n!==bay.parking.cellIndex).map(locate)];
+  const taken=[];
+  for(const i of members){
+   const p=candidates.find(q=>!blocked(q.x,q.y,21)&&taken.every(o=>Math.hypot(o.x-q.x,o.y-q.y)>=67));
+   if(!p)throw Error('Forward Bay squad lacks distinct spawn slots');
+   tanks[i].x=p.x;tanks[i].y=p.y;taken.push(p);
+  }
+ }
+}
 function initialState(arena=0,options=null,seed=null){const config={...readSettings(),pilotMode:true,recoveryPolicy:'corridor-v1',...(options||{})};let count=mode==='solo'?1:2;
+ // Normal Team Survival/TDM, LAN teams and CTF share actual Forward Bay territory.
+ // Preserve distributed FFA, independent solo survival, and pilot-only CQC.
+ if((config.teamMode==='teams'||config.teamMode==='coop')&&config.matchModeId!=='cqc')
+  config.forwardBayExercise=true;
  // Zero bots is a legitimate free-roam practice setting; don't silently add an enemy.
  const mazeSeed=seed||Math.floor(Math.random()*0x7fffffff)||1,id=setArena(0,mazeSeed,config.mapSize);
  const numBots=config.botCount,humans=count,total=humans+numBots,tanks=Array.from({length:total},(_,i)=>freshTank(i));
@@ -661,11 +686,7 @@ function initialState(arena=0,options=null,seed=null){const config={...readSetti
  const forwardBays=config.forwardBayExercise&&window.SectorForwardBays?
   window.SectorForwardBays.plan(mazeGrid,mazeSeed):null;
  if(config.forwardBayExercise&&!forwardBays)throw Error('Forward Bay layout unavailable');
- if(forwardBays)for(let i=0;i<tanks.length;i++){
-  const slots=forwardBays.bays[i%2].spawnSlots;
-  const pos=slots[Math.floor(i/2)%slots.length];
-  tanks[i].x=pos.x;tanks[i].y=pos.y;
- }
+ if(forwardBays)deploySquadsAtBays(tanks,config,humans,forwardBays.bays);
  const cqc=config.matchModeId==='cqc',scoredRules=SCORED_MATCH_RULES[config.matchModeId]||null;
  const vehicles=cqc?[]:config.pilotMode?spawnVehicles(tanks,humans,mazeSeed,config):[];
  if(forwardBays){
@@ -1210,7 +1231,17 @@ function respawn(victim){const enemies=state.tanks.filter((_,i)=>i!==victim&&sta
  else spots.push(...[[130,300],[830,300],[130,100],[830,500],[480,96],[480,500],[130,480],[830,120],[340,70],[620,525]]);
  const pool=spots.filter(([x,y])=>!blocked(x,y,isPilotMatch()?11:25)&&(isPilotMatch()||!parkedVehicleAt(x,y,25))&&state.tanks.every((other,j)=>j===victim||state.lives[j]===0||Math.hypot(x-other.x,y-other.y)>65));
  pool.sort((a,b)=>Math.min(...enemies.map(t=>Math.hypot(b[0]-t.x,b[1]-t.y)),10000)-Math.min(...enemies.map(t=>Math.hypot(a[0]-t.x,a[1]-t.y)),10000));
- const [x,y]=pool[0]||startingPosition(victim),t=state.tanks[victim];Object.assign(t,{x,y,a:0,vx:0,vy:0,shield:1.8,powerType:null,powerTimer:0,flash:0,recoil:0,trackLeft:0,trackRight:0,ejectAnim:0,onFoot:isPilotMatch()?true:false,vehicleId:null});
+ let selected=pool[0];
+ if(state.forwardBays&&mazeGrid){
+  const home=state.forwardBays.bays[teamOf(victim)];
+  const distance=window.SectorForwardBays.routeDistances(mazeGrid.open,home.cellIndex);
+  const at=p=>Math.floor(p[1]/mazeGrid.cell)*mazeGrid.cols+Math.floor(p[0]/mazeGrid.cell);
+  for(const depth of [2,4,7]){
+   const inTerritory=pool.filter(p=>distance[at(p)]>=0&&distance[at(p)]<=depth);
+   if(inTerritory.length){selected=inTerritory[0];break;}
+  }
+ }
+ const [x,y]=selected||startingPosition(victim),t=state.tanks[victim];Object.assign(t,{x,y,a:0,vx:0,vy:0,shield:1.8,powerType:null,powerTimer:0,flash:0,recoil:0,trackLeft:0,trackRight:0,ejectAnim:0,onFoot:isPilotMatch()?true:false,vehicleId:null});
  state.bullets=state.bullets.filter(b=>Math.hypot(b.x-x,b.y-y)>50);}
 function registerHit(attacker,victim){if(state.winner>=0||state.lives[victim]<=0||state.tanks[victim].shield>0||(attacker!==victim&&friendly(attacker,victim)))return false;
  quietContactSeconds=0;const target=state.tanks[victim];if(target.powerType==='guard'&&target.powerTimer>0){target.powerType=null;target.powerTimer=0;emitFx('guard',target.x,target.y,'#b59aff');audioCue('barrier',target.x,target.y);state.event='BARRIER BLOCKED THE HIT!';state.eventTimer=.8;return false;}
@@ -1264,11 +1295,22 @@ function tryCqcRespawn(victim){
  const candidates=[];
  if(mazeGrid)for(let r=0;r<mazeGrid.rows;r++)for(let c=0;c<mazeGrid.cols;c++)
   candidates.push({x:(c+.5)*mazeGrid.cell,y:(r+.5)*mazeGrid.cell});
- const site=window.SectorScored.chooseSafeScoreSpawn(candidates,{
-  blocked:(x,y)=>blocked(x,y,12),enemies:alive.filter(o=>!friendly(victim,o.i)).map(o=>o.t),
+ const options={blocked:(x,y)=>blocked(x,y,12),
+  enemies:alive.filter(o=>!friendly(victim,o.i)).map(o=>o.t),
   actors:alive.map(o=>o.t),bullets:state.bullets,
-  lineOfSight:hasLineOfSight,recentDeaths:state.recentDeaths||[]
- });
+  lineOfSight:hasLineOfSight,recentDeaths:state.recentDeaths||[]};
+ let site=null;
+ if(state.forwardBays&&mazeGrid){
+  const home=state.forwardBays.bays[teamOf(victim)];
+  const distance=window.SectorForwardBays.routeDistances(mazeGrid.open,home.cellIndex);
+  const at=p=>Math.floor(p.y/mazeGrid.cell)*mazeGrid.cols+Math.floor(p.x/mazeGrid.cell);
+  // Expand only outward through safe cells near YOUR team's base.
+  // An occupied or contested bay defers respawn rather than bypassing collision.
+  for(const depth of [2,4,7]){
+   site=window.SectorScored.chooseSafeScoreSpawn(candidates.filter(p=>distance[at(p)]>=0&&distance[at(p)]<=depth),options);
+   if(site)break;
+  }
+ }else site=window.SectorScored.chooseSafeScoreSpawn(candidates,options);
  if(!site)return false; // retry next simulation tick, NEVER unsafe spawn
  const t=state.tanks[victim];
  Object.assign(t,{x:site.x,y:site.y,a:0,vx:0,vy:0,shield:1.65,respawnWait:0,powerType:null,powerTimer:0,flash:0,recoil:0,trackLeft:0,trackRight:0,onFoot:true,vehicleId:null});
