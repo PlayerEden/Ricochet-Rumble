@@ -1,0 +1,29 @@
+name: Sector Rebound - experimental Daily Sector contract QA
+on:
+  push:
+    branches: [experiment/daily-sector-offline-v1]
+    paths:
+      - 'web/daily-sector.js'
+      - 'android/app/src/main/assets/daily-sector.js'
+      - 'tests/daily-sector.mjs'
+      - '.github/workflows/daily-sector-prototype.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Guard Android and browser service parity
+        run: cmp web/daily-sector.js android/app/src/main/assets/daily-sector.js
+      - name: Execute standalone deterministic Daily Sector contract
+        run: node tests/daily-sector.mjs
+      - name: Protect existing gameplay regression
+        run: node tests/smoke.mjs
