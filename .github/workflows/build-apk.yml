@@ -82,6 +82,7 @@ jobs:
           node tests/mixed-mode-soak-browser-qa.mjs
           node tests/lan-fault-injection-browser-qa.mjs
           node tests/render-budget-browser-qa.mjs
+          node tests/frame-pipeline-profile-browser-qa.mjs
           node tests/backup-stale-export-browser-qa.mjs
           node tests/preview-to-play-transfer-browser-qa.mjs
           node tests/pilot-art-review.mjs
@@ -103,6 +104,7 @@ jobs:
             qa-results/play-store-candidate/
             qa-results/mixed-mode-soak.json
             qa-results/render-budget-observations.json
+            qa-results/frame-pipeline-profile.json
           if-no-files-found: warn
           retention-days: 14
       - name: Build debug Android APK and unsigned release AAB
