@@ -12,7 +12,7 @@ const hooked=source.replace(ending,
  +"for(const v of state.vehicles)if(v.occupant===0)v.occupant=-1;},"
  +"stepOnce(){const old=paused;paused=false;step(1/60);paused=old;refreshHUD();},"
  +"timeout(){for(let i=0;i<36;i++)applyCtf(window.SectorFlags.tick(state.ctf,ctfActors(),10));finishCtf();refreshHUD();}};\n})();");
-const allowed=new Set(['index.html','style.css','game.js','ctf-rules.js','forward-bays.js','daily-sector.js','scored-match.js','save-backup.js','dossier.js']);
+const allowed=new Set(['index.html','style.css','game.js','ctf-rules.js','ctf-ai.js','forward-bays.js','daily-sector.js','scored-match.js','save-backup.js','dossier.js']);
 const server=http.createServer((req,res)=>{
  const name=new URL(req.url,'http://127.0.0.1').pathname.slice(1)||'index.html';
  if(!allowed.has(name)){res.writeHead(404);res.end();return}
