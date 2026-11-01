@@ -1,3 +1,29 @@
+# Forward Bay foundation — TARGETED + OVERALL AUTOMATED AUDIT ACCEPTED (2026-11-01)
+
+**Tested production-relevant gameplay source:** [e9f0949](https://github.com/PlayerEden/Ricochet-Rumble/commit/e9f09498b7cef85a70ff9256a0f7499ab9bb8431) on isolated `experiment/forward-bays-foundation-v1`. The only subsequent change to the game source was NONE; [375ccd3](https://github.com/PlayerEden/Ricochet-Rumble/commit/375ccd31ce049eba7447546e316cbe26af55a15f) extended test screenshot capture. Both [first run 41284401911](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41284401911) and [screenshot/overall run 41284724938](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41284724938) **PASSED**.
+
+## Targeted generated-map and depot audit
+
+- **300 real seeded procedural mazes** (small/standard/large rotated); deterministic side-separated Forward Bay plan, graph connectivity, distinct base locations, at least two open corridor entrances, separate spawn and parked slots. PASS.
+- **30 real engine initialState integrations** using the actual standard 2-team scored mode, 4 actors, existing vehicle collision / placement rules. Each side started near its own base, parked an existing identical tank, and preserved `MAX_VEHICLES`. No blocked actor or garage placement. PASS.
+- Real Chromium touch-size 740×360: collapsed experiment disclosure, expanded Back immediately visible, launch into genuine scored TDM, actual timed match completion, result labelled exercise with **no Dossier / cosmetic farming**, fresh-mazed rematch and unaffected normal Quick Play. PASS.
+- **Three genuine active FOB gameplay screenshots** (740×360, 915×412, 1280×720) captured in [QA screenshot artifact 13075130522](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41284724938/artifacts/13075130522). Automated bounds asserted; images are QA artifacts, **not yet owner-reviewed visual acceptance**.
+
+## Existing gameplay overall regression
+
+- Existing Daily Sector fixed-UTC seed and manual backup, Custom bot personalities and 300-seed AI QA, Quick Play real match and results, first-time solo entry, stale backup protection, standard responsive/visual QA, simulation smoke and mirror byte parity across game/HTML/CSS/forward-bays module. **PASS, no reported runtime errors.**
+
+## Remaining acceptance and explicit non-goals
+
+- **No physical Android install or two-phone LAN test** yet. No FOB Android APK built for this slice. Stable `main`, integration draft PR #85, and test Preview 100061 unchanged.
+- Graph-selection fairness is **heuristic, not proven competitively symmetric**. Two exits may later share common corridors; there are **no special invincible spawn areas**. Existing global safety-oriented scored respawn remains in control, including outside Forward Bays.
+- **Not yet implemented:** Capture the Flag, flag handling, objective bots, field supplies/vehicle replenishment, fortified solid buildings/cover, FOB capture, objective HUD, replicated LAN/online objective state.
+- Next milestone candidate **CTF contract**: decide whether only on-foot pilots carry flags, add deterministic flag origin/return/drop/capture state with objective-aware AI, headless 300 seeded arenas, actual match scoring/result/HUD and multiplayer protocol acceptance separately. Do not mix new CTF rules into this approved base foundation retroactively.
+
+**Decision:** Automated Forward Bay foundation milestone accepted for experimental branch; **not promoted** to release/stable code and not yet human-playtest approved. Preserve rollback to audited bot-personality branch SHA `149c0ba45da2e4a26d27a1f516c05b5c95bcfbc3`. No main merge or store release without owner review.
+
+---
+
 # Sector Rebound — Forward Bay / FOB Foundation (2026-11-01)
 
 **STATUS: IMPLEMENTATION CANDIDATE, NOT OWNER-ACCEPTED OR MERGED.**
