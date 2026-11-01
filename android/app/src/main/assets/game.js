@@ -1136,7 +1136,7 @@ function botInput(i,dt){
  const hasLine=enemyDist<(mazeGrid?385:750)&&hasLineOfSight(bot.x,bot.y,target.x,target.y);
  // Base defense and teammate escort hold a sensible standoff distance.
  const ctfHold=!!ctfDecision&&!ctfYield&&
-  ((choice.kind==='defend'&&objectiveDistance<95)||
+  ((choice.kind==='defend'&&objectiveDistance<34)||
    (choice.kind==='escort'&&objectiveDistance<90));
  const chasePace=ctfHold||choice.kind==='hold'?0:
   choice.kind==='engage'&&hasLine&&enemyDist<115?pace*(role==='hunter'?.72:.34):pace;

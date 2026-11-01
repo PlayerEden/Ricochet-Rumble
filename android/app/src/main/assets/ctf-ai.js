@@ -25,12 +25,22 @@
   const carrier=(flag)=>Number.isInteger(flag.carrier)?actors[flag.carrier]:null;
   const point=(target)=>({x:target.x,y:target.y});
   const decision=(kind,target,requiresPilot=false)=>({role,kind,point:point(target),requiresPilot});
+ // Hold slightly off the flag's central approach route. Forward Bays have
+ // two verified open entrances; the second faces the reserved parking lane.
+ // Remaining inside the bay keeps defense meaningful without occupying the
+ // runner's return/capture corridor. Fallback preserves older bay fixtures.
+ const guardSite=(bay)=>{
+  const parking=bay?.entrances?.[1];
+  if(!parking||!Number.isFinite(parking.x)||!Number.isFinite(parking.y))return bay;
+  return {x:bay.x+(parking.x-bay.x)*.72,
+   y:bay.y+(parking.y-bay.y)*.72};
+ };
   const ownCarrier=carrier(own),enemyCarrier=carrier(enemy);
   // Everyone reacts to a stolen own flag; visible objective, not hidden AI vision.
   if(role==='defender'){
    if(ownCarrier&&validActor(ownCarrier)&&ownCarrier.team!==team)return decision('intercept',ownCarrier);
    if(own.droppedFor>0)return decision('return',own,true);
-   return decision('defend',home);
+   return decision('defend',guardSite(home));
   }
   if(role==='runner'){
    if(enemy.carrier===index)return decision('capture',home,true);

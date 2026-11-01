@@ -12,6 +12,14 @@ const flags=[{team:0,x:100,y:100,home:{x:100,y:100},carrier:null,droppedFor:0},
 const decide=i=>ai.choose({index:i,humanCount:1,actors,flags,bays});
 assert.deepEqual([1,2,3].map(i=>ai.roleFor(i,1,actors)),['runner','escort','defender']);
 assert.equal(ai.choose({index:0,humanCount:1,actors,flags,bays}),null);
+// With a real Forward Bay, defender holds off the primary flag-return lane.
+// This changes no flag/collision rules; no positional warping or boosted stats.
+bays[1].entrances=[{x:618,y:100},{x:750,y:232}];
+const guard=decide(3);
+assert.equal(guard.kind,'defend');
+assert.equal(guard.point.x,750);
+assert.ok(guard.point.y>180&&guard.point.y<205);
+bays[1].entrances=undefined;
 assert.deepEqual([decide(1).kind,decide(2).kind,decide(3).kind],['steal','escort','defend']);
 assert.deepEqual({...decide(1).point},{x:100,y:100});
 assert.equal(decide(1).requiresPilot,true);
