@@ -677,15 +677,18 @@ function initialState(arena=0,options=null,seed=null){const config={...readSetti
  // Normal Team Survival/TDM, LAN teams and CTF share actual Forward Bay territory.
  // Preserve distributed FFA, independent solo survival, and pilot-only CQC.
  const usesTeamBays=(config.teamMode==='teams'||config.teamMode==='coop')&&config.matchModeId!=='cqc';
- config.forwardBayExercise=usesTeamBays;
+ // Team deployment is normal gameplay; never mark TDM/Team Survival as a
+ // reward-exempt experimental Forward Bay exercise merely for having a base.
+ config.teamBasesEnabled=usesTeamBays;
+ if(!usesTeamBays)config.forwardBayExercise=false;
  // Zero bots is a legitimate free-roam practice setting; don't silently add an enemy.
  const mazeSeed=seed||Math.floor(Math.random()*0x7fffffff)||1,id=setArena(0,mazeSeed,config.mapSize);
  const numBots=config.botCount,humans=count,total=humans+numBots,tanks=Array.from({length:total},(_,i)=>freshTank(i));
  // In this opt-in team exercise each side starts at its own open, connected
  // Forward Bay; ordinary Survival / TDM / LAN use the original spawn points.
- const forwardBays=config.forwardBayExercise&&window.SectorForwardBays?
+ const forwardBays=config.teamBasesEnabled&&window.SectorForwardBays?
   window.SectorForwardBays.plan(mazeGrid,mazeSeed):null;
- if(config.forwardBayExercise&&!forwardBays)throw Error('Forward Bay layout unavailable');
+ if(config.teamBasesEnabled&&!forwardBays)throw Error('Forward Bay layout unavailable');
  if(forwardBays)deploySquadsAtBays(tanks,config,humans,forwardBays.bays);
  const cqc=config.matchModeId==='cqc',scoredRules=SCORED_MATCH_RULES[config.matchModeId]||null;
  const vehicles=cqc?[]:config.pilotMode?spawnVehicles(tanks,humans,mazeSeed,config):[];
