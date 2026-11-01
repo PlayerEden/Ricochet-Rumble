@@ -37,3 +37,15 @@ jobs:
           test -n "$CHROME_BIN"
           npm install --no-save --ignore-scripts playwright-core@1.56.1
           node tests/daily-sector-live-qa.mjs
+          node tests/quick-play-live-flow-qa.mjs
+          node tests/backup-stale-export-browser-qa.mjs
+          node tests/first-match-entry-browser-qa.mjs
+          node tests/visual-qa.mjs
+      - name: Preserve isolated responsive screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sector-rebound-daily-ui-screenshots
+          path: qa-screens/
+          if-no-files-found: ignore
+          retention-days: 7

@@ -48,7 +48,7 @@ try{
  const resultOne=await page.evaluate(()=>window.__dailyQA.state.finalResult);
  assert.equal(resultOne?.reason,'time_limit','real scored match ends at clock');
  assert.match(await page.locator('#aa-mode-label').textContent(),/DAILY SECTOR · .* UTC/);
- assert.match(await page.locator('#aa-note').textContent(),/BEST .* 1 ATTEMPTS · UTC/);
+ assert.match(await page.locator('#aa-note').textContent(),/BEST .* 1 ATTEMPT · UTC/);
  assert.match(await page.locator('#quick-rematch').textContent(),/RETRY TODAY/);
  const dailyKey='rr-daily-sector-v1',day=first.config.dailyDate;
  const firstSave=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),dailyKey);

@@ -1,3 +1,9 @@
+## 2026-11-01 — Daily full gameplay and UI regression expansion
+
+The experiment's dedicated CI now includes the existing *actual* Quick Play live combat flow, fresh first-match entry, backup-stale-export protection and three-landscape-size visual scenes in addition to its daily mode end-to-end. The new Daily Sector results note names the actual saved best outcome and uses a correct singular/plural attempt count. Remaining acceptance: full CI on exact source, Android test build (not yet created), physical owner input and phone save validation. This remains opt-in experimental and cannot affect stable main or PR #85.
+
+---
+
 ## 2026-11-01 — PLAYABLE DAILY SECTOR EXPERIMENT WIRED (PENDING BROWSER QA)
 
 Implemented on isolated experiment branch: an opt-in DAiLY SECTOR button below the unchanged four-mode grid. The JS engine lazily loads the already QA-passed offline daily module, launches fixed scored-FFA with the UTC date seed, and reuses that same seed on Retry. HUD and results call record exactly once per game; local best/attempts replace the footer. No daily entry in Quick Play shuffle, Dossier progress or earned cosmetics. Existing five-key manual backup is backwards compatible; new sixth optional daily key validated strictly. No main, integration PR #85, signer, Google Play, native LAN or normal game modes changed.
