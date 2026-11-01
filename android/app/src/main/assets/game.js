@@ -1099,6 +1099,29 @@ function botInput(i,dt){
   direction+=side*1.18;
   if(brain.stuckFor<1.04){brain.timer=0;brain.path=[];brain.goal=-1;}
  }
+ // CTF teammates can deadlock in a corridor when runner and defender
+ // travel head-on. Give each the right-hand lane using ordinary steering,
+ // actor collisions and wall tests: no phasing or movement-speed bonuses.
+ let ctfYield=false;
+ if(ctfDecision){
+  const forwardX=Math.cos(direction),forwardY=Math.sin(direction);
+  const teammate=state.tanks.find((other,j)=>{
+   if(j===i||j<state.humanCount||state.lives[j]<=0||!friendly(i,j))return false;
+   const dx=other.x-bot.x,dy=other.y-bot.y,distance=Math.hypot(dx,dy);
+   return distance<110&&dx*forwardX+dy*forwardY>0&&
+    Math.abs(dx*forwardY-dy*forwardX)<46;
+  });
+  if(teammate){
+   const rightX=forwardY,rightY=-forwardX,radius=bot.onFoot?10:21;
+   const rightClear=!blocked(bot.x+rightX*27,bot.y+rightY*27,radius);
+   const leftClear=!blocked(bot.x-rightX*27,bot.y-rightY*27,radius);
+   if(rightClear||leftClear){
+    const side=rightClear?1:-1;
+    direction=Math.atan2(forwardY*.2+rightY*side,forwardX*.2+rightX*side);
+    ctfYield=true;
+   }
+  }
+ }
  botBrains.set(i,brain);
  const delta=Math.atan2(Math.sin(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a),Math.cos(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a));
  const basePace=skill==='casual'?.61:skill==='spicy'?.98:.81;
@@ -1107,7 +1130,7 @@ function botInput(i,dt){
  const enemyDist=Math.hypot(bot.x-target.x,bot.y-target.y);
  const hasLine=enemyDist<(mazeGrid?385:750)&&hasLineOfSight(bot.x,bot.y,target.x,target.y);
  // Base defense and teammate escort hold a sensible standoff distance.
- const ctfHold=!!ctfDecision&&
+ const ctfHold=!!ctfDecision&&!ctfYield&&
   ((choice.kind==='defend'&&objectiveDistance<95)||
    (choice.kind==='escort'&&objectiveDistance<90));
  const chasePace=ctfHold||choice.kind==='hold'?0:
