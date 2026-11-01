@@ -676,8 +676,8 @@ function deploySquadsAtBays(tanks,config,humans,bays){
 function initialState(arena=0,options=null,seed=null){const config={...readSettings(),pilotMode:true,recoveryPolicy:'corridor-v1',...(options||{})};let count=mode==='solo'?1:2;
  // Normal Team Survival/TDM, LAN teams and CTF share actual Forward Bay territory.
  // Preserve distributed FFA, independent solo survival, and pilot-only CQC.
- if((config.teamMode==='teams'||config.teamMode==='coop')&&config.matchModeId!=='cqc')
-  config.forwardBayExercise=true;
+ const usesTeamBays=(config.teamMode==='teams'||config.teamMode==='coop')&&config.matchModeId!=='cqc';
+ config.forwardBayExercise=usesTeamBays;
  // Zero bots is a legitimate free-roam practice setting; don't silently add an enemy.
  const mazeSeed=seed||Math.floor(Math.random()*0x7fffffff)||1,id=setArena(0,mazeSeed,config.mapSize);
  const numBots=config.botCount,humans=count,total=humans+numBots,tanks=Array.from({length:total},(_,i)=>freshTank(i));
