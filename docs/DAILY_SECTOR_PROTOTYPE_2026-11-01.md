@@ -1,3 +1,11 @@
+## Daily Sector end-to-end browser milestone accepted for further experimentation — 2026-11-01
+
+Source `131b02939a51e4f33c2b812df8dd85e473688c0a` passed [exact-commit scoped CI 41282942359](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41282942359): deterministic UTC contract, full preexisting simulation smoke, old/new backup compatibility, actual Chromium Daily launch/finish/retry/reload and truthful pause/restart, regular Quick Play live match regression, fresh first match, and UI comparison screenshots. Android/web service, gameplay, HTML/CSS and backup files were byte-compared. No reported uncaught page errors or test failures.
+
+**Still pending:** actual phone controls, Android install-over save migration, release-signed Android package, owner approval, and broader offline usability tests. Daily stays experimental. Original Preview 100061, stable main and integrated PR #85 remain unchanged.
+
+---
+
 # Daily Sector — implementation audit and acceptance record (2026-11-01)
 
 **Current status:** full scoped browser QA success at source `0a97879058e682d23da4b3c9f2c16b898e2e1f74` — [run 41282417257](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41282417257). The exact-script full run included:
