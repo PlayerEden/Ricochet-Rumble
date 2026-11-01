@@ -1,3 +1,13 @@
+# 2026-11-01 — FIRST-MATCH QUICK PLAY ENTRY REFINEMENT (PENDING CI)
+
+**Goal:** initial Quick Play becomes a predictable introduction to vehicle ricochet combat, without a tutorial modal or balance changes. On a genuinely fresh Solo player profile, if `survival_ffa` is part of the chosen playlist, first Quick Play starts **Solo Survival**. Existing `rr-coach-v0917` and Dossier history prevent applying it to returning players. If the player selects only Team Survival, that choice is honored. The shuffle bag preserves the displaced option so later rounds still rotate normally. The real game already has a brief nonblocking MOVE/FIRE hint, genuine After Action and one-tap Next Match; no extra UI needed.
+
+**Files:** `web/game.js` + identical Android embedded mirror, new real Chromium `tests/first-match-entry-browser-qa.mjs` wired into full QA. No new storage keys, altered save schema, Android ID, game physics, tank steering, pilot controls, LAN packet, icon or menu layout. Tests require fresh Quick Play FFA, existing hint, return-to-home and subsequent shuffled Team, and Team-only override at 740×360. This is a **targeted first-session behavior change** on draft PR #85, not a public APK release.
+
+**Acceptance:** fast regressions, full real-browser/Android QA exact SHA, automatic test-only preview signer/asset parity and physical owner feedback (pending). Prior same-certificate Preview 100059 is rollback-safe for its own preview app identity, but no owner-installed package version is assumed. Stable `main` remains untouched; PR #85 DRAFT.
+
+---
+
 # 2026-11-01 — REAL EMULATOR WEBVIEW SAVE RESTART + INSTALL-OVER PASS
 
 **New source-backed Android acceptance upgrade:** [test report](ANDROID_WEBVIEW_PERSISTENCE_2026-11-01.md), [exact-head emulator run 41274922759 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41274922759) at `017f414f`. Test-only Android debugging in two runner worktrees; **no game/Java source changes committed**. Actual Android API 35 WebView `localStorage` preserved **five synthetic real game records** after normal Home/background + force-stop + same-APK restart, then `adb install -r` Preview 100041 → 100050; UI Dossier correctly showed 6 matches / 11 KOs before and after upgrade. Pinned public AOSP test cert, app-private canary and install-over checks also pass. Two earlier failing exploratory runs are documented with test conditions, not hidden. **Only emulator scope accepted; owner phone and real LAN still pending.** PR #85 remains DRAFT; stable main untouched; public Play NO-GO.

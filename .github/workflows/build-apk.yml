@@ -77,6 +77,7 @@ jobs:
           test -n "$CHROME_BIN"
           npm install --no-save --ignore-scripts playwright-core@1.56.1
           node tests/visual-qa.mjs
+          node tests/first-match-entry-browser-qa.mjs
           node tests/quick-play-live-flow-qa.mjs
           node tests/game-lifecycle-interruption-qa.mjs
           node tests/mixed-mode-soak-browser-qa.mjs

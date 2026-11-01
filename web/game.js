@@ -271,6 +271,26 @@ function nextPlaylistMode(random=Math.random){
  lastSoloModeId=id;
  return id;
 }
+// Make the very first default Quick Play approachable: one human versus bots,
+// before alternating in allied Team Survival. Keep the saved playlist and the
+// original shuffle bag intact (the displaced mode remains queued), and never
+// override a player's deliberate Team-only or scored-only selection.
+function firstQuickPlayMode(){
+ let freshSolo=false;
+ try{freshSolo=window.localStorage?.getItem('rr-coach-v0917')===null}
+ catch(_){} // If storage is blocked, retain normal randomized selection.
+ const preferBasic=freshSolo&&lastSoloModeId===null&&
+  selectedPlaylistIds.includes('survival_ffa')&&!(currentDossier()?.matches>0);
+ const rolled=nextPlaylistMode();
+ if(!preferBasic||rolled==='survival_ffa')return rolled;
+ const position=playlistBag.indexOf('survival_ffa');
+ if(position<0)return rolled;
+ // We already consumed the first shuffled slot. Swap the basic mode into it,
+ // placing the originally rolled option back into its old, unplayed slot.
+ playlistBag[position]=rolled;
+ lastSoloModeId='survival_ffa';
+ return 'survival_ffa';
+}
 function soloOptionsFor(id,base=selectedRules){
  const preset=MATCH_MODE_PRESETS[id];if(!preset)return null;
  // Team Survival needs an ally AND a foe. Preserve intentionally empty
@@ -768,7 +788,7 @@ function newMatch(which){
  savePrefs();
  const scoredLaunch=!!SCORED_MATCH_RULES[which],customLaunch=which==='custom',cqcLaunch=which==='cqc';
  if(which==='solo'&&!selectedPlaylistIds.length){notice('SELECT A QUICK PLAY MODE IN MATCH SETTINGS',2300);return false;}
- const playlistId=which==='solo'?nextPlaylistMode():null;
+ const playlistId=which==='solo'?firstQuickPlayMode():null;
  if(bridgeReady())window.AndroidBridge.stopNetwork();mode=scoredLaunch||customLaunch?'solo':which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;neutralizeGuestInput();
  const arena=selectArena(),options=customLaunch?customOptionsFor():scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:which==='scored_tdm'?'teams':'ffa',matchModeId:which,pilotMode:true}:playlistId?quickPlayOptionsFor(playlistId):{...selectedRules,pilotMode:true};
  state=initialState(arena,options,freshSectorSeed(state?.mazeSeed));roundUnlocks=[];camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config)):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch){exitMenu();audioCue('deploy');if(mode==='solo')firstMatchHint();}}
