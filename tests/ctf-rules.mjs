@@ -18,7 +18,7 @@ assert.equal(disembark.flags[1].carrier,null);
 assert.ok(disembark.flags[1].droppedFor>0);
 assert.equal(api.drop(disembark,0,700,100),disembark,'second drop is idempotent');
 assert.equal(api.tick(disembark,p([a1(700,100)]),1).flags[1].droppedFor,0,'friendly touch returns flag');
-let timeout=api.tick(disembark,p([]),20);
+let timeout=api.tick(api.tick(disembark,p([]),10),p([]),10);
 assert.equal(timeout.flags[1].droppedFor,0,'drop returns after timer');
 assert.equal(timeout.flags[1].x,700);
 const forbidden=api.tick(api.create(bays),p([a0(700,100,true,false)]),1);
@@ -36,12 +36,13 @@ for(let n=1;n<=3;n++){
 }
 assert.equal(a.finished,true);assert.equal(a.winner,0);assert.equal(a.reason,'capture_target');
 assert.equal(api.tick(a,p([a0(700,100)]),1),a,'finished rounds are frozen');
-let tied=api.tick(api.create(bays),[],360);
+let tied=api.create(bays);
+for(let n=0;n<36;n++)tied=api.tick(tied,[],10);
 assert.equal(tied.finished,true);assert.equal(tied.winner,null);assert.equal(tied.reason,'time_limit');
 let lead=api.create(bays);
 lead=api.tick(lead,p([a0(700,100)]),1);
 lead=api.tick(lead,p([a0(100,100)]),1);
-lead=api.tick(lead,[],360);
+for(let n=0;n<36;n++)lead=api.tick(lead,[],10);
 assert.equal(lead.winner,0);assert.deepEqual([...lead.scores],[1,0]);
 let death=api.tick(api.create(bays),p([a0(700,100)]),1);
 death=api.tick(death,p([a0(690,95,true,true,false)]),1);
