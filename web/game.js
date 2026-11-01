@@ -156,7 +156,7 @@ function doBackupAction(action){
 
 
 const CUSTOM_PRESETS_KEY='rr-custom-presets-v1';
-let comfort={sound:true,music:true,shake:false,autoFire:false,leftHanded:false},fixedAccumulator=0;
+let comfort={sound:true,music:true,shake:false,autoFire:false,leftHanded:false,pilotAssist:false},fixedAccumulator=0;
 let selectedRules={botCount:2,bulletCap:4,startLives:2,teamMode:'ffa',botSkill:'normal',mapSize:'small'};
 // v0.9.22 / Slice A: stable solo presets backed by CURRENT survival combat, not proposed score modes.
 const MATCH_MODE_PRESETS=Object.freeze({
@@ -424,6 +424,9 @@ const fireAim={pointerId:null,source:null,startX:0,startY:0,x:0,y:0,active:false
 const SCORED_FFA_VEHICLE_PACE=Object.freeze({human:166,bot:136,turnRate:2.6});
 const SOLO_PILOT_TURN_RATE=6.5; // owner-approved CQC speed; experimental parity for offline Solo Survival
 const CQC_PILOT_HIT_RADIUS=17.5; // modestly forgiving for ALL CQC pilots, not homing
+// Separate local-player visibility and input assist from bot accuracy/damage.
+// 5-degree acquisition, at most 2 degrees per correction, short on-screen range.
+const PILOT_ASSIST_RANGE=200,PILOT_ASSIST_CONE=5*Math.PI/180,PILOT_ASSIST_MAX=2*Math.PI/180;
 let mode='idle',connected=false,paused=true,lastTime=performance.now(),sendTimer=0,snapshotTimer=0,toastTimer=0,botTimer=0,hudTimer=0;
 const botBrains=new Map();
 let state=null,dailyAttemptedKey='',dailyLastRecord=null;let guestInput={moveX:0,moveY:0,fire:false};
@@ -1022,6 +1025,9 @@ function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=c
  const independentAim=precisionFoot;
  const aimed=independentAim&&Number.isFinite(inp.aimX)&&Number.isFinite(inp.aimY)&&Math.hypot(inp.aimX,inp.aimY)>.6;
  if(mag||aimed){const target=aimed?Math.atan2(inp.aimY,inp.aimX):Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a)),maxTurn=dt*(precisionFoot?SOLO_PILOT_TURN_RATE:tacticalVehicle?SCORED_FFA_VEHICLE_PACE.turnRate:12);t.a+=clamp(diff,-maxTurn,maxTurn)}
+ // Local Solo pilot only: tiny optional heading nudge when already shooting
+ // almost directly at an on-screen enemy pilot. No auto-fire or homing shell.
+ if(inp.fire&&precisionFoot&&mode==='solo')t.a+=softPilotAimOffset(t,i);
  // Solo human tanks used to slide toward the thumb before the hull faced that
  // direction. During a deliberate, slow turn that appears like an off-center
  // orbit. Throttle forward drive until the tracks align with the requested path.
@@ -1062,6 +1068,36 @@ function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=c
  }
 }
 function hasLineOfSight(x,y,tx,ty){const length=Math.hypot(tx-x,ty-y),steps=Math.ceil(length/15);for(let n=1;n<steps;n++){const p=n/steps;if(nearWall(x+(tx-x)*p,y+(ty-y)*p,4))return false}return true;}
+// Camera boundaries reflect the actual rendered Solo viewport, not an AI
+// distance limit. Only local Solo uses this; LAN state stays host-authoritative.
+function pilotInLocalView(x,y,inset=24){
+ const zoom=Number.isFinite(camera.zoom)&&camera.zoom>0?camera.zoom:cameraZoom(state?.tanks?.[0]);
+ if(!Number.isFinite(zoom)||zoom<=0||!Number.isFinite(camera.x)||!Number.isFinite(camera.y))return false;
+ const sx=(x-camera.x)*zoom,sy=(y-camera.y)*zoom;
+ return sx>=inset&&sx<=W-inset&&sy>=inset&&sy<=H-inset;
+}
+function pilotBotFireFair(bot,target){
+ // An offscreen bot cannot fire upon an on-foot human it can see only
+ // through omniscient world coordinates. Other bot engagements are unchanged.
+ return mode!=='solo'||!state?.tanks?.[0]?.onFoot||target!==state.tanks[0]||
+  (pilotInLocalView(bot.x,bot.y)&&pilotInLocalView(target.x,target.y));
+}
+function softPilotAimOffset(t,owner){
+ if(owner!==0||mode!=='solo'||!t.onFoot||!comfort.pilotAssist||!pilotInLocalView(t.x,t.y))return 0;
+ let candidate=null;
+ for(let i=0;i<state.tanks.length;i++){
+  const target=state.tanks[i];
+  if(i===owner||state.lives[i]<=0||friendly(owner,i)||!target.onFoot||target.shield>0)continue;
+  const dist=Math.hypot(target.x-t.x,target.y-t.y);
+  if(dist<35||dist>PILOT_ASSIST_RANGE||!pilotInLocalView(target.x,target.y)||
+   !hasLineOfSight(t.x,t.y,target.x,target.y))continue;
+  const actual=Math.atan2(target.y-t.y,target.x-t.x);
+  const delta=Math.atan2(Math.sin(actual-t.a),Math.cos(actual-t.a));
+  if(Math.abs(delta)>PILOT_ASSIST_CONE)continue;
+  if(candidate===null||Math.abs(delta)<Math.abs(candidate))candidate=delta;
+ }
+ return candidate===null?0:clamp(candidate*.55,-PILOT_ASSIST_MAX,PILOT_ASSIST_MAX);
+}
 // Experimental Custom Match bot identities: predictable per bot and only
 // when explicitly selected. Original Quick Play/Daily/LAN AI stays classic.
 function botRoleFor(i,st=state){
@@ -1233,7 +1269,8 @@ function botInput(i,dt){
  const pace=role==='hunter'?.94:role==='sentinel'?.70:role==='scavenger'?.74:basePace;
  const aim=skill==='casual'?.27:skill==='spicy'?.39:.33;
  const enemyDist=Math.hypot(bot.x-target.x,bot.y-target.y);
- const hasLine=enemyDist<(mazeGrid?385:750)&&hasLineOfSight(bot.x,bot.y,target.x,target.y);
+ const hasLine=enemyDist<(mazeGrid?385:750)&&hasLineOfSight(bot.x,bot.y,target.x,target.y)&&
+   pilotBotFireFair(bot,target);
  // Base defense and teammate escort hold a sensible standoff distance.
  const ctfHold=!!ctfDecision&&!ctfYield&&
   ((choice.kind==='defend'&&objectiveDistance<34)||
