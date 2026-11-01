@@ -69,7 +69,7 @@ add('public_privacy_policy_url','policy',
  'Google Play requires a public privacy policy URL; HTTPS URL file '+(privacyUrl?'present':'missing')+'. Availability/content MUST be manually checked even if present.',
  'Host an app-specific privacy policy accessible worldwide; record its HTTPS URL in store-listing/privacy-policy-url.txt.');
 add('privacy_in_app','policy',
- /PRIVACY POLICY/i.test(html),'App's HTML '+(/PRIVACY POLICY/i.test(html)?'includes':'does not include')+' a privacy policy entry or text.',
+ /PRIVACY POLICY/i.test(html),"App's HTML "+(/PRIVACY POLICY/i.test(html)?'includes':'does not include')+' a privacy policy entry or text.',
  'Provide accessible in-game privacy text or an in-app link to the policy before publishing.');
 const manual=[
  ['data_safety_review','Play Console data-safety disclosures verified against actual APK, SDKs and LAN data flows'],
