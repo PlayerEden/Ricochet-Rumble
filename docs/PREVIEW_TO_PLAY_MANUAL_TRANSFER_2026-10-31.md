@@ -1,0 +1,11 @@
+# Preview-to-production manual save transfer QA — 2026-10-31
+
+The production app ID is `com.playereden.ricochetrumble`, separate from preview `com.playereden.ricochetrumble.preview`. Even with the same device and test signer, Android will not automatically move WebView localStorage between these packages. Users must export a text backup from the preview and import it through the in-game Dossier backup screen into the future production installation if they want to carry progress forward.
+
+**New actual-browser UI test:** `tests/preview-to-play-transfer-browser-qa.mjs` runs real bundled game HTML/JS with two independent Chromium browser contexts (different storage partitions, like distinct app packages). It seeds all five valid records in the existing app, uses the actual Dossier → Backup → Generate Text action, asserts the backup text includes settings, Custom Match draft/presets, Dossier and Hangar. The second profile starts without donor Dossier or paint, then uses the real Import → Preview → Confirm Restore buttons. The test verifies source data unchanged, destination raw data matches all five values and their visible Dossier, Hangar, settings and Custom preset screens reflect the restored values; the rollback/recovery snapshot remains present.
+
+**Boundaries:** This is real UI and app-code behavior, not actual cross-package Android/WebView sharing. It does not prove clipboard behavior on different physical phones, copy/paste usability, or future signed production build compatibility. `tests/save-backup.mjs` separately rejects malformed, oversized or unsupported saves and covers mid-write recovery. A physical owner test must still confirm exporting from `.preview` and importing to release package after private signing.
+
+The Android emulator [same-package install-over PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41267204053) already proved `adb install -r` on Preview 100041 → Preview 100050, same AOSP TEST signer, activity launch and app-private canary persistence. Neither test by itself certifies physical Dossier/Hangar persistence or real two-phone Wi-Fi.
+
+**Safe development:** adds only test source, full Chromium QA invocation, and documentation on draft PR #85; no gameplay, saved schema, controls, privacy or signing changes. Stable main stays untouched.

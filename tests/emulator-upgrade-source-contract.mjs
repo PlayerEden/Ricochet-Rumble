@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const sh=fs.readFileSync('tools/android-emulator-upgrade-rehearsal.sh','utf8');
+const y=fs.readFileSync('.github/workflows/android-emulator-upgrade-rehearsal.yml','utf8');
+assert.ok(y.includes('55c91024eb2d76f120bc9203dfc228fe7e333757'));
+assert.ok(y.includes('reactivecircus/android-emulator-runner@v2'));
+assert.ok(y.includes('api-level: 35'));
+assert.ok(y.includes('100041')&&y.includes('100050'));
+assert.ok(y.includes('public AOSP TEST signer')||y.includes('public AOSP test signer'));
+assert.ok(sh.includes('adb install -r "$NEXT_APK"'));
+assert.ok(sh.includes('run-as $PKG'));
+assert.ok(sh.includes('android-update-canary.txt'));
+assert.ok(sh.includes('base_cert')&&sh.includes('next_cert'));
+assert.ok(!/\badb uninstall\b/.test(sh));
+assert.ok(!/\bpm clear\b/.test(sh));
+assert.ok(sh.includes('does NOT prove'));
+console.log('ANDROID_EMULATOR_INSTALL_OVER_CONTRACT_PASS: real package update + app-private data, physical saves not presumed');

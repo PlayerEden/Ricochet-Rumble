@@ -36,7 +36,51 @@ jobs:
           cmp web/game.js android/app/src/main/assets/game.js
           cmp web/index.html android/app/src/main/assets/index.html
           cmp web/style.css android/app/src/main/assets/style.css
+          cmp web/scored-match.js android/app/src/main/assets/scored-match.js
+          node --check web/save-backup.js
+          cmp web/save-backup.js android/app/src/main/assets/save-backup.js
+          node tests/save-backup.mjs
+          node tests/android-upgrade-readiness.mjs
+          node tests/test-signer-contract.mjs
+          node --check web/dossier.js
+          cmp web/dossier.js android/app/src/main/assets/dossier.js
+          node tests/scored-browser-parity.mjs
+      - name: Validate owner-approved adaptive launcher icon assets
+        run: node tests/launcher-icon-a.mjs
+      - name: Audit Google Play release gates (NO-GO is expected before owner evidence)
+        run: |
+          set -euo pipefail
+          node tests/play-release-preflight.mjs
+          node tools/play-release-preflight.mjs --output=qa-results/play-release-preflight.json
+      - name: Keep inspectable Play release gate report
+        uses: actions/upload-artifact@v4
+        with:
+          name: sector-rebound-play-preflight-${{ github.run_id }}
+          path: qa-results/play-release-preflight.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Check accurate Play listing and draft privacy page (not publishable yet)
+        run: node tests/store-listing-policy.mjs
+      - name: Audit Android emulator update QA contract
+        run: node tests/emulator-upgrade-source-contract.mjs
+      - name: Verify LAN framing code does not allocate unbounded peer input
+        run: node tests/lan-framing-contract.mjs
       - name: Game regression and seeded combat tests
         run: node tests/smoke.mjs
+      - name: Audit approved art, UI audio, runtime/source and explicit release blockers
+        run: |
+          set -euo pipefail
+          node tests/release-readiness-v0947.mjs
+          node tests/first-plan-contract-audit.mjs
+      - name: Verify durable local dossier and safe concept-only cosmetics
+        run: node tests/dossier.mjs
+      - name: Verify pure scored KO, team timeouts and spawn ranking contract
+        run: node tests/scored-match-kernel.mjs
+      - name: Check APK package attestation guard logic (no SDK or phone needed)
+        run: node tests/android-ci-package-attestation.mjs
+      - name: Validate manual private-preview release guard source contracts
+        run: node tests/owner-preview-release-guard.mjs
+      - name: Audit OP-style automatic disposable Android preview guard
+        run: node tests/automatic-preview-contract.mjs
       - name: Validate FIELDGRID cosmetic manifest
         run: node tools/validate-cosmetic-catalog.mjs

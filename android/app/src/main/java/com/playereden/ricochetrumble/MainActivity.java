@@ -260,12 +260,11 @@ public final class MainActivity extends Activity {
             signalType("connected");
             BufferedReader reader = new BufferedReader(new InputStreamReader(sock.getInputStream(), StandardCharsets.UTF_8));
             String line;
-            while (myGen == generation.get() && (line = reader.readLine()) != null) {
-                if (line.length() > MAX_PACKET) break;
+            while (myGen == generation.get() && (line = BoundedLanReader.readPacket(reader, MAX_PACKET)) != null) {
                 try {
                     JSONObject packet = new JSONObject(line);
                     String kind = packet.optString("type", "");
-                    if ((host && ("input".equals(kind) || "interact".equals(kind))) || (!host && "state".equals(kind))) signal(packet);
+                    if ((host && ("input".equals(kind) || "interact".equals(kind) || "ready".equals(kind))) || (!host && ("state".equals(kind) || "lobby".equals(kind) || "start".equals(kind)))) signal(packet);
                 } catch (Exception ignored) { }
             }
         } catch (IOException ignored) { }
@@ -282,8 +281,9 @@ public final class MainActivity extends Activity {
         if (packet == null || packet.length() > MAX_PACKET) return;
         try {
             JSONObject json = new JSONObject(packet);
-            if (isHosting && !"state".equals(json.optString("type"))) return;
-            if (!isHosting && !("input".equals(json.optString("type")) || "interact".equals(json.optString("type")))) return;
+            String kind = json.optString("type");
+            if (isHosting && !("state".equals(kind) || "lobby".equals(kind) || "start".equals(kind))) return;
+            if (!isHosting && !("input".equals(kind) || "interact".equals(kind) || "ready".equals(kind))) return;
             synchronized (outputLock) {
                 if (out != null) { out.write(json.toString()); out.write('\n'); out.flush(); }
             }
