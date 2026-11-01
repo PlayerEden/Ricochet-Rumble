@@ -74,6 +74,11 @@ jobs:
           node tests/quick-play-live-flow-qa.mjs
           node tests/pilot-art-review.mjs
           node tests/ui-layout-geometry-v0948.mjs
+      - name: Build honest Play Store artwork candidates from actual game QA captures
+        run: |
+          set -euo pipefail
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          node tools/build-play-store-candidate.mjs
       - name: Upload visual and simulation evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -83,6 +88,7 @@ jobs:
             qa-screens/
             qa-layout/
             qa-results/combat-simulation.json
+            qa-results/play-store-candidate/
           if-no-files-found: warn
           retention-days: 14
       - name: Build debug Android APK and unsigned release AAB
