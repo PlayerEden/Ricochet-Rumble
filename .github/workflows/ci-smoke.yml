@@ -61,6 +61,8 @@ jobs:
           retention-days: 30
       - name: Check accurate Play listing and draft privacy page (not publishable yet)
         run: node tests/store-listing-policy.mjs
+      - name: Audit Android emulator update QA contract
+        run: node tests/emulator-upgrade-source-contract.mjs
       - name: Game regression and seeded combat tests
         run: node tests/smoke.mjs
       - name: Audit approved art, UI audio, runtime/source and explicit release blockers
