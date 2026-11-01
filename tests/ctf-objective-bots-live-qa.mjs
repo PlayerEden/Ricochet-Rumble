@@ -13,6 +13,7 @@ const hook=
  +"input(i){return botInput(i,1/60)},"
  +"relocate(i,x,y,foot=true){const t=state.tanks[i],v=state.vehicles[t.vehicleId];if(foot&&v)v.occupant=-1;t.x=x;t.y=y;t.vx=0;t.vy=0;t.onFoot=foot;if(foot)t.vehicleId=null;t.shield=15;},"
  +"frame(){const old=paused;paused=false;step(1/60);paused=old;refreshHUD();},"
+ +"restart(){resetAll();},"
  +"stress(count=45){const old=state,wasMode=mode,wasPause=paused,failures=[];let frames=0;"
  +"try{mode='solo';paused=false;for(let seed=1;seed<=count;seed++){const mapSize=['small','standard','large'][seed%3];"
  +"state=initialState(0,{mapSize,matchModeId:'scored_tdm',pilotMode:true,teamMode:'teams',botCount:3,botSkill:'normal',forwardBayExercise:true,ctfExercise:true,quickPlayMatch:false},seed);"
@@ -53,6 +54,13 @@ try{
  const stress=await page.evaluate(()=>window.__ctfBotsQA.stress(45));
  assert.equal(stress.count,45);assert.equal(stress.frames,360);
  assert.deepEqual(stress.failures,[],'45 real maps/360 steps valid bot movement');
+ // Start a genuinely fresh match before the scoring trial. The disembark
+ // exercise placed the QA human on CORAL's flag, so that test may have
+ // correctly caused Cyan to carry it. We cannot score until it is home.
+ await page.evaluate(()=>window.__ctfBotsQA.restart());
+ assert.deepEqual(await page.evaluate(()=>window.__ctfBotsQA.state.ctf.flags.map(f=>f.carrier)),[null,null],
+  'fresh CTF round must start with both flags home');
+
  // Remove the QA pilot from Coral's flag: otherwise Cyan steals it while
  // Coral attempts a capture, correctly blocking the score as designed.
  await page.evaluate(()=>{
