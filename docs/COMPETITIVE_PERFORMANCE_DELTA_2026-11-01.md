@@ -1,5 +1,14 @@
 # Sector Rebound — competitive design and performance delta, November 1, 2026
 
+## 2026-11-01 — exact-source profiler and full Android/Chromium QA confirmed
+
+**New verification after this report was initially drafted:** [full QA run 41272300538](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41272300538) and [fast QA 41272300451](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41272300451) both completed **SUCCESS**, exact source commit `b30bed1f7a9aa908769712895be7c37ee07adb0c`. The real-browser job log includes `FRAME_PIPELINE_REAL_BROWSER_PASS`: **9 combinations × 90 frames = 810 stage samples** with physics, Canvas, HUD and JSON packet histograms; assertions confirmed finite timings, bounded canvas area and serialized snapshots below 32,768 characters in the measured cases. The per-case numeric timings live in the attached `qa-results/frame-pipeline-profile.json` inside [QA artifact 13069114173](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41272300538/artifacts/13069114173); **do not invent stage-specific P95 values without reading it**.
+
+The same exact-source log confirms **30-match / 7,200 physics-step soak PASS**, LAN malformed snapshot handling PASS, 102 UI geometry scenes with 0 fails/0 warnings, Android debug packaging/source attestation PASS, and unsigned AAB build. The generated generic CI debug APK is **not** the owner's signed, install-over-safe preview, and none of these results certify real-phone FPS, thermals, battery life, touch responsiveness or two-phone Wi-Fi. **Recommendation:** no renderer rewrite or live gameplay retune from headless timings; prioritize device measurement and only prototype offscreen-floor caching as an isolated A/B if hardware shows a material problem. No production code or published build changed by this documentation.
+
+---
+
+
 **Decision:** owner asked what worthwhile work remains without a phone, including comparisons with other games and performance. This updates the [October 30 open-book audit](OPEN_BOOK_COMPETITIVE_TECHNICAL_AUDIT_2026-10-30.md), **not** a replacement and not a claim of consumer playtest or comparative benchmark. Exact source reviewed: [draft PR #85](https://github.com/PlayerEden/Ricochet-Rumble/pull/85), starting 32a0f4fdb7e04015c1d22e3d9bd72c14c3e48f8a. Owner-approved vehicle movement/pilot appearance/menu and icon are locked absent new device feedback.
 
 ## Comparable games — translate principles, don't clone features

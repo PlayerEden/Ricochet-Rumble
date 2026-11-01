@@ -1,46 +1,50 @@
 # Sector Rebound
 
-**Android-first ricochet combat in a new procedurally generated sector each match.** Pilot a tank or mech, survive on foot, and adapt to unfamiliar maze geometry. Set in the fictional FIELDGRID program.
+**Android-first, top-down ricochet combat.** Control tanks, mechs and the on-foot operator in procedural FIELDGRID arenas. Deliberate bank shots, vehicle ejection/recovery, short rounds and clear local multiplayer are the game's focus.
 
-**Current status: v0.9.21 development preview.** The APK is a working *debug test build*, not a Google Play production release. Solo combat has automated QA; the local two-phone Wi-Fi mode remains experimental and still needs physical-device acceptance. On accepted `main`, continuous Quick Play and new score-based modes are **not yet included**. On [draft PR #24](https://github.com/PlayerEden/Ricochet-Rumble/pull/24), saved survival playlists, NEXT MATCH, honest solo results and the approved camera are **implemented and Android/Chromium-tested**, but **not yet merged or fully phone-accepted**. Scored CQC/FFA/TDM remain future work.
+## Source of truth — two different development states
 
-## Start here
+| Lane | What it contains | Status |
+| --- | --- | --- |
+| `main` | Accepted **v0.9.21** runtime, history, checkpoints and baseline documents | Stable fallback; **not** the latest gameplay |
+| [Draft integration PR #85](https://github.com/PlayerEden/Ricochet-Rumble/pull/85) | Later modes, refined controls/UI, LAN host lobby, local progression, backup and reliability work | **Unmerged**, awaiting explicit acceptance |
+| [Exact-source full QA #41272300538](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41272300538) | 2026-11-01 full Chromium and Android CI at `b30bed1` | **Passed**; automated evidence, *not* owner phone acceptance |
 
-- [Current status / new-chat handoff](docs/PROJECT_STATUS.md) -- first read for every development session
-- [Development plan completeness audit](docs/ROADMAP_COMPLETENESS_AUDIT_2026-10-27.md) -- what's decided, missing acceptance gates and owner launch-scope decisions
-- [Development protocol](docs/DEVELOPMENT_PROTOCOL.md) -- branching, PR, QA and release safeguards
-- [Integration QA evidence](docs/QA_MAINLINE_v0921_2026-10-27.md), [GitHub audit](docs/GITHUB_AUDIT_2026-10-27.md) and [branch register](docs/BRANCH_REGISTER.md)
-- [Google Play v1.0 roadmap](docs/ROADMAP_TO_GOOGLE_PLAY_V1.md)
-- [Plan coverage / missing dependency audit](docs/DEVELOPMENT_PLAN_COVERAGE_AUDIT_2026-10-27.md) -- what is accounted for, what still needs explicit acceptance
-- [FIELDGRID design archive](docs/design/README.md) -- designs are not necessarily implemented
+**Important:** This README is updated on the *integration branch*. The default branch remains the older verified baseline until its owner authorizes integration. A later docs-only commit does not imply the exact gameplay runtime has been retested.
 
-## Play the latest preview
+## Start here when resuming development
 
-[Sector Rebound v0.9.21 APK release](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.21-polish-preview) -- Android debug-signed test APK. Keep existing save data backed up when switching between APKs from different signing certificates; uninstalling a previous app deletes its local data.
+1. [Latest handoff / PROJECT_STATUS](docs/PROJECT_STATUS.md) — detailed chronology and blockers; recent entries at the top
+2. [Integration rehearsal and rollback](docs/INTEGRATION_REHEARSAL_v0956.md) and [draft PR #85](https://github.com/PlayerEden/Ricochet-Rumble/pull/85) — current candidate, differences from `main`
+3. [Owner Android acceptance checklist](docs/OWNER_ANDROID_ACCEPTANCE_2026-10-31.md) — real saved progress, controls, two-device Wi-Fi
+4. [Competitive + measured performance audit](docs/COMPETITIVE_PERFORMANCE_DELTA_2026-11-01.md) — grounded optimization priorities and full QA verification
+5. [Repository rename playbook](docs/REPOSITORY_RENAME_PLAN_2026-11-01.md) — proposed `PlayerEden/Sector-Rebound` rename; **not performed**
+6. [Development protocol](docs/DEVELOPMENT_PROTOCOL.md), [Google Play roadmap](docs/ROADMAP_TO_GOOGLE_PLAY_V1.md) and [identity](docs/SECTOR_REBOUND_IDENTITY.md)
 
-What exists: offline solo against bots; tanks/mechs and on-foot pilot; seeded small/standard/large procedural mazes; local same-Wi-Fi host/guest infrastructure; after-action display; separate music/SFX settings; game-first lobby and real-unit previews.
+## What exists in the experimental integration candidate
 
-What is *not* shipped: internet matchmaking, ranked PvP, playlist rotation and Next Match flow, CQC/TDM score modes, profile/unlocks, payments, Google Play Games or a signed production bundle.
+- Offline Survival and Quick Play, scored vehicle FFA, pilot-only Close Quarters, Team Deathmatch and Custom Match with saved presets.
+- Tank/mech/pilot play; centered vehicle turning, MOVE/FIRE touch controls, ricochets, procedural maps and vehicle recovery.
+- Local same-Wi-Fi host/guest lobby: host rules, Ready/Start, initial two humans/zero bots, after-action results/rematches, host-authoritative state. **Two physical phones have not passed acceptance.** This is **not** internet matchmaking.
+- Offline Dossier statistics, Hangar paints/insignia and earned cosmetic rewards; manual backup/export/import. No real-money or performance-enhancing purchases.
+- Android package, browser/WebView source parity, responsive UI tests, CI build artifacts and Play candidate materials. Current Google Play release readiness remains **NO-GO**.
 
-## Code and checks
+### Automated evidence and limits
 
-- Web game source: `web/`; embedded Android assets: `android/app/src/main/assets/`
-- Android Java wrapper: `android/`, app ID `com.playereden.ricochetrumble` (legacy technical identifier; decide before Play publishing)
-- Local quick checks (Node.js 22 or a compatible modern Node): `node tests/smoke.mjs` and `node tools/validate-cosmetic-catalog.mjs`
-- Automated PR checks: `.github/workflows/ci-smoke.yml` (cheap game/test/artifact-parity validation)
-- Manual Android QA: `.github/workflows/build-apk.yml` (builds debug APK, unsigned AAB, visual QA)
-- Manual *new-tag-only* preview publishing: `.github/workflows/publish-preview-apk.yml`
+[Full QA run 41272300538](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41272300538) completed successfully at `b30bed1`: 30-start mixed-mode soak (7,200 physics ticks), nine-case Canvas render checks, 810-frame JS stage profiling, LAN malformed packet tests and 102 UI geometry scenes without reported failures or warnings. These are **headless browser and CI/emulator checks**, not measured real-phone FPS, thermal/battery testing or two-device LAN proof.
 
-The repo intentionally keeps browser and Android game files duplicated for offline packaging; CI rejects mismatches. Visual comparisons use actual game scenes, not marketing mockups. The Android debug APK is **not release-signed**. Review [signing notes](docs/SIGNING.md) before handling any signing materials.
+**Never install the generic CI `debug-apk` artifact over an owner-held preview expecting it to update safely.** CI test APKs can use a different signing certificate and/or package ID. An installation update requires matching Android package identity, signing certificate, and increasing versionCode. Do not uninstall an app holding valuable Dossier data. Back up first. The separately pinned, signed `.preview` test lineage and its compatibility evidence must be checked before any install-over. See [Android acceptance](docs/OWNER_ANDROID_ACCEPTANCE_2026-10-31.md), [signing](docs/SIGNING.md) and [preview transfer report](docs/PREVIEW_TO_PLAY_MANUAL_TRANSFER_2026-10-31.md).
 
-## Branching and history
+## Code, tests, provenance
 
-The original repository name `Ricochet-Rumble` stays intact for GitHub links. `main` now contains the v0.9.21 runtime and durable development documents. The earlier v0.6.3-era main is preserved in [`archive/legacy-main-v063-before-sector-rebound`](https://github.com/PlayerEden/Ricochet-Rumble/tree/archive/legacy-main-v063-before-sector-rebound). **[Integration PR #23](https://github.com/PlayerEden/Ricochet-Rumble/pull/23) merged on October 27, 2026 after successful Android, visual, smoke and catalog QA.** `main` is now the active v0.9.21 development baseline, not an older game. Physical phone acceptance and Play release signing remain pending.
+- Web source: `web/`; Android embedded browser assets: `android/app/src/main/assets/`. CI requires byte-for-byte source parity.
+- Android app ID: `com.playereden.ricochetrumble`; isolated preview suffix: `.preview`. These are **technical identifiers**, not the game's display title.
+- Main fast regression: `.github/workflows/ci-smoke.yml`; full Chromium/Android: `.github/workflows/build-apk.yml`; preview workflows are separate and subject to signer safeguards.
+- Published historical known-good baseline: [v0.9.21 development preview](https://github.com/PlayerEden/Ricochet-Rumble/releases/tag/v0.9.21-polish-preview). Later QA artifacts are not automatically compatible or released builds.
+- Historical branch/decision evidence: [branch register](docs/BRANCH_REGISTER.md), [archive](docs/history/README_DEVELOPMENT_THROUGH_V0921.md).
 
-Original chronological development README: [preserved archive](docs/history/README_DEVELOPMENT_THROUGH_V0921.md). Historical branches, draft PRs, and preview APKs remain available for rollback.
+## Remaining release gates
 
-## Release gate
+Before a public Google Play beta: actual Android install-over and saved Dossier/Hangar retention, real touch/performance/interrupt testing, **two physical phones for advertised local LAN** (or explicitly defer LAN from launch), authentic approved store assets, hosted completed privacy policy and developer contact, accurate Play Console declarations, private release signing and the owner's explicit merge/release approval.
 
-Before considering Google Play v1.0: real phone audio/controls testing; two-phone same-Wi-Fi testing; correct match mode/end rules; controlled release key custody; final package identity; Play privacy/data safety; store assets; and a signed, tested app bundle. Planned cosmetics are strictly visual, never combat upgrades.
-
-**Policy for this repository:** GitHub is the durable source of truth for game source, planning, decisions, QA evidence and chat handoffs. A future conversation should begin with [PROJECT_STATUS](docs/PROJECT_STATUS.md).
+**Safety rule:** leave `main`, approved game feel/icon, known-good preview checkpoints and Android identifiers untouched until review. No automatic merge, public release or surprise APK reinstall.
