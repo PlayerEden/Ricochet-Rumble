@@ -1,3 +1,11 @@
+# 2026-10-31 — OWNER REVIEW: VERSION A ICON ACCEPTED ON PHONE
+
+Following verified signed Preview **100040**, owner reported **"its good"** and asked what development comes next. Treat this as approval of the **installed launcher icon appearance**, and lock Version A's grounded charcoal tank/amber ricochet direction. This is NOT evidence of independently verified Dossier/Hangar save continuity, every adaptive mask/themed icon, or two-phone LAN. Preserve current approved icon and previous rollback checkpoint; avoid new speculative redesign.
+
+**Recommended next phase:** focused first-session gameplay usability acceptance: a player can tap Quick Play, understand the mode and MOVE/FIRE/eject controls, finish a match, interpret results and launch the next match without confusion. Inventory existing help/HUD/feedback first; add only measurable, minimal refinements if real issues. Then perform staged regression and Android owner review. Later release gates: install-over save verification, physical two-device same-WiFi LAN, exact-source integration review, and private Play signing. Stable `main` stays untouched pending explicit merge approval.
+
+---
+
 # 2026-10-31 — VERSION A LAUNCHER ICON VERIFIED / SIGNED PREVIEW 100040
 
 **Owner-selected grounded top-down tank + amber ricochet icon integrated**, with charcoal Android adaptive and round icon, monochrome themed icon, preserved original drawable rollback, and automated asset-hash/manifest guard. Source [gameplay/icon commit 0f74a36](https://github.com/PlayerEden/Ricochet-Rumble/commit/0f74a3676b6a3f34e665c8b82befef4a263e746b). No combat/controls/LAN/data schema/signing modifications.
