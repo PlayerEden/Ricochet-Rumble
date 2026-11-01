@@ -34,7 +34,9 @@ jobs:
       - name: Install Android build tools
         run: |
           set -euo pipefail
-          sdkmanager --install "platforms;android-36" "build-tools;35.0.0"
+          sdkmanager_bin="$(find "$ANDROID_HOME/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
+          test -n "$sdkmanager_bin"
+          "$sdkmanager_bin" --install "platforms;android-36" "build-tools;35.0.0"
       - name: Recover fixed public AOSP TEST signer (not release credentials)
         env:
           SR_TEST_STORE_FILE: ${{ runner.temp }}/sr-emulator/public-testkey.p12
