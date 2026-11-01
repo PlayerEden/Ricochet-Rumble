@@ -700,6 +700,12 @@ function initialState(arena=0,options=null,seed=null){const config={...readSetti
    v.x=spot[0];v.y=spot[1];v.type='tank';v.armor=VEHICLE_TYPES.tank.armor;
    bay.parking={x:v.x,y:v.y};bay.vehicleId=v.id;
   }
+  // Both team garages stock tanks; preserve the original guaranteed
+  // neutral spare mech rather than silently converting the only mech away.
+  const neutral=vehicles.filter(v=>v.occupant===-1&&!forwardBays.bays.some(b=>b.vehicleId===v.id));
+  if(neutral.length&&!neutral.some(v=>v.type==='mech')){
+   const v=neutral.at(-1);v.type='mech';v.armor=VEHICLE_TYPES.mech.armor;
+  }
  }
  if(cqc)for(const t of tanks){t.onFoot=true;t.vehicleId=null;t.shield=1.5;t.respawnWait=0;}
  const matchId=++matchSerial;
