@@ -45,7 +45,7 @@ lead=api.tick(lead,p([a0(100,100)]),1);
 for(let n=0;n<36;n++)lead=api.tick(lead,[],10);
 assert.equal(lead.winner,0);assert.deepEqual([...lead.scores],[1,0]);
 let death=api.tick(api.create(bays),p([a0(700,100)]),1);
-death=api.tick(death,p([a0(690,95,true,true,false)]),1);
+death=api.tick(death,p([near(0,690,95,true,true,false)]),1);
 assert.equal(death.flags[1].carrier,null,'death drops held flag');
 let returnFlag=api.tick(api.create(bays),p([a0(700,100)]),1);
 returnFlag=api.drop(returnFlag,0,685,100);
