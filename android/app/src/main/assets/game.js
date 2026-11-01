@@ -1717,6 +1717,25 @@ let lanLobby=null;
 const LAN_SIDES={ffa:'FREE FOR ALL',coop:'CO-OP VS BOTS',teams:'OPPOSING TEAMS'};
 const LAN_SIZE={small:'SMALL',standard:'STANDARD',large:'LARGE'};
 const LAN_SKILL={casual:'RELAXED',normal:'STANDARD',spicy:'CHALLENGE'};
+// Ignore malformed network snapshots before they can replace the live game state.
+ // Android transport bounds packet size, but a peer can still send a short,
+ // structurally incomplete JSON object. Never promote it into render/HUD state.
+function validRemoteSnapshot(s){
+ const n=Array.isArray(s?.tanks)?s.tanks.length:0;
+ if(n<2||n>6||!s.config||typeof s.config!=='object'||Array.isArray(s.config))return false;
+ if(!Number.isInteger(s.mazeSeed)||s.mazeSeed<1||!Number.isFinite(s.elapsedSeconds)||s.elapsedSeconds<0)return false;
+ if(!Array.isArray(s.lives)||s.lives.length!==n||!s.lives.every(v=>Number.isInteger(v)&&v>=0))return false;
+ if(!Array.isArray(s.kos)||s.kos.length!==n||!s.kos.every(v=>Number.isInteger(v)&&v>=0))return false;
+ if(!Array.isArray(s.bullets)||s.bullets.length>128||!Array.isArray(s.vehicles)||s.vehicles.length>10
+    ||!Array.isArray(s.pickups)||s.pickups.length>8||!Array.isArray(s.fxEvents)||s.fxEvents.length>12)return false;
+ const point=t=>t&&typeof t==='object'&&Number.isFinite(t.x)&&Number.isFinite(t.y);
+ if(!s.tanks.every(t=>point(t)&&Number.isFinite(t.a)))return false;
+ if(!s.bullets.every(b=>point(b)&&Number.isFinite(b.vx)&&Number.isFinite(b.vy)))return false;
+ if(!s.vehicles.every(v=>point(v)&&Number.isFinite(v.armor)))return false;
+ if(!s.pickups.every(point))return false;
+ if(!s.fxEvents.every(e=>point(e)&&Number.isFinite(e.id)))return false;
+ return true;
+}
 function sanitizeLanOptions(raw){
  const v=raw&&typeof raw==='object'?raw:{},base=selectedRules;
  return {mapSize:LAN_SIZE[v.mapSize]?v.mapSize:base.mapSize,
@@ -1933,7 +1952,7 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
  case 'start':{
  if(mode!=='guest'||!connected||!lanLobby||!lanLobby.active||!lanLobby.myReady||msg.revision!==lanLobby.revision)break;
  lanLobby.active=false;paused=false;lastRemoteFxId=0;exitMenu();notice('NEW FIELD · FIGHT!',1400);break;}
- case 'state':if(mode==='guest'&&(!lanLobby||!lanLobby.active)&&msg.state&&Array.isArray(msg.state.tanks)&&msg.state.tanks.length>=2&&msg.state.tanks.length<=6&&Array.isArray(msg.state.lives)&&msg.state.lives.length===msg.state.tanks.length&&Array.isArray(msg.state.kos)&&msg.state.kos.length===msg.state.tanks.length){const upcoming=msg.state;const currentEvents=Array.isArray(upcoming.fxEvents)?upcoming.fxEvents:[];for(const event of currentEvents){if(event.id>lastRemoteFxId&&event.id<lastRemoteFxId+1000&&Number.isFinite(event.x)&&Number.isFinite(event.y)){spawnParticles(event.kind,event.x,event.y,event.color);if(event.kind==='hit'&&event.target===1){damagePulse=.58;screenKick=comfort.shake?3.2:0}if(event.kind==='shot'){
+ case 'state':if(mode==='guest'&&(!lanLobby||!lanLobby.active)&&validRemoteSnapshot(msg.state)){const upcoming=msg.state;const currentEvents=Array.isArray(upcoming.fxEvents)?upcoming.fxEvents:[];for(const event of currentEvents){if(event.id>lastRemoteFxId&&event.id<lastRemoteFxId+1000&&Number.isFinite(event.x)&&Number.isFinite(event.y)){spawnParticles(event.kind,event.x,event.y,event.color);if(event.kind==='hit'&&event.target===1){damagePulse=.58;screenKick=comfort.shake?3.2:0}if(event.kind==='shot'){
  const shooter=upcoming.tanks?.[event.owner],vehicle=upcoming.vehicles?.[shooter?.vehicleId];
  audioCue(shooter?.onFoot?'pilot-shot':vehicle?.type==='mech'?'mech-shot':'tank-shot',event.x,event.y);
  }
