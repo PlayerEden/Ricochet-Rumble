@@ -14,6 +14,7 @@
 
 ## Start here when resuming development
 
+0. [Future game roadmap and ideas — discussion draft](docs/FUTURE_ROADMAP_2026-11-01_PROPOSAL.md) — proposed phases and tradeoffs; not implemented or approved
 1. [Latest handoff / PROJECT_STATUS](docs/PROJECT_STATUS.md) — detailed chronology and blockers; recent entries at the top
 2. [Integration rehearsal and rollback](docs/INTEGRATION_REHEARSAL_v0956.md) and [draft PR #85](https://github.com/PlayerEden/Ricochet-Rumble/pull/85) — current candidate, differences from `main`
 3. [Android WebView save continuity (2026-11-01)](docs/ANDROID_WEBVIEW_PERSISTENCE_2026-11-01.md) — actual emulator restart + install-over persistence PASS; owner phone pending

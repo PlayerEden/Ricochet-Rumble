@@ -1,3 +1,9 @@
+# 2026-11-01 — FUTURE ROADMAP DISCUSSION DRAFT (NO IMPLEMENTATION)
+
+Created [future roadmap and idea bank](FUTURE_ROADMAP_2026-11-01_PROPOSAL.md) on the active draft integration branch; **concept planning only**. Prioritize physical owner acceptance and honest Solo-first/verified-LAN v1 scope, then one small replayability prototype (recommended Ricochet Trials), harden local 1v1, and evaluate paid-hosted authoritative internet 1v1 only after reliable local play. Earned-only cosmetics for v1; direct-sale cosmetics / accounts / ranked / clans much later. See doc for phase gates, complexity and owner decisions. No UI, physics, network, signing or store files altered. Stable `main` untouched. The 2026-11-01 latest technical QA above remains canonical for what **actually exists**.
+
+---
+
 # 2026-11-01 — FIRST-MATCH + AFTER-ACTION POLISH VERIFIED (ALL EXACT-SOURCE CI GREEN)
 
 **Accepted automated scope:** source commit [3ecc7d3](https://github.com/PlayerEden/Ricochet-Rumble/commit/3ecc7d3cd0080c1ab94e8fbb890ae628e9ef8c60) on draft PR #85. [Fast regression 41279142670](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41279142670) **SUCCESS**, [full Chromium/Android QA 41279142730](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41279142730) **SUCCESS**, [real Android emulator update 41279142701](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41279142701) **SUCCESS**. [Automatic test-only preview 100061](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41279138843/artifacts/13072283427) built with `.preview` package and pinned PUBLIC AOSP test signer (not production signing). **Do not assume compatibility with the owner's installed version until versionCode, package and certificate are checked.** Previous 100060 remains a rollback/baseline test artifact for an eligible matching preview identity.
