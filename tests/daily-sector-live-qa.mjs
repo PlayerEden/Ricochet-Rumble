@@ -1,0 +1,92 @@
+// Real Chromium acceptance using actual game.js, with test-only state inspection.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import http from 'node:http';
+import path from 'node:path';
+import {chromium} from 'playwright-core';
+const chrome=process.env.CHROME_BIN;
+assert.ok(chrome,'CHROME_BIN required: no silent skip');
+const root=path.resolve('web');
+const script=fs.readFileSync(path.join(root,'game.js'),'utf8'),ending=/\}\)\(\);\s*$/;
+assert.ok(ending.test(script));
+const instrumented=script.replace(ending,
+ '\nwindow.__dailyQA={get state(){return state},get playlist(){return selectedPlaylistIds.slice()},freeze(){paused=true},expire(seconds=241){paused=false;step(seconds);paused=true},resetAll};\n})();');
+const allowed=new Set(['index.html','style.css','game.js','daily-sector.js','dossier.js','scored-match.js','save-backup.js']);
+const server=http.createServer((req,res)=>{
+ const name=new URL(req.url,'http://localhost').pathname.slice(1)||'index.html';
+ if(!allowed.has(name)){res.writeHead(404);res.end();return}
+ const type=name.endsWith('.js')?'text/javascript':name.endsWith('.css')?'text/css':'text/html';
+ res.writeHead(200,{'Content-Type':type+'; charset=utf-8','Cache-Control':'no-store'});
+ res.end(name==='game.js'?instrumented:fs.readFileSync(path.join(root,name)));
+});
+await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+const browser=await chromium.launch({headless:true,executablePath:chrome,args:['--no-sandbox','--disable-dev-shm-usage']});
+const errors=[];
+try{
+ const page=await browser.newPage({viewport:{width:740,height:360},deviceScaleFactor:1});
+ page.on('pageerror',error=>errors.push(error.message));
+ const base='http://127.0.0.1:'+server.address().port+'/';
+ await page.goto(base,{waitUntil:'load'});
+ assert.equal(await page.locator('.home-screen').isVisible(),true);
+ await page.locator('button[data-action="modes"]').click();
+ assert.equal(await page.locator('.mode-grid button').count(),4,'original modes retained');
+ assert.equal(await page.locator('button[data-action="daily"]').isVisible(),true,'Daily Sector opt-in');
+ const bounds=await page.locator('button[data-action="modes-back"]').boundingBox();
+ assert.ok(bounds&&bounds.y>=-1&&bounds.y+bounds.height<=362,
+  'Back immediately reachable at 740x360 without scroll');
+ const beforePlaylist=await page.evaluate(()=>window.__dailyQA.playlist);
+ const beforeDossier=await page.evaluate(()=>localStorage.getItem('rr-dossier-v1'));
+ await page.locator('button[data-action="daily"]').click();
+ await page.waitForFunction(()=>window.__dailyQA.state?.config?.dailySector===true&&document.querySelector('#menu').classList.contains('hidden'));
+ const first=await page.evaluate(()=>({id:window.__dailyQA.state.matchId,seed:window.__dailyQA.state.mazeSeed,config:window.__dailyQA.state.config}));
+ assert.equal(first.config.dailySeed,first.seed);
+ assert.equal(first.config.dailyDate,new Date().toISOString().slice(0,10));
+ assert.deepEqual([first.config.matchModeId,first.config.mapSize,first.config.botCount,first.config.teamMode],['scored_ffa','standard',3,'ffa']);
+ assert.equal((await page.locator('#mode-label').textContent()).trim(),'DAILY SECTOR');
+ await page.evaluate(()=>window.__dailyQA.expire(241));
+ assert.equal(await page.locator('#after-action').isVisible(),true);
+ const resultOne=await page.evaluate(()=>window.__dailyQA.state.finalResult);
+ assert.equal(resultOne?.reason,'time_limit','real scored match ends at clock');
+ assert.match(await page.locator('#aa-mode-label').textContent(),/DAILY SECTOR · .* UTC/);
+ assert.match(await page.locator('#aa-note').textContent(),/BEST .* 1 ATTEMPTS · UTC/);
+ assert.match(await page.locator('#quick-rematch').textContent(),/RETRY TODAY/);
+ const dailyKey='rr-daily-sector-v1',day=first.config.dailyDate;
+ const firstSave=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),dailyKey);
+ assert.equal(firstSave.days[day].attempts,1);
+ assert.equal(await page.evaluate(()=>localStorage.getItem('rr-dossier-v1')),beforeDossier,'Daily does not farm Dossier');
+ assert.equal(await page.locator('#aa-rewards').isVisible(),false,'Daily does not earn ordinary unlocks');
+ await page.locator('#quick-rematch').click();
+ await page.evaluate(()=>window.__dailyQA.freeze());
+ const replay=await page.evaluate(()=>({seed:window.__dailyQA.state.mazeSeed,id:window.__dailyQA.state.matchId}));
+ assert.equal(replay.seed,first.seed,'retry keeps same maze');
+ assert.notEqual(replay.id,first.id,'retry is new match');
+ assert.equal(await page.locator('#after-action').isVisible(),false);
+ assert.equal((await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),dailyKey)).days[day].attempts,1,'no attempt before result');
+ await page.evaluate(()=>window.__dailyQA.expire(241));
+ assert.equal((await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),dailyKey)).days[day].attempts,2);
+ assert.match(await page.locator('#aa-note').textContent(),/2 ATTEMPTS/);
+ assert.deepEqual(await page.evaluate(()=>window.__dailyQA.playlist),beforePlaylist,'normal Quick Play playlist unchanged');
+ await page.locator('#results-menu').click();
+ assert.equal(await page.locator('.home-screen').isVisible(),true);
+ await page.locator('button[data-action="dossier"]').click();
+ await page.locator('button[data-action="backup"]').click();
+ await page.locator('button[data-action="backup-export"]').click();
+ const exportText=await page.locator('#backup-output').inputValue();
+ const data=JSON.parse(exportText);
+ assert.ok(Object.keys(data.entries).includes(dailyKey),'daily results included in manual backup');
+ assert.equal(JSON.parse(data.entries[dailyKey]).days[day].attempts,2);
+ await page.locator('#backup-import').fill(exportText);
+ await page.locator('button[data-action="backup-preview"]').click();
+ assert.equal(await page.locator('#backup-restore').isDisabled(),false,'daily record backup round-trip preview');
+ await page.reload({waitUntil:'load'});
+ await page.locator('button[data-action="modes"]').click();
+ await page.locator('button[data-action="daily"]').click();
+ await page.waitForFunction(()=>window.__dailyQA.state?.config?.dailySector===true&&document.querySelector('#menu').classList.contains('hidden'));
+ assert.equal(await page.evaluate(()=>window.__dailyQA.state.mazeSeed),first.seed,'same day same maze after reload');
+ assert.equal((await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),dailyKey)).days[day].attempts,2);
+ assert.deepEqual(errors,[],'no uncaught game errors');
+ console.log('DAILY_SECTOR_REAL_BROWSER_PASS: mobile back, UTC seed, real match result, saved best, same-seed retry, Dossier isolation, backup preview and reload');
+}finally{
+ await browser.close();
+ await new Promise(resolve=>server.close(resolve));
+}

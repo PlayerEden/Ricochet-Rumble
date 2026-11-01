@@ -3,7 +3,7 @@
  * A recovery snapshot is committed before touching existing app storage. */
 (function(root){'use strict';
 const FORMAT='sector-rebound-local-v1',VERSION=1,MAX_INPUT=60000,RECOVERY_KEY='rr-restore-recovery-v1';
-const KEYS=Object.freeze(['rr-options-v06','rr-custom-v1','rr-custom-presets-v1','rr-dossier-v1','rr-hangar-paint-v1']);
+const KEYS=Object.freeze(['rr-options-v06','rr-custom-v1','rr-custom-presets-v1','rr-dossier-v1','rr-hangar-paint-v1','rr-daily-sector-v1']);
 const MISSING=Symbol('missing');
 const modeIds=['survival_ffa','survival_teams','cqc','scored_ffa','scored_tdm'];
 function object(x){return !!x&&typeof x==='object'&&!Array.isArray(x)}
@@ -25,6 +25,24 @@ function validJson(key,raw){
  }
  if(key==='rr-custom-v1')return obj.version===1&&object(obj.rules)&&modeIds.includes(obj.rules.modeId);
  if(key==='rr-custom-presets-v1')return obj.version===1&&Array.isArray(obj.entries)&&obj.entries.length<=5&&obj.entries.every(e=>object(e)&&typeof e.name==='string'&&e.name.length<=24&&object(e.rules)&&modeIds.includes(e.rules.modeId));
+ if(key==='rr-daily-sector-v1'){
+  if(obj.version!==1||!object(obj.days)||!Array.isArray(obj.recentKeys)||obj.recentKeys.length>32||
+   Object.keys(obj).some(k=>!['version','days','recentKeys'].includes(k)))return false;
+  const dates=Object.keys(obj.days);
+  if(dates.length>31||obj.recentKeys.some(k=>typeof k!=='string'||k.length<1||k.length>96)||
+   new Set(obj.recentKeys).size!==obj.recentKeys.length)return false;
+  for(const day of dates){
+   if(!/^(20[2-9]\d|2100)-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/.test(day))return false;
+   const [y,m,d]=day.split('-').map(Number);
+   if(new Date(Date.UTC(y,m-1,d)).toISOString().slice(0,10)!==day)return false;
+   const entry=obj.days[day],best=entry?.best;
+   if(!object(entry)||!Number.isSafeInteger(entry.attempts)||entry.attempts<1||entry.attempts>100000||
+    Object.keys(entry).some(k=>!['attempts','best'].includes(k))||!object(best)||
+    !['victory','draw','defeat'].includes(best.outcome)||Object.keys(best).some(k=>!['outcome','kos','deaths','seconds'].includes(k))||
+    !['kos','deaths','seconds'].every(k=>Number.isSafeInteger(best[k])&&best[k]>=0&&best[k]<=(k==='seconds'?86400:10000)))return false;
+  }
+  return true;
+ }
  if(key==='rr-dossier-v1'){
   if(obj.schemaVersion!==1||!object(obj.byMode)||!Array.isArray(obj.recentKeys)||obj.recentKeys.length>64)return false;
   if(!root.SectorDossier?.normalized(obj))return false;
@@ -36,7 +54,7 @@ function validJson(key,raw){
 }
 function hasUnsupportedVersion(key,raw){
  try{const o=JSON.parse(raw);return key==='rr-dossier-v1'?Number.isInteger(o?.schemaVersion)&&o.schemaVersion>1:
-  ['rr-custom-v1','rr-custom-presets-v1','rr-hangar-paint-v1'].includes(key)?Number.isInteger(o?.version)&&o.version>1:
+  ['rr-custom-v1','rr-custom-presets-v1','rr-hangar-paint-v1','rr-daily-sector-v1'].includes(key)?Number.isInteger(o?.version)&&o.version>1:
   key==='rr-options-v06'?Number.isInteger(o?.playlist?.version)&&o.playlist.version>1:false;}catch(_){return false}
 }
 function checkedEntries(text){

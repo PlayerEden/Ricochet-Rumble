@@ -27,3 +27,13 @@ jobs:
         run: node tests/daily-sector.mjs
       - name: Protect existing gameplay regression
         run: node tests/smoke.mjs
+      - name: Verify manual backup compatibility
+        run: node tests/save-backup.mjs
+      - name: Run live Chromium Daily Sector match flow
+        shell: bash
+        run: |
+          set -euo pipefail
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          npm install --no-save --ignore-scripts playwright-core@1.56.1
+          node tests/daily-sector-live-qa.mjs

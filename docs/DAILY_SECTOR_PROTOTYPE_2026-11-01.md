@@ -1,3 +1,11 @@
+## 2026-11-01 — PLAYABLE DAILY SECTOR EXPERIMENT WIRED (PENDING BROWSER QA)
+
+Implemented on isolated experiment branch: an opt-in DAiLY SECTOR button below the unchanged four-mode grid. The JS engine lazily loads the already QA-passed offline daily module, launches fixed scored-FFA with the UTC date seed, and reuses that same seed on Retry. HUD and results call record exactly once per game; local best/attempts replace the footer. No daily entry in Quick Play shuffle, Dossier progress or earned cosmetics. Existing five-key manual backup is backwards compatible; new sixth optional daily key validated strictly. No main, integration PR #85, signer, Google Play, native LAN or normal game modes changed.
+
+**Not ready for owner installation:** pending real browser flow, safe backup roundtrip and mobile viewport checks on exact branch SHA.
+
+---
+
 # Sector Rebound — Daily Sector offline experiment (2026-11-01)
 
 **Branch:** `experiment/daily-sector-offline-v1` based on draft integration commit `c4b7333`. **Status: FOUNDATION CONTRACT — NOT A PLAYABLE MODE YET.** Owner asked to continue productive JavaScript/Android development while Quick independently evaluates Godot.

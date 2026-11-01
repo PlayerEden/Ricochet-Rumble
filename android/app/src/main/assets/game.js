@@ -70,6 +70,21 @@ function openHangar(fromDossier=false){
  back?.setAttribute?.('aria-label',hangarReturnToDossier?'Back to Dossier':'Back to main menu');
 }
 function openModes(){setPanel(document.getElementById('modes-template').innerHTML);}
+// Lazy-load Daily Sector only when explicitly chosen. Ordinary Quick Play,
+// native LAN, and pre-existing browser QA boot without a sixth script.
+let dailyScriptLoading=false;
+function launchDailySector(){
+ if(window.SectorDaily){const day=window.SectorDaily.utcDay(),options=window.SectorDaily.rulesFor(day);
+  if(!options){notice('DAILY SECTOR UTC DATE IS UNAVAILABLE');return false;}
+  return newMatch('daily',options);
+ }
+ if(dailyScriptLoading)return false;
+ dailyScriptLoading=true;
+ const script=document.createElement('script');script.src='daily-sector.js';
+ script.onload=()=>{dailyScriptLoading=false;if(menu.classList.contains('hidden')||!panel.querySelector('.mode-screen'))return;launchDailySector();};
+ script.onerror=()=>{dailyScriptLoading=false;notice('DAILY SECTOR MODULE UNAVAILABLE');};
+ document.head.appendChild(script);return false;
+}
 let pendingRestoreText='';
 function openBackupScreen(){pendingRestoreText='';setPanel(document.getElementById('backup-template').innerHTML);}
 function backupNotice(message){const el=document.getElementById('backup-message');if(el)el.textContent=message;}
@@ -363,7 +378,7 @@ const SOLO_PILOT_TURN_RATE=6.5; // owner-approved CQC speed; experimental parity
 const CQC_PILOT_HIT_RADIUS=17.5; // modestly forgiving for ALL CQC pilots, not homing
 let mode='idle',connected=false,paused=true,lastTime=performance.now(),sendTimer=0,snapshotTimer=0,toastTimer=0,botTimer=0,hudTimer=0;
 const botBrains=new Map();
-let state=null;let guestInput={moveX:0,moveY:0,fire:false};
+let state=null,dailyAttemptedKey='',dailyLastRecord=null;let guestInput={moveX:0,moveY:0,fire:false};
 // LAN input arrives ~20 times/sec. If packets stop without a TCP disconnect,
 // the host must not keep applying the last guest's movement/FIRE indefinitely.
 // 0.4s tolerates several delayed messages without granting ghost controls.
@@ -738,7 +753,16 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  // replicated winner/KO fields until a host-authoritative result packet exists.
  const soloResult=ended&&mode==='solo'?finalizeRound():null;
  // Count only actual offline Solo-vs-bots final results, once per match.
- if(soloResult&&state.config?.botCount>0&&state.humanCount===1&&dossierStore){
+ if(soloResult&&state.config?.dailySector&&window.SectorDaily){
+   const key=DOSSIER_SESSION+':daily:'+soloResult.matchId+':'+soloResult.mazeSeed;
+   if(dailyAttemptedKey!==key){
+     dailyAttemptedKey=key;
+     try{dailyLastRecord=window.SectorDaily.record(window.localStorage,state.config.dailyDate,soloResult,key);}
+     catch(_){dailyLastRecord={ok:false,reason:'STORAGE_UNAVAILABLE'};}
+   }
+ }
+ // Daily attempts are *not* normal Dossier matches and cannot farm unlocks.
+ if(soloResult&&!state.config?.dailySector&&state.config?.botCount>0&&state.humanCount===1&&dossierStore){
   const key=DOSSIER_SESSION+':'+soloResult.matchId+':'+soloResult.mazeSeed;
   if(dossierAttemptedKey!==key){
     dossierAttemptedKey=key;
@@ -756,7 +780,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
    const rewardEl=document.getElementById('aa-rewards'),newRewards=ended&&mode==='solo'&&roundUnlocks.length>0;
    if(rewardEl){rewardEl.classList.toggle('hidden',!newRewards);rewardEl.textContent=newRewards?'NEW IN HANGAR · '+roundUnlocks.join(' · ')+' · VIEW HANGAR':'';}
    if(ended){
-     const modeTitle=document.getElementById('aa-mode-label');if(modeTitle){if(mode==='solo')modeTitle.textContent=(state.config?.customMatch?'CUSTOM · ':'')+soloModeLabel(state.config);else if(mode==='host'||mode==='guest')modeTitle.textContent='LOCAL MATCH · '+(state.config?.teamMode==='coop'?'CO-OP':state.config?.teamMode==='teams'?'TEAMS':'FREE FOR ALL');}
+     const modeTitle=document.getElementById('aa-mode-label');if(modeTitle){if(mode==='solo')modeTitle.textContent=(state.config?.dailySector?'DAILY SECTOR · '+state.config.dailyDate+' UTC':(state.config?.customMatch?'CUSTOM · ':'')+soloModeLabel(state.config));else if(mode==='host'||mode==='guest')modeTitle.textContent='LOCAL MATCH · '+(state.config?.teamMode==='coop'?'CO-OP':state.config?.teamMode==='teams'?'TEAMS':'FREE FOR ALL');}
      document.getElementById('aa-title').textContent=scoredDraw?'MATCH DRAW':localWon?'SECTOR CLEARED':'SECTOR LOST';
      document.getElementById('aa-event').textContent=soloResult?.event??String(state.event||'EXERCISE COMPLETE');
      document.getElementById('aa-kos').textContent=String(soloResult?.operatorKOs??state.kos[me]??0);
@@ -765,10 +789,10 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
      document.getElementById('aa-lives').textContent=String(isScoredMatch()?state.scored.scoreTarget:soloResult?.livesRemaining??state.lives[me]??0);
      const metric=document.getElementById('aa-lives-label');if(metric)metric.textContent=isScoredMatch()?(state.scored.mode==='teams'?'TEAM KO TARGET':'KO TARGET'):'LIVES LEFT';
      document.getElementById('aa-outcome').textContent=scoredDraw?'DRAW':localWon?'VICTORY':'DEFEAT';
-     document.getElementById('aa-note').textContent=mode==='guest'?'WAITING FOR HOST · REMATCH OR NEW RULES':mode==='host'?'HOST CHOOSES REMATCH OR NEW RULES':state.config?.customMatch?'SAME RULES · FRESH MAZE':mode==='solo'&&state.config?.botCount===0?'PRACTICE · NO DOSSIER RECORD':state.config?.quickPlayMatch?(selectedPlaylistIds.length>1?'NEXT MATCH · ROTATING MODES':'NEXT MATCH · SAME MODE, NEW MAZE'):'NEW MAZE · SAME MODE';
+     document.getElementById('aa-note').textContent=state.config?.dailySector?(dailyLastRecord?.ok&&dailyLastRecord?.entry?('DAILY · BEST '+dailyLastRecord.entry.best.kos+' KOs · '+dailyLastRecord.entry.attempts+' ATTEMPTS · UTC'):'DAILY RESULT NOT SAVED · CHECK STORAGE'):mode==='guest'?'WAITING FOR HOST · REMATCH OR NEW RULES':mode==='host'?'HOST CHOOSES REMATCH OR NEW RULES':state.config?.customMatch?'SAME RULES · FRESH MAZE':mode==='solo'&&state.config?.botCount===0?'PRACTICE · NO DOSSIER RECORD':state.config?.quickPlayMatch?(selectedPlaylistIds.length>1?'NEXT MATCH · ROTATING MODES':'NEXT MATCH · SAME MODE, NEW MAZE'):'NEW MAZE · SAME MODE';
    }
  }
- const replay=document.getElementById('quick-rematch');if(replay){replay.textContent=state.config?.customMatch?'↻ SAME RULES · NEW SECTOR':mode==='solo'?'↻ NEXT MATCH':'↻ NEW SECTOR';replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));}
+ const replay=document.getElementById('quick-rematch');if(replay){replay.textContent=state.config?.dailySector?'↻ RETRY TODAY\'S SECTOR':state.config?.customMatch?'↻ SAME RULES · NEW SECTOR':mode==='solo'?'↻ NEXT MATCH':'↻ NEW SECTOR';replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));}
  const tdm=isScoredMatch()&&state.scored.mode==='teams';
  const editRules=document.getElementById('custom-edit');if(editRules)editRules.classList.toggle('hidden',!(ended&&mode==='solo'&&!!state.config?.customMatch));
  const lanEdit=document.getElementById('lan-edit-rules');if(lanEdit)lanEdit.classList.toggle('hidden',!(ended&&mode==='host'&&connected));
@@ -784,14 +808,15 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
    document.getElementById('score1').textContent=tdm?scores.reduce((sum,k,i)=>sum+(state.scored.teamIds[i]===1?k:0),0):Math.max(0,...scores);
  }
 }
-function newMatch(which){
+function newMatch(which,dailyOptions=null){
  savePrefs();
- const scoredLaunch=!!SCORED_MATCH_RULES[which],customLaunch=which==='custom',cqcLaunch=which==='cqc';
+ const scoredLaunch=!!SCORED_MATCH_RULES[which],customLaunch=which==='custom',cqcLaunch=which==='cqc',dailyLaunch=which==='daily';
+ if(dailyLaunch&&(!dailyOptions||!window.SectorDaily||dailyOptions.dailySeed!==window.SectorDaily.seedFor(dailyOptions.dailyDate)))return false;
  if(which==='solo'&&!selectedPlaylistIds.length){notice('SELECT A QUICK PLAY MODE IN MATCH SETTINGS',2300);return false;}
  const playlistId=which==='solo'?firstQuickPlayMode():null;
- if(bridgeReady())window.AndroidBridge.stopNetwork();mode=scoredLaunch||customLaunch?'solo':which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;neutralizeGuestInput();
- const arena=selectArena(),options=customLaunch?customOptionsFor():scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:which==='scored_tdm'?'teams':'ffa',matchModeId:which,pilotMode:true}:playlistId?quickPlayOptionsFor(playlistId):{...selectedRules,pilotMode:true};
- state=initialState(arena,options,freshSectorSeed(state?.mazeSeed));roundUnlocks=[];camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config)):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch){exitMenu();audioCue('deploy');if(mode==='solo')firstMatchHint();}}
+ if(bridgeReady())window.AndroidBridge.stopNetwork();mode=scoredLaunch||customLaunch||dailyLaunch?'solo':which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;neutralizeGuestInput();
+ const arena=selectArena(),options=dailyLaunch?dailyOptions:customLaunch?customOptionsFor():scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:which==='scored_tdm'?'teams':'ffa',matchModeId:which,pilotMode:true}:playlistId?quickPlayOptionsFor(playlistId):{...selectedRules,pilotMode:true};
+ state=initialState(arena,options,dailyLaunch?options.dailySeed:freshSectorSeed(state?.mazeSeed));dailyAttemptedKey='';dailyLastRecord=null;roundUnlocks=[];camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch||dailyLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(dailyLaunch?'DAILY SECTOR':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config))):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch||dailyLaunch){exitMenu();audioCue('deploy');if(mode==='solo')firstMatchHint();}}
 function resetAll(advancePlaylist=false){
  const previousSeed=state.mazeSeed;
  let options={...state.config};
@@ -802,9 +827,9 @@ function resetAll(advancePlaylist=false){
   // Prevent a 1-bot FFA silently becoming 2 bots after Team Survival.
   options=quickPlayOptionsFor(id,selectedRules);
  }
- state=initialState(0,options,freshSectorSeed(previousSeed));
+ state=initialState(0,options,options.dailySector?options.dailySeed:freshSectorSeed(previousSeed));dailyAttemptedKey='';dailyLastRecord=null;
  if(mode==='host')neutralizeGuestInput();
- if(mode==='solo')document.getElementById('mode-label').textContent=options.botCount===0?'PRACTICE FIELD':(options.customMatch?'CUSTOM · ':'')+soloModeLabel(options);
+ if(mode==='solo')document.getElementById('mode-label').textContent=options.botCount===0?'PRACTICE FIELD':options.dailySector?'DAILY SECTOR':(options.customMatch?'CUSTOM · ':'')+soloModeLabel(options);
  camera.zoom=null;resultCuePlayed=false;roundUnlocks=[];quietContactSeconds=0;radarReminderShown=false;coachRemaining=0;document.getElementById('field-coach')?.classList.add('hidden');fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();clearFireAim();paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();if(mode!=='guest')notice('NEW FIELD GENERATED — GO!');}
 function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
 function circlesRect(x,y,r,w){const nx=clamp(x,w.x,w.x+w.w),ny=clamp(y,w.y,w.y+w.h);return (x-nx)**2+(y-ny)**2<r*r}
@@ -1874,7 +1899,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
    const ok=equipEmblem(b.dataset.emblemId);refreshHangar();
    const status=document.getElementById('emblem-status');
    if(!ok&&status)status.textContent=emblemProgress(b.dataset.emblemId).eligible?'COULD NOT SAVE INSIGNIA':'INSIGNIA LOCKED · COMPLETE DOSSIER MILESTONE';
-  }else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel(document.getElementById('help-template').innerHTML)}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){openModes();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
+  }else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel(document.getElementById('help-template').innerHTML)}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='daily')launchDailySector();else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){openModes();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
  else if(a==='custom-reset'){resetCustomDraft();refreshCustomUI();customPresetStatus('DEFAULT RULES RESTORED · SAVED PRESETS KEPT');}
  else if(a==='custom-preset-save'){
   readCustomScreen();const input=document.getElementById('custom-preset-name'),name=cleanPresetName(input?.value);
