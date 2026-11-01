@@ -1,3 +1,13 @@
+# 2026-10-31 — FIRST-SESSION PLAYER UX REPAIR / PREVIEW 100041
+
+**Live user-directed review:** after approving the Version A icon, user authorized first-time player experience audit and targeted improvements. Reviewed actual home, match-start coaching, HUD, Help, pause, results and Next Match; already non-modal coach and post-game Next Match are present, so no heavy tutorial introduced. Three source-backed presentation fixes: remove inert Quick Play `NEARBY SIDES` selector (Solo presets and LAN lobby override it); change home explanation to `Rotating modes. A new maze every match.`; update Help FIRE copy to `Tap or hold`. No movement, pilot, aim, balance, scoring, AI, LAN, controls, settings schema, assets or cosmetics altered. [Full audit](FIRST_SESSION_UX_AUDIT_2026-10-31.md).
+
+**Signed Preview 100041 SUCCESS:** [GitHub Actions run 41263050223](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41263050223), exact runtime [commit 55c91024](https://github.com/PlayerEden/Ricochet-Rumble/commit/55c91024eb2d76f120bc9203dfc228fe7e333757), [artifact](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41263050223/artifacts/13066075960) `sector-rebound-preview-100041.apk`; app ID `com.playereden.ricochetrumble.preview`, same public AOSP test signing cert, verified APK SHA256 `50a62b520de6a583e72b888b7d059a0a5f114508206e41e802c1ec1da7297a70`. Extracted APK to independently check actual new help/home text, absent inert selector and adaptive launcher icon resources. Build smoke, WebView parity, package and signer attestations passed.
+
+**Real Chromium flow/layout QA** [run 41263072995](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41263072995) on same runtime plus test workflow comment [commit 8cbb813b](https://github.com/PlayerEden/Ricochet-Rumble/commit/8cbb813b0bf5ace8efb72cce90e7a2ec50d947c1): **in progress at latest review; check actual outcome before declaring full UI PASS**. Owner Android first-session usability and in-place Dossier/Hangar continuity, actual two-phone LAN remain pending. Previous Preview 100040 is rollback. Draft PR #85, stable `main` remains intentionally unmerged.
+
+---
+
 # 2026-10-31 — OWNER REVIEW: VERSION A ICON ACCEPTED ON PHONE
 
 Following verified signed Preview **100040**, owner reported **"its good"** and asked what development comes next. Treat this as approval of the **installed launcher icon appearance**, and lock Version A's grounded charcoal tank/amber ricochet direction. This is NOT evidence of independently verified Dossier/Hangar save continuity, every adaptive mask/themed icon, or two-phone LAN. Preserve current approved icon and previous rollback checkpoint; avoid new speculative redesign.
