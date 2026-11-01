@@ -1113,14 +1113,19 @@ function botInput(i,dt){
   });
   if(teammate){
    const rightX=forwardY,rightY=-forwardX,radius=bot.onFoot?10:21;
-   const rightClear=!blocked(bot.x+rightX*27,bot.y+rightY*27,radius);
-   const leftClear=!blocked(bot.x-rightX*27,bot.y-rightY*27,radius);
-   if(rightClear||leftClear){
-    const side=rightClear?1:-1;
-    direction=Math.atan2(forwardY*.2+rightY*side,forwardX*.2+rightX*side);
-    ctfYield=true;
+   // Pick a passing side once, and keep it until the corridor clears.
+   // Switching sides near a wall makes two tanks oscillate forever.
+   if(brain.ctfLaneSide!==1&&brain.ctfLaneSide!==-1){
+    brain.ctfLaneSide=!blocked(bot.x+rightX*27,bot.y+rightY*27,radius)?1:
+     !blocked(bot.x-rightX*27,bot.y-rightY*27,radius)?-1:1;
    }
-  }
+   const side=brain.ctfLaneSide,sideX=rightX*side,sideY=rightY*side;
+   if(!blocked(bot.x+sideX*3,bot.y+sideY*3,radius))
+    direction=Math.atan2(forwardY*.2+sideY,forwardX*.2+sideX);
+   // At the lateral wall limit, continue FORWARD to pass rather than
+   // reversing lanes and walking back into the teammate.
+   ctfYield=true;
+  }else brain.ctfLaneSide=0;
  }
  botBrains.set(i,brain);
  const delta=Math.atan2(Math.sin(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a),Math.cos(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a));

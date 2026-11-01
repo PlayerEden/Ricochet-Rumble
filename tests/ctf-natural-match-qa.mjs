@@ -133,7 +133,7 @@ try{
   assert.ok(result.frames>=1000,'meaningful natural match time');
   assert.ok(result.runnerDistance>100,'runner navigates physically without relocation');
   assert.ok(result.maxFrameMotion<100,'no non-respawn frame teleport');
-  assert.ok(result.improvement>45,'runner approaches flag through actual maze');
+  assert.ok(result.improvement>(c.mapSize==='large'?200:45),'runner traverses the real maze instead of oscillating in spawn corridor');
   assert.ok(result.defenderHomeFrames>0,'defender occupies its own bay');
   assert.ok(result.escortDecisions.escort>0,'Cyan escort makes escort decisions');
   assert.ok(result.defenderDecisions.defend>0,'Coral defender makes defend decisions');
