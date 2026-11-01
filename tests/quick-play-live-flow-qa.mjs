@@ -107,7 +107,11 @@ try{
  assert.equal((await page.evaluate(()=>localStorage.getItem('rr-hangar-paint-v1'))),JSON.stringify({version:1,equipped:'fieldgrid.moss'}),'back navigation does not reset equipped paint');
  result.steps.push('Hangar four free paint selectors: real click, saved equip, responsive landscape, safe return');
 
+ assert.match(await page.locator('.home-description').textContent(),/rotating modes/i,'Quick Play explains its changing mode playlist');
  await page.locator('#menu button[data-action="settings"]').click();
+ assert.equal(await page.locator('#team-choice').count(),0,'Quick Play Settings does not expose a team-sides selector that its modes override');
+ assert.equal(await page.locator('#map-size').isVisible(),true,'arena size remains accessible');
+ assert.equal(await page.locator('#bot-count').isVisible(),true,'bot count remains accessible');
  const advanced=page.locator('details.extra-rules');
  await advanced.locator('summary').click();
  const ffa=page.locator('input[data-playlist-mode="survival_ffa"]');
