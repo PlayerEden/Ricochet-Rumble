@@ -509,11 +509,48 @@ function currentVehicle(t){return t&&!t.onFoot?state?.vehicles?.[t.vehicleId]:nu
 function activeBulletCap(t){if(!t)return 2;const base=t.onFoot?2:currentVehicle(t)?.type==='mech'?Math.max(1,Math.ceil((state.config?.bulletCap||4)*.75)):(state.config?.bulletCap||4);return base+(t.powerTimer>0&&t.powerType==='rapid'?1:0)+(t.powerTimer>0&&t.powerType==='overcharge'?2:0);}
 function fireInterval(t){const base=t.onFoot?.43:vehicleDef(currentVehicle(t)).fireCooldown;return t.powerTimer>0&&t.powerType==='rapid'?base*.66:base;}
 function deploymentSeed(seed,index){return ((seed>>>0)^(Math.imul(index+1,0x9e3779b1)>>>0))>>>0;}
+// A neutral supply vehicle is a *route-balanced* objective, not a random
+// Euclidean midpoint. Reuse the real connected maze; no walls or instant moves.
+function teamNeutralVehicleSite(vehicles,actors,bays,seed,ordinal=0,actorClearance=150,vehicleClearance=150){
+ if(!mazeGrid||!Array.isArray(bays)||bays.length!==2)return null;
+ const {cols,cell,open}=mazeGrid,span=open.length;
+ const routes=bays.map(b=>window.SectorForwardBays.routeDistances(open,b.cellIndex));
+ const travel=routes[0][bays[1].cellIndex];
+ const rand=mazeRandom(deploymentSeed(seed,810+ordinal));
+ let best=null;
+ for(let i=0;i<span;i++){
+  const d0=routes[0][i],d1=routes[1][i];
+  if(d0<3||d1<3)continue; // leave bay mouths clear
+  const x=((i%cols)+.5)*cell,y=(Math.floor(i/cols)+.5)*cell;
+  if(blocked(x,y,28)||actors.some(t=>Math.hypot(t.x-x,t.y-y)<actorClearance)||
+   vehicles.some(v=>v.armor>0&&Math.hypot(v.x-x,v.y-y)<vehicleClearance))continue;
+  const gap=Math.abs(d0-d1),detour=Math.max(0,d0+d1-travel);
+  // First minimize unfair route access; then prefer the actual connected
+  // cross-map corridor over a remote cul-de-sac. Stable seeded tie-breaking.
+  const rank=gap*100000+detour*50+Math.max(d0,d1)*2+rand()*.5;
+  if(!best||rank<best.rank)best={x,y,cellIndex:i,d0,d1,gap,rank};
+ }
+ return best;
+}
 function deployVehicle(forceType=null){if(!isPilotMatch()||isCqcMatch()||state.winner>=0)return false;
  const available=state.vehicles.filter(v=>v.armor>0).length;
  if(available>=MAX_VEHICLES||state.vehicles.length>=MAX_VEHICLES)return false;
  const rng=mazeRandom(deploymentSeed(state.mazeSeed,state.dropIndex++));
  const type=forceType|| (rng()<.32?'mech':'tank');
+ if(state.forwardBays){
+  // Supply drops are neutral, never materialize in a base, on a pilot, or
+  // clustered around the team garage. If no safe fair cell exists, defer.
+  const site=teamNeutralVehicleSite(
+   state.vehicles,state.tanks.filter((_,i)=>state.lives[i]>0),
+   state.forwardBays.bays,state.mazeSeed,state.dropIndex,180,150);
+  if(!site||site.gap>2)return false;
+  const {x,y}=site,v={id:state.vehicles.length,x,y,
+   a:Math.floor(rng()*4)*Math.PI/2,type,armor:VEHICLE_TYPES[type].armor,
+   occupant:-1,respawn:0};
+  state.vehicles.push(v);state.vehicleBeacon={x,y,type,ttl:7};
+  state.event=type==='mech'?'MECH DEPLOYED':'TANK DEPLOYED';state.eventTimer=2.25;
+  emitFx('pickup',x,y,type==='mech'?'#e5a8ff':'#7df1c8');return true;
+ }
  const cells=Array.from({length:mazeGrid.cols*mazeGrid.rows},(_,i)=>i);
  for(let i=cells.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[cells[i],cells[j]]=[cells[j],cells[i]];}
  for(const i of cells){const x=((i%mazeGrid.cols)+.5)*mazeGrid.cell,y=(Math.floor(i/mazeGrid.cols)+.5)*mazeGrid.cell;
@@ -706,8 +743,13 @@ function initialState(arena=0,options=null,seed=null){const config={...readSetti
   // Both team garages stock tanks; preserve the original guaranteed
   // neutral spare mech rather than silently converting the only mech away.
   const neutral=vehicles.filter(v=>v.occupant===-1&&!forwardBays.bays.some(b=>b.vehicleId===v.id));
-  if(neutral.length&&!neutral.some(v=>v.type==='mech')){
-   const v=neutral.at(-1);v.type='mech';v.armor=VEHICLE_TYPES.mech.armor;
+  if(neutral.length){
+   // Keep one spare mech in fair contested territory (not on either flag).
+   const v=neutral.at(-1);
+   if(!neutral.some(q=>q.type==='mech')){v.type='mech';v.armor=VEHICLE_TYPES.mech.armor;}
+   const site=teamNeutralVehicleSite(vehicles.filter(q=>q!==v),tanks,
+    forwardBays.bays,mazeSeed,0,150,150);
+   if(site&&site.gap<=2){v.x=site.x;v.y=site.y;}
   }
  }
  if(cqc)for(const t of tanks){t.onFoot=true;t.vehicleId=null;t.shield=1.5;t.respawnWait=0;}
