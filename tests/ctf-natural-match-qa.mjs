@@ -72,7 +72,11 @@ window.__ctfNaturalQA={
    cell,goal:br.goal,waypoint:br.path?.[0]??null,
    pathHead:br.path?.slice(0,5),stuckFor:Number((br.stuckFor||0).toFixed(2)),
    blocked:blocked(t.x,t.y,t.onFoot?10:21),
-   movement:m.runnerDistance});
+   movement:m.runnerDistance,
+   wallLeft:[0,10,20,30,40,50,60,70,90].map(dx=>[dx,blocked(t.x-dx,t.y,t.onFoot?10:21)]),
+   neighbors:grid?grid.open[cell]:[],
+   defender:{x:state.tanks[3].x,y:state.tanks[3].y},
+   closeWalls:wallSet.filter(w=>Math.abs(w.x-t.x)<145&&Math.abs(w.y-t.y)<145).slice(0,12)});
   return {frames:m.frames,seconds:m.seconds,finished:state.ctf.finished,invalid:m.invalid.length};
  },
  result(){
