@@ -222,7 +222,7 @@ function normalizeCustomDraft(raw){
  const p=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{};
  const choose=(key,values)=>values.includes(p[key])?p[key]:CUSTOM_DEFAULT[key];
  return {modeId:choose('modeId',CUSTOM_MODE_IDS),mapSize:choose('mapSize',['small','standard','large']),
- botCount:choose('botCount',[0,1,2,3,4]),botSkill:choose('botSkill',['casual','normal','spicy']),
+ botCount:choose('botCount',[0,1,2,3,4]),botSkill:choose('botSkill',['casual','normal','spicy','varied']),
  startLives:choose('startLives',[2,3,5]),bulletCap:choose('bulletCap',[1,2,3,4,5,8])};
 }
 function saveCustomDraft(){try{window.localStorage?.setItem(CUSTOM_PREF_KEY,JSON.stringify({version:1,rules:customDraft}))}catch(_){}return {...customDraft}}
@@ -249,7 +249,7 @@ function refreshCustomUI(){
  const count=options.botCount,p=document.getElementById('custom-preview');
  if(p)p.textContent=soloModeLabel(options)+' · '+options.mapSize.toUpperCase()+' · '+(count?count+1+' COMBATANTS':'PRACTICE · NO OPPONENTS')+' · '+(scored?'SCORE '+SCORED_MATCH_RULES[customDraft.modeId].scoreTarget+' KOs / '+SCORED_MATCH_RULES[customDraft.modeId].clockSeconds/60+' MIN':'LAST SIDE STANDING');
  const note=document.getElementById('custom-rule-note');
- if(note)note.textContent=scored?'SCORED TEST PRESET: MAP, BOTS, LIVES AND SHELLS LOCKED; AI SKILL ADJUSTABLE.':customDraft.modeId==='survival_teams'&&customDraft.botCount===1?'TEAM SURVIVAL: 1 BOT SETTING DEPLOYS 2 (ALLY + ENEMY).':'CASUAL · SAVED SEPARATELY FROM QUICK PLAY';
+ if(note)note.textContent=scored?'SCORED TEST PRESET: MAP, BOTS, LIVES AND SHELLS LOCKED; BOT AI ADJUSTABLE.':customDraft.modeId==='survival_teams'&&customDraft.botCount===1?'TEAM SURVIVAL: 1 BOT SETTING DEPLOYS 2 (ALLY + ENEMY).':customDraft.botSkill==='varied'?'EXPERIMENT · HUNTER / SENTINEL / SCAVENGER · SAME AIM & DAMAGE':'CASUAL · SAVED SEPARATELY FROM QUICK PLAY';
 }
 function readCustomScreen(){
  if(!document.getElementById('custom-match'))return {...customDraft};
@@ -887,10 +887,16 @@ function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=c
  }
 }
 function hasLineOfSight(x,y,tx,ty){const length=Math.hypot(tx-x,ty-y),steps=Math.ceil(length/15);for(let n=1;n<steps;n++){const p=n/steps;if(nearWall(x+(tx-x)*p,y+(ty-y)*p,4))return false}return true;}
+// Experimental Custom Match bot identities: predictable per bot and only
+// when explicitly selected. Original Quick Play/Daily/LAN AI stays classic.
+function botRoleFor(i,st=state){
+ if(!st?.config?.customMatch||st.config.botSkill!=='varied'||i<st.humanCount)return 'classic';
+ return ['hunter','sentinel','scavenger'][(i-st.humanCount)%3];
+}
 // AI priorities are readable: recover a vehicle, choose an available supply,
 // evade a close enemy when nearly destroyed, then return to a fair duel.
 // All decisions use existing visible game state: no enhanced accuracy or damage.
-function chooseBotObjective(i,target,skill='normal'){
+function chooseBotObjective(i,target,skill='normal',role='classic'){
  const bot=state.tanks[i];
  if(isPilotMatch()&&bot.onFoot){
   const recovery=(state.vehicles||[]).filter(v=>v.occupant===-1&&v.armor>0&&vehicleEntryClear(i,v))
@@ -902,7 +908,7 @@ function chooseBotObjective(i,target,skill='normal'){
   const v=currentVehicle(bot),armor=v?.armor??0,maxArmor=vehicleDef(v).armor;
   const repairUseful=pickup.type==='repair'&&!bot.onFoot&&armor<maxArmor;
   const buffUseful=pickup.type!=='repair'&&!(bot.powerTimer>1.3&&bot.powerType);
-  const maxRange=skill==='casual'?205:skill==='spicy'?425:325;
+  const maxRange=role==='scavenger'?470:skill==='casual'?205:skill==='spicy'?425:325;
   const distance=Math.hypot(bot.x-pickup.x,bot.y-pickup.y);
   const enemyDist=Math.hypot(bot.x-target.x,bot.y-target.y);
   // A nearby useful repair can outweigh a duel; never chase across the whole
@@ -919,15 +925,23 @@ function chooseBotObjective(i,target,skill='normal'){
   const px=clamp(nx,42,worldW-42),py=clamp(ny,42,worldH-42);
   if(!blocked(px,py,bot.onFoot?12:22))return {kind:'evade',point:{x:px,y:py}};
  }
+ if(role==='sentinel'&&!bot.onFoot&&hasLineOfSight(bot.x,bot.y,target.x,target.y)){
+  if(threatened>=145&&threatened<=310)return {kind:'hold',point:{x:bot.x,y:bot.y}};
+  if(threatened<145){
+   const dx=(bot.x-target.x)/(threatened||1),dy=(bot.y-target.y)/(threatened||1);
+   const px=clamp(bot.x+dx*115,42,worldW-42),py=clamp(bot.y+dy*115,42,worldH-42);
+   if(!blocked(px,py,22))return {kind:'reposition',point:{x:px,y:py}};
+  }
+ }
  return {kind:'engage',point:target};
 }
 function botInput(i,dt){
  const bot=state.tanks[i],enemies=state.tanks.map((t,j)=>({t,j})).filter(({j})=>j!==i&&state.lives[j]>0&&!friendly(i,j));
  if(!enemies.length)return {moveX:0,moveY:0,fire:false,bot:true};
  enemies.sort((a,b)=>Math.hypot(bot.x-a.t.x,bot.y-a.t.y)-Math.hypot(bot.x-b.t.x,bot.y-b.t.y));
- const target=enemies[0].t,skill=state.config?.botSkill||'normal';
+ const target=enemies[0].t,rawSkill=state.config?.botSkill||'normal',skill=rawSkill==='varied'?'normal':rawSkill,role=botRoleFor(i);
  let brain=botBrains.get(i)||{timer:0,path:[],goal:-1,intent:'engage'};
- const choice=chooseBotObjective(i,target,skill);
+ const choice=chooseBotObjective(i,target,skill,role);
  let objective=choice.point;
  if(choice.kind==='recovery'&&Math.hypot(objective.x-bot.x,objective.y-bot.y)<58&&hasLineOfSight(bot.x,bot.y,objective.x,objective.y)){
   tryInteract(i);
@@ -972,11 +986,12 @@ function botInput(i,dt){
  }
  botBrains.set(i,brain);
  const delta=Math.atan2(Math.sin(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a),Math.cos(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a));
- const pace=skill==='casual'?.61:skill==='spicy'?.98:.81;
+ const basePace=skill==='casual'?.61:skill==='spicy'?.98:.81;
+ const pace=role==='hunter'?.94:role==='sentinel'?.70:role==='scavenger'?.74:basePace;
  const aim=skill==='casual'?.27:skill==='spicy'?.39:.33;
  const enemyDist=Math.hypot(bot.x-target.x,bot.y-target.y);
  const hasLine=enemyDist<(mazeGrid?385:750)&&hasLineOfSight(bot.x,bot.y,target.x,target.y);
- const chasePace=choice.kind==='engage'&&hasLine&&enemyDist<115?pace*.34:pace;
+ const chasePace=choice.kind==='hold'?0:choice.kind==='engage'&&hasLine&&enemyDist<115?pace*(role==='hunter'?.72:.34):pace;
  return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,fire:Math.abs(delta)<aim&&hasLine,bot:true};
 }
 // One shared local-space pistol muzzle anchor, used by BOTH art and physics.
