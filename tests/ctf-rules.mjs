@@ -21,7 +21,7 @@ assert.equal(api.tick(disembark,p([a1(700,100)]),1).flags[1].droppedFor,0,'frien
 let timeout=api.tick(api.tick(disembark,p([]),10),p([]),10);
 assert.equal(timeout.flags[1].droppedFor,0,'drop returns after timer');
 assert.equal(timeout.flags[1].x,700);
-const forbidden=api.tick(api.create(bays),p([a0(700,100,true,false)]),1);
+const forbidden=api.tick(api.create(bays),p([near(0,700,100,true,false)]),1);
 assert.equal(forbidden.flags[1].carrier,null,'bots without carry ability cannot grab flag');
 const stolen=api.tick(api.create(bays),p([a0(700,100),a1(100,100)]),1);
 assert.equal(stolen.flags[1].carrier,0);assert.equal(stolen.flags[0].carrier,1);
