@@ -73,7 +73,7 @@ function openModes(){setPanel(document.getElementById('modes-template').innerHTM
 let loadingForwardBay=false;
 let loadingCtf=false;
 function launchCtfExercise(){
- if(window.SectorFlags&&window.SectorForwardBays)return newMatch('ctf');
+ if(window.SectorFlags&&window.SectorForwardBays&&window.SectorCtfAI)return newMatch('ctf');
  if(loadingCtf)return false;
  loadingCtf=true;
  const load=(src,done)=>{
@@ -84,8 +84,10 @@ function launchCtfExercise(){
  const done=()=>{loadingCtf=false;
   if(panel.querySelector('.mode-screen')&&!menu.classList.contains('hidden'))launchCtfExercise();
  };
- if(window.SectorForwardBays)load('ctf-rules.js',done);
- else load('forward-bays.js',()=>load('ctf-rules.js',done));
+ const rulesReady=()=>window.SectorCtfAI?done():load('ctf-ai.js',done);
+ const baysReady=()=>window.SectorFlags?rulesReady():load('ctf-rules.js',rulesReady);
+ if(window.SectorForwardBays)baysReady();
+ else load('forward-bays.js',baysReady);
  return false;
 }
 function launchForwardBayExercise(){
@@ -358,7 +360,7 @@ function isScoredMatch(){return !!state?.scored&&!!SCORED_MATCH_RULES[state?.con
 function isCqcMatch(){return state?.config?.matchModeId==='cqc'&&isScoredMatch();}
 function isCtfMatch(){return !!state?.ctf&&state.config?.ctfExercise===true;}
 function ctfActors(){return state.tanks.map((t,i)=>({x:t.x,y:t.y,team:teamOf(i),
- onFoot:!!t.onFoot,alive:state.lives[i]>0,canCarry:i<state.humanCount}));}
+ onFoot:!!t.onFoot,alive:state.lives[i]>0,canCarry:true}));}
 function applyCtf(next){
  if(!isCtfMatch()||!next)return;
  const previous=state.ctf;state.ctf=next;
@@ -1038,11 +1040,23 @@ function chooseBotObjective(i,target,skill='normal',role='classic'){
 }
 function botInput(i,dt){
  const bot=state.tanks[i],enemies=state.tanks.map((t,j)=>({t,j})).filter(({j})=>j!==i&&state.lives[j]>0&&!friendly(i,j));
- if(!enemies.length)return {moveX:0,moveY:0,fire:false,bot:true};
+ if(!enemies.length&&!isCtfMatch())return {moveX:0,moveY:0,fire:false,bot:true};
  enemies.sort((a,b)=>Math.hypot(bot.x-a.t.x,bot.y-a.t.y)-Math.hypot(bot.x-b.t.x,bot.y-b.t.y));
- const target=enemies[0].t,rawSkill=state.config?.botSkill||'normal',skill=rawSkill==='varied'?'normal':rawSkill,role=botRoleFor(i);
+ const ctfDecision=isCtfMatch()&&window.SectorCtfAI?
+  window.SectorCtfAI.choose({index:i,humanCount:state.humanCount,
+   actors:ctfActors(),flags:state.ctf.flags,bays:state.forwardBays.bays}):null;
+ // Combat aim stays honest; a visible enemy flag carrier is a priority target.
+ const carrier=isCtfMatch()?state.ctf.flags[teamOf(i)]?.carrier:null;
+ const priorityTarget=enemies.find(({j})=>j===carrier);
+ const target=priorityTarget?.t||enemies[0]?.t||state.forwardBays?.bays[1-teamOf(i)]||bot,
+  rawSkill=state.config?.botSkill||'normal',skill=rawSkill==='varied'?'normal':rawSkill,role=botRoleFor(i);
  let brain=botBrains.get(i)||{timer:0,path:[],goal:-1,intent:'engage'};
- const choice=chooseBotObjective(i,target,skill,role);
+ // CTF flag objectives replace the classic vehicle-recovery-first priority;
+ // drivers may cross a maze in armor, but must exit to collect/return flags.
+ const choice=ctfDecision||chooseBotObjective(i,target,skill,role);
+ if(ctfDecision?.requiresPilot&&!bot.onFoot&&
+  Math.hypot(bot.x-choice.point.x,bot.y-choice.point.y)<105&&
+  hasLineOfSight(bot.x,bot.y,choice.point.x,choice.point.y))tryInteract(i);
  let objective=choice.point;
  if(choice.kind==='recovery'&&Math.hypot(objective.x-bot.x,objective.y-bot.y)<58&&hasLineOfSight(bot.x,bot.y,objective.x,objective.y)){
   tryInteract(i);
@@ -1092,7 +1106,12 @@ function botInput(i,dt){
  const aim=skill==='casual'?.27:skill==='spicy'?.39:.33;
  const enemyDist=Math.hypot(bot.x-target.x,bot.y-target.y);
  const hasLine=enemyDist<(mazeGrid?385:750)&&hasLineOfSight(bot.x,bot.y,target.x,target.y);
- const chasePace=choice.kind==='hold'?0:choice.kind==='engage'&&hasLine&&enemyDist<115?pace*(role==='hunter'?.72:.34):pace;
+ // Base defense and teammate escort hold a sensible standoff distance.
+ const ctfHold=!!ctfDecision&&
+  ((choice.kind==='defend'&&objectiveDistance<95)||
+   (choice.kind==='escort'&&objectiveDistance<90));
+ const chasePace=ctfHold||choice.kind==='hold'?0:
+  choice.kind==='engage'&&hasLine&&enemyDist<115?pace*(role==='hunter'?.72:.34):pace;
  return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,fire:Math.abs(delta)<aim&&hasLine,bot:true};
 }
 // One shared local-space pistol muzzle anchor, used by BOTH art and physics.
