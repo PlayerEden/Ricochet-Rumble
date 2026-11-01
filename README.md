@@ -14,6 +14,8 @@
 
 ## Start here when resuming development
 
+- [CTF objective-aware bot experiment — full automated QA passed](https://github.com/PlayerEden/Ricochet-Rumble/tree/experiment/ctf-objective-bots-v1) — Coral flag runner/defender and Cyan escort, real pilot exit and three genuine bot flag captures. [Exact-source test run 41287633831](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41287633831); [audit and rollback](https://github.com/PlayerEden/Ricochet-Rumble/blob/experiment/ctf-objective-bots-v1/docs/CTF_OBJECTIVE_BOTS_2026-11-01.md). **Experiment only: no release APK, multiplayer CTF or owner phone test.**
+
 - [CTF pilot-only flag prototype — audited experimental branch](https://github.com/PlayerEden/Ricochet-Rumble/tree/experiment/ctf-pilot-flags-v1) — [pure rules + live capture/scoring + full regression PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41285942743). Objective-aware AI, physical Android and actual LAN CTF are **NOT IMPLEMENTED**; experimental code is **not merged**.
 
 - [Forward Bay / FOB foundation — audited experimental branch](https://github.com/PlayerEden/Ricochet-Rumble/tree/experiment/forward-bays-foundation-v1) — two connected procedural team depots, real team starting slots and existing parked tanks; [300-seed audit + actual game screenshots PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41284724938). **Not merged, no flags or owner phone test.**
