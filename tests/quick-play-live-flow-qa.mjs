@@ -52,6 +52,17 @@ try{
  await page.locator('#menu button[data-action="help"]').click();
  assert.equal(await page.locator('.help-steps article').count(),4,'four concise visible first-time instructions');
  assert.equal(await page.locator('.help-more').getAttribute('open'),null,'advanced manual collapsed by default');
+ const privacyDetails=page.locator('.privacy-more');
+ assert.equal(await privacyDetails.count(),1,'privacy notice discoverable inside Help');
+ assert.equal(await privacyDetails.getAttribute('open'),null,'privacy stays collapsed by default');
+ await privacyDetails.locator('summary').click();
+ assert.equal(await privacyDetails.getAttribute('open'),'','in-app privacy information expands');
+ const privacyContent=await privacyDetails.textContent();
+ for(const term of ['ON-DEVICE PROGRESS','LOCAL WI-FI MATCHES','BACKUPS','NO ADS OR ANALYTICS'])
+  assert.ok(privacyContent.includes(term),'privacy explains '+term);
+ assert.ok(privacyContent.includes('local IP address'),'local network peer address is disclosed');
+ await privacyDetails.locator('summary').click();
+ assert.equal(await privacyDetails.getAttribute('open'),null,'privacy closes without affecting navigation');
  assert.equal(await page.locator('.help-screen .screen-back').isVisible(),true,'Help Back in compact top header');
  const backBG=await page.locator('.help-screen .screen-back').evaluate(el=>getComputedStyle(el).backgroundImage);
  assert.ok(!backBG.includes('255, 207'),'Help Back is neutral, not golden primary CTA');

@@ -990,12 +990,12 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 #menu .help-steps article .help-glyph{display:grid;place-items:center;width:30px;height:30px;border-radius:5px;border:1px solid #5f8c94;background:#1a2b31;color:#9bcfd2;font:900 23px/1 monospace}
 #menu .help-steps h3{font:900 clamp(12px,1.55vw,16px)/1.12 'sans-serif-condensed',Arial,sans-serif;color:#edf5f2;margin:0 0 5px;letter-spacing:.3px}
 #menu #panel .help-steps p{font:600 clamp(10px,1.22vw,13px)/1.32 system-ui,sans-serif;color:#c3d2d5;margin:0}
-#menu .help-more{background:#202a2f;border:1px solid #51616a;border-radius:6px}
-#menu .help-more summary{padding:10px 12px;font:800 clamp(11px,1.25vw,13px)/1.2 monospace;color:#d3e1e1;cursor:pointer;touch-action:manipulation;min-height:39px}
-#menu .help-more[open] summary{border-bottom:1px solid #526267}
-#menu .help-more>div{padding:9px 12px}
-#menu #panel .help-more p{font:600 clamp(10px,1.12vw,12px)/1.4 system-ui,sans-serif;color:#c6d6d9;margin:0 0 8px}
-#menu .help-more strong{color:#a3d8db}
+#menu :is(.help-more,.privacy-more){background:#202a2f;border:1px solid #51616a;border-radius:6px}
+#menu :is(.help-more,.privacy-more) summary{padding:10px 12px;font:800 clamp(11px,1.25vw,13px)/1.2 monospace;color:#d3e1e1;cursor:pointer;touch-action:manipulation;min-height:39px}
+#menu :is(.help-more,.privacy-more)[open] summary{border-bottom:1px solid #526267}
+#menu :is(.help-more,.privacy-more)>div{padding:9px 12px}
+#menu #panel :is(.help-more,.privacy-more) p{font:600 clamp(10px,1.12vw,12px)/1.4 system-ui,sans-serif;color:#c6d6d9;margin:0 0 8px}
+#menu :is(.help-more,.privacy-more) strong{color:#a3d8db}
 #menu .dossier-stats>div:nth-child(2),
 #menu .dossier-stats>div:nth-child(5){border-color:#718e92;background:#2b383c}
 #menu .dossier-stats>div:nth-child(2) strong,
@@ -1008,7 +1008,7 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  #menu .help-steps article .help-glyph{width:24px;height:24px;font-size:18px}
  #menu .help-steps h3{font-size:11px;margin-bottom:3px}
  #menu #panel .help-steps p{font-size:10px;line-height:1.2}
- #menu .help-more summary{padding:7px 9px;min-height:34px}
+ #menu :is(.help-more,.privacy-more) summary{padding:7px 9px;min-height:34px}
  .game-hud .score-clock:not(.hidden){top:max(45px,calc(env(safe-area-inset-top) + 45px))}
 }
 @media(max-width:590px){
