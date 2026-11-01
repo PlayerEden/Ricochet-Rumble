@@ -32,7 +32,7 @@ try{
  assert.equal(await page.locator('button[data-action="ctf"]').isVisible(),true);
  const priorDossier=await page.evaluate(()=>localStorage.getItem('rr-dossier-v1'));
  await page.locator('button[data-action="ctf"]').click();
- await page.waitForFunction(()=>window.__ctfQA.state?.ctf&&document.querySelector('#menu').classList.contains('hidden'));
+ await page.waitForFunction(()=>window.__ctfQA.state?.ctf&&document.querySelector('#menu').classList.contains('hidden'),null,{timeout:15000});
  const start=await page.evaluate(()=>({id:window.__ctfQA.state.matchId,seed:window.__ctfQA.state.mazeSeed,
   flags:window.__ctfQA.state.ctf.flags,config:window.__ctfQA.state.config}));
  assert.equal(start.config.ctfExercise,true);assert.equal(start.config.forwardBayExercise,true);
