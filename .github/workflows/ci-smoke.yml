@@ -59,6 +59,8 @@ jobs:
           path: qa-results/play-release-preflight.json
           if-no-files-found: error
           retention-days: 30
+      - name: Check accurate Play listing and draft privacy page (not publishable yet)
+        run: node tests/store-listing-policy.mjs
       - name: Game regression and seeded combat tests
         run: node tests/smoke.mjs
       - name: Audit approved art, UI audio, runtime/source and explicit release blockers
