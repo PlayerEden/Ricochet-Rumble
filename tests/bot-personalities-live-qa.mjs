@@ -8,7 +8,7 @@ const dir=path.resolve('web');
 const game=fs.readFileSync(path.join(dir,'game.js'),'utf8');
 const ending=/\}\)\(\);\s*$/;assert.ok(ending.test(game));
 const instrumented=game.replace(ending,
- "\nwindow.__roleQA={get state(){return state},botRoleFor,botInput,chooseBotObjective};\n})();");
+ "\nwindow.__roleQA={\n get state(){return state},botRoleFor,botInput,chooseBotObjective,\n sampleSeededMaps(count=300){\n  const oldState=state,oldMode=mode,oldPause=paused;\n  const problems=[];let steps=0;\n  try{\n   mode='solo';paused=false;\n   for(let seed=1;seed<=count;seed++){\n    const mapSize=['small','standard','large'][seed%3];\n    state=initialState(0,{mapSize,botCount:3,botSkill:'varied',customMatch:true,\n      matchModeId:'survival_ffa',teamMode:'ffa',pilotMode:true},seed);\n    for(let t=0;t<6;t++){\n     step(1/60);steps++;\n     for(let i=1;i<=3;i++){\n      const bot=state.tanks[i],input=botInput(i,1/60);\n      if(!Number.isFinite(bot.x)||!Number.isFinite(bot.y)||\n       !Number.isFinite(input.moveX)||!Number.isFinite(input.moveY)||\n       Math.hypot(input.moveX,input.moveY)>1.01||\n       botRoleFor(i)==='classic'||typeof input.fire!=='boolean'){\n       problems.push({seed,mapSize,t,i,x:bot.x,y:bot.y,moveX:input.moveX,moveY:input.moveY});\n      }\n     }\n    }\n   }\n  }finally{state=oldState;mode=oldMode;paused=oldPause;botBrains.clear();}\n  return {maps:count,steps,problems:problems.slice(0,10),bad:problems.length};\n }\n};\n})();");
 const allowed=new Set(['index.html','style.css','game.js','save-backup.js','dossier.js','scored-match.js','daily-sector.js']);
 const server=http.createServer((req,res)=>{
  const name=new URL(req.url,'http://127.0.0.1').pathname.slice(1)||'index.html';
@@ -71,8 +71,13 @@ try{
  await page.locator('.custom-preset-fold summary').click();
  await page.locator('#custom-reset').click();
  assert.equal(await page.locator('#custom-skill').inputValue(),'normal','reset restores classic');
- assert.deepEqual(errors,[],'no page errors');
- console.log('BOT_PERSONALITIES_LIVE_BROWSER_PASS: classic Quick Play, opt-in three distinct roles, bounded controls, scavenger supply, persisted Custom and reset');
+ const sample=await page.evaluate(()=>window.__roleQA.sampleSeededMaps(300));
+ assert.equal(sample.maps,300);
+ assert.equal(sample.steps,1800,'six real physics steps per reproducible map');
+ assert.deepEqual(sample.problems,[],'no invalid movement/position or role over 300 seeds');
+ assert.equal(sample.bad,0,'300 reproducible seeded arenas have bounded bot movement');
+  assert.deepEqual(errors,[],'no page errors');
+ console.log('BOT_PERSONALITIES_LIVE_BROWSER_PASS: classic Quick Play, opt-in three distinct roles, bounded controls, scavenger supply, persisted Custom and reset, 300 seeded arenas');
 }finally{
  await browser.close();
  await new Promise(done=>server.close(done));
