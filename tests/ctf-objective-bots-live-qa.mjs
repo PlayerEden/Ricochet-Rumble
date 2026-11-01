@@ -61,7 +61,11 @@ try{
   assert.equal(await page.evaluate(()=>window.__ctfBotsQA.state.ctf.flags[0].carrier),1,'enemy bot took real flag');
   assert.equal(await page.evaluate(()=>window.__ctfBotsQA.choice(1).kind),'capture','bot plans home after pickup');
   await page.evaluate(p=>{window.__ctfBotsQA.relocate(1,p.x,p.y);window.__ctfBotsQA.frame();},homes[1]);
-  assert.equal(await page.evaluate(()=>window.__ctfBotsQA.state.ctf.scores[1]),n,'bot scores actual capture '+n);
+  const capture=await page.evaluate(()=>{const s=window.__ctfBotsQA.state;
+   return {score:s.ctf.scores[1],flags:s.ctf.flags,runner:s.tanks[1],
+    actors:s.tanks.map((a,i)=>({i,x:a.x,y:a.y,onFoot:a.onFoot,alive:s.lives[i]>0})),
+    goal:window.__ctfBotsQA.choice(1)};});
+  assert.equal(capture.score,n,'bot scores actual capture '+n+' '+JSON.stringify(capture));
  }
  assert.equal((await page.locator('#aa-outcome').textContent()).trim(),'DEFEAT');
  assert.deepEqual(await page.evaluate(()=>window.__ctfBotsQA.state.finalResult.scoreboard),[0,3]);
