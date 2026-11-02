@@ -134,6 +134,33 @@ assert.equal(node('player1-label').textContent,'RED','HUD clearly shows the oppo
   console.log('PASS team pass-through: tank/pilot allied crossing, enemies solid, FFA intact, walls intact');
  }
 
+// COMBAT A1: player and AI pilots obey the same real turn cap both when
+// walking and when independently aiming. Existing vehicle turn rates are
+// intentionally unchanged. Restore all mutated state after each fixture.
+{
+ const api=win.__test,units=st().tanks,hum=units[0],bot=units[1];
+ const saved=[{...hum},{...bot}],dt=1/60;
+ function turn(unit,i,isBot,onFoot,aimed){
+  Object.assign(unit,{a:0,vx:0,vy:0,onFoot});
+  const input=aimed?{moveX:0,moveY:0,aimX:-1,aimY:0,fireAim:true,bot:isBot}:
+   {moveX:-1,moveY:0,bot:isBot};
+  api.tankMove(unit,input,dt,i);
+  return unit.a;
+ }
+ try{
+  for(const aimed of [false,true]){
+   const human=turn(hum,0,false,true,aimed),ai=turn(bot,1,true,true,aimed);
+   assert.ok(Math.abs(human-6.5*dt)<1e-9,'human pilot cap 6.5 rad/s');
+   assert.ok(Math.abs(ai-6.5*dt)<1e-9,'AI pilot cap 6.5 rad/s');
+   assert.ok(Math.abs(human-ai)<1e-9,'pilot turn parity across human and AI inputs');
+   const tankHuman=turn(hum,0,false,false,aimed),tankBot=turn(bot,1,true,false,aimed);
+   const expectedVehicle=(aimed?4.2:12)*dt;
+   assert.ok(Math.abs(tankHuman-expectedVehicle)<1e-9,'solo tank turn rate preserved');
+   assert.ok(Math.abs(tankBot-expectedVehicle)<1e-9,'bot tank turn rate preserved');
+  }
+ }finally{Object.assign(hum,saved[0]);Object.assign(bot,saved[1]);}
+ console.log('PASS combat A1: human/AI pilot movement+aim cap equal, vehicle rates unchanged');
+}
 const shooter=st().tanks[0];shooter.shield=0;
 assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),false,'shell cap');
 assert.equal(win.__test.botInput(1,1/60).bot,true);
@@ -1628,7 +1655,7 @@ console.log('PASS playable CQC contract: real 10 pilot KOs, protected safe respa
  const bot=game.tanks[1];
  bot.a=0;
  api.tankMove(bot,{moveX:0,moveY:1,bot:true},dt,1);
- assert.ok(Math.abs(bot.a-12*dt)<.000001,'bot rotation unchanged');
+ assert.ok(Math.abs(bot.a-6.5*dt)<.000001,'bot pilot now shares the human 6.5rad/s movement turn cap');
 
  api.beginFireAim({pointerId:77,clientX:210,clientY:240});
  assert.equal(api.fireAim.active,false);

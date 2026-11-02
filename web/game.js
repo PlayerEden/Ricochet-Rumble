@@ -1067,19 +1067,22 @@ function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=c
  const tacticalVehicle=isScoredVehicleMatch()&&!t.onFoot;
  const baseVehicleSpeed=tacticalVehicle?(inp.bot?SCORED_FFA_VEHICLE_PACE.bot:SCORED_FFA_VEHICLE_PACE.human):(inp.bot?178:222);
  const speed=(t.onFoot?(inp.bot?194:268):baseVehicleSpeed*vehicleDef(currentVehicle(t)).speed)*(t.powerType==='turbo'&&t.powerTimer>0?1.48:1);
- // Apply CQC's accepted 6.5rad/s aim to the local Solo Survival pilot too.
- // AI, guest/host LAN, duel, and all vehicles retain their existing behavior.
- // Both human seats in LAN can independently aim a vulnerable pilot.
- // One local player remains seat 0 in offline Solo. No new tank AIM mode.
+ // Pilot heading is a physical capability, not a player-only movement
+ // assist: both human and AI pilots obey the SAME 6.5 rad/s turn ceiling.
+ // Keep approved vehicle aim/drive rates and local Solo tank center-pivot
+ // steering intact; don't change pilot damage, accuracy or movement speed.
  const humanSeat=!inp.bot&&((mode==='solo'&&i===0)||(mode==='host'&&(i===0||i===1)));
  const botAiming=inp.bot===true&&inp.fireAim===true;
  const precisionFoot=t.onFoot&&humanSeat,independentAim=humanSeat||botAiming;
  const aimed=independentAim&&Number.isFinite(inp.aimX)&&Number.isFinite(inp.aimY)&&Math.hypot(inp.aimX,inp.aimY)>.6;
  if(mag||aimed){const target=aimed?Math.atan2(inp.aimY,inp.aimX):Math.atan2(my,mx),
   diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a)),
-  aimTurn=aimed?(t.onFoot?SOLO_PILOT_TURN_RATE:
-   tacticalVehicle?SCORED_FFA_VEHICLE_PACE.turnRate:4.2):null,
-  maxTurn=dt*(aimTurn??(precisionFoot?SOLO_PILOT_TURN_RATE:tacticalVehicle?SCORED_FFA_VEHICLE_PACE.turnRate:12));
+  // Input source (human/bot) must never bypass a pilot's turn limit.
+  // Vehicle rates deliberately preserve the existing accepted feel.
+  turnRate=t.onFoot?SOLO_PILOT_TURN_RATE:
+   aimed?(tacticalVehicle?SCORED_FFA_VEHICLE_PACE.turnRate:4.2):
+   tacticalVehicle?SCORED_FFA_VEHICLE_PACE.turnRate:12,
+  maxTurn=dt*turnRate;
   t.a+=clamp(diff,-maxTurn,maxTurn)}
  // Local Solo pilot only: tiny optional heading nudge when already shooting
  // almost directly at an on-screen enemy pilot. No auto-fire or homing shell.
