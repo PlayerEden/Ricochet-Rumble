@@ -458,7 +458,7 @@ const LAN_GUEST_INPUT_TIMEOUT=.4;
 let guestInputAge=Infinity;
 function neutralizeGuestInput(){
  guestInput={moveX:0,moveY:0,fire:false};
- guestInputAge=Infinity;
+ guestInputAge=Infinity;remoteReleaseShot=null;
 }
 // Host-authoritative LAN pilot input. Explicit axes are accepted only as a
 // finite unit vector; malformed/partial aim can NEVER cause NaN rotation.
@@ -1496,21 +1496,28 @@ function step(dt){if(paused||state.winner>=0)return;
  state.vehicleDropTimer=(state.vehicleDropTimer??28)-dt;
  if(!isCqcMatch()&&state.vehicleDropTimer<=0){deployVehicle();state.vehicleDropTimer=30+mazeRandom(deploymentSeed(state.mazeSeed,state.dropIndex+9))()*12;}
  if(!isCqcMatch()&&state.pickupTimer<=0){if(state.pickups.length)state.pickups=[];spawnPickup();state.pickupTimer=state.pickups.length?13:3;}
- const inputs=state.tanks.map((t,i)=>i===0?makeControl(true):i===1&&mode==='duel'?makeControl(false):i===1&&mode==='host'?guestInput:botInput(i,dt));
+ const inputs=state.tanks.map((t,i)=>i===0?makeControl(true):i===1&&mode==='duel'?makeControl(false):i===1&&mode==='host'?{...guestInput}:botInput(i,dt));
+ if(mode==='host'&&remoteReleaseShot&&state.matchId===remoteReleaseShot.matchId){
+  inputs[1].aimX=remoteReleaseShot.x;inputs[1].aimY=remoteReleaseShot.y;
+ }
+ if(remoteReleaseShot&&(!connected||mode!=='host'||remoteReleaseShot.matchId!==state.matchId||
+  state.lives[1]<=0||paused||(remoteReleaseShot.ttl-=dt)<=0))remoteReleaseShot=null;
  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]<=0)continue;
  t.powerTimer=Math.max(0,(t.powerTimer||0)-dt);if(t.powerTimer<=0)t.powerType=null;t.flash=Math.max(0,(t.flash||0)-dt);t.recoil=Math.max(0,(t.recoil||0)-dt*6);t.ejectAnim=Math.max(0,(t.ejectAnim||0)-dt);
  t.shield=Math.max(0,t.shield-dt);tankMove(t,inputs[i],dt,i);
  for(const p of state.pickups){if(Math.hypot(t.x-p.x,t.y-p.y)<(t.onFoot?23:35)&&collectPickup(t,i,p))break}
  fireCooldown[i]=Math.max(0,(fireCooldown[i]||0)-dt);
- // Wait for the same 6.5rad/s physical turn before releasing the shot.
+ // Host-authoritative fire from one physical release, after facing alignment.
+ const queued=i===0&&mode!=='guest'?releaseShot:i===1&&mode==='host'?remoteReleaseShot:null;
  let releaseReady=false;
- if(i===0&&releaseShot&&pilotReleaseMode()&&releaseShot.matchId===state.matchId){
-  const angle=Math.atan2(releaseShot.y,releaseShot.x);
-  const difference=Math.atan2(Math.sin(angle-t.a),Math.cos(angle-t.a));
-  releaseReady=Math.abs(difference)<.10&&fireCooldown[i]<=0;
+ if(queued&&queued.matchId===state.matchId&&state.lives[i]>0){
+  const angle=Math.atan2(queued.y,queued.x),
+    diff=Math.atan2(Math.sin(angle-t.a),Math.cos(angle-t.a));
+  releaseReady=Math.abs(diff)<.095&&fireCooldown[i]<=0;
  }
  if((inputs[i]?.fire||releaseReady)&&fireCooldown[i]<=0&&shoot(i)){
-  fireCooldown[i]=fireInterval(t);if(releaseReady)releaseShot=null;
+  fireCooldown[i]=fireInterval(t);
+  if(releaseReady){if(i===0)releaseShot=null;else remoteReleaseShot=null;}
  }
 }
  for(const b of state.bullets){b.age+=dt;b.life-=dt;const substeps=Math.max(1,Math.ceil(Math.max(Math.abs(b.vx),Math.abs(b.vy))*dt/5)),subDt=dt/substeps;
@@ -2184,6 +2191,9 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  }
 function nativePacket(packet){if(!window.AndroidBridge)return;try{window.AndroidBridge.sendPacket(JSON.stringify(packet))}catch(e){notice('Network send failed')}}
 function loop(now){const dt=clamp((now-lastTime)/1000,0,.085);lastTime=now;
+ if(mode==='guest'&&releaseShot){releaseShot.ttl-=dt;
+  if(!releaseMode()||releaseShot.ttl<=0||releaseShot.matchId!==state.matchId)releaseShot=null;
+ }
  if(mode==='solo'||mode==='duel'||mode==='host'){if(!paused&&state.winner<0){fixedAccumulator=Math.min(.12,fixedAccumulator+dt);let ticks=0;while(fixedAccumulator>=STEP&&ticks++<5){step(STEP);fixedAccumulator-=STEP}}else fixedAccumulator=0;}
  updateVisuals(dt);hudTimer+=dt;if(hudTimer>.15){hudTimer=0;refreshHUD();}
  if(mode==='host'&&connected&&!(lanLobby&&lanLobby.active)){snapshotTimer+=dt;if(snapshotTimer>.09){snapshotTimer=0;nativePacket({type:'state',state:serializeState()})}}
@@ -2423,7 +2433,7 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
  case 'found':{const r=document.getElementById('rooms');if(r&&!r.querySelector('[data-host="'+msg.host+'"]')){const b=document.createElement('button');b.textContent='JOIN '+(msg.name||'NEARBY GAME');b.dataset.host=msg.host;b.onclick=()=>{window.AndroidBridge.joinGame(msg.host,msg.port);document.getElementById('find-status').textContent='Connecting...'};r.appendChild(b)}break}
  case 'connected':{
  if(mode!=='host'&&mode!=='guest')break;
- if(mode==='host')neutralizeGuestInput();
+ if(mode==='host'){neutralizeGuestInput();lastGuestFireSeq=0;remoteReleaseShot=null;}
  connected=true;paused=true;
  document.getElementById('mode-label').textContent=mode==='guest'?'YOU: CORAL':'YOU: CYAN';
  if(mode==='host'){if(!lanLobby)startLanLobby();lanLobby.guestReady=false;refreshLanLobby();publishLanLobby();}
@@ -2454,6 +2464,16 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
  if(event.kind==='guard')audioCue('barrier',event.x,event.y);
  if(event.kind==='pickup')audioCue('pickup',event.x,event.y);lastRemoteFxId=event.id}}state=upcoming;setArena(0,state.mazeSeed,state.config?.mapSize);refreshHUD()}break;
  case 'input':if(mode==='host'&&connected&&!paused&&state.winner<0&&msg.input){guestInput=normalizeLanInput(msg.input);guestInputAge=0;}break;
+ case 'fire-request':{
+  if(mode!=='host'||!connected||paused||state.winner>=0||state.lives[1]<=0||
+    msg.matchId!==state.matchId||!Number.isInteger(msg.seq)||
+    msg.seq<=lastGuestFireSeq||msg.seq>2147483600)break;
+  const x=Number(msg.aimX),y=Number(msg.aimY),len=Math.hypot(x,y);
+  if(!Number.isFinite(len)||len<.6||len>1.1)break;
+  lastGuestFireSeq=msg.seq;
+  remoteReleaseShot={x:x/len,y:y/len,ttl:1.6,matchId:state.matchId};
+  break;
+ }
  case 'interact':if(mode==='host'&&connected&&!paused)tryInteract(1);break;
  case 'disconnected':connected=false;paused=true;lanLobby=null;neutralizeGuestInput();clearStick();notice('Other player disconnected');setPanel('<h2>CONNECTION LOST</h2><p>Return to the main menu and reconnect.</p><button data-action="close">MAIN MENU</button>');break;
  case 'error':notice(msg.message||'Network error');break;}}};
