@@ -1,3 +1,17 @@
+# 2026-11-02 — A2 SHARED BALLISTICS / DOTTED TRACE (EXPERIMENTAL)
+
+**In progress on isolated [draft PR #91](https://github.com/PlayerEden/Ricochet-Rumble/pull/91):** `experiment/trajectory-physics-core-a2`, descendant of combat A1. Stable `main`, signed owner v0.9.67 preview and local saves remain untouched.
+
+**Implemented:** shared exact `projectileOrigin`, `makeProjectile`, `advanceProjectileMicrostep` for live bullets and side-effect-free `traceProjectile` predictions. The player's dotted `previewTrajectory` now calls shared ballistics and remains intentionally capped at a short, one-bounce hint. AI targeting, skill/reactions, projectiles' actual damage/velocity/lifetime, and LAN protocol unchanged. Browser/Android game assets have identical blob `9f8767398ae9efdae3cfac998cbee12672af6864`.
+
+**Verified:** [fast physics contract run #41519415065 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41519415065). It checks pilot/tank/mech actual shot origin/kinematics, static target contact and shields, side-effect-free prediction, real microstep parity, sidearm wall stops, vehicle ricochet, short UI preview and ally/enemy filtering. Earlier short-lived CI failures were invalid test harness or temporarily unmatched web/Android source in sequential commits; final mirrored run succeeded.
+
+**Whole game independent gate:** [run #41519415000](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41519415000) at final gameplay source was triggered; **await terminal result before claiming CTF/44-screen full QA passes**. [Technical A2 audit and test matrix](SHARED_BALLISTICS_A2_2026-11-02.md); [overall combat/faction/LAN plan](COMBAT_FACTION_LAN_ARC_2026-11-02.md).
+
+**Still not implemented:** A3 AI bank-shot planning/acquire/lock, B friendly fire and allied trace display, C dynamic faction IDs and FFA/solo side shuffling, D true scored squad LAN TDM. Physical two-phone LAN test remains pending. No new APK at this checkpoint.
+
+---
+
 # 2026-11-02 — COMBAT A1: PHYSICAL PILOT TURN PARITY (ISOLATED)
 
 **Status:** Stage A1 implemented on experimental branch `experiment/combat-parity-trajectory-a1`, [draft PR #90](https://github.com/PlayerEden/Ricochet-Rumble/pull/90). Stable `main` and v0.9.67 signed owner APK unchanged.
