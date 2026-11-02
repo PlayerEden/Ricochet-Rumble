@@ -1772,7 +1772,16 @@ function step(dt){if(paused||state.winner>=0)return;
     diff=Math.atan2(Math.sin(angle-t.a),Math.cos(angle-t.a));
   releaseReady=Math.abs(diff)<.095&&fireCooldown[i]<=0;
  }
- if((inputs[i]?.fire||releaseReady)&&fireCooldown[i]<=0&&shoot(i)){
+ // Host-only bot safety: at firing commitment, reject a shot whose first
+ // intercept is an allied actor under FF ON. This examines only current
+ // physically simulated path, not future teammate movement. A teammate can
+ // still step into the shell AFTER it leaves the muzzle.
+ const botShotClear=!inputs[i]?.bot||!friendlyFireEnabled()||(()=>{
+  const path=traceProjectile(t,t.a,{maxDistance:t.onFoot?370:730,
+   maxBounces:t.onFoot?0:1,checkActors:true});
+  return path.hit===null||path.hit===i||!friendly(i,path.hit);
+ })();
+ if((inputs[i]?.fire||releaseReady)&&fireCooldown[i]<=0&&botShotClear&&shoot(i)){
   fireCooldown[i]=fireInterval(t);
   if(inputs[i]?.bot){
    const brain=botBrains.get(i);
