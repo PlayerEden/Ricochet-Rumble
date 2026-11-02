@@ -29,7 +29,7 @@
 
 - `tests/combat-feedback-parity-qa.mjs` uses the real game script, Chromium, a deterministic host-style valid snapshot, Web Audio API stub and calls `window.RR.nativeMessage` on the guest. Exercises pilot, tank and mech at 568x320, 740x360 and 960x540 with own vs other damage, muted SFX, shake OFF and duplicate packet replay.
 - Existing 45 combat-HUD truth fixtures, 27 visibility cues, 18 bot timing cases, 48 touch gesture cases, team vehicle routes, Forward Bays, CTF and full visual regression required.
-- **Do not mark complete until the actual GitHub Actions run reports green**. CI has been configured for this isolated branch; no Android build has been requested.
+- **Complete regression PASS:** [GitHub Actions 41469568539](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41469568539), actual gameplay commit `a4923a2ea47f50e82c631b559dd4f9d640279023`. New **42 real guest feedback fixtures** passed across pilots/tanks/mechs and three landscapes; **45 HUD**, **27 cue**, **18 bot cadence**, **48 touch** fixtures, route-fair deployment, Forward Bays, CTF, Quick Play and **44 visual screenshots** all passed. Evidence artifact: `sector-rebound-combat-cues-evidence` (GitHub Actions run). No Android APK was built.
 
 ## Known limitations and next quality work
 
