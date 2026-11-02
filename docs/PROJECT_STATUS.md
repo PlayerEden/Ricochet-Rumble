@@ -1,3 +1,15 @@
+# 2026-11-02 — COMBAT A1: PHYSICAL PILOT TURN PARITY (ISOLATED)
+
+**Status:** Stage A1 implemented on experimental branch `experiment/combat-parity-trajectory-a1`, [draft PR #90](https://github.com/PlayerEden/Ricochet-Rumble/pull/90). Stable `main` and v0.9.67 signed owner APK unchanged.
+
+**Change:** Humans and AI on-foot pilots now share a strict 6.5 rad/s physical movement and aim ceiling; previously moving AI pilots had a 12 rad/s advantage. Tank/mech turning, AI accuracy, projectile physics, reaction/cooldowns, hitboxes, shared friendly pass-through and current team colors remain unchanged. Browser/Android `game.js` file blobs are identical `83261832f5fb49ef97f48fe9d3674e86df3569ff`.
+
+**QA:** Real-engine smoke parity tests added (human/bot on-foot, aim vs movement, tank rates preserved). The first CI run [#41517384062](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41517384062) failed only an old CQC fixture that explicitly required the now-removed AI 12 rad/s turn advantage; test expectation updated without changing production mechanics. Full follow-up run [#41517512572](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41517512572) is the active acceptance gate; don't claim full QA success until its terminal result is recorded.
+
+**Next:** [Combat/factions/LAN roadmap](COMBAT_FACTION_LAN_ARC_2026-11-02.md); [actual bullet vs dotted-preview divergence and A2 architecture audit](SHOT_TRACE_A2_AUDIT_2026-11-02.md). Build deterministic exact trajectory evaluator, then bot acquire/commit behavior. After focused tests, add friendly-fire, real team ids, FFA palette shuffling, solo rotating sides, LAN scored squads. Hold APK until substantive stage checkpoint and acceptance.
+
+---
+
 # 2026-11-02 — EXPERIMENT: NON-SOLID TEAMMATES (v0.9.67 TEST APK)
 
 **New design rule:** In team-based modes, friendly tanks/mechs/pilots physically overlap rather than block each other. Enemies remain solid; FFA opponent collision, walls, vehicle occupant rules, shooting stats, damage and scoring remain unchanged. The recently introduced special Solo CTF **human escort** yielding workaround was removed. Older general bot-versus-bot path steering remains unchanged for this test.
