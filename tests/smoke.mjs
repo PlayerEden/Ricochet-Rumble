@@ -15,7 +15,7 @@ node('bot-skill').value='normal';
 node('bot-count').value='1';node('bullet-cap').value='3';node('lives-choice').value='5';node('team-choice').value='ffa';node('map-size').value='standard';
 let frame=null,tick=0,hostCalled=false,discoverCalled=false,packets=[];
 const android={hostGame(){hostCalled=true},findGames(){discoverCalled=true},joinGame(){},stopNetwork(){},sendPacket(p){packets.push(JSON.parse(p))}};
-const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(key){return ['rr-options-v06','rr-custom-v1','rr-custom-presets-v1','rr-coach-cqc-v1','rr-coach-scored-vehicle-v2','rr-hangar-paint-v1','rr-dossier-v1'].includes(key)?savedStorage.get(key)??null:null},setItem(key,value){if(['rr-options-v06','rr-custom-v1','rr-custom-presets-v1','rr-coach-cqc-v1','rr-coach-scored-vehicle-v2','rr-hangar-paint-v1','rr-dossier-v1'].includes(key))savedStorage.set(key,String(value))}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(sel){if(sel==='input[data-playlist-mode]')return acceptancePlaylistInputs||[];if(sel==='[data-action="solo"],[data-action="settings-play"]')return acceptancePlayButtons||[];return []}};
+const win={AndroidBridge:android,addEventListener(){},localStorage:{getItem(key){return (['rr-options-v06','rr-custom-v1','rr-custom-presets-v1','rr-coach-cqc-v1','rr-coach-scored-vehicle-v2','rr-hangar-paint-v1','rr-dossier-v1'].includes(key)||key.startsWith('rr-coach-fire-v0965-'))?savedStorage.get(key)??null:null},setItem(key,value){if((['rr-options-v06','rr-custom-v1','rr-custom-presets-v1','rr-coach-cqc-v1','rr-coach-scored-vehicle-v2','rr-hangar-paint-v1','rr-dossier-v1'].includes(key)||key.startsWith('rr-coach-fire-v0965-')))savedStorage.set(key,String(value))}}},document={addEventListener(){},getElementById:node,querySelector(){return node('battlefield')},querySelectorAll(sel){if(sel==='input[data-playlist-mode]')return acceptancePlaylistInputs||[];if(sel==='[data-action="solo"],[data-action="settings-play"]')return acceptancePlayButtons||[];return []}};
 let simRand=null;
 const testMath=Object.create(Math);testMath.random=()=>simRand?simRand():Math.random();
 function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5;return(z>>>0)/4294967296;};}
@@ -195,7 +195,7 @@ assert.ok(script.includes('drawTopPilot')&&script.includes('drawTopTank')&&scrip
 // v0.9.1 QA pass — learnability, default friction, and accessible no-bot practice.
 assert.ok(menuHtml.includes('id="quick-rematch"'),'visible one-tap replay control exists');
 assert.ok(menuHtml.includes('0 · PRACTICE'),'no-bots selection explains its purpose');
-assert.ok(script.includes('rr-coach-v091'),'nonmodal first-time coaching');
+assert.ok(script.includes('rr-coach-fire-v0965-'),'nonmodal first-time coaching');
 assert.equal(win.__test.comfort.shake,false,'screen shake off by default for comfort');
 click('settings');node('bot-count').value='0';node('map-size').value='small';node('team-choice').value='ffa';
 click('settings-play');assert.equal(st().tanks.length,1,'0 bots should be a real safe practice field');
@@ -971,7 +971,7 @@ console.log('PASS v0.9.15: after-action stats, result transitions, replay/menu a
  click('solo');
  const coach=node('field-coach');
  assert.equal(coach.classList.contains('hidden'),false,'initial controls explained without blocking play');
- assert.ok(coach.textContent.includes('HOLD FIRE'));
+ assert.ok(coach.textContent.includes('RELEASE TO SHOOT'));
  win.__test.coachTip('PILOT TEST',.05);
  assert.equal(coach.textContent,'PILOT TEST');
  runFrames(6);
@@ -2172,18 +2172,20 @@ console.log('PASS v0.9.46 presentation: interactive pause SFX/music, persistence
 // appear once per input scheme, and never intrude on later sessions/modes.
 {
  const api=win.__test,overlay=node('field-coach');
- savedStorage.delete('rr-coach-scored-vehicle-v2');
- savedStorage.delete('rr-coach-cqc-v1');
+ const priorFire={release:api.comfort.releaseFire,auto:api.comfort.autoFire};
+ api.comfort.releaseFire=true;api.comfort.autoFire=false;
+ savedStorage.delete('rr-coach-fire-v0965-scored-vehicle-release');
+ savedStorage.delete('rr-coach-fire-v0965-cqc-release');
  api.newMatch('scored_ffa');
  assert.equal(overlay.classList.contains('hidden'),false,'scored tank entry has a first-time hint');
- assert.ok(overlay.textContent.includes('MOVE TO STEER'),'scored tank explains joystick steering without extra button');
- assert.equal(savedStorage.get('rr-coach-scored-vehicle-v2'),'1','scored tank tip permanently marks one brief per scheme');
+ assert.ok(overlay.textContent.includes('DRAG FIRE TO AIM · RELEASE FOR ONE SHOT'),'scored tank explains actual release-to-fire');
+ assert.equal(savedStorage.get('rr-coach-fire-v0965-scored-vehicle-release'),'1','scored tank tip permanently marks one brief per scheme');
  api.newMatch('scored_tdm');
  assert.equal(overlay.classList.contains('hidden'),true,'TDM shares scored vehicle controls: do not nag on next match');
  api.newMatch('cqc');
  assert.equal(overlay.classList.contains('hidden'),false,'first CQC displays on-foot instructions');
  assert.ok(overlay.textContent.includes('DRAG FIRE TO AIM'),'CQC on-foot instructions are not tank instructions');
- assert.equal(savedStorage.get('rr-coach-cqc-v1'),'1');
+ assert.equal(savedStorage.get('rr-coach-fire-v0965-cqc-release'),'1');
  api.newMatch('cqc');
  assert.equal(overlay.classList.contains('hidden'),true,'CQC repeat starts directly in combat without hint');
  // Existing scored Custom variants reuse the already learned scored control scheme.
@@ -2192,7 +2194,8 @@ console.log('PASS v0.9.46 presentation: interactive pause SFX/music, persistence
  assert.equal(overlay.classList.contains('hidden'),true,'Custom scored tank keeps one-time scored briefing state');
  assert.ok(!api.state.tanks[0].onFoot,'custom scored mode still starts in vehicle');
  assert.equal(overlay.classList.contains('hidden'),true);
- console.log('PASS Phase 3A: Survival text preserved, scored joystick and CQC FIRE-drag coached once, repeat modes unblocked');
+ api.comfort.releaseFire=priorFire.release;api.comfort.autoFire=priorFire.auto;
+ console.log('PASS Phase 3A: release-to-fire truth in scored/CQC, once-per-scheme no-repeat on subsequent modes');
 }
 
 // Phase 4A: The actual starter Hangar uses pre-existing unit materials,
