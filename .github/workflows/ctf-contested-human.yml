@@ -1,7 +1,7 @@
 name: Sector Rebound - Contested CTF input-driven combat audit
 on:
   push:
-    branches: [experiment/ctf-contested-human-attack-v1, audit/ctf-armed-attacker-v1, experiment/ctf-human-escort-lane-clearance-v1, experiment/friendly-unit-pass-through-v1, experiment/combat-parity-trajectory-a1]
+    branches: [experiment/ctf-contested-human-attack-v1, audit/ctf-armed-attacker-v1, experiment/ctf-human-escort-lane-clearance-v1, experiment/friendly-unit-pass-through-v1, experiment/combat-parity-trajectory-a1, experiment/trajectory-physics-core-a2]
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,6 +25,7 @@ jobs:
           node tests/ctf-objective-ai.mjs
           node tests/ctf-rules.mjs
           node tests/smoke.mjs
+          node tests/ballistic-trace-a2.mjs
           node tests/save-backup.mjs
       - name: Simulate player-controlled flag theft, interception and legacy browser gameplay
         shell: bash
