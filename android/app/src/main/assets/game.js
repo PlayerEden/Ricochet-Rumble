@@ -2478,7 +2478,7 @@ function beginFireAim(e,source='fire'){
 }
 function updateFireAim(e){
  if(fireAim.pointerId!==e.pointerId)return;
- if(!releaseMode()){clearFireAim();return;
+ if(!releaseMode()){clearFireAim();return;}
  const dx=(Number(e.clientX)||0)-fireAim.startX,dy=(Number(e.clientY)||0)-fireAim.startY,d=Math.hypot(dx,dy);
  // Preserve accepted pilot FIRE drag sensitivity without new tuning.
  if(d<14)return;
