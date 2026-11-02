@@ -28,3 +28,21 @@ A pass proves that a scripted attacker can move, legitimately fire, steal a flag
 2. If the attacker can't fire, distinguish a too-strict test planner from a genuine physical shooting defect before any gameplay change.
 3. If the human can fight but cannot ever bring a flag home, investigate defensive lane positions, escort distance and time to escape; use matched-seed A/B evidence and targeted regression before tuning.
 4. After a justified change, retain the old seeded fixtures as a control and seek a physical Android owner test. No merging to stable `main` or Play publication without approval.
+
+## First armed-only experiment — actual result (verified)
+[Real browser/CTF/Forward Bay/Quick Play/visual regression run 41503619118: SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41503619118), tested source `8e4698f5c89e74f80ed5b7b23158c002c7dc3e58`, artifact `13169597652`.
+
+| Seed | Human shots | Human KOs | Human deaths | Human captures |
+|---|---:|---:|---:|---:|
+| 101 small | 2 | 1 | 0 | 0 |
+| 102 small | 4 | 2 | 0 | 0 |
+| 104 small | 57 | 44 | 1 | 2 |
+| 201 standard | 15 | 9 | 0 | 3 |
+| **Total** | **78** | **56** | **1** | **5** |
+
+The attack script uses instant perfect enemy coordinates for every currently visible candidate, zero reaction delay, and parallel movement/aim; it is **not a representative novice or expert human**. The 44-KO case is a warning not to infer normal difficulty from this test. Previous unarmed tests were on an older checkpoint; comparing historical values without controlling the source is confounded.
+
+## Second-phase controlled A/B (test-only)
+A follow-on source commit `474ef3e649124a643eb198e2c1aaf5cf4d24521e` now reruns the same four seeded maps in three controller profiles: (1) no firing, (2) precise existing controller, and (3) conservative controller requiring 0.34s continuous visibility, 0.30s target-position sampling, up to 0.065rad deterministic aim imprecision and at least 0.78s between input FIRE pulses. Every profile uses the same movement route planner and unchanged game engine. Results are observational, not a claim of causal isolation if other game-wide pseudorandom inputs diverge. The exact-head GitHub run must finish before reporting these results as successful.
+
+No gameplay/Android asset changes; retain the parent stable/test build. If comparative results show unreasonable KOs, do not artificially nerf bots or grant player stats without physical owner feedback and further matched-seed evidence.
