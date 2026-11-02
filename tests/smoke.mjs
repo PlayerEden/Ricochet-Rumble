@@ -968,6 +968,10 @@ console.log('PASS v0.9.15: after-action stats, result transitions, replay/menu a
  assert.ok(html.includes('data-action="solo"')&&html.includes('data-action="nearby"')&&html.includes('data-action="settings"')&&html.includes('data-action="help"'),'all entry actions retained');
  assert.equal(html,fs.readFileSync(new URL('../android/app/src/main/assets/index.html',import.meta.url),'utf8'),'Android and web menus must remain identical');
  assert.ok(css.includes('.scorestrip .middle.damaged'),'critical armor styling is present');
+ // Previous smoke sections may have used this scheme; isolate first-run UX.
+ const priorCoachScheme={auto:win.__test.comfort.autoFire,release:win.__test.comfort.releaseFire};
+ win.__test.comfort.autoFire=false;win.__test.comfort.releaseFire=true;
+ savedStorage.delete('rr-coach-fire-v0965-survival-release');
  click('solo');
  const coach=node('field-coach');
  assert.equal(coach.classList.contains('hidden'),false,'initial controls explained without blocking play');
@@ -990,6 +994,7 @@ console.log('PASS v0.9.15: after-action stats, result transitions, replay/menu a
  win.__test.updateQuietMatchPrompt(50);
  assert.ok(node('toast').textContent.includes('RADAR'),'quiet prompt is one-time');
  assert.notEqual(node('toast').textContent,oldNotice);
+ win.__test.comfort.autoFire=priorCoachScheme.auto;win.__test.comfort.releaseFire=priorCoachScheme.release;
 }
 console.log('PASS v0.9.17 contextual guidance, true projectile availability, one-time quiet-match radar reminder.');
 
