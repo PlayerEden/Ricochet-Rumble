@@ -34,3 +34,23 @@ Do **not** merge to `main` or build a production-signed release as a consequence
 [Run 41509680268 FAILED the deliberately strict seed-102 progress assertion](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41509680268); browser and Android source parity and objective rule checks had passed, but the attacker remained behind the escort. The failure is **not accepted** as an implementation success and did not reach the later full regression steps. The next [instrumented run 41510003761](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41510003761) was likewise rejected at the same assertion and recorded the actual cause: escort at (305.9,594.0) when human stopped (263.9,595.1), or at (351.9,594.0) when the human stopped (318.8,595). Both bot-side 48-unit lateral probes were blocked by physical maze walls, so a strictly side-only yield never activated. The escort's decision was `escort`, not enemy interception, and the current `ctfHumanYieldSide` stayed zero. This disproved the initial side-pocket hypothesis for the particular narrow corridor.
 
 **Second candidate:** in addition to safe lateral yielding when a pocket exists, a blocked-side friendly escort now tries to advance 36 units forward along the human's approach heading when the proposed position is physically clear of walls and live actors. It moves using ordinary bot steering and speed, no teleport/phasing. If neither side nor forward is clear, the original collision remains enforced rather than silently bypassed. The same strict seed-102 movement gate, twelve contested real-match cases and complete regressions must be rerun. First version of this addition is preserved in gameplay commits `18e2a74` and `4688e20` (web/Android mirror respectively). No changes have been merged to main or distributed as APK.
+
+## Revised forward-or-side fallback — full real-engine QA PASS
+
+[GitHub Actions run 41510223130: SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41510223130), exact game source commit `4688e20750c30465b5740834bab1ee29b1825bb2`. The web and Android WebView `game.js` files had matching Git blob SHA `f03d45c1f76560cd7439a7d13d2de9567ba61e6a`.
+
+The revised experiment attempts a small legal **forward** advance when a trailing human is blocked by an escort in a corridor and both 48-unit sideways positions are physically obstructed. This is CTF-specific AI steering; all engine movement, armor/hitboxes, projectile, collision, damage, objective scoring, respawn and LAN/network code remain unchanged.
+
+**Observed seed 102 full 180-second real-engine tests:**
+
+| Scripted human | Previous closest flag distance | Revised closest | Result |
+|---|---:|---:|---|
+| Unarmed | 721.2 | **21.0** | Reached enemy flag, 0 captures |
+| Precise | 721.2 | **19.4** | 3 human captures |
+| Reaction-limited | 772.6 | **16.7** | 3 human captures |
+
+No fixture position, enemy health or physics was changed in natural tests. This supports a genuine player-wayfinding improvement in this known congested seed, but the simulated controller is still not a representative human and results are not an acceptance rate. Total deaths and KOs across the four seeds changed substantially, so avoid asserting skill balance or changing difficulty based solely on this test.
+
+**Broader QA:** same 12 controlled-attack cases, CTF objective/rules/natural-match browser regression, 300 Forward Bay seeds, Quick Play live flow, stale backup guard, first-match, and **44 actual visual snapshots** all passed. This is browser and JS/Android source evidence, not a signed APK or real phone/LAN proof.
+
+**Next gate:** cross-system pilot/combat/HUD/save and Android package QA, followed by optional separately identified test-only v0.9.66 owner APK. Preserve v0.9.65 owner-installed preview and never force an uninstall. Stable `main` and draft PR #85 untouched.
