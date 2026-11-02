@@ -33,6 +33,20 @@ function hooks(){
    return {visible:pilotInLocalView(human.x,human.y)&&pilotInLocalView(bot.x,bot.y),
     line:hasLineOfSight(bot.x,bot.y,human.x,human.y),kind,skill};
   },
+  traceChoice(){
+   // Read actual bot decision state without faking its angle or firing cycle.
+   const target=state.tanks[0],bot=state.tanks[1],oldY=target.y;
+   botBrains.delete(1);
+   const first=botInput(1,1/60);
+   const brain=botBrains.get(1),angle=brain?.fireAngle;
+   const count=brain?.fireCandidateCount||0,bank=brain?.fireBank;
+   target.y+=18;const moved=botInput(1,1/60);
+   const locked=botBrains.get(1)?.fireAngle;
+   target.y=oldY;
+   botBrains.delete(1); // leave the existing shot-cycle fixture unchanged
+   return {firstFire:first.fire,firstAim:angle,candidates:count,
+    banked:bank,movedFire:moved.fire,locked,hasAim:!!first.aimX||!!first.aimY};
+  },
   sample(n=230){
    const shots=[],aims=[];let last=0;
    for(let f=1;f<=n;f++){
@@ -92,6 +106,14 @@ try{
     {seed,kind,skill});
    assert.equal(init.line,true,'fixture must have actual world LOS');
    assert.equal(init.visible,true,'fixture visible on local viewport');
+   const choice=await page.evaluate(()=>window.__shotParity.traceChoice());
+   assert.equal(choice.firstFire,false,kind+' '+skill+' cannot fire first acquisition tick');
+   assert.equal(choice.banked,false,kind+' '+skill+' clear short shot selects direct path');
+   assert.ok(choice.candidates>=1&&choice.candidates<=7,
+    kind+' '+skill+' caps per-shot evaluations at seven');
+   assert.ok(Number.isFinite(choice.firstAim),kind+' '+skill+' plans a finite angle');
+   assert.ok(Math.abs(choice.firstAim-choice.locked)<1e-9,
+    kind+' '+skill+' shot heading locked when target changes position');
    const got=await page.evaluate(()=>window.__shotParity.sample());
    const firstMinimum=skill==='casual'?16:skill==='normal'?12:8;
    assert.ok(got.shots.length>=2,kind+' '+skill+' should commit at least two actual shots');
