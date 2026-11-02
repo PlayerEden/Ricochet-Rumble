@@ -1203,7 +1203,11 @@ function botTraceAim(bot,owner,seen,skill,shotNumber,canSee){
    const distance=(p.x-seen.x)**2+(p.y-seen.y)**2;
    if(distance<closest)closest=distance;
   }
-  const hit=(canSee?result.hit===seen.index:closest<targetRadius*targetRadius);
+  // Existing spawn shields still allow acquisition and the normal firing
+  // cycle; their actual hit immunity stays fully authoritative in step().
+  const hit=canSee?(result.hit===seen.index||
+   (state.tanks[seen.index]?.shield>0&&closest<targetRadius*targetRadius)):
+   closest<targetRadius*targetRadius;
   if(!hit)continue;
   const banked=result.bounces>0;
   // Direct shots are economical; choose a bank only when it actually works
@@ -1218,14 +1222,20 @@ function botTraceAim(bot,owner,seen,skill,shotNumber,canSee){
 // No frame-perfect tracking or course corrections AFTER the lock.
 function botFireCommit(brain,bot,target,skill,dt,visible,oldPilotGate,i,seen=null){
  brain.fireRecover=Math.max(0,(brain.fireRecover||0)-Math.max(0,dt));
+ brain.firePlanRetry=Math.max(0,(brain.firePlanRetry||0)-Math.max(0,dt));
  const index=state.tanks.indexOf(target);
  if(!visible||index<0||!seen){
   brain.fireTarget=-1;brain.fireTrack=0;brain.fireAngle=NaN;
   return {fire:false,aimX:undefined,aimY:undefined};
  }
  const targetKind=seen.onFoot?'pilot':'vehicle';
- if(brain.fireTarget!==index||brain.fireTargetKind!==targetKind||!Number.isFinite(brain.fireAngle)){
+ const targetChanged=brain.fireTarget!==index||brain.fireTargetKind!==targetKind;
+ if((targetChanged||!Number.isFinite(brain.fireAngle))&&
+    (targetChanged||brain.firePlanRetry<=0)){
   brain.fireTarget=index;brain.fireTargetKind=targetKind;brain.fireTrack=0;
+  // No valid trajectory? Try again at a bounded interval, never a costly
+  // full wall search every game frame.
+  brain.firePlanRetry=skill==='casual'?.75:skill==='spicy'?.38:.52;
   const candidate=botTraceAim(bot,i,{...seen,index},skill,brain.fireShots||0,
    seen.live===true);
   brain.fireCandidateCount=candidate.examined;
