@@ -1149,3 +1149,9 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 .game-screen:has(#ctf-status:not(.hidden)):has(#power-status:not(.hidden)) .arena-wrap .toast{
  top:max(128px,calc(clamp(47px,10dvh,72px) + 70px));
 }
+
+/* The scored clock must clear the entire 38px top scoreboard even when the
+   short-height menu layout would otherwise pull it up to y=45. */
+.game-hud .score-clock:not(.hidden){
+ top:max(52px,calc(env(safe-area-inset-top) + 52px));
+}
