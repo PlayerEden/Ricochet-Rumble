@@ -34,6 +34,30 @@ function hooks(){
    return {clear:hasLineOfSight(enemy.x,enemy.y,human.x,human.y),
     visible:pilotInLocalView(enemy.x,enemy.y,0)&&pilotInLocalView(human.x,human.y,0)};
   },
+  screenshotScene(){
+   // Documentation screenshots use an actual open corridor, never actor
+   // overlap deliberately created for the 55-unit first-shot test fixture.
+   const human=state.tanks[0],enemy=state.tanks[1],brain=botBrains.get(1);
+   let placed=false;
+   for(let cy=1;cy<mazeGrid.rows-1&&!placed;cy++)
+    for(let cx=1;cx<mazeGrid.cols-2&&!placed;cx++){
+     const a=cy*mazeGrid.cols+cx,b=a+1;
+     if(!mazeGrid.open[a]?.includes(b))continue;
+     const ax=(cx+.5)*mazeGrid.cell,ay=(cy+.5)*mazeGrid.cell,
+      bx=(cx+1.5)*mazeGrid.cell;
+     if(!hasLineOfSight(ax,ay,bx,ay))continue;
+     human.x=ax;human.y=ay;enemy.x=bx;enemy.y=ay;enemy.a=Math.PI;
+     brain.fireAngle=Math.PI;brain.fireTarget=0;brain.fireTrack=.27;
+     brain.fireRecover=0;enemy.flash=0;
+     camera.zoom=1;camera.x=(ax+bx)/2-W/2;camera.y=ay-H/2;
+     placed=true;
+    }
+   if(!placed)throw Error('No open corridor for aim cue screenshot');
+   render(1/60);
+   const cue=enemyBotCue(1,0);
+   return {placed,actorGap:Math.hypot(enemy.x-human.x,enemy.y-human.y),
+    visible:!!cue&&cue.phase==='acquire'};
+  },
   evaluate(){
    const human=state.tanks[0],enemy=state.tanks[1],brain=botBrains.get(1);
    const check=()=>enemyBotCue(1,0);
@@ -108,6 +132,9 @@ try{
    assert.equal(result.coveredFound,true,'real maze includes an occluded fixture');
    cases.push({viewport,kind,skill,progress:result.positive.progress});
    if(skill==='normal'&&kind==='tank'){
+    const scene=await page.evaluate(()=>window.__cueQA.screenshotScene());
+    assert.ok(scene.placed&&scene.visible&&scene.actorGap>=120,
+     'real screenshots show separate actors in an open corridor');
     fs.mkdirSync('qa-screens',{recursive:true});
     await page.locator('#arena').screenshot({
      path:'qa-screens/enemy-aim-'+viewport.width+'x'+viewport.height+'.png'});
