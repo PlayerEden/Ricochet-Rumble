@@ -1004,15 +1004,16 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
   if(ctf){
    const mine=state.ctf.flags[0],enemy=state.ctf.flags[1],
     carrying=enemy.carrier===me,ourHome=window.SectorFlags.flagHome(mine);
-   objective.textContent=carrying?('CARRY CORAL FLAG · '+(ourHome?'RETURN TO CYAN FOB':'CYAN FLAG MUST RETURN')):
+   const clockLabel=durationLabel(Math.ceil(Math.max(0,state.ctf.clock-state.ctf.elapsed)))+' · ';
+   objective.textContent=clockLabel+(carrying?('CARRY CORAL FLAG · '+(ourHome?'RETURN TO CYAN FOB':'CYAN FLAG MUST RETURN')):
     !foot?'EXIT VEHICLE TO GRAB FLAG':
     'ON FOOT · GRAB CORAL FLAG · CYAN '+(ourHome?'HOME':'MISSING')+
-    ' · CORAL '+(window.SectorFlags.flagHome(enemy)?'HOME':enemy.carrier!==null?'CARRIED':'DROPPED');
+    ' · CORAL '+(window.SectorFlags.flagHome(enemy)?'HOME':enemy.carrier!==null?'CARRIED':'DROPPED'));
   }
  }
  const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=comfort.autoFire?'AUTO ON':comfort.releaseFire&&['solo','host','guest'].includes(mode)?'AIM · RELEASE':'HOLD TO FIRE';
  const clock=document.getElementById('score-clock'),life=document.querySelector('.scorestrip .hud-life');
- if(clock){clock.classList.toggle('hidden',!isScoredMatch());if(isScoredMatch())clock.textContent=durationLabel(Math.ceil(Math.max(0,ctf?state.ctf.clock-state.ctf.elapsed:state.scored.clockSeconds-state.scored.elapsedSeconds)));}
+ if(clock){clock.classList.toggle('hidden',!isScoredMatch()||ctf);if(isScoredMatch()&&!ctf)clock.textContent=durationLabel(Math.ceil(Math.max(0,state.scored.clockSeconds-state.scored.elapsedSeconds)));}
  if(life)life.classList.toggle('hidden',isScoredMatch());
  if(ctf){
   document.getElementById('score0').textContent=state.ctf.scores[0];

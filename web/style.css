@@ -1100,3 +1100,34 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 /* CTF pilot-only objective hint: compact, pointer-transparent, no new overlay menu. */
 #ctf-status{position:absolute;z-index:3;top:clamp(47px,10dvh,72px);left:50%;transform:translateX(-50%);width:max-content;max-width:min(90vw,600px);padding:4px 9px;border:1px solid #9d8a61;border-radius:3px;background:#111e26db;color:#f1dfb7;font:800 clamp(9px,1.8dvh,12px)/1.2 monospace;white-space:normal;text-align:center;pointer-events:none;letter-spacing:.25px}
 #ctf-status.hidden{display:none}
+
+
+/* 2026-11-02 — safe top-center combat stack.
+   CTF objective itself owns its countdown, so don't draw a duplicate clock.
+   Transient status layers never cover one another or steal touch input. */
+.game-screen:has(#ctf-status:not(.hidden)) .game-hud .score-clock{display:none!important}
+.game-screen:has(#score-clock:not(.hidden)) .power-status,
+.game-screen:has(#ctf-status:not(.hidden)) .power-status{
+ top:max(82px,calc(env(safe-area-inset-top) + 82px));
+}
+.game-screen:has(#score-clock:not(.hidden)) .field-coach,
+.game-screen:has(#ctf-status:not(.hidden)) .field-coach{
+ top:max(88px,calc(env(safe-area-inset-top) + 88px));
+}
+.game-screen:has(#power-status:not(.hidden)) .field-coach{
+ top:max(117px,calc(env(safe-area-inset-top) + 117px));
+}
+.game-screen:has(#score-clock:not(.hidden)) .arena-wrap .toast,
+.game-screen:has(#ctf-status:not(.hidden)) .arena-wrap .toast{
+ top:max(91px,calc(env(safe-area-inset-top) + 91px));
+}
+.game-screen:has(#power-status:not(.hidden)) .arena-wrap .toast{
+ top:max(117px,calc(env(safe-area-inset-top) + 117px));
+}
+/* Prefer momentary action toast to optional coach guidance if both occur. */
+.game-screen:has(.toast.visible) .field-coach{visibility:hidden}
+/* The textual cooldown/slot state must remain readable on short phone
+   landscapes too; it sits beneath FIRE and doesn't change any hit target. */
+@media(max-height:390px) and (orientation:landscape){
+ .battlefield .shell-meter{display:block;font-size:9px;line-height:1.1;letter-spacing:.2px}
+}
