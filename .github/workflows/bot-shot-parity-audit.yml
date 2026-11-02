@@ -21,6 +21,7 @@ jobs:
           cmp web/forward-bays.js android/app/src/main/assets/forward-bays.js
           node --check web/game.js
           node --check tests/pilot-combat-fairness-qa.mjs
+          node --check tests/bot-shot-parity-qa.mjs
           node --check tests/pilot-release-aim-qa.mjs
           node tests/smoke.mjs
           node tests/save-backup.mjs
@@ -34,6 +35,7 @@ jobs:
           test -n "$CHROME_BIN"
           npm install --no-save --ignore-scripts playwright-core@1.56.1
           node tests/pilot-combat-fairness-qa.mjs
+          node tests/bot-shot-parity-qa.mjs
           node tests/pilot-release-aim-qa.mjs
           VEHICLE_BALANCE_ENFORCE=1 node tests/team-vehicle-route-qa.mjs
           node tests/team-forward-bays-seed-matrix.mjs
@@ -53,6 +55,7 @@ jobs:
           name: sector-rebound-bot-shot-parity-evidence
           path: |
             qa-results/pilot-combat-fairness.json
+            qa-results/bot-shot-parity.json
             qa-results/pilot-release-aim-qa.json
             qa-results/team-vehicle-route-audit.json
             qa-screens/
