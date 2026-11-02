@@ -24,7 +24,7 @@ vm.runInNewContext(fs.readFileSync(new URL('../web/scored-match.js',import.meta.
 vm.runInNewContext(fs.readFileSync(new URL('../web/forward-bays.js',import.meta.url),'utf8'),env,{filename:'forward-bays.js'});
 vm.runInNewContext(fs.readFileSync(new URL('../web/dossier.js',import.meta.url),'utf8'),env,{filename:'dossier.js'});
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,get customDraft(){return {...customDraft}},normalizeCustomDraft,customOptionsFor,setCustomDraft,loadCustomDraft,cleanPresetName,normalizeCustomPresets,loadCustomPresets,saveNamedCustomPreset,loadNamedCustomPreset,deleteNamedCustomPreset,resetCustomDraft,get customPresets(){return customPresets.map(p=>({name:p.name,rules:{...p.rules}}))},freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,projectileHitRadius,beginFireAim,updateFireAim,clearFireAim,get fireAim(){return {...fireAim}},get touch(){return touch},tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,resolveUnitMaterials,get equippedPaint(){return equippedPaint},get dossierStore(){return dossierStore},setDossierStoreForTest(next){dossierStore=next},paintProgress,equipPaint,loadPaint,normalizePaint,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,get customDraft(){return {...customDraft}},normalizeCustomDraft,customOptionsFor,setCustomDraft,loadCustomDraft,cleanPresetName,normalizeCustomPresets,loadCustomPresets,saveNamedCustomPreset,loadNamedCustomPreset,deleteNamedCustomPreset,resetCustomDraft,get customPresets(){return customPresets.map(p=>({name:p.name,rules:{...p.rules}}))},freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,projectileHitRadius,beginFireAim,updateFireAim,clearFireAim,get fireAim(){return {...fireAim}},get touch(){return touch},tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,friendlyFireEnabled,projectileCanHit,botFriendlyLaneClear,traceProjectile,sanitizeLanOptions,lanLobbyHTML,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,resolveUnitMaterials,get equippedPaint(){return equippedPaint},get dossierStore(){return dossierStore},setDossierStoreForTest(next){dossierStore=next},paintProgress,equipPaint,loadPaint,normalizePaint,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -93,7 +93,7 @@ assert.equal(node('player1-label').textContent,'RED','HUD clearly shows the oppo
  // physics, testing only in a controlled open maze cell, then restore state.
  {
   const game=st(),api=win.__test,units=game.tanks,backup=units.map(u=>({...u})),
-   savedTeam=game.config.teamMode,savedHumans=game.humanCount;
+   savedTeam=game.config.teamMode,savedHumans=game.humanCount,savedFF=game.config.friendlyFire;
   const grid=api.maze;
   const site=Array.from({length:grid.rows*grid.cols},(_,n)=>({
    x:((n%grid.cols)+.5)*grid.cell,
@@ -102,8 +102,9 @@ assert.equal(node('player1-label').textContent,'RED','HUD clearly shows the oppo
    (api.blocked(p.x+grid.cell/2,p.y,21)||api.blocked(p.x-grid.cell/2,p.y,21))&&
    units.slice(1).every(t=>Math.hypot(t.x-p.x,t.y-p.y)>160));
   assert.ok(site,'one clear walkable cell for friendly overlap tests');
-  const moveAgainst=(otherIndex,profile,ally)=> {
+  const moveAgainst=(otherIndex,profile,ally,ff=false)=> {
    game.config.teamMode=profile;
+   game.config.friendlyFire=ff;
    game.humanCount=profile==='coop'?2:1;
    units.forEach((t,i)=>Object.assign(t,backup[i]));
    const p=units[0],other=units[otherIndex];
@@ -111,23 +112,25 @@ assert.equal(node('player1-label').textContent,'RED','HUD clearly shows the oppo
    Object.assign(other,{x:site.x+26,y:site.y,a:0,vx:0,vy:0,onFoot:false});
    assert.equal(api.teamOf(0)===api.teamOf(otherIndex),ally,'fixture teammate identity');
    const start=p.x;api.tankMove(p,{moveX:1,moveY:0},.12,0);
-   if(ally)assert.ok(p.x>start+12,'friendly tank is pass-through in '+profile);
-   else assert.ok(Math.abs(p.x-start)<.01,'enemy tank stays solid in '+profile);
+   if(ally&&!ff)assert.ok(p.x>start+12,'friendly tank is pass-through in '+profile);
+   else assert.ok(Math.abs(p.x-start)<.01,'enemy or FF-on ally tank stays solid in '+profile);
    Object.assign(p,{x:site.x,y:site.y,a:0,vx:0,vy:0,onFoot:true});
    Object.assign(other,{x:site.x+26,y:site.y,a:0,vx:0,vy:0,onFoot:true});
    const footStart=p.x;api.tankMove(p,{moveX:1,moveY:0},.12,0);
-   if(ally)assert.ok(p.x>footStart+12,'friendly pilot is pass-through in '+profile);
-   else assert.ok(Math.abs(p.x-footStart)<.01,'enemy pilot stays solid in '+profile);
+   if(ally&&!ff)assert.ok(p.x>footStart+12,'friendly pilot is pass-through in '+profile);
+   else assert.ok(Math.abs(p.x-footStart)<.01,'enemy or FF-on ally pilot stays solid in '+profile);
   };
   try{
    moveAgainst(2,'teams',true);
+   moveAgainst(2,'teams',true,true);
    moveAgainst(1,'teams',false);
    moveAgainst(1,'coop',true);
+   moveAgainst(1,'coop',true,true);
    moveAgainst(2,'coop',false);
    moveAgainst(2,'ffa',false);
   }finally{
    units.forEach((t,i)=>Object.assign(t,backup[i]));
-   game.config.teamMode=savedTeam;game.humanCount=savedHumans;
+   game.config.teamMode=savedTeam;game.humanCount=savedHumans;game.config.friendlyFire=savedFF;
   }
   assert.ok(api.blocked(site.x+grid.cell/2,site.y,21)||api.blocked(
    site.x-grid.cell/2,site.y,21),'maze walls remain solid independently of team physics');
@@ -1820,7 +1823,8 @@ console.log('PASS scored vehicle FFA: tank armor not KO, real ejection, safe pil
  assert.equal(api.fireInterval(human),.36,'fire cooldown still forces deliberate timing');
  assert.ok(415/166>2.49,'shell outruns scored FFA player tank >2.3x');
  assert.ok(415/222<1.9,'previous shell-to-hull pace was below 1.9x');
- assert.ok(fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8').includes('b.age>.38&&b.bounces>0'),'returning owner ricochet can still hit the original shooter');
+ assert.equal(api.projectileCanHit(0,0,{age:.39,bounces:1}),true,'returning owner ricochet can still hit the original shooter');
+ assert.equal(api.projectileCanHit(0,0,{age:.2,bounces:1}),false,'early owner ricochet cannot self-hit');
 
  api.newMatch('solo');
  const old=st().tanks[0];old.a=0;old.vx=0;old.vy=0;
@@ -2002,6 +2006,92 @@ console.log('PASS Solo and LAN pilot FIRE-drag parity, independent heading, ejec
  api.newMatch('solo');assert.equal(st().scored,null,'finite-life Survival rules unchanged');
 }
 console.log('PASS v0.9.34: 2v2 scored Team Deathmatch, real ally+enemy pilot KOs, 15/300, no friendly fire, respawn, draw, result, new sector.');
+
+
+// B1 Friendly Fire policy: real Custom Match setup, frozen match config,
+// score-neutral team kills, FFA restriction and LAN host rule validation.
+{
+ const api=win.__test;
+ assert.ok(menuHtml.includes('id="custom-friendly"'),'Custom Match exposes FF ON/OFF');
+ assert.ok(api.lanLobbyHTML(true).includes('data-lan-setting="friendlyFire"'),
+  'LAN host explicitly controls FF option');
+ assert.equal(api.sanitizeLanOptions({teamMode:'teams',friendlyFire:true,botCount:2}).friendlyFire,true,
+  'LAN opposing-teams rule accepts FF ON');
+ assert.equal(api.sanitizeLanOptions({teamMode:'coop',friendlyFire:true,botCount:2}).friendlyFire,true,
+  'LAN co-op rule accepts FF ON');
+ assert.equal(api.sanitizeLanOptions({teamMode:'ffa',friendlyFire:true}).friendlyFire,false,
+  'FFA never enables friendly damage or team collisions');
+ assert.equal(api.sanitizeLanOptions({teamMode:'teams',friendlyFire:'on'}).friendlyFire,false,
+  'malformed native packet cannot enable FF');
+ api.setCustomDraft({modeId:'scored_tdm',friendlyFire:true});
+ assert.equal(api.customOptionsFor().friendlyFire,true,'Custom team TDM keeps FF rule');
+ api.newMatch('custom');
+ let m=st(),friendly=m.tanks[2],attacker=m.tanks[0];
+ assert.equal(m.config.friendlyFire,true,'FF policy locked into the new scored match');
+ assert.equal(api.friendlyFireEnabled(),true);
+ assert.equal(api.projectileCanHit(0,2,{age:0,bounces:0}),true,'ally projectile hit eligible with FF ON');
+ assert.equal(api.projectileCanHit(0,1,{age:0,bounces:0}),true,'enemy projectile hit always eligible');
+ assert.equal(api.projectileCanHit(0,0,{age:0,bounces:0}),false,'unbounced self shot excluded');
+
+ // Use a real open east-west maze corridor and live bot/ally team identities.
+ // The full-lifetime safety test must veto a teammate in the projectile lane.
+ {
+  const snapshot=m.tanks.map(t=>({...t})),grid=api.maze,bot=m.tanks[1],ally=m.tanks[3];
+  const lane=grid.open.flatMap((open,n)=>open.includes(n+1)&&n%grid.cols<grid.cols-1?
+   [{x:(n%grid.cols+.5)*grid.cell,y:(Math.floor(n/grid.cols)+.5)*grid.cell}]:[])
+   .find(p=>Array.from({length:19},(_,k)=>k*5).every(d=>!api.blocked(p.x+d,p.y,5)));
+  assert.ok(lane,'safe physical firing lane through real maze');
+  try{
+   Object.assign(bot,{x:lane.x,y:lane.y,a:0,onFoot:false,shield:0});
+   Object.assign(ally,{x:lane.x+88,y:lane.y,onFoot:false,shield:0});
+   for(const i of [0,2]){m.tanks[i].x=-500;m.tanks[i].y=-500;}
+   assert.equal(api.traceProjectile(bot,0,{maxDistance:140,checkActors:true}).hit,3,
+    'real ballistic trace sees friendly actor first with FF ON');
+   assert.equal(api.botFriendlyLaneClear(1),false,'AI vetoes shot through friendly tank');
+   m.config.friendlyFire=false;
+   assert.equal(api.botFriendlyLaneClear(1),true,'with FF OFF ally does not block AI projectile');
+   m.config.friendlyFire=true;
+   ally.x=-500;ally.y=-500;
+   assert.equal(api.botFriendlyLaneClear(1),true,'safe lane permits AI to fire');
+  }finally{m.tanks.forEach((t,i)=>Object.assign(t,snapshot[i]));m.config.friendlyFire=true;}
+ }
+
+ friendly.onFoot=true;friendly.shield=0;
+ const scoredBefore=m.scored,score0=m.scored.operatorKOs[0];
+ // Actual projectile collision with a stationary pilot, not merely calling
+ // registerHit manually. dt=0 isolates the hit resolver from bot steering.
+ const friendBullet=()=>({owner:0,x:friendly.x,y:friendly.y,
+  vx:0,vy:0,age:0,life:.4,bounces:0,kind:'sidearm'});
+ m.config.friendlyFire=false;m.bullets=[friendBullet()];api.step(0);
+ assert.equal(m.scored.deaths[2],0,'real bullet passes harmlessly through ally when FF OFF');
+ m.config.friendlyFire=true;m.bullets=[friendBullet()];api.step(0);
+ assert.equal(m.scored.deaths[2],1,'actual physical friendly bullet causes pilot death when FF ON');
+ assert.equal(m.scored.operatorKOs[0],score0,'team kill awards no KO');
+ assert.equal(node('score0').textContent,0,'team score remains zero for friendly kill');
+ assert.ok(m.event.includes('FRIENDLY FIRE'),'kill feed labels accidental friendly hit');
+ assert.equal(m.scored.finished,false,'teamkill cannot finish the score target');
+ assert.notEqual(m.scored,scoredBefore,'real death still advances scored death state');
+ api.setCustomDraft({modeId:'survival_teams',botCount:2,friendlyFire:true});
+ api.newMatch('custom');m=st();
+ assert.equal(m.config.friendlyFire,true,'survival team match honors FF ON');
+ assert.equal(api.projectileCanHit(0,2,{age:0,bounces:0}),true);
+ const health=m.lives[2];m.tanks[2].onFoot=true;m.tanks[2].shield=0;
+ assert.equal(api.registerHit(0,2),true,'survival teammate damage allowed');
+ assert.equal(m.kos[0],0,'unscored team kills do not award KOs');
+ assert.equal(m.lives[2],health-1,'survival friendly hit consumes life');
+ api.setCustomDraft({modeId:'survival_ffa',friendlyFire:true});
+ api.newMatch('custom');m=st();
+ assert.equal(m.config.friendlyFire,false,'FFA force-disables stale saved FF=true');
+ assert.equal(api.friendlyFireEnabled(),false);
+ api.setCustomDraft({modeId:'scored_tdm',friendlyFire:false});
+ api.newMatch('custom');m=st();
+ assert.equal(api.projectileCanHit(0,2,{age:0,bounces:0}),false,'FF OFF projectile ignores teammate');
+ m.tanks[2].onFoot=true;m.tanks[2].shield=0;
+ assert.equal(api.registerHit(0,2),false,'FF OFF cannot hit teammate');
+ // Restore Custom state so unrelated later test fixtures use their defaults.
+ api.setCustomDraft({modeId:'survival_ffa',friendlyFire:false});
+ console.log('PASS B1 FF: collision ON/OFF, live team damage, teamkill death without score, LAN rule validation, FFA OFF');
+}
 
 // v0.9.34 audit: genuine self-ricochet death is a death, never a team KO.
 {
