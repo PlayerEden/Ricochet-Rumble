@@ -28,7 +28,9 @@ The browser test checks safe-area bounding boxes, no menu/score/time/CTF/power/c
 
 The existing actual CTF simulation checks dynamic mission/flag transitions; the full release regression additionally covers combat, Android assets, objective AI, Forward Bays, multiplayer, and visual snapshots.
 
-**Verification target:** [GitHub Actions run 41475532655](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41475532655). Do not consider the new source release-tested until it passes.
+**Verification COMPLETE — PASS:** [GitHub Actions run 41475978907](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41475978907), tested source commit `11568258bd1163c6307ef8e51077374ad3e2771e`. All **84 real-browser geometry fixtures** passed: 6 viewports × 7 HUD state combinations × 2 control hands. Existing regressions passed as well: **27 bot perception**, **42 guest combat feedback**, **45 shell HUD**, **27 enemy warning**, **18 bot shot cadence**, **48 touch-input**, 300-seed Forward Bays, CTF actual captures/rematches, and **44 visual screenshots**. QA artifact `sector-rebound-combat-cues-evidence`, id `13157697437`.
+
+First rounds of the new layout test revealed previously unmeasured conditions: zero-opacity toast mistakenly considered visible (test corrected), then a **real 2px overlap** between scoreboard and scored-match clock on 740×360 (CSS corrected). Responsive CTF offsets were also adjusted to keep the power-up status below the objective on taller landscapes. Subsequent full run passed. Phone acceptance is still required, and no Android APK has been built for this branch.
 
 ## Deferred / owner testing
 
