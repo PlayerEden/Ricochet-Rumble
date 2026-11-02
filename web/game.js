@@ -1561,6 +1561,7 @@ function step(dt){if(paused||state.winner>=0)return;
    if(brain){
     const skill=state.config?.botSkill==='casual'?'casual':state.config?.botSkill==='spicy'?'spicy':'normal';
     brain.fireRecover=skill==='casual'?.58:skill==='spicy'?.35:.43;
+    brain.lastShotTarget=brain.fireTarget;
     brain.fireTrack=0;brain.fireTarget=-1;brain.fireShots=(brain.fireShots||0)+1;
    }
   }
@@ -2104,7 +2105,7 @@ function enemyBotCue(i,me=mode==='guest'?1:0){
  if(distance>385||!hasLineOfSight(enemy.x,enemy.y,local.x,local.y))return null;
  const angle=Number.isFinite(enemy.a)?enemy.a:0;
  // The existing true muzzle flash takes priority over reacquisition.
- if(enemy.flash>0)return {phase:'shot',angle,progress:1};
+ if(enemy.flash>0&&brain.lastShotTarget===me)return {phase:'shot',angle,progress:1};
  if(brain.fireTarget!==me||brain.fireRecover>0||
     !(brain.fireTrack>0)||!Number.isFinite(brain.fireAngle))return null;
  const skill=state.config?.botSkill==='casual'?'casual':
