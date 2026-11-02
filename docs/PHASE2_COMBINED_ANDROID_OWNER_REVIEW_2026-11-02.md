@@ -4,7 +4,7 @@
 **Source from fully passing game CI:** `f09ab9fcab46a819a69e6b0edf14be8827fe621c`, [run 41478683188](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41478683188).  
 **Source branch with documented acceptance:** `experiment/match-flow-truth-v1` at `93081aa37becbf8a3c51322fc0c39dafc761d584`.  
 **Owner APK preparation branch:** `test/phase2-combined-owner-2026-11-02`.  
-**APK workflow:** `.github/workflows/phase2-combined-owner-apk.yml`, [build run 41479770356](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41479770356).  
+**APK workflow:** `.github/workflows/phase2-combined-owner-apk.yml`. First run 41479770356 stopped at a misplaced Chromium-dependent test in the pre-install gate; fixed the workflow only, then **fully passed** [build run 41480036489](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41480036489), tested source+workflow commit `801e614df71a090fa3f81fb05fa1b4568cbd8cdc`. Artifact: [sector-rebound-phase2-2](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41480036489/artifacts/13160355059), artifact ID `13160355059` (APK plus verification manifest), 164440-byte GitHub archive, unexpired.  
 **Stable main:** unchanged. No source merge or Play Store production signing.
 
 ## Combined changes since installed v0.9.64 preview
@@ -20,7 +20,7 @@
 
 - **Package identity:** `com.playereden.ricochetrumble.preview`, same as the previous owner-tested Android preview.
 - **Signer:** fixed *public AOSP development* key, verified certificate SHA-256 `a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc`; **not** a production Google Play certificate.
-- **Version:** expected `0.9.65-phase2.<workflow-run-number>`, calculated `versionCode=270000+workflow-run-number`. Must exceed the installed preview **260001** and must match both Android metadata and the archive's verification manifest.
+- **Version:** verified `0.9.65-phase2.2`, **versionCode 270002** (> previous installed **260001**); actual Android metadata and embedded assets checked in successful build. The artifact's `verification.txt` includes actual APK SHA-256 and exact checked source SHA.
 - **Provenance:** check exact `SOURCE_SHA`, `APP_ID`, `VERSION_CODE`, `APK_SHA256`, `PUBLIC_TEST_SIGNER_SHA256`, embedded game assets and `apksigner` before treating the downloadable artifact as valid.
 - **Data retention:** install over the existing preview app. **Do not uninstall**; uninstalling generally discards local saves/settings. The preview and eventual production app are separate signing/package identities.
 
@@ -39,4 +39,4 @@
 
 - Automated Chromium test evidence cannot guarantee subjective mobile combat feel or actual Android GPU/audio/network behavior. Mark release readiness pending owner testing.
 - This is an **experimental owner APK**, not a Play Store or production-signed release.
-- If the verification workflow fails, no APK should be advertised. Preserve previous verified v0.9.64 artifact [run 41386494069](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41386494069) as the immediately available device rollback.
+- If a later build fails verification, do not advertise it. Preserve previous verified v0.9.64 artifact [run 41386494069](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41386494069) as the immediately available device rollback.
