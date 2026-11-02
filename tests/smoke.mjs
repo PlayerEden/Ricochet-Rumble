@@ -1766,7 +1766,7 @@ console.log('PASS scored vehicle FFA tactical pacing: 166/136 movement and 2.6ra
  api.newMatch('scored_ffa');
  const s=st(),t=s.tanks[0],v=s.vehicles[t.vehicleId];
  assert.equal(v.type,'tank');
- assert.equal(node('fire-mode').textContent,'HOLD TO FIRE');
+ assert.equal(node('fire-mode').textContent,'AIM · RELEASE');
  t.a=0;t.vx=t.vy=0;
  const px=t.x,py=t.y,originalShells=s.bullets.length;
  api.tankMove(t,{moveX:0,moveY:1,bot:false},dt,0);
@@ -1775,12 +1775,12 @@ console.log('PASS scored vehicle FFA tactical pacing: 166/136 movement and 2.6ra
  assert.equal(s.bullets.length,originalShells,'steering does not fire');
  t.a=0;t.vx=t.vy=0;
  api.tankMove(t,{moveX:0,moveY:1,aimX:1,aimY:0,bot:false},dt,0);
- assert.ok(Math.abs(t.a-2.6*dt)<1e-6,'old vehicle AIM vectors do not override steering');
+ assert.equal(t.a,0,'drag-direction overrides vehicle movement steering while preview aiming');
  api.beginFireAim({pointerId:47,clientX:90,clientY:90},'aim');
  assert.equal(api.fireAim.pointerId,null,'deleted AIM control cannot capture a pointer');
  assert.equal(api.makeControl(true).aimX,undefined,'vehicle input emits no independent aim vector');
  api.touch.add('fire');
- assert.equal(api.makeControl(true).fire,true,'FIRE still works while driving');
+ assert.equal(api.makeControl(true).fire,false,'vehicle FIRE hold previews without an early shot');
  api.touch.delete('fire');
  t.a=0;t.vx=t.vy=0;
  assert.equal(api.shoot(0),true,'vehicle still shoots ordinary shells');
@@ -1807,7 +1807,8 @@ console.log('PASS owner vehicle control simplification: centered MOVE steering, 
  a.newMatch('solo');
  const s=st(),p=s.tanks[0];
  a.beginFireAim({pointerId:600,clientX:200,clientY:200},'fire');
- assert.equal(a.fireAim.pointerId,null,'Solo vehicle FIRE does not claim pilot aim pointer');
+ assert.equal(a.fireAim.pointerId,600,'Solo vehicle FIRE now controls angle preview');
+ a.clearFireAim();
  a.ejectPilot(0);
  assert.equal(p.onFoot,true,'real Solo vehicle ejection returns to pilot');
  a.touch.add('fire');
@@ -1816,7 +1817,7 @@ console.log('PASS owner vehicle control simplification: centered MOVE steering, 
  assert.equal(a.fireAim.active,true,'Solo Survival pilot FIRE-drag is enabled');
  const input=a.makeControl(true);
  assert.ok(Math.abs(input.aimX)<.01&&input.aimY>.99,'on-foot Survival independent aim vector');
- assert.equal(input.fire,true,'dragging FIRE still fires');
+ assert.equal(input.fire,false,'dragging FIRE does not fire until release');
  p.a=0;p.vx=p.vy=0;
  a.tankMove(p,{moveX:1,moveY:0,aimX:0,aimY:1},dt,0);
  assert.ok(Math.abs(p.a-6.5*dt)<1e-6,'Solo Survival pilot turns 6.5rad/s with independent aim');
@@ -1844,13 +1845,13 @@ console.log('PASS owner vehicle control simplification: centered MOVE steering, 
  a.newMatch('host');
  const host=st().tanks[0];host.onFoot=true;host.vehicleId=null;host.a=0;
  a.beginFireAim({pointerId:605,clientX:200,clientY:200},'fire');
- assert.equal(a.fireAim.pointerId,605,'LAN host now shares Solo on-foot FIRE-drag');
+ assert.equal(a.fireAim.pointerId,null,'paused LAN host cannot queue an accidental shot');
  a.tankMove(host,{moveX:0,moveY:1,bot:false},dt,0);
  assert.ok(Math.abs(host.a-6.5*dt)<1e-6,'LAN host uses accepted on-foot turn rate');
  a.newMatch('guest');
  st().tanks[1].onFoot=true;st().tanks[1].vehicleId=null;
  a.beginFireAim({pointerId:606,clientX:200,clientY:200},'fire');
- assert.equal(a.fireAim.pointerId,606,'LAN guest FIRE-drag uses its own seat-1 pilot');
+ assert.equal(a.fireAim.pointerId,null,'paused LAN guest cannot queue an accidental shot');
  a.newMatch('cqc');
  const cqc=st().tanks[0];cqc.a=0;
  a.tankMove(cqc,{moveX:0,moveY:1,bot:false},dt,0);
