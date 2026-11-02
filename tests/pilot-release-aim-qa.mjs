@@ -27,6 +27,54 @@ function hooks(){
     pendingId:fireAim.pointerId,down:inputFrom(keys1,true).fire,
     currentVehicleType:currentVehicle(t)?.type??null};
   },
+  setupWeapon(seed,kind){
+   mode='solo';paused=false;connected=false;menu.classList.add('hidden');
+   const opts={mapSize:'standard',matchModeId:kind==='pilot'?'cqc':'scored_ffa',
+    botCount:1,teamMode:'ffa',pilotMode:true,botSkill:'casual',startLives:3};
+   state=initialState(0,opts,seed);
+   const t=state.tanks[0];t.a=0;t.shield=0;state.winner=-1;
+   if(kind==='pilot'){t.onFoot=true;t.vehicleId=null;}
+   else{
+    t.onFoot=false;
+    const v=state.vehicles[t.vehicleId];v.type=kind;v.armor=VEHICLE_TYPES[kind].armor;
+   }
+   comfort.releaseFire=true;comfort.autoFire=false;comfort.pilotAssist=false;
+   fireCooldown.fill(0);releaseControls();
+   const dirs=[0,Math.PI/2,Math.PI,-Math.PI/2].map(a=>previewTrajectory(t,a));
+   return {kind,bounces:dirs.filter(d=>!!d.bounce).length,
+    maxSections:Math.max(...dirs.map(d=>d.segments.length)),
+    reach:Math.max(...dirs.map(d=>d.segments.reduce((sum,line)=>sum+line.slice(1).reduce((n,p,i)=>n+Math.hypot(p.x-line[i].x,p.y-line[i].y),0),0))),
+    blocked:blocked(t.x,t.y,t.onFoot?10:21)};
+  },
+  untilShot(maxFrames=90){
+   let fired=false,first=-1,kind=null,count=0;
+   for(let n=1;n<=maxFrames;n++){
+    const prior=fireCooldown[0];step(1/60);
+    if(fireCooldown[0]>prior+.12){
+     count++;if(first<0){first=n;kind=state.tanks[0].onFoot?'sidearm':currentVehicle(state.tanks[0])?.type;}
+     fired=true;
+    }
+   }
+   return {fired,first,kind,count,pending:!!releaseShot};
+  },
+  hostProtocol(){
+   mode='host';connected=true;paused=false;menu.classList.add('hidden');
+   state=initialState(0,{mapSize:'small',botCount:0,teamMode:'ffa',pilotMode:true},455);
+   state.winner=-1;state.lives[1]=1;state.tanks[1].a=0;state.tanks[1].shield=0;
+   fireCooldown.fill(0);remoteReleaseShot=null;lastGuestFireSeq=0;
+   guestInput={moveX:0,moveY:0,fire:false};guestInputAge=0;
+   const packet={type:'fire-request',seq:1,matchId:state.matchId,aimX:1,aimY:0};
+   window.RR.nativeMessage(JSON.stringify(packet));
+   const accepted=!!remoteReleaseShot;
+   window.RR.nativeMessage(JSON.stringify({...packet,seq:2,aimX:100,aimY:0}));
+   const malformedDidNotReplace=remoteReleaseShot?.x===1;
+   step(1/60);
+   const fired=fireCooldown[1]>0;
+   window.RR.nativeMessage(JSON.stringify(packet));
+   const duplicateRejected=remoteReleaseShot===null;
+   releaseControls();connected=false;paused=true;
+   return {accepted,malformedDidNotReplace,fired,duplicateRejected};
+  },
   cancel(){releaseControls();return this.status()},
   foot(value){state.tanks[0].onFoot=value;return inputFrom(keys1,true).fire;},
   pause(){releaseControls();paused=true;return this.status()},
@@ -122,6 +170,29 @@ try{
    assert.ok(keyboard.cd>0,'keyboard SPACE fires while release mode enabled');
    await page.keyboard.up('Space');
    results.push({viewport,seed,kind:'keyboard',keyboard});
+   for(const weapon of ['pilot','tank','mech']){
+    const terrain=await page.evaluate(({seed,weapon})=>window.__pilotReleaseQA.setupWeapon(seed+70,weapon),{seed,weapon});
+    assert.equal(terrain.blocked,false,'real actor free of wall');
+    assert.ok(terrain.maxSections<=2,'trajectory previews no more than one bounce');
+    if(weapon==='pilot')assert.equal(terrain.bounces,0,'pilot sidearm never previews a ricochet');
+    else assert.ok(terrain.bounces>0,'vehicle previews a real wall/bounce segment');
+    await page.mouse.move(cx,cy);await page.mouse.down();
+    await page.mouse.move(cx,cy-56,{steps:3});
+    const heldVehicle=await page.evaluate(()=>window.__pilotReleaseQA.pump(20));
+    assert.ok(heldVehicle.cd===0,'holding preview does not fire '+weapon);
+    await page.mouse.up();
+    const done=await page.evaluate(()=>window.__pilotReleaseQA.untilShot(75));
+    assert.equal(done.fired,true,weapon+' release commits a shot after alignment');
+    assert.equal(done.count,1,'one release produces only one '+weapon+' shot');
+    assert.equal(done.pending,false,weapon+' queue cleared after shot');
+    results.push({viewport,seed,kind:'weapon-'+weapon,terrain,done});
+   }
+   const protocol=await page.evaluate(()=>window.__pilotReleaseQA.hostProtocol());
+   assert.equal(protocol.accepted,true,'host accepts valid release edge');
+   assert.equal(protocol.malformedDidNotReplace,true,'host rejects oversized aim vector');
+   assert.equal(protocol.fired,true,'host fires real authoritative shot');
+   assert.equal(protocol.duplicateRejected,true,'host rejects duplicate shot sequence');
+   results.push({viewport,seed,kind:'host-protocol',protocol});
    console.log('RELEASE_AIM_STAGE seed '+seed+' complete');
   }
   await page.close();
@@ -130,6 +201,6 @@ try{
  fs.mkdirSync('qa-results',{recursive:true});
  fs.writeFileSync('qa-results/pilot-release-aim-qa.json',JSON.stringify({results},null,2));
  console.log('PILOT_RELEASE_AIM_REAL_POINTER_PASS '+JSON.stringify({viewports:2,seeds:3,
-  cases:results.length,defaultOn:true,settingsPersist:true,previewNoPrematureShot:true,
+  cases:results.length,weapons:['pilot','tank','mech'],oneBouncePreview:true,hostSequenceGuard:true,defaultOn:true,settingsPersist:true,previewNoPrematureShot:true,
   cancelAndPauseSafe:true,legacyHoldUnaffected:true,keyboardUnaffected:true}));
 }finally{await browser.close();await new Promise(ok=>server.close(ok));}
