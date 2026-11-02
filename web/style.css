@@ -535,3 +535,17 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 }
 @media(max-width:790px){.home-build{display:none}.home-brand h2{font-size:clamp(18px,4.3dvh,29px)}.home-overline{font-size:8px}}
 @media(max-width:590px) and (orientation:landscape){.home-content{grid-template-columns:1fr 1fr}.home-showcase-caption span{display:none}.home-brand-mark{display:none}.home-actions{gap:5px}}
+
+/* v0.9.22 mode selectors: real thumb-sized checkboxes, not inherited full-width text inputs. */
+.settings-page .quick-mode-option{display:flex;align-items:center;gap:8px;min-height:38px;line-height:1.15;white-space:normal;cursor:pointer;touch-action:manipulation}
+.settings-page .quick-mode-option input[type="checkbox"]{width:23px;height:23px;min-width:23px;margin:0;padding:0;flex:0 0 23px;accent-color:#52d9f7;cursor:pointer}
+.settings-mode-status{text-align:center;margin:2px 0 5px!important;color:#aed6e5!important;font-weight:800;letter-spacing:.2px}
+.panel button:disabled{opacity:.43;cursor:not-allowed;filter:saturate(.35)}
+
+/* v0.9.22-dev2: four verified solo stats; outcome belongs in the compact title rail. */
+.after-action .aa-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.after-action .aa-stats>div{padding-inline:clamp(5px,.8vw,10px)}
+.after-action .aa-stats span{overflow-wrap:anywhere}
+.after-action #aa-outcome{color:#b1e6d4;font-weight:900;white-space:nowrap}
+.after-action.lost #aa-outcome{color:#f8bca2}
+@media(max-width:760px){.after-action .aa-stats{gap:4px}.after-action .aa-stats strong{font-size:clamp(16px,4dvh,22px)}.after-action .aa-stats span{font-size:clamp(8px,1.2vw,10px)}}
