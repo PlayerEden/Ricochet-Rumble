@@ -99,6 +99,7 @@ assert.equal(node('player1-label').textContent,'RED','HUD clearly shows the oppo
    x:((n%grid.cols)+.5)*grid.cell,
    y:(Math.floor(n/grid.cols)+.5)*grid.cell
   })).find(p=>!api.blocked(p.x,p.y,21)&&!api.blocked(p.x+40,p.y,21)&&
+   (api.blocked(p.x+grid.cell/2,p.y,21)||api.blocked(p.x-grid.cell/2,p.y,21))&&
    units.slice(1).every(t=>Math.hypot(t.x-p.x,t.y-p.y)>160));
   assert.ok(site,'one clear walkable cell for friendly overlap tests');
   const moveAgainst=(otherIndex,profile,ally)=> {
