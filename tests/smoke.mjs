@@ -75,18 +75,19 @@ win.__test.setPlaylistModes(['survival_teams']);
 node('map-size').value='large';node('bot-count').value='4';node('lives-choice').value='3';node('bullet-cap').value='2';node('bot-skill').value='casual';node('team-choice').value='coop';
 click('solo');assert.equal(st().tanks.length,5);assert.equal(st().lives[0],3);
 assert.equal(st().config.bulletCap,2);assert.equal(st().config.teamMode,'teams');assert.equal(st().config.matchModeId,'survival_teams');
-assert.equal(win.__test.teamOf(0),0,'human pilot is BLUE');
-assert.equal(win.__test.teamOf(1),1,'AI1 is RED opponent');
-assert.equal(win.__test.teamOf(2),0,'AI2 is BLUE ally');
-assert.equal(win.__test.teamOf(3),1,'AI3 is RED opponent');
-assert.equal(win.__test.teamOf(4),0,'AI4 is BLUE ally');
-assert.equal(win.__test.combatColor(0),'#46d2f5','player team paint matches Cyan');
-assert.equal(win.__test.combatColor(2),'#46d2f5','AI ally uses same BLUE paint');
-assert.equal(win.__test.combatColor(1),'#fc856e','enemy tank and pilot use RED paint');
-assert.equal(win.__test.combatColor(3),'#fc856e','all Red AI painted consistently');
+const startingSide=win.__test.teamOf(0),opposingSide=1-startingSide;
+assert.ok([0,1].includes(startingSide),'Solo Team Survival may start as either team');
+assert.equal(win.__test.teamOf(1),opposingSide,'AI1 opposes current human side');
+assert.equal(win.__test.teamOf(2),startingSide,'AI2 joins the current human side');
+assert.equal(win.__test.teamOf(3),opposingSide,'AI3 opposes current human side');
+assert.equal(win.__test.teamOf(4),startingSide,'AI4 joins current human side');
+assert.equal(win.__test.combatColor(0),startingSide===0?'#46d2f5':'#fc856e','human gets real assigned side color');
+assert.equal(win.__test.combatColor(2),win.__test.combatColor(0),'AI ally shares paint');
+assert.equal(win.__test.combatColor(1),opposingSide===0?'#46d2f5':'#fc856e','enemy uses opposing side paint');
+assert.equal(win.__test.combatColor(3),win.__test.combatColor(1),'enemy AI shares paint');
 assert.equal(win.__test.opposingCount(0),2,'only red alive pilots appear in enemy HUD counter');
 assert.equal(node('score1').textContent,2,'team HUD excludes the allied bots');
-assert.equal(node('player1-label').textContent,'RED','HUD clearly shows the opposing team');
+assert.equal(node('player1-label').textContent,startingSide===0?'CORAL · ENEMIES':'CYAN · ENEMIES','HUD accurately labels local opponent');
 
  // Team-based physical collision: reproduce the narrow-corridor body block
  // with real tankMove() and genuine teamOf() rules. Do not alter production
@@ -419,7 +420,7 @@ click('solo');
 const lone=st().tanks[0],vacant=st().vehicles.find(v=>v.occupant===-1&&v.armor>0);
 assert.ok(vacant,'empty recoverable vehicle exists');
 const armorBefore=vacant.armor;
-lone.x=vacant.x-40;lone.y=vacant.y;lone.vx=lone.vy=0;
+lone.x=vacant.x-40;lone.y=vacant.y;lone.a=0;lone.vx=lone.vy=0; // Controlled collision probe independent of randomized team-facing orientation.
 for(let n=0;n<4;n++)win.__test.tankMove(lone,{moveX:1,moveY:0},.065,0);
 assert.ok(lone.x>vacant.x,'occupied tank drives through an unoccupied deployment without blocking');
 // Simulated bullets should similarly ignore projections, not delete armor from them.
@@ -876,7 +877,7 @@ console.log('PASS v0.9.14 end-of-life powerup state audit.');
 }
 {
  click('solo');
- const game=st();game.winner=0;game.winnerTeam=0;game.event='CYAN WINS!';
+ const game=st();game.winner=0;game.winnerTeam=win.__test.teamOf(0);game.event='PLAYER TEAM WINS!';
  game.kos[0]=2;game.lives[0]=3;
  win.__test.refreshHUD();
  assert.equal(node('after-action').classList.contains('hidden'),false,'results surfaced');
@@ -1529,7 +1530,7 @@ console.log('PASS pilot prototype visibility: label, arrow, shield and locator c
  node('bot-count').value='2';node('lives-choice').value='2';api.newMatch('solo');
  const live=st();assert.equal(live.config.botCount,2);
  live.lives[0]=0;live.lives[1]=0;live.lives[2]=1;
- live.winner=2;live.winnerTeam=0;live.event='TEAM BLUE WINS!';
+ live.winner=2;live.winnerTeam=api.teamOf(0);live.event='TEAM ALLIES WIN!';
  const result=api.finalizeRound();
  assert.equal(result.outcome,'victory','team victory counts even if human had died');
  assert.equal(result.livesRemaining,0,'team victory does not fake surviving personal lives');
@@ -1958,8 +1959,8 @@ console.log('PASS Solo and LAN pilot FIRE-drag parity, independent heading, ejec
  assert.ok(m.vehicles.some(v=>v.type==='mech'),'mech recovery is preserved');
  assert.equal(api.teamOf(2),0);assert.equal(api.teamOf(3),1);
  assert.equal(api.combatColor(2),'#46d2f5');assert.equal(api.combatColor(3),'#fc856e');
- assert.equal(node('player0-label').textContent,'BLUE KOs');
- assert.equal(node('player1-label').textContent,'RED KOs');
+ assert.equal(node('player0-label').textContent,'CYAN KOs · YOU');
+ assert.equal(node('player1-label').textContent,'CORAL KOs');
  assert.equal(node('score0').textContent,0);assert.equal(node('score1').textContent,0);
  assert.equal(node('score-clock').textContent,'05:00');
  assert.ok(!menuHtml.includes('id="vehicle-aim"'),'TDM uses simple MOVE and FIRE without extra AIM button');
@@ -2159,7 +2160,8 @@ console.log('PASS TDM ricochet self-death audit: death counted, neither team sco
  assert.equal(st().config.mapSize,'standard');
  a.setCustomDraft({modeId:'scored_tdm'});
  a.newMatch('custom');
- assert.deepEqual([...st().scored.teamIds],[0,1,0,1]);
+ assert.deepEqual([...st().scored.teamIds],[...st().config.teamIds],'Custom TDM scored roster follows actual assigned teams');
+ assert.equal(st().config.teamIds[0],a.customDraft.sidePreference==='coral'?1:st().config.teamIds[0],'Custom side assignment is explicit');
  assert.equal(st().scored.scoreTarget,15);
  assert.equal(st().config.customMatch,true);
  a.resetAll(true);
@@ -2491,4 +2493,53 @@ console.log('PASS v0.9.46 presentation: interactive pause SFX/music, persistence
  assert.equal(api.alliedAimActive(3,1),false,'guest never invents missing host bot aim');
  api.setModeForTest('solo');api.comfort.alliedTraces=selected;
  console.log('PASS B2 allied aim: acquisition/LOS/FFA/crowding gates, optional toggle, guest-only host authority, invalid metadata rejected');
+}
+
+
+// C1: seeded, unique six-combatant FFA colors and authoritative rotating
+// Solo team ownership, without altering actor index, projectile physics or LAN.
+{
+ const api=win.__test;
+ assert.ok(menuHtml.includes('id="custom-side"'),'Custom Match has actual RANDOM/CYAN/CORAL selection');
+ const oldPlaylist=api.selectedPlaylistIds.slice();
+ const names=new Set(),assignments=[];
+ api.newMatch('scored_ffa');
+ for(let n=0;n<12;n++){
+  if(n)api.resetAll();
+  const m=st(),palette=m.config.ffaColors,ids=m.config.teamIds;
+  assert.equal(palette.length,m.tanks.length,'FFA creates an individual paint per actor');
+  assert.equal(new Set(palette).size,palette.length,'no same-color competitors in one FFA');
+  assert.deepEqual([...ids],[...m.tanks.map((_,i)=>i)],'FFA physical opponent identity remains individual');
+  for(let i=0;i<palette.length;i++){
+   assert.equal(api.combatColor(i),palette[i],'actual render color follows match palette');
+   assert.ok(/^#[0-9a-f]{6}$/.test(palette[i]),'approved legible palette entry');
+  }
+  const snapshot=api.serializeState();
+  assert.deepEqual([...snapshot.config.ffaColors],[...palette],'host-synchronized palette is identical on both devices');
+  assert.deepEqual([...snapshot.config.teamIds],[...ids],'network replicates actual actor team ids');
+  assert.ok(api.validRemoteSnapshot(snapshot),'valid palette accepted in LAN snapshot');
+  assert.equal(api.validRemoteSnapshot({...snapshot,config:{...snapshot.config,ffaColors:Array(palette.length).fill(palette[0])}}),false,'duplicate FFA colors rejected');
+  assignments.push(palette[0]);names.add(palette[0]);
+ }
+ assert.ok(names.size>=3,'player FFA paint rotates across seeded new matches');
+ api.setCustomDraft({modeId:'scored_tdm',sidePreference:'coral',friendlyFire:false});
+ api.newMatch('custom');
+ let m=st();assert.equal(api.teamOf(0),1,'Custom side Coral owns its own unit/FOB');
+ assert.deepEqual([...m.scored.teamIds],[...m.config.teamIds],'TDM scoring uses same side IDs as physical battlefield');
+ assert.equal(api.combatColor(0),'#fc856e','Custom Coral paint applied to player');
+ assert.equal(m.tanks[0].a,Math.PI,'Coral FOB faces inward');
+ assert.ok(Math.hypot(m.tanks[0].x-m.forwardBays.bays[1].x,m.tanks[0].y-m.forwardBays.bays[1].y)<250,'Coral player deploys at Coral Forward Bay');
+ api.setCustomDraft({modeId:'scored_tdm',sidePreference:'cyan'});
+ api.newMatch('custom');m=st();
+ assert.equal(api.teamOf(0),0,'Custom locked Cyan side respected');
+ assert.equal(m.tanks[0].a,0,'Cyan FOB faces inward');
+ api.setPlaylistModes(['survival_teams']);
+ api.newMatch('solo');const initial=api.teamOf(0);
+ assert.equal(st().config.quickPlayMatch,true,'Quick Play team mode is marked for side rotation');
+ api.resetAll(true);
+ assert.equal(api.teamOf(0),1-initial,'second Quick Play team match reverses player faction');
+ assert.equal(api.teamOf(2),api.teamOf(0),'teammate follows human to new faction');
+ api.setCustomDraft({modeId:'survival_ffa',sidePreference:'random',friendlyFire:false});
+ api.setPlaylistModes(oldPlaylist);
+ console.log('PASS C1 identity: distinct seeded FFA colors + host replication, locked Custom Coral/Cyan FOB, Quick Play team side rotation');
 }

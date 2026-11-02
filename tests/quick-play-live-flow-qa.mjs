@@ -411,8 +411,8 @@ try{
  assert.equal(tdmStart.mode,'scored_tdm');
  assert.deepEqual(tdmStart.teams,[0,1,0,1]);
  assert.equal(tdmStart.target,15);assert.equal(tdmStart.clock,300);
- assert.equal((await page.locator('#player0-label').textContent()).trim(),'BLUE KOs');
- assert.equal((await page.locator('#player1-label').textContent()).trim(),'RED KOs');
+ assert.equal((await page.locator('#player0-label').textContent()).trim(),'CYAN KOs · YOU');
+ assert.equal((await page.locator('#player1-label').textContent()).trim(),'CORAL KOs');
  assert.equal(await page.locator('#vehicle-aim').count(),0,'scored TDM also uses two-control layout');
  const tdmResult=await page.evaluate(()=>{
   const qa=window.__flowQA,s=qa.state,enemy=s.tanks[1],v=s.vehicles[enemy.vehicleId],hits=[];

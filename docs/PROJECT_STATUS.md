@@ -1,3 +1,19 @@
+# 2026-11-02 — C1 MATCH IDENTITIES AND SOLO TEAM SIDE ROTATION
+
+**VERIFIED experimental checkpoint:** [draft PR #95](https://github.com/PlayerEden/Ricochet-Rumble/pull/95) on `experiment/match-identity-colors-c1`, built over B2 v0.9.69. Stable `main` remains unchanged.
+
+**Gameplay:** The user/player is no longer permanently Cyan in FFA: six distinguishable, unique colors from the curated palette are shuffled by the new maze seed, frozen per match and serialized in authoritative host configuration. Every match now has explicit `teamIds` used by bot friend/enemy targeting, FF collisions and damage, actual Forward Bay side, scored TDM, CTF flag ownership, player/AI paint and HUD. Solo Quick Play **alternates team sides** across team rounds, even between FFA rounds; Custom Team Match offers RANDOM (default), CYAN, CORAL; scored direct-launch and LAN retain old host Cyan/guest Coral until Stage D. Opposing FOB orientation turns toward the arena and CTF objective labels are local-side-correct. FFA allies don't accidentally appear; cosmetics and stored progress remain untouched.
+
+**Fast QA SUCCESS:** [#41547345816](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41547345816), including dynamic team color, Quick Play team rotation, strict LAN palette rejection, Custom Coral FOB, FF damage/no teamkill KOs, A2/A3 projectile and backup; final code was unchanged after fast QA other than a test label fix and workflow file.
+
+**Full exact gameplay source QA SUCCESS:** [#41547659462](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41547659462) at source commit `5b7bb54fba3b00808ae5b66fc560fbc39eacb0a9`: C1 match identity, B1 FF, B2 ally-aim guest privacy, 18 AI pilot/tank/mech shot cases, 12 scripted human input CTF combat scenarios, real CTF captures/results, 300 Forward Bay seeds, Quick Play and first-match settings, save/backup, and all **44 visual snapshots** (fullscreen + layout checks).
+
+**v0.9.70 Android owner preview SUCCESS:** [#41547828522](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41547828522) at source `64f9464022e33ecd23cfe2b1152a6d9935a49ce9` (only workflow file differs from previous green gameplay source). APK `com.playereden.ricochetrumble.preview`, versionCode **320001**, filename `sector-rebound-match-identity-320001.apk`, SHA-256 `5e546522a52670b7ec2145ff8e49fec0abb848fef072eb75e1edbc1592cdc3d8`; same public AOSP development signer `a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc` as installed v0.9.69 code 310001. All APK assets compared to exact browser source. Build zip manifest independently checksum-verified. **Developer preview only; not a Play Store key**.
+
+**Next:** manual Android install-over test + perceived FFA color legibility, Quick Play Coral spawn/HUD/CTF and paint, and 2-phone LAN same-color identity. Stage D is actual scored LAN team rosters with host/guest side choices and bot teammates. Draft PR stays isolated, no merge to main, no claim of phone or multiplayer manual acceptance. [C1 technical handoff](MATCH_IDENTITY_C1_2026-11-02.md).
+
+---
+
 # 2026-11-02 — B2 ALLIED AIM TRACE UI (EXPERIMENTAL)
 
 **Status:** [draft PR #94](https://github.com/PlayerEden/Ricochet-Rumble/pull/94), branch `experiment/allied-aim-traces-b2`; stable `main`, owner v0.9.68 test APK and existing saves unchanged.
