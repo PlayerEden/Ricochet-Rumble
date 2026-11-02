@@ -941,7 +941,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  shellMeter.classList.toggle('cycling',active<cap&&cycling);
  shellMeter.title=active>=cap?'All projectiles are in flight; capacity returns when a shot expires':
   cycling?'Weapon cycling; next shot waits for firing cooldown':'Projectile slot available; weapon ready to fire';
- shellMeter.setAttribute('aria-label',`${available} of ${cap} projectile slots available; ${shotState.toLowerCase()}`);
+ if(typeof shellMeter.setAttribute==='function')shellMeter.setAttribute('aria-label',`${available} of ${cap} projectile slots available; ${shotState.toLowerCase()}`);
  const slots=document.getElementById('shell-slots');
  if(slots&&cap<=12){const markup=Array.from({length:cap},(_,i)=>'<i class="shell-slot'+(i<available?' ready':'')+'"></i>').join('');if(slots.innerHTML!==markup)slots.innerHTML=markup;}
 }
