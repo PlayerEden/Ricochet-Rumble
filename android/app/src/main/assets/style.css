@@ -1131,3 +1131,21 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 @media(max-height:390px) and (orientation:landscape){
  .battlefield .shell-meter{display:block;font-size:9px;line-height:1.1;letter-spacing:.2px}
 }
+
+/* CTF's objective top follows viewport height (up to 72px). Keep secondary
+   indicators below its ACTUAL responsive slot, including taller displays. */
+.game-screen:has(#ctf-status:not(.hidden)) .power-status{
+ top:max(86px,calc(clamp(47px,10dvh,72px) + 36px));
+}
+.game-screen:has(#ctf-status:not(.hidden)) .field-coach{
+ top:max(101px,calc(clamp(47px,10dvh,72px) + 39px));
+}
+.game-screen:has(#ctf-status:not(.hidden)):has(#power-status:not(.hidden)) .field-coach{
+ top:max(125px,calc(clamp(47px,10dvh,72px) + 69px));
+}
+.game-screen:has(#ctf-status:not(.hidden)) .arena-wrap .toast{
+ top:max(102px,calc(clamp(47px,10dvh,72px) + 42px));
+}
+.game-screen:has(#ctf-status:not(.hidden)):has(#power-status:not(.hidden)) .arena-wrap .toast{
+ top:max(128px,calc(clamp(47px,10dvh,72px) + 70px));
+}
