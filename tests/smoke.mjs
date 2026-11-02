@@ -2058,8 +2058,14 @@ console.log('PASS v0.9.34: 2v2 scored Team Deathmatch, real ally+enemy pilot KOs
 
  friendly.onFoot=true;friendly.shield=0;
  const scoredBefore=m.scored,score0=m.scored.operatorKOs[0];
- assert.equal(api.registerHit(0,2),true,'friendly fire damages a real on-foot pilot in TDM');
- assert.equal(m.scored.deaths[2],1,'friendly pilot death is recorded');
+ // Actual projectile collision with a stationary pilot, not merely calling
+ // registerHit manually. dt=0 isolates the hit resolver from bot steering.
+ const friendBullet=()=>({owner:0,x:friendly.x,y:friendly.y,
+  vx:0,vy:0,age:0,life:.4,bounces:0,kind:'sidearm'});
+ m.config.friendlyFire=false;m.bullets=[friendBullet()];api.step(0);
+ assert.equal(m.scored.deaths[2],0,'real bullet passes harmlessly through ally when FF OFF');
+ m.config.friendlyFire=true;m.bullets=[friendBullet()];api.step(0);
+ assert.equal(m.scored.deaths[2],1,'actual physical friendly bullet causes pilot death when FF ON');
  assert.equal(m.scored.operatorKOs[0],score0,'team kill awards no KO');
  assert.equal(node('score0').textContent,0,'team score remains zero for friendly kill');
  assert.ok(m.event.includes('FRIENDLY FIRE'),'kill feed labels accidental friendly hit');
