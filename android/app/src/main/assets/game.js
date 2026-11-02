@@ -1494,7 +1494,10 @@ function botInput(i,dt){
  }else brain.shotSightRemaining=Math.max(0,(brain.shotSightRemaining||0)-dt);
  const stored=brain.shotLastSeen;
  const remembered=!hasLine&&brain.shotSightAcquired&&
-  brain.shotSightRemaining>0&&stored?.index===state.tanks.indexOf(target);
+  brain.shotSightRemaining>0&&stored?.index===state.tanks.indexOf(target)&&
+  // The existing Solo fairness rule forbids shooting a human off-camera,
+  // even if that target was seen briefly before leaving the viewport.
+  pilotBotFireFair(bot,target);
  const seen=hasLine?brain.shotLastSeen:remembered?{...stored,live:false}:null;
  // Lock chosen angle once; do not chase a dodging target's updated position
  // throughout the aim animation or magically cancel a shot mid-flight.
