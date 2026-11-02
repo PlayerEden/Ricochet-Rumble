@@ -24,7 +24,7 @@ vm.runInNewContext(fs.readFileSync(new URL('../web/scored-match.js',import.meta.
 vm.runInNewContext(fs.readFileSync(new URL('../web/forward-bays.js',import.meta.url),'utf8'),env,{filename:'forward-bays.js'});
 vm.runInNewContext(fs.readFileSync(new URL('../web/dossier.js',import.meta.url),'utf8'),env,{filename:'dossier.js'});
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,get customDraft(){return {...customDraft}},normalizeCustomDraft,customOptionsFor,setCustomDraft,loadCustomDraft,cleanPresetName,normalizeCustomPresets,loadCustomPresets,saveNamedCustomPreset,loadNamedCustomPreset,deleteNamedCustomPreset,resetCustomDraft,get customPresets(){return customPresets.map(p=>({name:p.name,rules:{...p.rules}}))},freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,projectileHitRadius,beginFireAim,updateFireAim,clearFireAim,get fireAim(){return {...fireAim}},get touch(){return touch},tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,friendlyFireEnabled,projectileCanHit,sanitizeLanOptions,lanLobbyHTML,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,resolveUnitMaterials,get equippedPaint(){return equippedPaint},get dossierStore(){return dossierStore},setDossierStoreForTest(next){dossierStore=next},paintProgress,equipPaint,loadPaint,normalizePaint,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,get customDraft(){return {...customDraft}},normalizeCustomDraft,customOptionsFor,setCustomDraft,loadCustomDraft,cleanPresetName,normalizeCustomPresets,loadCustomPresets,saveNamedCustomPreset,loadNamedCustomPreset,deleteNamedCustomPreset,resetCustomDraft,get customPresets(){return customPresets.map(p=>({name:p.name,rules:{...p.rules}}))},freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,projectileHitRadius,beginFireAim,updateFireAim,clearFireAim,get fireAim(){return {...fireAim}},get touch(){return touch},tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,friendlyFireEnabled,projectileCanHit,botFriendlyLaneClear,traceProjectile,sanitizeLanOptions,lanLobbyHTML,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,resolveUnitMaterials,get equippedPaint(){return equippedPaint},get dossierStore(){return dossierStore},setDossierStoreForTest(next){dossierStore=next},paintProgress,equipPaint,loadPaint,normalizePaint,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -2032,6 +2032,30 @@ console.log('PASS v0.9.34: 2v2 scored Team Deathmatch, real ally+enemy pilot KOs
  assert.equal(api.projectileCanHit(0,2,{age:0,bounces:0}),true,'ally projectile hit eligible with FF ON');
  assert.equal(api.projectileCanHit(0,1,{age:0,bounces:0}),true,'enemy projectile hit always eligible');
  assert.equal(api.projectileCanHit(0,0,{age:0,bounces:0}),false,'unbounced self shot excluded');
+
+ // Use a real open east-west maze corridor and live bot/ally team identities.
+ // The full-lifetime safety test must veto a teammate in the projectile lane.
+ {
+  const snapshot=m.tanks.map(t=>({...t})),grid=api.maze,bot=m.tanks[1],ally=m.tanks[3];
+  const lane=grid.open.flatMap((open,n)=>open.includes(n+1)&&n%grid.cols<grid.cols-1?
+   [{x:(n%grid.cols+.5)*grid.cell,y:(Math.floor(n/grid.cols)+.5)*grid.cell}]:[])
+   .find(p=>Array.from({length:19},(_,k)=>k*5).every(d=>!api.blocked(p.x+d,p.y,5)));
+  assert.ok(lane,'safe physical firing lane through real maze');
+  try{
+   Object.assign(bot,{x:lane.x,y:lane.y,a:0,onFoot:false,shield:0});
+   Object.assign(ally,{x:lane.x+88,y:lane.y,onFoot:false,shield:0});
+   for(const i of [0,2]){m.tanks[i].x=-500;m.tanks[i].y=-500;}
+   assert.equal(api.traceProjectile(bot,0,{maxDistance:140,checkActors:true}).hit,3,
+    'real ballistic trace sees friendly actor first with FF ON');
+   assert.equal(api.botFriendlyLaneClear(1),false,'AI vetoes shot through friendly tank');
+   m.config.friendlyFire=false;
+   assert.equal(api.botFriendlyLaneClear(1),true,'with FF OFF ally does not block AI projectile');
+   m.config.friendlyFire=true;
+   ally.x=-500;ally.y=-500;
+   assert.equal(api.botFriendlyLaneClear(1),true,'safe lane permits AI to fire');
+  }finally{m.tanks.forEach((t,i)=>Object.assign(t,snapshot[i]));m.config.friendlyFire=true;}
+ }
+
  friendly.onFoot=true;friendly.shield=0;
  const scoredBefore=m.scored,score0=m.scored.operatorKOs[0];
  assert.equal(api.registerHit(0,2),true,'friendly fire damages a real on-foot pilot in TDM');
