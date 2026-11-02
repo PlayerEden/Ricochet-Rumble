@@ -1772,16 +1772,10 @@ function step(dt){if(paused||state.winner>=0)return;
     diff=Math.atan2(Math.sin(angle-t.a),Math.cos(angle-t.a));
   releaseReady=Math.abs(diff)<.095&&fireCooldown[i]<=0;
  }
- // Host-only bot safety: at firing commitment, reject a shot whose first
- // intercept is an allied actor under FF ON. This examines only current
- // physically simulated path, not future teammate movement. A teammate can
- // still step into the shell AFTER it leaves the muzzle.
+ // Host-only AI safety checks the entire *current* physical trajectory.
+ // It cannot predict where a human teammate will run after shell launch.
  const botShotClear=!inputs[i]?.bot||!friendlyFireEnabled()||
-  !(inputs[i]?.fire&&fireCooldown[i]<=0)||(()=>{
-  const path=traceProjectile(t,t.a,{maxDistance:t.onFoot?370:730,
-   maxBounces:t.onFoot?0:1,checkActors:true});
-  return path.hit===null||path.hit===i||!friendly(i,path.hit);
- })();
+  !(inputs[i]?.fire&&fireCooldown[i]<=0)||botFriendlyLaneClear(i);
  if((inputs[i]?.fire||releaseReady)&&fireCooldown[i]<=0&&botShotClear&&shoot(i)){
   fireCooldown[i]=fireInterval(t);
   if(inputs[i]?.bot){
@@ -2246,6 +2240,17 @@ function unitTargetZoom(t){
 }
 function cameraZoom(t=state?.tanks?.[mode==='guest'?1:0]){
  return mazeGrid?Math.max(unitTargetZoom(t),W/(worldW+CAMERA_APRON*2),H/(worldH+CAMERA_APRON*2)):1;
+}
+// B1: one bounded static trajectory at the actual fire decision. The engine
+// never cancels an in-flight projectile when a teammate enters its path.
+// Evaluate full shell life, not merely the shorter visible dotted preview.
+function botFriendlyLaneClear(i){
+ if(!friendlyFireEnabled())return true;
+ const t=state.tanks[i];
+ if(!t||state.lives[i]<=0)return false;
+ const path=traceProjectile(t,t.a,{maxDistance:1300,
+  maxBounces:t.onFoot?0:5,checkActors:true});
+ return path.hit===null||path.hit===i||!friendly(i,path.hit);
 }
 // A2: deterministic static-world shot prediction through the identical
 // muzzle/microstep used by live bullets. No effects, damage or state mutation.
