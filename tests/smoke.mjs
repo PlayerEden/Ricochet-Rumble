@@ -1655,7 +1655,7 @@ console.log('PASS playable CQC contract: real 10 pilot KOs, protected safe respa
  const bot=game.tanks[1];
  bot.a=0;
  api.tankMove(bot,{moveX:0,moveY:1,bot:true},dt,1);
- assert.ok(Math.abs(bot.a-12*dt)<.000001,'bot rotation unchanged');
+ assert.ok(Math.abs(bot.a-6.5*dt)<.000001,'bot pilot now shares the human 6.5rad/s movement turn cap');
 
  api.beginFireAim({pointerId:77,clientX:210,clientY:240});
  assert.equal(api.fireAim.active,false);
