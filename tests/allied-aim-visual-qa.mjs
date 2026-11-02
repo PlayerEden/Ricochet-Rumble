@@ -40,7 +40,7 @@ function hooks(){
   scenario(kind){
    const ally=state.tanks[2],brain=botBrains.get(2),me=state.tanks[0];
    const save={x:ally.x,y:ally.y,track:brain.fireTrack,recover:brain.fireRecover,
-    mode:state.config.teamMode,toggle:comfort.alliedTraces};
+    mode:state.config.teamMode,toggle:comfort.alliedTraces,mx:me.x,my:me.y};
    if(kind==='off')comfort.alliedTraces=false;
    if(kind==='recover')brain.fireRecover=.4;
    if(kind==='idle')brain.fireTrack=0;
@@ -59,7 +59,7 @@ function hooks(){
    }
    draws=0;render(0);
    const count=draws;
-   Object.assign(ally,{x:save.x,y:save.y});brain.fireTrack=save.track;
+   Object.assign(ally,{x:save.x,y:save.y});me.x=save.mx;me.y=save.my;brain.fireTrack=save.track;
    brain.fireRecover=save.recover;state.config.teamMode=save.mode;
    comfort.alliedTraces=save.toggle;
    return count;
@@ -87,7 +87,7 @@ try{
   await page.waitForFunction(()=>!!window.__alliedQA);
   const base=await page.evaluate(()=>window.__alliedQA.setup());
   assert.ok(base.line&&base.gap>90,'actually visible allied actors in a separate maze cell');
-  for(const name of ['visible','off','recover','idle','ffa','far']){
+  for(const name of ['visible','off','recover','idle','ffa','far','hidden']){
    const count=await page.evaluate(n=>window.__alliedQA.scenario(n),name);
    assert.equal(count,name==='visible'?1:0,name+' allied trace count');
    report.push({viewport,scenario:name,count});
