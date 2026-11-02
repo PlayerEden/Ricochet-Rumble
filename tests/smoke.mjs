@@ -2509,14 +2509,14 @@ console.log('PASS v0.9.46 presentation: interactive pause SFX/music, persistence
   const m=st(),palette=m.config.ffaColors,ids=m.config.teamIds;
   assert.equal(palette.length,m.tanks.length,'FFA creates an individual paint per actor');
   assert.equal(new Set(palette).size,palette.length,'no same-color competitors in one FFA');
-  assert.deepEqual(ids,m.tanks.map((_,i)=>i),'FFA physical opponent identity remains individual');
+  assert.deepEqual([...ids],[...m.tanks.map((_,i)=>i)],'FFA physical opponent identity remains individual');
   for(let i=0;i<palette.length;i++){
    assert.equal(api.combatColor(i),palette[i],'actual render color follows match palette');
    assert.ok(/^#[0-9a-f]{6}$/.test(palette[i]),'approved legible palette entry');
   }
   const snapshot=api.serializeState();
-  assert.deepEqual(snapshot.config.ffaColors,palette,'host-synchronized palette is identical on both devices');
-  assert.deepEqual(snapshot.config.teamIds,ids,'network replicates actual actor team ids');
+  assert.deepEqual([...snapshot.config.ffaColors],[...palette],'host-synchronized palette is identical on both devices');
+  assert.deepEqual([...snapshot.config.teamIds],[...ids],'network replicates actual actor team ids');
   assert.ok(api.validRemoteSnapshot(snapshot),'valid palette accepted in LAN snapshot');
   assert.equal(api.validRemoteSnapshot({...snapshot,config:{...snapshot.config,ffaColors:Array(palette.length).fill(palette[0])}}),false,'duplicate FFA colors rejected');
   assignments.push(palette[0]);names.add(palette[0]);
@@ -2525,7 +2525,7 @@ console.log('PASS v0.9.46 presentation: interactive pause SFX/music, persistence
  api.setCustomDraft({modeId:'scored_tdm',sidePreference:'coral',friendlyFire:false});
  api.newMatch('custom');
  let m=st();assert.equal(api.teamOf(0),1,'Custom side Coral owns its own unit/FOB');
- assert.deepEqual([...m.scored.teamIds],m.config.teamIds,'TDM scoring uses same side IDs as physical battlefield');
+ assert.deepEqual([...m.scored.teamIds],[...m.config.teamIds],'TDM scoring uses same side IDs as physical battlefield');
  assert.equal(api.combatColor(0),'#fc856e','Custom Coral paint applied to player');
  assert.equal(m.tanks[0].a,Math.PI,'Coral FOB faces inward');
  assert.ok(Math.hypot(m.tanks[0].x-m.forwardBays.bays[1].x,m.tanks[0].y-m.forwardBays.bays[1].y)<250,'Coral player deploys at Coral Forward Bay');
