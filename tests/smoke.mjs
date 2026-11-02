@@ -420,7 +420,7 @@ click('solo');
 const lone=st().tanks[0],vacant=st().vehicles.find(v=>v.occupant===-1&&v.armor>0);
 assert.ok(vacant,'empty recoverable vehicle exists');
 const armorBefore=vacant.armor;
-lone.x=vacant.x-40;lone.y=vacant.y;lone.vx=lone.vy=0;
+lone.x=vacant.x-40;lone.y=vacant.y;lone.a=0;lone.vx=lone.vy=0; // Controlled collision probe independent of randomized team-facing orientation.
 for(let n=0;n<4;n++)win.__test.tankMove(lone,{moveX:1,moveY:0},.065,0);
 assert.ok(lone.x>vacant.x,'occupied tank drives through an unoccupied deployment without blocking');
 // Simulated bullets should similarly ignore projections, not delete armor from them.
