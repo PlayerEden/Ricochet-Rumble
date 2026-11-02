@@ -13,6 +13,14 @@
 - CI checked actual APK with `apksigner`/`aapt`, compared embedded Android assets to the browser files, ran source/saves and live Chromium pilot/AI/touch/combat HUD/CTF/first-match tests, and successfully compiled the Android package. This is **build acceptance**, not actual hardware or user-data migration acceptance.
 - The independent CTF full browser+visual regression [41511097801](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41511097801) is a separate exact-source gate; record its terminal status before treating this candidate as fully QA-green.
 
+## Independent whole-game CTF regression — VERIFIED PASS
+
+[Full 12-profile CTF + existing mixed-mode/Forward Bay/visual workflow 41511097801](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41511097801) completed **SUCCESS** at exact source commit `cc6223e9a70c081630ea27ecc557056c5aa3d4d1`, the same source as the owner APK. It passed actual CTF capture/rematch and objective bots, natural-maze diagnostic, 300 Forward Bay seeded cases, Quick Play, saved progression/backup, first-match and **44 browser visual snapshots**.
+
+All four seed maps and all three scripted controller profiles reached and picked up the enemy flag in this run. Aggregated 12-scenario totals: unarmed 6 captures, 13 deaths; precise 12 captures, 2 deaths; reaction-limited 12 captures, 2 deaths. These figures are scripted input-model outcomes and should **not** be presented as human win rate, AI fairness certification or stable gameplay balance. Real hardware, input comfort, menu/UI perception and actual save migration are still pending.
+
+**Final automated decision:** targeted CTF, broader game/browser QA, Android compilation, signer/metadata verification and embedded-asset parity PASS. **Release decision:** experimental owner phone test only; stable `main` unmerged, Google Play public release NO-GO.
+
 ## Phone acceptance (not yet executed)
 
 1. Note current installed preview package and version; back up your offline Dossier and preferences before updating. Do **not uninstall** to install this test APK. Update only when package name, signing certificate and version order match the existing app.
