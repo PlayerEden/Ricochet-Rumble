@@ -248,7 +248,7 @@ try{
  assert.ok(clockLayout.clockLeft>=clockLayout.menuRight-2,'countdown clears MENU');
  assert.equal((await page.locator('#player0-label').textContent()).trim(),'YOU KOs');
  assert.equal((await page.locator('#interact-btn').isVisible()),false);
- assert.equal((await page.locator('#fire-mode').textContent()).trim(),'HOLD · DRAG TO AIM');
+ assert.equal((await page.locator('#fire-mode').textContent()).trim(),'AIM · RELEASE');
  const fireBox=await page.locator('.fire-btn').boundingBox();
  assert.ok(fireBox?.width>=35&&fireBox.height>=35,'right FIRE drag target has a mobile-sized hit area');
  const pressX=fireBox.x+fireBox.width/2,pressY=fireBox.y+fireBox.height/2;
