@@ -156,7 +156,7 @@ function doBackupAction(action){
 
 
 const CUSTOM_PRESETS_KEY='rr-custom-presets-v1';
-let comfort={sound:true,music:true,shake:false,autoFire:false,leftHanded:false,pilotAssist:false},fixedAccumulator=0;
+let comfort={sound:true,music:true,shake:false,autoFire:false,leftHanded:false,pilotAssist:false,pilotRelease:false},fixedAccumulator=0;
 let selectedRules={botCount:2,bulletCap:4,startLives:2,teamMode:'ffa',botSkill:'normal',mapSize:'small'};
 // v0.9.22 / Slice A: stable solo presets backed by CURRENT survival combat, not proposed score modes.
 const MATCH_MODE_PRESETS=Object.freeze({
@@ -414,6 +414,15 @@ const colors=PALETTE,pressed=new Set(),touch=new Set();
 const stick={x:0,y:0,pointerId:null};
 // CQC mobile: right FIRE thumb can drag to aim while left thumb steers.
 const fireAim={pointerId:null,source:null,startX:0,startY:0,x:0,y:0,active:false};
+let releaseShot=null;
+function pilotReleaseMode(){return comfort.pilotRelease&&mode==='solo'&&!!state?.tanks?.[0]?.onFoot&&
+ state.lives[0]>0&&state.winner<0&&!paused&&menu.classList.contains('hidden');}
+function queuePilotRelease(){
+ if(!pilotReleaseMode()||fireAim.pointerId===null)return false;
+ const t=state.tanks[0],x=fireAim.active?fireAim.x:Math.cos(t.a),y=fireAim.active?fireAim.y:Math.sin(t.a);
+ const mag=Math.hypot(x,y);if(mag<.6)return false;
+ releaseShot={x:x/mag,y:y/mag,ttl:.7,matchId:state.matchId};return true;
+}
 // Tactical scored-FFA test: let bounced shells work ahead of the tank.
 // Other modes and all shell speeds, bounce rules and caps remain untouched.
 // Thumb-comfort experiment: modestly slower hull, much calmer maximum slew.
@@ -476,7 +485,7 @@ function applyPlaylistUI(){
 }
 function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){const st=p.settings||{};selectedRules={mapSize:MAP_SIZES[st.mapSize]?st.mapSize:'small',botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:2,bulletCap:[1,2,3,4,5,8].includes(st.bulletCap)?st.bulletCap:4,startLives:[2,3,5].includes(st.startLives)?st.startLives:2,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key];if(p.playlist?.version===1&&Array.isArray(p.playlist.enabled))setPlaylistModes(p.playlist.enabled)}}catch(_){}loadCustomDraft();loadCustomPresets();applyPrefsToUI()}
 function applyPrefsToUI(){const picks={mapSize:selectedRules.mapSize,botCount:selectedRules.botCount,bulletCap:selectedRules.bulletCap,startLives:selectedRules.startLives,teamMode:selectedRules.teamMode,botSkill:selectedRules.botSkill};const ids={mapSize:'map-size',botCount:'bot-count',bulletCap:'bullet-cap',startLives:'lives-choice',teamMode:'team-choice',botSkill:'bot-skill'};for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(el&&el.options&&[...el.options].some(o=>o.value===String(picks[key])))el.value=String(picks[key])}for(const key of Object.keys(comfort)){const el=document.getElementById('pref-'+key);if(el)el.checked=comfort[key]}const el=document.getElementById('fire-mode');if(el)el.textContent=comfort.autoFire?'AUTO ON':'HOLD TO FIRE';document.querySelector('.battlefield')?.classList.toggle('swap-controls',comfort.leftHanded);applyPlaylistUI();}
-function releaseControls(){touch.clear();pressed.clear();clearStick();clearFireAim();for(const el of document.querySelectorAll('[data-key]'))el.classList.remove('active')}
+function releaseControls(){touch.clear();pressed.clear();releaseShot=null;clearStick();clearFireAim();for(const el of document.querySelectorAll('[data-key]'))el.classList.remove('active')}
 
 function mazeRandom(seed){let x=(seed>>>0)||1;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296};}
 function createMaze(def,seed){const {cols,rows,cell}=def,rng=mazeRandom(seed),open=Array.from({length:cols*rows},()=>[]),visited=new Set([0]),stack=[0];
@@ -873,9 +882,11 @@ function inputFrom(keys,isLocal){const down=k=>menu.classList.contains('hidden')
  // as well; the guest sends its aim vector to the authoritative host.
  const localSeat=mode==='guest'?1:0;
  const localFoot=isLocal&&['solo','host','guest'].includes(mode)&&!!state?.tanks?.[localSeat]?.onFoot;
- const fineAim=fireAim.active&&localFoot&&fireAim.source==='fire'&&touch.has('fire');
+ const queuedAim=isLocal&&pilotReleaseMode()&&releaseShot?.matchId===state?.matchId?releaseShot:null;
+  const fineAim=fireAim.active&&localFoot&&fireAim.source==='fire'&&touch.has('fire');
  // Only on-foot pilots use independent FIRE-drag vectors; vehicle steering uses MOVE.
- return {moveX,moveY,aimX:fineAim?fireAim.x:undefined,aimY:fineAim?fireAim.y:undefined,fire:down('fire')||(isLocal&&comfort.autoFire&&mode!=='idle'&&menu.classList.contains('hidden')&&!paused)};}
+ return {moveX,moveY,aimX:queuedAim?.x??(fineAim?fireAim.x:undefined),aimY:queuedAim?.y??(fineAim?fireAim.y:undefined),fire:(down('fire')&&!(isLocal&&pilotReleaseMode()&&touch.has('fire')&&!pressed.has(keys.fire)))||
+ (isLocal&&comfort.autoFire&&!pilotReleaseMode()&&mode!=='idle'&&menu.classList.contains('hidden')&&!paused)};}
 function makeControl(isPlayer1){return isPlayer1?inputFrom(keys1,true):inputFrom(keys2,false)}
 function serializeState(){return {tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,vehicleDropTimer:state.vehicleDropTimer,dropIndex:state.dropIndex,vehicleBeacon:state.vehicleBeacon?{...state.vehicleBeacon}:null,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,elapsedSeconds:state.elapsedSeconds,deaths:state.deaths.slice(),hostPaused:mode==='host'&&paused};}
 function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
@@ -994,7 +1005,7 @@ function newMatch(which,dailyOptions=null){
  const arena=selectArena(),options=ctfLaunch?{...selectedRules,matchModeId:'scored_tdm',
  mapSize:'standard',teamMode:'teams',botCount:3,botSkill:'normal',pilotMode:true,
  forwardBayExercise:true,ctfExercise:true,quickPlayMatch:false}:bayLaunch?{...selectedRules,matchModeId:'scored_tdm',mapSize:'standard',teamMode:'teams',botCount:3,botSkill:'normal',pilotMode:true,forwardBayExercise:true,quickPlayMatch:false}:dailyLaunch?dailyOptions:customLaunch?customOptionsFor():scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:which==='scored_tdm'?'teams':'ffa',matchModeId:which,pilotMode:true}:playlistId?quickPlayOptionsFor(playlistId):{...selectedRules,pilotMode:true};
- state=initialState(arena,options,dailyLaunch?options.dailySeed:freshSectorSeed(state?.mazeSeed));dailyAttemptedKey='';dailyLastRecord=null;roundUnlocks=[];camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(ctfLaunch?'CAPTURE THE FLAG · TEST':bayLaunch?'FORWARD BAY · TEAM EXERCISE':dailyLaunch?'DAILY SECTOR':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config))):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch){exitMenu();audioCue('deploy');if(mode==='solo')firstMatchHint();}}
+ state=initialState(arena,options,dailyLaunch?options.dailySeed:freshSectorSeed(state?.mazeSeed));dailyAttemptedKey='';dailyLastRecord=null;roundUnlocks=[];camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();releaseShot=null;refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(ctfLaunch?'CAPTURE THE FLAG · TEST':bayLaunch?'FORWARD BAY · TEAM EXERCISE':dailyLaunch?'DAILY SECTOR':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config))):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch){exitMenu();audioCue('deploy');if(mode==='solo')firstMatchHint();}}
 function resetAll(advancePlaylist=false){
  const previousSeed=state.mazeSeed;
  let options={...state.config};
@@ -1008,7 +1019,7 @@ function resetAll(advancePlaylist=false){
  state=initialState(0,options,options.dailySector?options.dailySeed:freshSectorSeed(previousSeed));dailyAttemptedKey='';dailyLastRecord=null;
  if(mode==='host')neutralizeGuestInput();
  if(mode==='solo')document.getElementById('mode-label').textContent=options.botCount===0?'PRACTICE FIELD':options.dailySector?'DAILY SECTOR':options.ctfExercise?'CAPTURE THE FLAG · TEST':options.forwardBayExercise?'FORWARD BAY · TEAM EXERCISE':(options.customMatch?'CUSTOM · ':'')+soloModeLabel(options);
- camera.zoom=null;resultCuePlayed=false;roundUnlocks=[];quietContactSeconds=0;radarReminderShown=false;coachRemaining=0;document.getElementById('field-coach')?.classList.add('hidden');fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();clearFireAim();paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();if(mode!=='guest')notice(options.dailySector?'SAME DAILY SECTOR · RETRY':'NEW FIELD GENERATED — GO!');}
+ camera.zoom=null;resultCuePlayed=false;roundUnlocks=[];quietContactSeconds=0;radarReminderShown=false;coachRemaining=0;document.getElementById('field-coach')?.classList.add('hidden');fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();clearFireAim();releaseShot=null;paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();if(mode!=='guest')notice(options.dailySector?'SAME DAILY SECTOR · RETRY':'NEW FIELD GENERATED — GO!');}
 function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
 function circlesRect(x,y,r,w){const nx=clamp(x,w.x,w.x+w.w),ny=clamp(y,w.y,w.y+w.h);return (x-nx)**2+(y-ny)**2<r*r}
 function blocked(x,y,r=21){return x<r+13||x>worldW-r-13||y<r+13||y>worldH-r-13||nearWall(x,y,r)}
@@ -1426,6 +1437,9 @@ function updateQuietMatchPrompt(dt){
  }
 }
 function step(dt){if(paused||state.winner>=0)return;
+ if(releaseShot){releaseShot.ttl-=dt;
+  if(!pilotReleaseMode()||releaseShot.matchId!==state.matchId||releaseShot.ttl<=0)releaseShot=null;
+ }
  if(mode==='host'){
   if(!connected)neutralizeGuestInput();
   else{
@@ -1462,7 +1476,18 @@ function step(dt){if(paused||state.winner>=0)return;
  t.powerTimer=Math.max(0,(t.powerTimer||0)-dt);if(t.powerTimer<=0)t.powerType=null;t.flash=Math.max(0,(t.flash||0)-dt);t.recoil=Math.max(0,(t.recoil||0)-dt*6);t.ejectAnim=Math.max(0,(t.ejectAnim||0)-dt);
  t.shield=Math.max(0,t.shield-dt);tankMove(t,inputs[i],dt,i);
  for(const p of state.pickups){if(Math.hypot(t.x-p.x,t.y-p.y)<(t.onFoot?23:35)&&collectPickup(t,i,p))break}
- fireCooldown[i]=Math.max(0,(fireCooldown[i]||0)-dt);if(inputs[i]?.fire&&fireCooldown[i]<=0&&shoot(i))fireCooldown[i]=fireInterval(t);}
+ fireCooldown[i]=Math.max(0,(fireCooldown[i]||0)-dt);
+ // Wait for the same 6.5rad/s physical turn before releasing the shot.
+ let releaseReady=false;
+ if(i===0&&releaseShot&&pilotReleaseMode()&&releaseShot.matchId===state.matchId){
+  const angle=Math.atan2(releaseShot.y,releaseShot.x);
+  const difference=Math.atan2(Math.sin(angle-t.a),Math.cos(angle-t.a));
+  releaseReady=Math.abs(difference)<.10&&fireCooldown[i]<=0;
+ }
+ if((inputs[i]?.fire||releaseReady)&&fireCooldown[i]<=0&&shoot(i)){
+  fireCooldown[i]=fireInterval(t);if(releaseReady)releaseShot=null;
+ }
+}
  for(const b of state.bullets){b.age+=dt;b.life-=dt;const substeps=Math.max(1,Math.ceil(Math.max(Math.abs(b.vx),Math.abs(b.vy))*dt/5)),subDt=dt/substeps;
  for(let j=0;j<substeps&&b.life>0&&state.winner<0;j++){const nx=b.x+b.vx*subDt,ny=b.y+b.vy*subDt;
  if(blocked(nx,b.y,b.kind==='sidearm'?3:5)){if(b.kind==='sidearm'){b.life=0;break}b.vx=-b.vx;b.bounces++;emitFx('bounce',b.x,b.y,combatColor(b.owner));audioCue('ricochet',b.x,b.y)}else b.x=nx;
@@ -2038,6 +2063,19 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
   else{c.moveTo(t.x,t.y-59);c.lineTo(t.x-8,t.y-71);c.lineTo(t.x+8,t.y-71);}
   c.closePath();c.fillStyle='#ffffff';c.fill();
  }}
+ if(pilotReleaseMode()&&(fireAim.pointerId!==null||releaseShot)){
+  const t=state.tanks[0];
+  const vx=releaseShot?.x??(fireAim.active?fireAim.x:Math.cos(t.a));
+  const vy=releaseShot?.y??(fireAim.active?fireAim.y:Math.sin(t.a));
+  let reach=0;
+  for(let distance=16;distance<=135;distance+=5){
+   if(blocked(t.x+vx*distance,t.y+vy*distance,3))break;
+   reach=distance;
+  }
+  if(reach>16){c.save();c.globalAlpha=.65;c.strokeStyle='#a9f4d6';c.lineWidth=1.5;
+   c.beginPath();c.moveTo(t.x+vx*24,t.y+vy*24);c.lineTo(t.x+vx*reach,t.y+vy*reach);c.stroke();
+   c.globalAlpha=.95;c.beginPath();c.arc(t.x+vx*reach,t.y+vy*reach,3,0,Math.PI*2);c.stroke();c.restore();}
+ }
  for(const b of state.bullets){
    const foot=b.kind==='sidearm',heavy=b.kind==='mech';
    const length=Math.min(foot?10:heavy?24:19,Math.hypot(b.vx,b.vy)*.037);
@@ -2316,8 +2354,15 @@ menu.addEventListener('click',e=>{const a=e.target?.dataset?.action;
  else if(a==='confirm-restart'&&mode!=='guest'&&paused){resetAll();exitMenu()}});
 window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if([...Object.values(keys1),...Object.values(keys2)].includes(e.code))e.preventDefault();pressed.add(e.code);if(e.code==='KeyR'&&state.winner>=0&&mode!=='guest')resetAll(mode==='solo'&&!!state.config?.quickPlayMatch);if(e.code==='KeyE'&&!e.repeat&&menu.classList.contains('hidden')){if(mode==='guest'&&connected&&!state.hostPaused)nativePacket({type:'interact'});else if(mode==='solo'||mode==='host'||mode==='duel')tryInteract(0)}});
 window.addEventListener('keyup',e=>pressed.delete(e.code));window.addEventListener('blur',releaseControls);
-for(const b of document.querySelectorAll('[data-key]')){const k=b.dataset.key;const release=e=>{touch.delete(k);b.classList.remove('active');if(k==='fire'&&fireAim.pointerId===e.pointerId)clearFireAim();try{b.releasePointerCapture(e.pointerId)}catch(_){}};
- b.addEventListener('pointerdown',e=>{e.preventDefault();touch.add(k);b.classList.add('active');if(k==='fire')beginFireAim(e);b.setPointerCapture(e.pointerId)});
+for(const b of document.querySelectorAll('[data-key]')){const k=b.dataset.key;const release=e=>{
+ if(k==='fire'&&fireAim.pointerId===e.pointerId&&e.type==='pointerup'){
+  updateFireAim(e);queuePilotRelease();
+ }
+ touch.delete(k);b.classList.remove('active');
+ if(k==='fire'&&fireAim.pointerId===e.pointerId)clearFireAim();
+ try{b.releasePointerCapture(e.pointerId)}catch(_){}
+};
+ b.addEventListener('pointerdown',e=>{e.preventDefault();touch.add(k);b.classList.add('active');if(k==='fire'){releaseShot=null;beginFireAim(e)}b.setPointerCapture(e.pointerId)});
  if(k==='fire')b.addEventListener('pointermove',e=>{if(fireAim.pointerId===e.pointerId){e.preventDefault();updateFireAim(e)}});
  b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);b.addEventListener('lostpointercapture',e=>{touch.delete(k);b.classList.remove('active');if(k==='fire'&&fireAim.pointerId===e.pointerId)clearFireAim()})}
 const joystick=document.getElementById('joystick'),knob=document.getElementById('stick-knob');
