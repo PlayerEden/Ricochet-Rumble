@@ -2105,7 +2105,7 @@ function enemyBotCue(i,me=mode==='guest'?1:0){
  if(distance>385||!hasLineOfSight(enemy.x,enemy.y,local.x,local.y))return null;
  const angle=Number.isFinite(enemy.a)?enemy.a:0;
  // The existing true muzzle flash takes priority over reacquisition.
- if(enemy.flash>0&&brain.lastShotTarget===me)return {phase:'shot',angle,progress:1};
+ if(enemy.flash>0)return brain.lastShotTarget===me?{phase:'shot',angle,progress:1}:null;
  if(brain.fireTarget!==me||brain.fireRecover>0||
     !(brain.fireTrack>0)||!Number.isFinite(brain.fireAngle))return null;
  const skill=state.config?.botSkill==='casual'?'casual':
