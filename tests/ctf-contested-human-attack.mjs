@@ -318,6 +318,10 @@ try{
  assert.ok(results.some(x=>x.carriedFrames>0),'at least one genuine flag pickup');
  assert.ok(results.some(x=>x.defenderInterceptFrames>0),'defender reacts to carrier');
  assert.ok(results.some(x=>x.escortSupportFrames>0),'escort responds to carrier');
+ // Seed 102 previously stalled behind the allied escort in every profile.
+ const obstruction=results.filter(x=>x.seed===102);
+ assert.ok(obstruction.some(x=>x.nearestToEnemyFlag<680),
+  'a normal-input contestant must clear the friendly corridor bottleneck');
  const summary=g=>({shots:g.reduce((n,x)=>n+x.humanShots,0),
   captures:g.reduce((n,x)=>n+x.humanCaptures,0),
   pickups:g.filter(x=>x.firstHumanPickup!==null).length,
