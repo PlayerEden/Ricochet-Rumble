@@ -24,7 +24,7 @@ vm.runInNewContext(fs.readFileSync(new URL('../web/scored-match.js',import.meta.
 vm.runInNewContext(fs.readFileSync(new URL('../web/forward-bays.js',import.meta.url),'utf8'),env,{filename:'forward-bays.js'});
 vm.runInNewContext(fs.readFileSync(new URL('../web/dossier.js',import.meta.url),'utf8'),env,{filename:'dossier.js'});
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,get customDraft(){return {...customDraft}},normalizeCustomDraft,customOptionsFor,setCustomDraft,loadCustomDraft,cleanPresetName,normalizeCustomPresets,loadCustomPresets,saveNamedCustomPreset,loadNamedCustomPreset,deleteNamedCustomPreset,resetCustomDraft,get customPresets(){return customPresets.map(p=>({name:p.name,rules:{...p.rules}}))},freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,projectileHitRadius,beginFireAim,updateFireAim,clearFireAim,get fireAim(){return {...fireAim}},get touch(){return touch},tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,friendlyFireEnabled,projectileCanHit,botFriendlyLaneClear,traceProjectile,sanitizeLanOptions,lanLobbyHTML,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,resolveUnitMaterials,get equippedPaint(){return equippedPaint},get dossierStore(){return dossierStore},setDossierStoreForTest(next){dossierStore=next},paintProgress,equipPaint,loadPaint,normalizePaint,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,get customDraft(){return {...customDraft}},normalizeCustomDraft,customOptionsFor,setCustomDraft,loadCustomDraft,cleanPresetName,normalizeCustomPresets,loadCustomPresets,saveNamedCustomPreset,loadNamedCustomPreset,deleteNamedCustomPreset,resetCustomDraft,get customPresets(){return customPresets.map(p=>({name:p.name,rules:{...p.rules}}))},freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,projectileHitRadius,beginFireAim,updateFireAim,clearFireAim,get fireAim(){return {...fireAim}},get touch(){return touch},tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,friendlyFireEnabled,projectileCanHit,botFriendlyLaneClear,traceProjectile,alliedAimActive,alliedAimIntentIndices,visibleAlliedAimIndices,validRemoteSnapshot,get botBrains(){return botBrains},setModeForTest(v){mode=v},sanitizeLanOptions,lanLobbyHTML,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,resolveUnitMaterials,get equippedPaint(){return equippedPaint},get dossierStore(){return dossierStore},setDossierStoreForTest(next){dossierStore=next},paintProgress,equipPaint,loadPaint,normalizePaint,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -2430,4 +2430,65 @@ console.log('PASS v0.9.46 presentation: interactive pause SFX/music, persistence
  assert.equal(api.resolveUnitMaterials('tank','#46d2f5','fieldgrid.standard').armor,'#46d2f5');
  api.setDossierStoreForTest(previousDossier);
  console.log('PASS Phase 4B: real isolated Dossier completion/wins grant cosmetics; unchanged underlying gameplay');
+}
+
+// B2: the allied aiming display uses real acquisition, not all bot headings.
+// No hostile aim path can be drawn, including the LAN guest's shared snapshot.
+{
+ const api=win.__test;
+ assert.ok(menuHtml.includes('id="pref-alliedTraces"'),
+   'real advanced Match Settings provides allied-trace toggle');
+ const selected=api.comfort.alliedTraces;
+ api.comfort.alliedTraces=true;api.newMatch('scored_tdm');
+ const m=st(),me=m.tanks[0],ally=m.tanks[2],enemy=m.tanks[1];
+ const prev={...ally},brain={fireTarget:1,fireTrack:.22,fireRecover:0,
+  fireAngle:0,fireShots:0};
+ ally.x=me.x+6;ally.y=me.y;ally.flash=0;
+ api.camera.zoom=1;api.camera.x=ally.x-100;api.camera.y=ally.y-100;
+ api.botBrains.set(2,brain);
+ assert.equal(api.alliedAimActive(2,0),true,'live ally has valid acquisition state');
+ assert.equal(api.alliedAimActive(1,0),false,'enemy is never a friendly cue');
+ assert.ok(api.visibleAlliedAimIndices(0).includes(2),'onscreen teammate gets faint aim dots');
+ api.comfort.alliedTraces=false;
+ assert.equal(api.visibleAlliedAimIndices(0).length,0,'player toggle hides all ally dots');
+ api.comfort.alliedTraces=true;
+ brain.fireRecover=.2;
+ assert.equal(api.alliedAimActive(2,0),false,'ally trace disappears during shot recovery');
+ brain.fireRecover=0;brain.fireTrack=0;
+ assert.equal(api.alliedAimActive(2,0),false,'inactive aim cannot draw a dotted trace');
+ brain.fireTrack=.21;
+ ally.x=me.x+700;
+ assert.equal(api.alliedAimActive(2,0),false,'far-off ally cannot produce clutter');
+ ally.x=me.x+6;ally.y=me.y;
+ m.config.teamMode='ffa';
+ assert.equal(api.visibleAlliedAimIndices(0).length,0,'FFA has no allied aim traces');
+ m.config.teamMode='teams';
+ Object.assign(ally,prev);
+ // LAN host is authoritative. Only seat 1's friendly bot index may travel
+ // in a guest snapshot; angle, target index and acquisition timer stay hidden.
+ m.humanCount=2;
+ const guest=m.tanks[1],guestAlly=m.tanks[3];
+ Object.assign(guestAlly,{x:guest.x+6,y:guest.y,flash:0});
+ api.botBrains.set(3,{fireTarget:0,fireTrack:.22,fireRecover:0,
+   fireAngle:1.1});
+ api.setModeForTest('host');
+ const sent=api.alliedAimIntentIndices(1),snapshot=api.serializeState();
+ assert.ok(sent.includes(3),'host shares only guest-side AI intent');
+ assert.ok(!sent.includes(2),'host-side bot never leaks as guest ally');
+ assert.equal(snapshot.allyAim.length,1,'minimal network field contains index only');
+ assert.equal(typeof snapshot.allyAim[0],'number','no target or aim-plan details are sent');
+ assert.equal(api.validRemoteSnapshot(snapshot),true,'strict legitimate guest snapshot is valid');
+ assert.equal(api.validRemoteSnapshot({...snapshot,allyAim:[2]}),false,
+   'host cannot advertise opponent intent to the guest');
+ assert.equal(api.validRemoteSnapshot({...snapshot,allyAim:[3,3]}),false,
+   'duplicate aim metadata rejected');
+ assert.equal(api.validRemoteSnapshot({...snapshot,allyAim:[1]}),false,
+   'human aiming or out-of-scope intent rejected');
+ api.setModeForTest('guest');m.allyAim=[3];
+ api.camera.x=guestAlly.x-100;api.camera.y=guestAlly.y-100;
+ assert.equal(api.alliedAimActive(3,1),true,'guest renders host-approved nearby teammate');
+ m.allyAim=[];
+ assert.equal(api.alliedAimActive(3,1),false,'guest never invents missing host bot aim');
+ api.setModeForTest('solo');api.comfort.alliedTraces=selected;
+ console.log('PASS B2 allied aim: acquisition/LOS/FFA/crowding gates, optional toggle, guest-only host authority, invalid metadata rejected');
 }
