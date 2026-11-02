@@ -84,3 +84,9 @@ Same four fixed seeds and movement goal logic, but this first paired script did 
 - **Seed 201:** unarmed captured once, precise twice, conservative twice.
 
 **Engineering decision:** do **not** nerf bot weapons or buff pilot sidearms based on this. Isolate seed 102 with movement/waypoint/wall/actor diagnostics first. Real Android player acceptance is still outstanding. This branch and PR are not a gameplay release.
+
+## Seed 102 obstruction instrumentation (test-only, pending exact run)
+
+Source commit `10b67e9f9cd622d3b250b43528268081cd1a5b5b` adds capped snapshots on persistent script-navigation stalls: actual operator position, head angle versus desired direction, maze cell/goal/next waypoint, distance to flag, blocked 35-unit probes in four directions, blocked forward path, and nearest live actor distances/teams. It never changes AI selection, bot shooting, engine state, physics, pathfinding, lives, scores or Android runtime. Stalled movements are recorded per test profile inside the existing same-seed JSON and structured CI logs.
+
+[Exact-source validation workflow](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41507307186) started after commit; **wait for terminal QA status and inspect matched seed 102 traces before design changes**. If multiple adjacent walls block the selected waypoint, diagnose test path planner vs generator topology; if the nearest live teammate/defender occupies the lane, compare real CTF yielding and operator push-away control without collision bypass. Owner device acceptance remains pending.
