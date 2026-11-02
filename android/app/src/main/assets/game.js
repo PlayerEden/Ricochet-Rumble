@@ -2626,11 +2626,13 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
  case 'start':{
  if(mode!=='guest'||!connected||!lanLobby||!lanLobby.active||!lanLobby.myReady||msg.revision!==lanLobby.revision)break;
  lanLobby.active=false;paused=false;lastRemoteFxId=0;exitMenu();notice('NEW FIELD · FIGHT!',1400);break;}
- case 'state':if(mode==='guest'&&(!lanLobby||!lanLobby.active)&&validRemoteSnapshot(msg.state)){const upcoming=msg.state;const currentEvents=Array.isArray(upcoming.fxEvents)?upcoming.fxEvents:[];for(const event of currentEvents){if(event.id>lastRemoteFxId&&event.id<lastRemoteFxId+1000&&Number.isFinite(event.x)&&Number.isFinite(event.y)){spawnParticles(event.kind,event.x,event.y,event.color);if(event.kind==='hit'&&event.target===1){damagePulse=.58;screenKick=comfort.shake?3.2:0}if(event.kind==='shot'){
+ case 'state':if(mode==='guest'&&(!lanLobby||!lanLobby.active)&&validRemoteSnapshot(msg.state)){const upcoming=msg.state;const currentEvents=Array.isArray(upcoming.fxEvents)?upcoming.fxEvents:[];for(const event of currentEvents){if(event.id>lastRemoteFxId&&event.id<lastRemoteFxId+1000&&Number.isFinite(event.x)&&Number.isFinite(event.y)){spawnParticles(event.kind,event.x,event.y,event.color);if(event.kind==='hit'&&event.target===1){damagePulse=.58;screenKick=comfort.shake?3.2:0}
+ if(event.kind==='armor'&&event.target===1){damagePulse=.28;screenKick=comfort.shake?2.3:0}if(event.kind==='shot'){
  const shooter=upcoming.tanks?.[event.owner],vehicle=upcoming.vehicles?.[shooter?.vehicleId];
  audioCue(shooter?.onFoot?'pilot-shot':vehicle?.type==='mech'?'mech-shot':'tank-shot',event.x,event.y);
  }
  if(event.kind==='armor')audioCue('armor-hit',event.x,event.y);
+ if(event.kind==='bounce')audioCue('ricochet',event.x,event.y);
   if(event.kind==='hit')audioCue('pilot-hit',event.x,event.y);
  if(event.kind==='eject')audioCue('eject',event.x,event.y);
  if(event.kind==='guard')audioCue('barrier',event.x,event.y);
