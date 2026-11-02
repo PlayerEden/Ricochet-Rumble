@@ -2160,7 +2160,7 @@ console.log('PASS TDM ricochet self-death audit: death counted, neither team sco
  assert.equal(st().config.mapSize,'standard');
  a.setCustomDraft({modeId:'scored_tdm'});
  a.newMatch('custom');
- assert.deepEqual([...st().scored.teamIds],st().config.teamIds,'Custom TDM scored roster follows actual assigned teams');
+ assert.deepEqual([...st().scored.teamIds],[...st().config.teamIds],'Custom TDM scored roster follows actual assigned teams');
  assert.equal(st().config.teamIds[0],a.customDraft.sidePreference==='coral'?1:st().config.teamIds[0],'Custom side assignment is explicit');
  assert.equal(st().scored.scoreTarget,15);
  assert.equal(st().config.customMatch,true);
