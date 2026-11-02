@@ -26,6 +26,9 @@ function installQA(){
    if(!['unarmed','armed','conservative'].includes(profile))throw Error('Invalid QA input profile');
    this.profile=profile;
    mode='solo';paused=true;
+   // Match reset contract: newMatch() clears cooldowns and queued FIRE.
+   // Paired fixtures must never inherit the preceding profile's timing.
+   fireCooldown.fill(0);releaseShot=null;remoteReleaseShot=null;
    state=initialState(0,{mapSize,matchModeId:'scored_tdm',pilotMode:true,
     teamMode:'teams',botCount:3,botSkill:'normal',forwardBayExercise:true,
     ctfExercise:true,quickPlayMatch:false},seed);
