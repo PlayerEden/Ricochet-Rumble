@@ -39,6 +39,7 @@ function installQA(){
     defenderIncorrectFrames:0,defenderChangedPosition:0,escortSupportFrames:0,
     humanCaptures:0,defenderFireFrames:0,enemyFlagReturns:0,
     humanShots:0,aimCandidates:0,humanKOs:0,stalls:[],lastStallBin:0,
+    progressSamples:[],
     defenderTravelDuringCarry:0,firstDefenderCarrierRange:null,
     nearestDefenderCarrierRange:Infinity,lastDefenderFrame:null,events:[],
     invalid:[],nearestToEnemyFlag:Infinity,lastSeq:state.ctf.seq,
@@ -113,6 +114,9 @@ function installQA(){
    }
    if(stallBin===0)m.lastStallBin=0;
    const pace=dist<26?.35:1;
+   // Store steering request for observational telemetry only.
+   b.lastNavigation={cell:start,goal,waypointCell:b.path[0]??null,
+    wx:waypoint.x,wy:waypoint.y,angle,dx:Math.cos(angle)*pace,dy:Math.sin(angle)*pace};
    if(this.profile==='unarmed')return {
     moveX:Math.cos(angle)*pace,moveY:Math.sin(angle)*pace,fire:false
    };
@@ -166,6 +170,34 @@ function installQA(){
      const old=state.tanks[0],px=old.x,py=old.y;
      step(1/60);m.frames++;m.steps=state.ctf.elapsed;
      const human=state.tanks[0],flag=state.ctf.flags[1],actors=ctfActors();
+     // Sample progress even when an actor jitters enough to reset the
+     // stationary-only stall counter. This is read-only test evidence.
+     if((m.seed===102||(m.seed===101&&m.profile==='armed'))&&
+        (m.frames===1||m.frames%(10*60)===0)){
+      const nav=this.planner.lastNavigation||{},radius=human.onFoot?10:21;
+      const others=state.tanks.map((other,i)=>({
+       seat:i,alive:state.lives[i]>0,
+       distance:+Math.hypot(other.x-human.x,other.y-human.y).toFixed(1),
+       onFoot:!!other.onFoot,team:teamOf(i)
+      })).filter(x=>x.seat!==0&&x.alive).sort((a,b)=>a.distance-b.distance);
+      const direction=Number.isFinite(nav.angle)?nav.angle:human.a;
+      const w=Number.isFinite(nav.wx)?nav.wx:human.x,
+            h=Number.isFinite(nav.wy)?nav.wy:human.y;
+      m.progressSamples.push({
+       time:+state.ctf.elapsed.toFixed(1),x:+human.x.toFixed(1),y:+human.y.toFixed(1),
+       vx:+human.vx.toFixed(1),vy:+human.vy.toFixed(1),
+       onFoot:!!human.onFoot,heading:+human.a.toFixed(2),
+       cell:nav.cell,goal:nav.goal,waypointCell:nav.waypointCell,
+       waypointDist:+Math.hypot(w-human.x,h-human.y).toFixed(1),
+       flagDist:+Math.hypot(human.x-flag.home.x,human.y-flag.home.y).toFixed(1),
+       stationarySeconds:+this.planner.stuck.toFixed(2),
+       proposedWall:blocked(human.x+Math.cos(direction)*30,
+        human.y+Math.sin(direction)*30,radius),
+       nearbyWalls:[0,Math.PI/2,Math.PI,1.5*Math.PI].map(a=>blocked(
+        human.x+Math.cos(a)*35,human.y+Math.sin(a)*35,radius)),
+       nearestActors:others.slice(0,2)
+      });
+     }
      m.humanTravel+=Math.hypot(human.x-px,human.y-py);
      for(const fx of state.fxEvents){
       if(fx.id>this.planner.lastFxId&&fx.kind==='shot'&&fx.owner===0)m.humanShots++;
@@ -263,7 +295,7 @@ try{
    firstDefenderCarrierRange:result.firstDefenderCarrierRange,
    nearestDefenderCarrierRange:result.nearestDefenderCarrierRange,
    humanShots:result.humanShots,aimCandidates:result.aimCandidates,
-   stalls:result.stalls,
+   stalls:result.stalls,progressSamples:result.progressSamples,
    humanKOs:result.humanKOs,humanCaptures:result.humanCaptures,
    humanDeaths:result.humanDeaths,invalid:result.invalid}));
   assert.deepEqual(result.invalid,[]);
