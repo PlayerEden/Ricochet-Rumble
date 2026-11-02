@@ -1054,11 +1054,13 @@ function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=c
  // Both human seats in LAN can independently aim a vulnerable pilot.
  // One local player remains seat 0 in offline Solo. No new tank AIM mode.
  const humanSeat=!inp.bot&&((mode==='solo'&&i===0)||(mode==='host'&&(i===0||i===1)));
- const precisionFoot=t.onFoot&&humanSeat,independentAim=humanSeat;
+ const botAiming=inp.bot===true&&inp.fireAim===true;
+ const precisionFoot=t.onFoot&&humanSeat,independentAim=humanSeat||botAiming;
  const aimed=independentAim&&Number.isFinite(inp.aimX)&&Number.isFinite(inp.aimY)&&Math.hypot(inp.aimX,inp.aimY)>.6;
  if(mag||aimed){const target=aimed?Math.atan2(inp.aimY,inp.aimX):Math.atan2(my,mx),
   diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a)),
-  aimTurn=!t.onFoot&&aimed?(tacticalVehicle?SCORED_FFA_VEHICLE_PACE.turnRate:4.2):null,
+  aimTurn=aimed?(t.onFoot?SOLO_PILOT_TURN_RATE:
+   tacticalVehicle?SCORED_FFA_VEHICLE_PACE.turnRate:4.2):null,
   maxTurn=dt*(aimTurn??(precisionFoot?SOLO_PILOT_TURN_RATE:tacticalVehicle?SCORED_FFA_VEHICLE_PACE.turnRate:12));
   t.a+=clamp(diff,-maxTurn,maxTurn)}
  // Local Solo pilot only: tiny optional heading nudge when already shooting
@@ -1128,6 +1130,35 @@ function pilotBotReactionReady(brain,target,skill,dt,visible){
  brain.pilotAcquire=Math.min(delay,Math.max(0,Number(brain.pilotAcquire)||0)+clamp(dt,0,.05));
  return brain.pilotAcquire+1e-8>=delay;
 }
+// All bots use the player's deliberate aim -> commit -> recover firing loop.
+// Their heading turns through real vehicle/pilot physics and shots obey the
+// same projectile cap and cooldown. No automatic perfect ricochet solver.
+function botFireCommit(brain,bot,target,skill,dt,visible,oldPilotGate,i){
+ brain.fireRecover=Math.max(0,(brain.fireRecover||0)-Math.max(0,dt));
+ const index=state.tanks.indexOf(target);
+ if(!visible||index<0){
+  brain.fireTarget=-1;brain.fireTrack=0;return {fire:false,aimX:undefined,aimY:undefined};
+ }
+ if(brain.fireTarget!==index||!Number.isFinite(brain.fireAngle)){
+  brain.fireTarget=index;brain.fireTrack=0;
+  // Fixed per-shot aim and small deterministic error: no frame-perfect target
+  // tracking, random state, or increased damage/shot speed.
+  const wobble=skill==='casual'?.085:skill==='spicy'?.025:.05;
+  const shotIndex=brain.fireShots||0;
+  const offset=Math.sin((i+1)*13.79+shotIndex*7.17)*wobble;
+  brain.fireAngle=Math.atan2(target.y-bot.y,target.x-bot.x)+offset;
+ }
+ const a=brain.fireAngle;
+ const aimX=Math.cos(a),aimY=Math.sin(a);
+ if(brain.fireRecover>0)return {fire:false,aimX,aimY};
+ const humanPilot=mode==='solo'&&state.tanks[0]===target&&target.onFoot;
+ const delay=humanPilot?(skill==='casual'?.32:skill==='spicy'?.16:.24):
+  (skill==='casual'?.44:skill==='spicy'?.24:.32);
+ brain.fireTrack=Math.min(delay,(brain.fireTrack||0)+clamp(dt,0,.05));
+ const error=Math.atan2(Math.sin(a-bot.a),Math.cos(a-bot.a));
+ return {fire:brain.fireTrack+1e-8>=delay&&oldPilotGate&&Math.abs(error)<.095,
+  aimX,aimY};
+}
 function softPilotAimOffset(t,owner){
  if(owner!==0||mode!=='solo'||!t.onFoot||!comfort.pilotAssist||!pilotInLocalView(t.x,t.y))return 0;
  let candidate=null;
@@ -1194,7 +1225,10 @@ function chooseBotObjective(i,target,skill='normal',role='classic'){
 }
 function botInput(i,dt){
  const bot=state.tanks[i],enemies=state.tanks.map((t,j)=>({t,j})).filter(({j})=>j!==i&&state.lives[j]>0&&!friendly(i,j));
- if(!enemies.length&&!isCtfMatch())return {moveX:0,moveY:0,fire:false,bot:true};
+ if(!enemies.length&&!isCtfMatch()){
+  const brain=botBrains.get(i);if(brain){brain.fireTarget=-1;brain.fireTrack=0;}
+  return {moveX:0,moveY:0,fire:false,bot:true};
+ }
  enemies.sort((a,b)=>Math.hypot(bot.x-a.t.x,bot.y-a.t.y)-Math.hypot(bot.x-b.t.x,bot.y-b.t.y));
  const ctfDecision=isCtfMatch()&&window.SectorCtfAI?
   window.SectorCtfAI.choose({index:i,humanCount:state.humanCount,
@@ -1318,13 +1352,17 @@ function botInput(i,dt){
  const hasLine=enemyDist<(mazeGrid?385:750)&&hasLineOfSight(bot.x,bot.y,target.x,target.y)&&
    pilotBotFireFair(bot,target);
  const acquired=pilotBotReactionReady(brain,target,skill,dt,hasLine);
+ // A shot must now be committed after a physical aim turn, not fired on
+ // every frame the target is inside the generous old combat cone.
+ const committed=botFireCommit(brain,bot,target,skill,dt,hasLine,acquired,i);
  // Base defense and teammate escort hold a sensible standoff distance.
  const ctfHold=!!ctfDecision&&!ctfYield&&
   ((choice.kind==='defend'&&objectiveDistance<34)||
    (choice.kind==='escort'&&objectiveDistance<90));
  const chasePace=ctfHold||choice.kind==='hold'?0:
   choice.kind==='engage'&&hasLine&&enemyDist<115?pace*(role==='hunter'?.72:.34):pace;
- return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,fire:Math.abs(delta)<aim&&hasLine&&acquired,bot:true};
+ return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,
+  aimX:committed.aimX,aimY:committed.aimY,fireAim:hasLine,fire:committed.fire,bot:true};
 }
 // One shared local-space pistol muzzle anchor, used by BOTH art and physics.
 // +X is actor facing; +Y is the tiny visual hand offset in top-down view.
@@ -1517,6 +1555,14 @@ function step(dt){if(paused||state.winner>=0)return;
  }
  if((inputs[i]?.fire||releaseReady)&&fireCooldown[i]<=0&&shoot(i)){
   fireCooldown[i]=fireInterval(t);
+  if(inputs[i]?.bot){
+   const brain=botBrains.get(i);
+   if(brain){
+    const skill=state.config?.botSkill==='casual'?'casual':state.config?.botSkill==='spicy'?'spicy':'normal';
+    brain.fireRecover=skill==='casual'?.58:skill==='spicy'?.35:.43;
+    brain.fireTrack=0;brain.fireTarget=-1;brain.fireShots=(brain.fireShots||0)+1;
+   }
+  }
   if(releaseReady){if(i===0)releaseShot=null;else remoteReleaseShot=null;}
  }
 }
