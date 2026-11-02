@@ -33,6 +33,34 @@ function hooks(){
    return {visible:pilotInLocalView(human.x,human.y)&&pilotInLocalView(bot.x,bot.y),
     line:hasLineOfSight(bot.x,bot.y,human.x,human.y),kind,skill};
   },
+  bankSurvey(){
+   // Actual seeded maze wall geometry, not a fabricated raycaster.
+   // Model a target last observed behind cover: no current-target
+   // coordinates or AI visibility leaks into the planner.
+   const game=state,g=mazeGrid,bot=game.tanks[1],target=game.tanks[0];
+   bot.onFoot=target.onFoot=false;bot.shield=target.shield=0;
+   const points=[];
+   for(let n=0;n<g.cols*g.rows;n++){
+    const x=(n%g.cols+.5)*g.cell,y=(Math.floor(n/g.cols)+.5)*g.cell;
+    if(!blocked(x,y,24))points.push({x,y,n});
+   }
+   let tested=0,banked=null;
+   outer:for(const shooter of points)for(const lastSeen of points){
+    const distance=Math.hypot(shooter.x-lastSeen.x,shooter.y-lastSeen.y);
+    if(distance<100||distance>390||hasLineOfSight(shooter.x,shooter.y,lastSeen.x,lastSeen.y))continue;
+    bot.x=shooter.x;bot.y=shooter.y;target.x=lastSeen.x;target.y=lastSeen.y;
+    const seen={...lastSeen,index:0,onFoot:false,live:false};
+    const plan=botTraceAim(bot,1,seen,'spicy',0,false);
+    tested++;
+    if(plan.aim?.banked){
+     banked={from:shooter.n,to:lastSeen.n,angle:plan.aim.angle,
+      directLOS:false,candidates:plan.examined,distance};
+     break outer;
+    }
+    if(tested>=420)break outer;
+   }
+   return {tested,banked};
+  },
   traceChoice(){
    // Read actual bot decision state without faking its angle or firing cycle.
    const target=state.tanks[0],bot=state.tanks[1],oldY=target.y;
@@ -133,6 +161,11 @@ try{
    assert.equal(identity.after,'pilot');
    assert.ok(identity.track<=1/60+.001,'ejection restarts acquisition');
    cases.push({viewport,kind,skill,init,shotFrames:got.shots,occlusion,identity});
+  }
+  if(viewport.width===740){
+   await page.evaluate(()=>window.__shotParity.setup(304,'tank','normal'));
+   const scout=await page.evaluate(()=>window.__shotParity.bankSurvey());
+   console.log('BOT_A3_REAL_MAZE_BANK_SURVEY '+JSON.stringify(scout));
   }
   await page.close();
  }
