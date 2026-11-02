@@ -1115,9 +1115,9 @@ function pilotInLocalView(x,y,inset=24){
  return sx>=inset&&sx<=W-inset&&sy>=inset&&sy<=H-inset;
 }
 function pilotBotFireFair(bot,target){
- // An offscreen bot cannot fire upon an on-foot human it can see only
- // through omniscient world coordinates. Other bot engagements are unchanged.
- return mode!=='solo'||!state?.tanks?.[0]?.onFoot||target!==state.tanks[0]||
+ // Offscreen bots cannot fire at the local Solo player, whether in a
+ // vehicle or on foot. Their pathfinding and bot-versus-bot rules stay intact.
+ return mode!=='solo'||target!==state?.tanks?.[0]||
   (pilotInLocalView(bot.x,bot.y)&&pilotInLocalView(target.x,target.y));
 }
 // Acquiring an on-foot human requires continuous real screen visibility and LOS.
@@ -1139,8 +1139,9 @@ function botFireCommit(brain,bot,target,skill,dt,visible,oldPilotGate,i){
  if(!visible||index<0){
   brain.fireTarget=-1;brain.fireTrack=0;return {fire:false,aimX:undefined,aimY:undefined};
  }
- if(brain.fireTarget!==index||!Number.isFinite(brain.fireAngle)){
-  brain.fireTarget=index;brain.fireTrack=0;
+ const targetKind=target.onFoot?'pilot':'vehicle';
+ if(brain.fireTarget!==index||brain.fireTargetKind!==targetKind||!Number.isFinite(brain.fireAngle)){
+  brain.fireTarget=index;brain.fireTargetKind=targetKind;brain.fireTrack=0;
   // Fixed per-shot aim and small deterministic error: no frame-perfect target
   // tracking, random state, or increased damage/shot speed.
   const wobble=skill==='casual'?.085:skill==='spicy'?.025:.05;
