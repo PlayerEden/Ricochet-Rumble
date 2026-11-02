@@ -1397,6 +1397,31 @@ function botInput(i,dt){
    ctfYield=true;
   }else brain.ctfLaneSide=0;
  }
+ // Solo CTF escort steps aside when it occupies the human's forward lane.
+ // This uses standard input/physics; no collision bypass, bonus speed or LAN.
+ let ctfHumanWait=false;
+ if(ctfDecision?.kind==='escort'&&mode==='solo'&&state.lives[0]>0&&friendly(i,0)){
+  const human=state.tanks[0],fx=Math.cos(human.a),fy=Math.sin(human.a),
+   dx=bot.x-human.x,dy=bot.y-human.y,dist=Math.hypot(dx,dy),
+   ahead=dx*fx+dy*fy,lateral=dx*fy-dy*fx;
+  if(dist<115&&ahead>8&&ahead<96&&Math.abs(lateral)<70){
+   const sideX=-fy,sideY=fx,radius=bot.onFoot?10:21;
+   const openSide=sign=>{
+    const x=bot.x+sideX*sign*48,y=bot.y+sideY*sign*48;
+    return !blocked(x,y,radius)&&hasLineOfSight(bot.x,bot.y,x,y)&&
+     state.tanks.every((other,j)=>j===i||state.lives[j]<=0||
+      Math.hypot(other.x-x,other.y-y)>=radius+(other.onFoot?12:21)+5);
+   };
+   const first=Math.abs(brain.ctfHumanYieldSide)===1?brain.ctfHumanYieldSide:1;
+   const sign=openSide(first)?first:openSide(-first)?-first:0;
+   if(Math.abs(lateral)>=48)ctfHumanWait=true;
+   else if(sign){
+    brain.ctfHumanYieldSide=sign;
+    direction=Math.atan2(sideY*sign,sideX*sign);
+    ctfYield=true;
+   }
+  }else brain.ctfHumanYieldSide=0;
+ }
  botBrains.set(i,brain);
  const delta=Math.atan2(Math.sin(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a),Math.cos(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a));
  const basePace=skill==='casual'?.61:skill==='spicy'?.98:.81;
@@ -1413,7 +1438,7 @@ function botInput(i,dt){
  const ctfHold=!!ctfDecision&&!ctfYield&&
   ((choice.kind==='defend'&&objectiveDistance<34)||
    (choice.kind==='escort'&&objectiveDistance<90));
- const chasePace=ctfHold||choice.kind==='hold'?0:
+ const chasePace=ctfHumanWait||ctfHold||choice.kind==='hold'?0:
   choice.kind==='engage'&&hasLine&&enemyDist<115?pace*(role==='hunter'?.72:.34):pace;
  return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,
   aimX:committed.aimX,aimY:committed.aimY,fireAim:hasLine,fire:committed.fire,bot:true};
