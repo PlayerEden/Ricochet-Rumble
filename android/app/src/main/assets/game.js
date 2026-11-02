@@ -1419,6 +1419,16 @@ function botInput(i,dt){
     brain.ctfHumanYieldSide=sign;
     direction=Math.atan2(sideY*sign,sideX*sign);
     ctfYield=true;
+   }else{
+    // An actual one-cell-wide maze lane has no lateral pocket. Escort
+    // advances in front of the human instead of holding the corridor shut.
+    const x=bot.x+fx*36,y=bot.y+fy*36;
+    if(!blocked(x,y,radius)&&
+     state.tanks.every((other,j)=>j===i||state.lives[j]<=0||
+      Math.hypot(other.x-x,other.y-y)>=radius+(other.onFoot?12:21)+3)){
+     direction=Math.atan2(fy,fx);
+     ctfYield=true;
+    }
    }
   }else brain.ctfHumanYieldSide=0;
  }
