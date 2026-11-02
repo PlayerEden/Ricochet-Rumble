@@ -874,10 +874,13 @@ function coachTip(message,seconds=3.8){
 // Do not replay a modal tutorial or show misleading Survival controls in scored modes.
 function firstMatchHint(){
  const cqc=isCqcMatch(),scoredVehicle=isScoredVehicleMatch();
- const key=cqc?'rr-coach-cqc-v1':scoredVehicle?'rr-coach-scored-vehicle-v2':'rr-coach-v0917';
- const hint=cqc?'DRAG FIRE TO AIM · PILOT KOs SCORE':
-   scoredVehicle?'MOVE TO STEER · TAP FIRE TO SHOOT':
-   'MOVE TO AIM · HOLD FIRE TO SHOOT';
+ const scheme=comfort.autoFire?'auto':comfort.releaseFire?'release':'hold';
+ const key='rr-coach-fire-v0965-'+(cqc?'cqc':scoredVehicle?'scored-vehicle':'survival')+'-'+scheme;
+ const hint=scheme==='auto'?'AUTO FIRE ON · MOVE TO STEER':
+   scheme==='hold'?'MOVE TO STEER · HOLD FIRE TO SHOOT':
+   cqc?'CQC · DRAG FIRE TO AIM · RELEASE TO SHOOT':
+   scoredVehicle?'DRAG FIRE TO AIM · RELEASE FOR ONE SHOT':
+   'DRAG FIRE TO AIM · RELEASE TO SHOOT';
  try{
   if(window.localStorage?.getItem(key))return false;
   window.localStorage?.setItem(key,'1');
@@ -910,12 +913,12 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  active=state.bullets.filter(b=>b.owner===me&&b.life>0).length; // Same live-projectile rule as shoot().
  const phase=document.getElementById('round'),localPilot=state.tanks[me],localVehicle=currentVehicle(localPilot),foot=!!localPilot?.onFoot,hostPaused=mode==='guest'&&state.hostPaused;
  const armor=localVehicle?.armor??0,maxArmor=vehicleDef(localVehicle).armor;
- phase.textContent=hostPaused?'HOST PAUSED':state.winner>=0?'MATCH OVER':isScoredMatch()&&state.lives[me]===0?'RESPAWNING · '+Math.max(0,state.tanks[me].respawnWait||0).toFixed(1)+'s':foot?(isCqcMatch()?'PILOT · CQC':'PILOT · ON FOOT'):`${vehicleDef(localVehicle).name} · ${armor}/${maxArmor}`;
- phase.classList.toggle('on-foot',foot&&state.winner<0&&!hostPaused);
+ phase.textContent=hostPaused?'HOST PAUSED':state.winner>=0?'MATCH OVER':isScoredMatch()&&state.lives[me]===0?(state.tanks[me].respawnWait>0?'RESPAWNING · '+Math.max(0,state.tanks[me].respawnWait).toFixed(1)+'s':'WAITING FOR SAFE SPAWN'):foot?(isCqcMatch()?'PILOT · CQC':'PILOT · ON FOOT'):`${vehicleDef(localVehicle).name} · ${armor}/${maxArmor}`;
+ phase.classList.toggle('on-foot',foot&&state.lives[me]>0&&state.winner<0&&!hostPaused);
  phase.classList.toggle('damaged',!foot&&armor<=1&&state.winner<0&&!hostPaused);
  phase.classList.toggle('match-ended',state.winner>=0);
  phase.classList.toggle('host-paused',hostPaused);
- if(typeof phase.setAttribute==='function')phase.setAttribute('aria-label',hostPaused?'Host paused the match':state.winner>=0?'Match over':foot?'Pilot on foot':`${vehicleDef(localVehicle).name} armor ${armor} of ${maxArmor}`);
+ if(typeof phase.setAttribute==='function')phase.setAttribute('aria-label',hostPaused?'Host paused the match':state.winner>=0?'Match over':isScoredMatch()&&state.lives[me]===0?phase.textContent:foot?'Pilot on foot':`${vehicleDef(localVehicle).name} armor ${armor} of ${maxArmor}`);
  const interact=document.getElementById('interact-btn');if(interact){const canUse=isPilotMatch()&&!isCqcMatch()&&state.lives[me]>0&&state.winner<0;
   const near=canUse&&foot?nearestEmptyVehicle(me):null;
   // A temporary occupied bay is still visible and provides useful feedback,

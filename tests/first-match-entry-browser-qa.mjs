@@ -29,15 +29,15 @@ try{
  page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base,{waitUntil:'load'});
  assert.equal(await page.locator('.home-screen').isVisible(),true);
- assert.equal(await page.evaluate(()=>localStorage.getItem('rr-coach-v0917')),null);
+ assert.equal(await page.evaluate(()=>localStorage.getItem('rr-coach-fire-v0965-survival-release')),null);
  await page.locator('.home-deploy[data-action="solo"]').click();
  assert.equal((await page.locator('#mode-label').textContent()).trim(),'SOLO SURVIVAL',
    'first default Quick Play is a straightforward Solo Survival match');
  assert.equal(await page.locator('#menu').evaluate(e=>e.classList.contains('hidden')),true);
- assert.match(await page.locator('#field-coach').textContent(),/HOLD FIRE TO SHOOT/,
+ assert.match(await page.locator('#field-coach').textContent(),/DRAG FIRE TO AIM · RELEASE TO SHOOT/,
    'existing brief coach is presented without a separate tutorial modal');
- assert.equal(await page.evaluate(()=>localStorage.getItem('rr-coach-v0917')),'1',
-   'first-play hint records its existing compatibility flag');
+ assert.equal(await page.evaluate(()=>localStorage.getItem('rr-coach-fire-v0965-survival-release')),'1',
+   'first-play hint records the updated release-to-fire instruction flag');
  await page.locator('#menu-button').click();
  assert.equal(await page.locator('button[data-action="resume"]').isVisible(),true);
  await page.locator('button[data-action="close"]').click();
