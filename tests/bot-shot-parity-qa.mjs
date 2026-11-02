@@ -33,6 +33,48 @@ function hooks(){
    return {visible:pilotInLocalView(human.x,human.y)&&pilotInLocalView(bot.x,bot.y),
     line:hasLineOfSight(bot.x,bot.y,human.x,human.y),kind,skill};
   },
+  bankSurvey(){
+   // Actual seeded maze wall geometry, not a fabricated raycaster.
+   // Model a target last observed behind cover: no current-target
+   // coordinates or AI visibility leaks into the planner.
+   const game=state,g=mazeGrid,bot=game.tanks[1],target=game.tanks[0];
+   bot.onFoot=target.onFoot=false;bot.shield=target.shield=0;
+   const points=[];
+   for(let n=0;n<g.cols*g.rows;n++){
+    const x=(n%g.cols+.5)*g.cell,y=(Math.floor(n/g.cols)+.5)*g.cell;
+    if(!blocked(x,y,24))points.push({x,y,n});
+   }
+   let tested=0,banked=null;
+   outer:for(const shooter of points)for(const lastSeen of points){
+    const distance=Math.hypot(shooter.x-lastSeen.x,shooter.y-lastSeen.y);
+    if(distance<100||distance>390||hasLineOfSight(shooter.x,shooter.y,lastSeen.x,lastSeen.y))continue;
+    bot.x=shooter.x;bot.y=shooter.y;target.x=lastSeen.x;target.y=lastSeen.y;
+    const seen={...lastSeen,index:0,onFoot:false,live:false};
+    const plan=botTraceAim(bot,1,seen,'spicy',0,false);
+    tested++;
+    if(plan.aim?.banked){
+     banked={from:shooter.n,to:lastSeen.n,angle:plan.aim.angle,
+      directLOS:false,candidates:plan.examined,distance};
+     break outer;
+    }
+    if(tested>=420)break outer;
+   }
+   return {tested,banked};
+  },
+  traceChoice(){
+   // Read actual bot decision state without faking its angle or firing cycle.
+   const target=state.tanks[0],bot=state.tanks[1],oldY=target.y;
+   botBrains.delete(1);
+   const first=botInput(1,1/60);
+   const brain=botBrains.get(1),angle=brain?.fireAngle;
+   const count=brain?.fireCandidateCount||0,bank=brain?.fireBank;
+   target.y+=18;const moved=botInput(1,1/60);
+   const locked=botBrains.get(1)?.fireAngle;
+   target.y=oldY;
+   botBrains.delete(1); // leave the existing shot-cycle fixture unchanged
+   return {firstFire:first.fire,firstAim:angle,candidates:count,
+    banked:bank,movedFire:moved.fire,locked,hasAim:!!first.aimX||!!first.aimY};
+  },
   sample(n=230){
    const shots=[],aims=[];let last=0;
    for(let f=1;f<=n;f++){
@@ -92,6 +134,14 @@ try{
     {seed,kind,skill});
    assert.equal(init.line,true,'fixture must have actual world LOS');
    assert.equal(init.visible,true,'fixture visible on local viewport');
+   const choice=await page.evaluate(()=>window.__shotParity.traceChoice());
+   assert.equal(choice.firstFire,false,kind+' '+skill+' cannot fire first acquisition tick');
+   assert.equal(choice.banked,false,kind+' '+skill+' clear short shot selects direct path');
+   assert.ok(choice.candidates>=1&&choice.candidates<=7,
+    kind+' '+skill+' caps per-shot evaluations at seven');
+   assert.ok(Number.isFinite(choice.firstAim),kind+' '+skill+' plans a finite angle');
+   assert.ok(Math.abs(choice.firstAim-choice.locked)<1e-9,
+    kind+' '+skill+' shot heading locked when target changes position');
    const got=await page.evaluate(()=>window.__shotParity.sample());
    const firstMinimum=skill==='casual'?16:skill==='normal'?12:8;
    assert.ok(got.shots.length>=2,kind+' '+skill+' should commit at least two actual shots');
@@ -111,6 +161,14 @@ try{
    assert.equal(identity.after,'pilot');
    assert.ok(identity.track<=1/60+.001,'ejection restarts acquisition');
    cases.push({viewport,kind,skill,init,shotFrames:got.shots,occlusion,identity});
+  }
+  if(viewport.width===740){
+   await page.evaluate(()=>window.__shotParity.setup(304,'tank','normal'));
+   const scout=await page.evaluate(()=>window.__shotParity.bankSurvey());
+   assert.ok(scout.banked,'real maze must yield at least one genuine LOS-blocked bank shot from stored sight');
+   assert.equal(scout.banked.directLOS,false,'bank shot does not require current direct LOS');
+   assert.ok(scout.banked.candidates<=7,'bank shot search stays bounded');
+   console.log('BOT_A3_REAL_MAZE_BANK_SURVEY '+JSON.stringify(scout));
   }
   await page.close();
  }

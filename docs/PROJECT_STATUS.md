@@ -1,3 +1,21 @@
+# 2026-11-02 — A3 AI TRAJECTORY/COMMIT PHASE (EXPERIMENTAL)
+
+**Owner goal:** bots should calculate credible shot paths, rotate physically toward an intended angle, and sometimes execute earned bank shots—but cannot instantly snap or adjust shots already committed. The teammate pass-through v0.9.67 owner preview remains the installed fallback.
+
+**Branch / review:** [Draft PR #92](https://github.com/PlayerEden/Ricochet-Rumble/pull/92) from `experiment/bot-trace-aim-a3-v1`, based on accepted A2 shared bullet/preview physics. Stable `main` and Android update identity unchanged. A3 modifies only browser + Android mirrored `game.js`, focused bot decision test `tests/bot-shot-parity-qa.mjs`, CI workflows, and docs.
+
+**Implementation:** per-shot maximum 7 candidate physical paths (direct plus nearby one-wall reflections for tank/mech; sidearms don't bank); explicit recorded live or short last-seen position; actual A2 wall/bumper/bullet trajectory; choose only if static shot crosses the observed point, favor a **direct** shot ahead of an unnecessary bank; lock physical aim until shot/reacquisition. No continuous perfect aim after target dodge. Current direct LOS refreshes target location; last-sighting speculation expires after .85s and offscreen Solo no-fire rule remains. No-path retry paced to .75/.52/.38 seconds by difficulty instead of a raycast each frame. A1 6.5rad/s pilot max turn remains shared. AI damage/shell velocity/hitboxes, LAN authority, cosmetics and colors unchanged.
+
+**Tests already GREEN:** [fast A3 live Chromium decision suite](https://github.com/PlayerEden/Ricochet-Rumble/actions?query=workflow%3A%22Sector+Rebound+-+A3+bot+shot+decision+%26+parity+%28fast%29%22) at gameplay source: 18 real firing fixtures (pilot/tank/mech × Casual/Normal/Spicy × 2 viewport sizes) including acquisition, realistic shot cadence/recovery, per-shot candidate cap, locked aim after target moves, offscreen safety, ejection reacquisition. A **genuine bank** was found in actual seeded map with direct LOS blocked (cells 0→10, 6 candidate angles); the survey is now a strict fixture. [Fast A2 projectile contract](https://github.com/PlayerEden/Ricochet-Rumble/actions?query=workflow%3A%22Sector+Rebound+-+A2+ballistic+contract+%28fast%29%22) also passes. Earlier CI failures preserved: one planner defect misclassifying a direct shot because the bullet bounced after passing a shielded target; fixed and proven with fast tests. Temporary web/Android mirror mismatches occurred during sequential commits; final mirror passes.
+
+**Next gates underway:** complete input-driven CTF/300 Forward Bay/Quick Play/backup/44 visual suite, [v0.9.68 test-only Android APK build](https://github.com/PlayerEden/Ricochet-Rumble/actions?query=workflow%3A%22Sector+Rebound+-+v0.9.68+experimental+trace-aim+owner+APK%22) with the same public AOSP preview signer and strictly higher versionCode than v0.9.67 **290001**. Do not claim passes or supply an installable APK unless run concludes SUCCESS, exact-source asset equivalence and signer/version checks verify.
+
+**Still out of scope / next:** B Friendly Fire ON/OFF coupled to teammate physical collision and optional visible allied dotted trajectories; C varied FFA colors, random solo faction assignment and explicit team ids; D real LAN squad scored TDM with host/guest team choices and bots. Real two-phone LAN and subjective Android AI fairness NOT yet certified.
+
+[Complete A3 design and rollback notes](BOT_TRAJECTORY_COMMIT_A3_2026-11-02.md) · [A2 source physics reference](SHARED_BALLISTICS_A2_2026-11-02.md) · [overall roadmap](COMBAT_FACTION_LAN_ARC_2026-11-02.md).
+
+---
+
 # 2026-11-02 — A2 SHARED BALLISTICS / DOTTED TRACE (EXPERIMENTAL)
 
 **In progress on isolated [draft PR #91](https://github.com/PlayerEden/Ricochet-Rumble/pull/91):** `experiment/trajectory-physics-core-a2`, descendant of combat A1. Stable `main`, signed owner v0.9.67 preview and local saves remain untouched.

@@ -1,11 +1,12 @@
 name: Sector Rebound - A2 ballistic contract (fast)
 on:
   push:
-    branches: [experiment/trajectory-physics-core-a2]
+    branches: [experiment/trajectory-physics-core-a2, experiment/bot-trace-aim-a3-v1]
     paths:
       - 'web/game.js'
       - 'android/app/src/main/assets/game.js'
       - 'tests/ballistic-trace-a2.mjs'
+      - 'tests/bot-shot-parity-qa.mjs'
       - '.github/workflows/ballistic-trace-a2.yml'
   workflow_dispatch:
 permissions:
