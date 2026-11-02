@@ -782,6 +782,7 @@ function initialState(arena=0,options=null,seed=null){const config={...readSetti
  const mazeSeed=seed||Math.floor(Math.random()*0x7fffffff)||1,id=setArena(0,mazeSeed,config.mapSize);
  const numBots=config.botCount,humans=count,total=humans+numBots;
  config.teamIds=assignMatchTeams(config,humans,total,mazeSeed);
+ config.teamIdsMode=config.teamMode;
  config.ffaColors=config.teamMode==='ffa'?shuffledMatchColors(mazeSeed,total):[];
  const tanks=Array.from({length:total},(_,i)=>freshTank(i));
  // In this opt-in team exercise each side starts at its own open, connected
@@ -789,7 +790,12 @@ function initialState(arena=0,options=null,seed=null){const config={...readSetti
  const forwardBays=config.teamBasesEnabled&&window.SectorForwardBays?
   window.SectorForwardBays.plan(mazeGrid,mazeSeed):null;
  if(config.teamBasesEnabled&&!forwardBays)throw Error('Forward Bay layout unavailable');
- if(forwardBays)deploySquadsAtBays(tanks,config,humans,forwardBays.bays);
+ if(forwardBays){
+  deploySquadsAtBays(tanks,config,humans,forwardBays.bays);
+  // The opposite FOB must face toward the sector center even when the
+  // local Solo player deploys on Coral rather than assuming seat 0 = Cyan.
+  for(let i=0;i<tanks.length;i++)tanks[i].a=config.teamIds[i]===1?Math.PI:0;
+ }
  const cqc=config.matchModeId==='cqc',scoredRules=SCORED_MATCH_RULES[config.matchModeId]||null;
  const vehicles=cqc?[]:config.pilotMode?spawnVehicles(tanks,humans,mazeSeed,config):[];
  if(forwardBays){
@@ -826,7 +832,8 @@ function initialState(arena=0,options=null,seed=null){const config={...readSetti
 state=initialState();
 function teamOf(i,st=state){
  const ids=st?.config?.teamIds;
- if(Array.isArray(ids)&&ids.length===st.tanks?.length&&
+ if(st.config?.teamIdsMode===st.config?.teamMode&&
+    Array.isArray(ids)&&ids.length===st.tanks?.length&&
     Number.isInteger(ids[i]))return ids[i];
  const rules=st?.config?.teamMode||'ffa';
  if(rules==='ffa')return i;
@@ -1055,19 +1062,28 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  const tdm=isScoredMatch()&&state.scored.mode==='teams',ctf=isCtfMatch();
  const editRules=document.getElementById('custom-edit');if(editRules)editRules.classList.toggle('hidden',!(ended&&mode==='solo'&&!!state.config?.customMatch));
  const lanEdit=document.getElementById('lan-edit-rules');if(lanEdit)lanEdit.classList.toggle('hidden',!(ended&&mode==='host'&&connected));
- const label0=document.getElementById('player0-label');if(label0)label0.textContent=ctf?'CYAN FLAGS':tdm?'BLUE KOs':isScoredMatch()?'YOU KOs':'YOU · LIVES';
- const label1=document.getElementById('player1-label');if(label1)label1.textContent=ctf?'CORAL FLAGS':tdm?'RED KOs':isScoredMatch()?'LEADER':mode==='solo'&&state.config?.teamMode==='teams'?'RED':mode==='solo'?'ENEMIES':state.config?.teamMode==='coop'?'BOTS':mode==='guest'?'HOST':'RIVAL';
+ const mySide=teamOf(me),isTeams=state.config?.teamMode==='teams';
+ const label0=document.getElementById('player0-label');if(label0)label0.textContent=
+  ctf?(mySide===0?'CYAN FLAGS · YOU':'CYAN FLAGS'):
+  tdm?(mySide===0?'CYAN KOs · YOU':'CYAN KOs'):
+  isScoredMatch()?'YOU KOs':'YOU · LIVES';
+ const label1=document.getElementById('player1-label');if(label1)label1.textContent=
+  ctf?(mySide===1?'CORAL FLAGS · YOU':'CORAL FLAGS'):
+  tdm?(mySide===1?'CORAL KOs · YOU':'CORAL KOs'):
+  isScoredMatch()?'LEADER':mode==='solo'&&isTeams?(mySide===1?'CYAN · ENEMIES':'CORAL · ENEMIES'):mode==='solo'?'ENEMIES':state.config?.teamMode==='coop'?'BOTS':mode==='guest'?'HOST':'RIVAL';
  if(mode==='solo'||((mode==='host'||mode==='guest')&&state.config?.teamMode==='coop'))document.getElementById('score1').textContent=botLives;
  const objective=document.getElementById('ctf-status');
  if(objective){objective.classList.toggle('hidden',!ctf);
   if(ctf){
-   const mine=state.ctf.flags[0],enemy=state.ctf.flags[1],
+   const homeSide=teamOf(me),enemySide=homeSide===0?1:0;
+   const homeName=homeSide===0?'CYAN':'CORAL',enemyName=enemySide===0?'CYAN':'CORAL';
+   const mine=state.ctf.flags[homeSide],enemy=state.ctf.flags[enemySide],
     carrying=enemy.carrier===me,ourHome=window.SectorFlags.flagHome(mine);
    const clockLabel=durationLabel(Math.ceil(Math.max(0,state.ctf.clock-state.ctf.elapsed)))+' · ';
-   objective.textContent=clockLabel+(carrying?('CARRY CORAL FLAG · '+(ourHome?'RETURN TO CYAN FOB':'CYAN FLAG MUST RETURN')):
+   objective.textContent=clockLabel+(carrying?('CARRY '+enemyName+' FLAG · '+(ourHome?'RETURN TO '+homeName+' FOB':homeName+' FLAG MUST RETURN')):
     !foot?'EXIT VEHICLE TO GRAB FLAG':
-    'ON FOOT · GRAB CORAL FLAG · CYAN '+(ourHome?'HOME':'MISSING')+
-    ' · CORAL '+(window.SectorFlags.flagHome(enemy)?'HOME':enemy.carrier!==null?'CARRIED':'DROPPED'));
+    'ON FOOT · GRAB '+enemyName+' FLAG · '+homeName+' '+(ourHome?'HOME':'MISSING')+
+    ' · '+enemyName+' '+(window.SectorFlags.flagHome(enemy)?'HOME':enemy.carrier!==null?'CARRIED':'DROPPED'));
   }
  }
  const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=comfort.autoFire?'AUTO ON':comfort.releaseFire&&['solo','host','guest'].includes(mode)?'AIM · RELEASE':'HOLD TO FIRE';
@@ -2723,6 +2739,14 @@ function validRemoteSnapshot(s){
  if(n<2||n>6||!s.config||typeof s.config!=='object'||Array.isArray(s.config))return false;
  if(!Number.isInteger(s.mazeSeed)||s.mazeSeed<1||!Number.isFinite(s.elapsedSeconds)||s.elapsedSeconds<0)return false;
  if(!Array.isArray(s.lives)||s.lives.length!==n||!s.lives.every(v=>Number.isInteger(v)&&v>=0))return false;
+ if(s.config.teamIdsMode!==undefined&&s.config.teamIdsMode!==s.config.teamMode)return false;
+ if(s.config.teamIds!==undefined&&(!Array.isArray(s.config.teamIds)||s.config.teamIds.length!==n||
+  !s.config.teamIds.every((id,i)=>Number.isInteger(id)&&
+   (s.config.teamMode==='ffa'?id===i:(id===0||id===1)))))return false;
+ if(s.config.ffaColors!==undefined&&(!Array.isArray(s.config.ffaColors)||
+  (s.config.teamMode==='ffa'&&(s.config.ffaColors.length!==n||
+   new Set(s.config.ffaColors).size!==n||
+   !s.config.ffaColors.every(c=>PALETTE.includes(c))))))return false;
  if(!Array.isArray(s.kos)||s.kos.length!==n||!s.kos.every(v=>Number.isInteger(v)&&v>=0))return false;
  if(!Array.isArray(s.bullets)||s.bullets.length>128||!Array.isArray(s.vehicles)||s.vehicles.length>10
     ||!Array.isArray(s.pickups)||s.pickups.length>8||!Array.isArray(s.fxEvents)||s.fxEvents.length>12)return false;
