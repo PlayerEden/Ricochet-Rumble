@@ -1197,7 +1197,6 @@ function botTraceAim(bot,owner,seen,skill,shotNumber,canSee){
   const result=traceProjectile(bot,c.angle,{
    maxDistance:bot.onFoot?370:730,maxBounces:bot.onFoot?0:1,
    checkActors:canSee});
-  if(canSee&&result.hit!==null&&result.hit!==seen.index)continue;
   let closest=Infinity,firstInterceptSegment=-1;
   for(let n=0;n<result.segments.length;n++)for(const p of result.segments[n]){
    const distance=(p.x-seen.x)**2+(p.y-seen.y)**2;
@@ -1210,6 +1209,8 @@ function botTraceAim(bot,owner,seen,skill,shotNumber,canSee){
   // reflection. In particular, targets with a temporary shield still count
   // as lined up even if the actual trace continues harmlessly past them.
   const intersects=firstInterceptSegment>=0;
+  if(canSee&&result.hit!==null&&result.hit!==seen.index&&
+     !(state.tanks[seen.index]?.shield>0&&intersects))continue;
   const hit=canSee?(result.hit===seen.index||
    (state.tanks[seen.index]?.shield>0&&intersects)):intersects;
   if(!hit)continue;
