@@ -79,7 +79,7 @@ try {
       const node=get(key),style=getComputedStyle(node);
       const r=node.getBoundingClientRect();
       const visible=style.display!=='none'&&style.visibility!=='hidden'&&
-       r.width>=1&&r.height>=1;
+       Number(style.opacity)>.01&&r.width>=1&&r.height>=1;
       out[key]={visible,rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,
        width:r.width,height:r.height},text:node.textContent.trim().slice(0,100)};
      }
