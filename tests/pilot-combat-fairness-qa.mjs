@@ -60,12 +60,15 @@ function hooks(){
    }
    // A tank opponent is not subject to pilot-specific reaction tuning.
    human.onFoot=false;botBrains.delete(1);state.config.botSkill='normal';
-   const vehicleImmediate=botInput(1,1/60).fire;human.onFoot=true;
+   const vehicleImmediate=botInput(1,1/60).fire;
+   let vehicleAcquired=-1;
+   for(let n=2;n<=36;n++)if(botInput(1,1/60).fire&&vehicleAcquired<0)vehicleAcquired=n;
+   human.onFoot=true;
    const old=mode;mode='host';
    const hostSame=pilotBotFireFair(bot,human);mode=old;
    return {off,assisted,outside,vehicle,shield,distant,offscreen,headed,
     fired,bulletAngle,cooled,unseen,seen,botFire,hostSame,kind:bullet?.kind,
-    reaction,vehicleImmediate};
+    reaction,vehicleImmediate,vehicleAcquired};
   }
  };
 }
@@ -116,7 +119,8 @@ try{
    assert.equal(x.unseen,false,'offscreen bot cannot fire at human pilot');
    assert.equal(x.seen,true);
    assert.equal(x.hostSame,true,'LAN host behavior unchanged');
-   assert.equal(x.vehicleImmediate,true,'vehicle targeting retains old immediate fire');
+   assert.equal(x.vehicleImmediate,false,'vehicle target now requires a deliberate acquisition, not instant autofire');
+   assert.ok(x.vehicleAcquired>=13&&x.vehicleAcquired<=23,'vehicle aim commits within the normal difficulty reaction window');
    for(const [skill,min,max] of [['casual',19,21],['normal',14,16],['spicy',9,11]]){
     const r=x.reaction[skill];
     assert.ok(r.first>=min&&r.first<=max,skill+' reaction delay within skill band');
