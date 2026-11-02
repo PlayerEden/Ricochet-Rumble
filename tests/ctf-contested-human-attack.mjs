@@ -1,6 +1,7 @@
-// Actual input-driven Cyan attacker against genuine Coral CTF defender.
-// The QA planner supplies only normal joystick vectors and EXIT interactions.
-// No actor repositioning, health changes, flag mutation or collision bypass.
+// Input-driven, ARMED Cyan attacker against genuine Coral CTF defender.
+// Planner uses normal movement, aim vectors, intermittent FIRE and EXIT.
+// No actor teleport, privileged stats, hidden-position targeting, flag mutation or collision bypass.
+// The script is NOT a skilled human and cannot certify difficulty or capture balance.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -26,11 +27,15 @@ function installQA(){
    state=initialState(0,{mapSize,matchModeId:'scored_tdm',pilotMode:true,
     teamMode:'teams',botCount:3,botSkill:'normal',forwardBayExercise:true,
     ctfExercise:true,quickPlayMatch:false},seed);
-   this.planner={timer:0,goal:-1,path:[],stuck:0,last:null,exitAttempts:0};
+   this.planner={timer:0,goal:-1,path:[],stuck:0,last:null,exitAttempts:0,fireTimer:0,
+     lastFxId:0};
    this.log={seed,mapSize,frames:0,steps:0,humanTravel:0,humanExit:false,
     humanPickups:0,firstHumanPickup:null,carriedFrames:0,defenderInterceptFrames:0,
     defenderIncorrectFrames:0,defenderChangedPosition:0,escortSupportFrames:0,
-    humanCaptures:0,defenderFireFrames:0,enemyFlagReturns:0,events:[],
+    humanCaptures:0,defenderFireFrames:0,enemyFlagReturns:0,
+    humanShots:0,aimCandidates:0,humanKOs:0,
+    defenderTravelDuringCarry:0,firstDefenderCarrierRange:null,
+    nearestDefenderCarrierRange:Infinity,lastDefenderFrame:null,events:[],
     invalid:[],nearestToEnemyFlag:Infinity,lastSeq:state.ctf.seq,
     firstDefenderPosition:null,lastDefenderPosition:null};
    return {seed,mapSize,start:{x:state.tanks[0].x,y:state.tanks[0].y},
@@ -81,7 +86,30 @@ function installQA(){
    b.last={x:t.x,y:t.y};
    if(b.stuck>1)angle+=((Math.floor(b.stuck/.8)%2)?1:-1)*1.14;
    const pace=dist<26?.35:1;
-   return {moveX:Math.cos(angle)*pace,moveY:Math.sin(angle)*pace,fire:false};
+   // The attacking cyan pilot/tank only aims at hostile units in a
+   // conservative on-screen rectangle and clear LOS. Never use hidden bots.
+   // Seat 2 is our cyan escort; seats 1 and 3 are opposing Coral actors.
+   const visible=[1,3].map(i=>state.lives[i]>0?state.tanks[i]:null)
+    .filter(enemy=>enemy&&Math.abs(enemy.x-t.x)<175&&
+     Math.abs(enemy.y-t.y)<85&&hasLineOfSight(t.x,t.y,enemy.x,enemy.y))
+    .sort((a,b)=>Math.hypot(a.x-t.x,a.y-t.y)-Math.hypot(b.x-t.x,b.y-t.y));
+   b.fireTimer=Math.max(0,b.fireTimer-1/60);
+   let aimX,aimY,fire=false;
+   if(visible.length){
+    this.log.aimCandidates++;
+    const enemy=visible[0],dx=enemy.x-t.x,dy=enemy.y-t.y,
+     d=Math.hypot(dx,dy)||1;
+    aimX=dx/d;aimY=dy/d;
+    const targetAngle=Math.atan2(dy,dx),
+     headingError=Math.abs(Math.atan2(Math.sin(targetAngle-t.a),Math.cos(targetAngle-t.a)));
+    // A single FIRE pulse, respecting the actual game cooldown and hull/
+    // pilot turn limit. The engine creates each real projectile via shoot().
+    if(b.fireTimer<=0&&fireCooldown[0]<=1/60&&headingError<.11){
+     fire=true;b.fireTimer=t.onFoot?.55:.55;
+    }
+   }
+   return {moveX:Math.cos(angle)*pace,moveY:Math.sin(angle)*pace,
+    aimX,aimY,fire};
   },
   advance(frames){
    const m=this.log;
@@ -92,6 +120,10 @@ function installQA(){
      step(1/60);m.frames++;m.steps=state.ctf.elapsed;
      const human=state.tanks[0],flag=state.ctf.flags[1],actors=ctfActors();
      m.humanTravel+=Math.hypot(human.x-px,human.y-py);
+     for(const fx of state.fxEvents){
+      if(fx.id>this.planner.lastFxId&&fx.kind==='shot'&&fx.owner===0)m.humanShots++;
+      if(fx.id>this.planner.lastFxId)this.planner.lastFxId=fx.id;
+     }
      m.nearestToEnemyFlag=Math.min(m.nearestToEnemyFlag,Math.hypot(human.x-flag.home.x,human.y-flag.home.y));
      if(flag.carrier===0){
       m.carriedFrames++;
@@ -105,8 +137,15 @@ function installQA(){
        index:2,humanCount:1,actors,flags:state.ctf.flags,bays:state.forwardBays.bays});
       if(escort?.kind==='escort'&&Math.hypot(escort.point.x-human.x,escort.point.y-human.y)<1)
        m.escortSupportFrames++;
-      if(m.firstDefenderPosition===null)m.firstDefenderPosition={x:state.tanks[3].x,y:state.tanks[3].y};
-      m.lastDefenderPosition={x:state.tanks[3].x,y:state.tanks[3].y};
+      const defender=state.tanks[3];
+      const range=Math.hypot(defender.x-human.x,defender.y-human.y);
+      if(m.firstDefenderCarrierRange===null)m.firstDefenderCarrierRange=range;
+      m.nearestDefenderCarrierRange=Math.min(m.nearestDefenderCarrierRange,range);
+      if(m.lastDefenderFrame)m.defenderTravelDuringCarry+=
+       Math.hypot(defender.x-m.lastDefenderFrame.x,defender.y-m.lastDefenderFrame.y);
+      m.lastDefenderFrame={x:defender.x,y:defender.y};
+      if(m.firstDefenderPosition===null)m.firstDefenderPosition={x:defender.x,y:defender.y};
+      m.lastDefenderPosition={x:defender.x,y:defender.y};
      }
      if(state.ctf.seq!==m.lastSeq){
       const e=state.ctf.event;
@@ -127,6 +166,7 @@ function installQA(){
   result(){
    const m=this.log;return {...m,finalScores:state.ctf.scores.slice(),
     finalReason:state.ctf.reason,humanDeaths:state.deaths[0],
+    humanKOs:state.kos[0],lastDefenderFrame:undefined,
     defenderDisplacement:m.firstDefenderPosition&&m.lastDefenderPosition?
      Math.hypot(m.lastDefenderPosition.x-m.firstDefenderPosition.x,
       m.lastDefenderPosition.y-m.firstDefenderPosition.y):null};
@@ -172,13 +212,18 @@ try{
    carriedFrames:result.carriedFrames,humanDistance:+result.humanTravel.toFixed(1),
    closestFlag:+result.nearestToEnemyFlag.toFixed(1),
    defenderIntercept:result.defenderInterceptFrames,escortSupport:result.escortSupportFrames,
-   defenderMovement:result.defenderDisplacement,humanCaptures:result.humanCaptures,
+   defenderMovement:result.defenderDisplacement,
+   defenderTravelDuringCarry:result.defenderTravelDuringCarry,
+   firstDefenderCarrierRange:result.firstDefenderCarrierRange,
+   nearestDefenderCarrierRange:result.nearestDefenderCarrierRange,
+   humanShots:result.humanShots,aimCandidates:result.aimCandidates,
+   humanKOs:result.humanKOs,humanCaptures:result.humanCaptures,
    humanDeaths:result.humanDeaths,events:result.events,invalid:result.invalid}));
   assert.deepEqual(result.invalid,[]);
  }
  fs.mkdirSync('qa-results',{recursive:true});
  fs.writeFileSync('qa-results/ctf-contested-human-attack.json',
-  JSON.stringify({method:'real input, full maze, collision, fire and flag rules',
+  JSON.stringify({method:'scripted legitimate movement, intermittent aimed FIRE, EXIT, full maze and real collision/flag rules; not a skilled-human balance test',
    cases:results},null,2));
  assert.deepEqual(errors,[],'no uncaught browser exceptions');
  const successful=results.filter(x=>x.carriedFrames>0);
@@ -187,7 +232,11 @@ try{
   'Coral defender chooses intercept against a real human carrier');
  assert.ok(successful.some(x=>x.escortSupportFrames>0),
   'Cyan escort identifies and supports its human flag carrier');
- console.log('CTF_CONTESTED_HUMAN_REAL_MATCH_PASS: genuine player input, flag theft, defender reaction and escort response');
+ assert.ok(results.some(x=>x.aimCandidates>0),
+  'scripted attacker sees a hostile at legal screen-like range with clear LOS');
+ assert.ok(results.some(x=>x.humanShots>0),
+  'scripted attacker actually fires at least one legal engine-created shot');
+ console.log('CTF_CONTESTED_ARMED_ATTACK_PASS: legitimate movement, actual engine shots, flag theft and objective response (capture balance not proven)');
 }finally{
  await browser.close();
  await new Promise(done=>server.close(done));
