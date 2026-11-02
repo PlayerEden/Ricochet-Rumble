@@ -1,4 +1,4 @@
-// Input-driven, ARMED Cyan attacker against genuine Coral CTF defender.
+// Input-driven same-seed CTF A/B: unarmed, precise and reaction-limited attack.
 // Planner uses normal movement, aim vectors, intermittent FIRE and EXIT.
 // No actor teleport, privileged stats, hidden-position targeting, flag mutation or collision bypass.
 // The script is NOT a skilled human and cannot certify difficulty or capture balance.
@@ -22,14 +22,16 @@ const hooked=source.replace('i===0?makeControl(true)',
 function installQA(){
  const api={
   get state(){return state;},
-  begin(seed,mapSize){
+  begin(seed,mapSize,profile='armed'){
+   if(!['unarmed','armed','conservative'].includes(profile))throw Error('Invalid QA input profile');
+   this.profile=profile;
    mode='solo';paused=true;
    state=initialState(0,{mapSize,matchModeId:'scored_tdm',pilotMode:true,
     teamMode:'teams',botCount:3,botSkill:'normal',forwardBayExercise:true,
     ctfExercise:true,quickPlayMatch:false},seed);
    this.planner={timer:0,goal:-1,path:[],stuck:0,last:null,exitAttempts:0,fireTimer:0,
-     lastFxId:0};
-   this.log={seed,mapSize,frames:0,steps:0,humanTravel:0,humanExit:false,
+     lastFxId:0,lockTarget:-1,sightSeconds:0,scanCooldown:0,lockedPos:null};
+   this.log={seed,mapSize,profile,frames:0,steps:0,humanTravel:0,humanExit:false,
     humanPickups:0,firstHumanPickup:null,carriedFrames:0,defenderInterceptFrames:0,
     defenderIncorrectFrames:0,defenderChangedPosition:0,escortSupportFrames:0,
     humanCaptures:0,defenderFireFrames:0,enemyFlagReturns:0,
@@ -86,6 +88,9 @@ function installQA(){
    b.last={x:t.x,y:t.y};
    if(b.stuck>1)angle+=((Math.floor(b.stuck/.8)%2)?1:-1)*1.14;
    const pace=dist<26?.35:1;
+   if(this.profile==='unarmed')return {
+    moveX:Math.cos(angle)*pace,moveY:Math.sin(angle)*pace,fire:false
+   };
    // The attacking cyan pilot/tank only aims at hostile units in a
    // conservative on-screen rectangle and clear LOS. Never use hidden bots.
    // Seat 2 is our cyan escort; seats 1 and 3 are opposing Coral actors.
@@ -97,16 +102,33 @@ function installQA(){
    let aimX,aimY,fire=false;
    if(visible.length){
     this.log.aimCandidates++;
-    const enemy=visible[0],dx=enemy.x-t.x,dy=enemy.y-t.y,
-     d=Math.hypot(dx,dy)||1;
-    aimX=dx/d;aimY=dy/d;
-    const targetAngle=Math.atan2(dy,dx),
-     headingError=Math.abs(Math.atan2(Math.sin(targetAngle-t.a),Math.cos(targetAngle-t.a)));
-    // A single FIRE pulse, respecting the actual game cooldown and hull/
-    // pilot turn limit. The engine creates each real projectile via shoot().
-    if(b.fireTimer<=0&&fireCooldown[0]<=1/60&&headingError<.11){
-     fire=true;b.fireTimer=t.onFoot?.55:.55;
+    const enemy=visible[0],targetId=state.tanks.indexOf(enemy);
+    if(b.lockTarget!==targetId){
+     b.lockTarget=targetId;b.sightSeconds=0;b.scanCooldown=0;b.lockedPos=null;
     }
+    b.sightSeconds+=1/60;
+    if(this.profile==='conservative'){
+     // The reaction-limited controller observes each target at 0.30s
+     // intervals, rather than tracking its exact position continuously.
+     b.scanCooldown-=1/60;
+     if(!b.lockedPos||b.scanCooldown<=0){
+      b.lockedPos={x:enemy.x,y:enemy.y};b.scanCooldown=.30;
+     }
+    }
+    const position=this.profile==='conservative'?b.lockedPos:enemy;
+    const dx=position.x-t.x,dy=position.y-t.y;
+    const imprecision=this.profile==='conservative'?
+     Math.sin(state.ctf.elapsed*2.3+this.log.seed*.19)*.065:0;
+    const targetAngle=Math.atan2(dy,dx)+imprecision;
+    aimX=Math.cos(targetAngle);aimY=Math.sin(targetAngle);
+    const headingError=Math.abs(Math.atan2(Math.sin(targetAngle-t.a),Math.cos(targetAngle-t.a)));
+    const reactionReady=this.profile==='armed'||b.sightSeconds>=.34;
+    // Engine controls the actual turning, projectile and cooldown.
+    if(reactionReady&&b.fireTimer<=0&&fireCooldown[0]<=1/60&&headingError<.11){
+     fire=true;b.fireTimer=this.profile==='conservative'?.78:.55;
+    }
+   }else{
+    b.lockTarget=-1;b.sightSeconds=0;b.scanCooldown=0;b.lockedPos=null;
    }
    return {moveX:Math.cos(angle)*pace,moveY:Math.sin(angle)*pace,
     aimX,aimY,fire};
@@ -198,8 +220,8 @@ try{
  await page.locator('button[data-action="ctf"]').click();
  await page.waitForFunction(()=>!!window.__ctfContestQA?.state?.ctf&&!!window.SectorCtfAI,
   null,{timeout:15000});
- for(const c of cases){
-  const init=await page.evaluate(v=>window.__ctfContestQA.begin(v.seed,v.mapSize),c);
+ for(const c of cases)for(const profile of ['unarmed','armed','conservative']){
+  const init=await page.evaluate(v=>window.__ctfContestQA.begin(v.seed,v.mapSize,v.profile),{...c,profile});
   assert.deepEqual(init.roles,['runner','escort','defender']);
   for(let f=0;f<180*60;f+=300){
    const p=await page.evaluate(n=>window.__ctfContestQA.advance(n),300);
@@ -207,36 +229,45 @@ try{
   }
   const result=await page.evaluate(()=>window.__ctfContestQA.result());
   results.push(result);
-  console.log('CTF_CONTESTED_CASE '+JSON.stringify({
-   seed:c.seed,map:c.mapSize,pickup:result.firstHumanPickup,
+  console.log('CTF_CONTESTED_AB_CASE '+JSON.stringify({
+   profile,seed:c.seed,map:c.mapSize,pickup:result.firstHumanPickup,
    carriedFrames:result.carriedFrames,humanDistance:+result.humanTravel.toFixed(1),
    closestFlag:+result.nearestToEnemyFlag.toFixed(1),
    defenderIntercept:result.defenderInterceptFrames,escortSupport:result.escortSupportFrames,
-   defenderMovement:result.defenderDisplacement,
    defenderTravelDuringCarry:result.defenderTravelDuringCarry,
    firstDefenderCarrierRange:result.firstDefenderCarrierRange,
    nearestDefenderCarrierRange:result.nearestDefenderCarrierRange,
    humanShots:result.humanShots,aimCandidates:result.aimCandidates,
    humanKOs:result.humanKOs,humanCaptures:result.humanCaptures,
-   humanDeaths:result.humanDeaths,events:result.events,invalid:result.invalid}));
+   humanDeaths:result.humanDeaths,invalid:result.invalid}));
   assert.deepEqual(result.invalid,[]);
  }
  fs.mkdirSync('qa-results',{recursive:true});
  fs.writeFileSync('qa-results/ctf-contested-human-attack.json',
-  JSON.stringify({method:'scripted legitimate movement, intermittent aimed FIRE, EXIT, full maze and real collision/flag rules; not a skilled-human balance test',
+  JSON.stringify({method:'same-seed unarmed/precise/reaction-limited legitimate input and physics; not a representative skilled player or human balance certification',
    cases:results},null,2));
  assert.deepEqual(errors,[],'no uncaught browser exceptions');
- const successful=results.filter(x=>x.carriedFrames>0);
- assert.ok(successful.length>0,'at least one human reaches and steals the real flag');
- assert.ok(successful.some(x=>x.defenderInterceptFrames>0),
-  'Coral defender chooses intercept against a real human carrier');
- assert.ok(successful.some(x=>x.escortSupportFrames>0),
-  'Cyan escort identifies and supports its human flag carrier');
- assert.ok(results.some(x=>x.aimCandidates>0),
-  'scripted attacker sees a hostile at legal screen-like range with clear LOS');
- assert.ok(results.some(x=>x.humanShots>0),
-  'scripted attacker actually fires at least one legal engine-created shot');
- console.log('CTF_CONTESTED_ARMED_ATTACK_PASS: legitimate movement, actual engine shots, flag theft and objective response (capture balance not proven)');
+ assert.equal(results.length,cases.length*3,'three profiles per seed');
+ for(const c of cases)assert.deepEqual(
+  results.filter(x=>x.seed===c.seed&&x.mapSize===c.mapSize).map(x=>x.profile),
+  ['unarmed','armed','conservative'],'matched input profiles per seed');
+ const unarmed=results.filter(x=>x.profile==='unarmed');
+ const armed=results.filter(x=>x.profile==='armed');
+ const conservative=results.filter(x=>x.profile==='conservative');
+ assert.ok(unarmed.every(x=>x.humanShots===0),'unarmed control does not fire');
+ assert.ok(armed.some(x=>x.humanShots>0),'precise attacker produces actual shots');
+ assert.ok(conservative.some(x=>x.humanShots>0),'reaction-limited attacker fires actual shots');
+ assert.ok(results.some(x=>x.carriedFrames>0),'at least one genuine flag pickup');
+ assert.ok(results.some(x=>x.defenderInterceptFrames>0),'defender reacts to carrier');
+ assert.ok(results.some(x=>x.escortSupportFrames>0),'escort responds to carrier');
+ const summary=g=>({shots:g.reduce((n,x)=>n+x.humanShots,0),
+  captures:g.reduce((n,x)=>n+x.humanCaptures,0),
+  pickups:g.filter(x=>x.firstHumanPickup!==null).length,
+  kos:g.reduce((n,x)=>n+x.humanKOs,0),
+  deaths:g.reduce((n,x)=>n+x.humanDeaths,0)});
+ console.log('CTF_CONTESTED_AB_SUMMARY '+JSON.stringify({
+  unarmed:summary(unarmed),armed:summary(armed),conservative:summary(conservative)}));
+ console.log('CTF_CONTESTED_AB_REAL_MATCH_PASS: same-seed unarmed/precise/reaction-limited input and real engine shots; subjective balance unverified');
 }finally{
  await browser.close();
  await new Promise(done=>server.close(done));
