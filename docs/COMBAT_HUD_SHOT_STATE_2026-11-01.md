@@ -21,7 +21,7 @@ The existing projectile meter displayed `READY` whenever there were open simulta
 
 - New `tests/combat-hud-truth-qa.mjs`: 3 phone landscape sizes × 3 weapon types × 5 cases (ready, cycling, partial, fully occupied, expired owned + active enemy shells) = **45 browser assertions**.
 - The existing `bot-combat-cues-audit.yml` now runs this additional test alongside the 27 visibility fixtures, bot cadence, pilot release controls, CTF, forward bays, team vehicle placement, Quick Play and visual regression.
-- **Passing full regression is a requirement, not assumed.** Review the actual GitHub Actions result before treating this experimental branch as a stable preview.
+- **Full browser regression PASS:** [GitHub Actions run 41390494669](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41390494669), gameplay commit `a938a8e48280aa4747b8452c9555401d000bb784`. New **45/45 HUD cases**, **27/27 enemy visibility fixtures**, **18/18 bot-cadence cases**, **48/48 release/aim cases**, route-fair vehicles, forward bays, CTF bot/human matches, Quick Play, backup recovery and **44 visual scenes** succeeded. Full evidence artifact `sector-rebound-combat-cues-evidence` was uploaded. Initial CI 41390426212 correctly caught a lightweight smoke DOM stub missing `setAttribute`; the compatibility guard was added without changing normal browser/Android appearance, and the complete rerun passed.
 - Android APK was not rebuilt or installed for this HUD pass.
 
 ## Physical owner acceptance and next decision
