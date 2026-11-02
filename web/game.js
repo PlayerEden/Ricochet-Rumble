@@ -156,7 +156,7 @@ function doBackupAction(action){
 
 
 const CUSTOM_PRESETS_KEY='rr-custom-presets-v1';
-let comfort={sound:true,music:true,shake:false,autoFire:false,leftHanded:false,pilotAssist:false,pilotRelease:false},fixedAccumulator=0;
+let comfort={sound:true,music:true,shake:false,autoFire:false,leftHanded:false,pilotAssist:false,pilotRelease:false,releaseFire:true},fixedAccumulator=0;
 let selectedRules={botCount:2,bulletCap:4,startLives:2,teamMode:'ffa',botSkill:'normal',mapSize:'small'};
 // v0.9.22 / Slice A: stable solo presets backed by CURRENT survival combat, not proposed score modes.
 const MATCH_MODE_PRESETS=Object.freeze({
@@ -414,14 +414,26 @@ const colors=PALETTE,pressed=new Set(),touch=new Set();
 const stick={x:0,y:0,pointerId:null};
 // CQC mobile: right FIRE thumb can drag to aim while left thumb steers.
 const fireAim={pointerId:null,source:null,startX:0,startY:0,x:0,y:0,active:false};
-let releaseShot=null;
-function pilotReleaseMode(){return comfort.pilotRelease&&mode==='solo'&&!!state?.tanks?.[0]?.onFoot&&
- state.lives[0]>0&&state.winner<0&&!paused&&menu.classList.contains('hidden');}
+let releaseShot=null,remoteReleaseShot=null,guestFireSeq=0,lastGuestFireSeq=0;
+function releaseMode(){
+ const seat=mode==='guest'?1:0;
+ return comfort.releaseFire&&['solo','host','guest'].includes(mode)&&!!state?.tanks?.[seat]&&
+  state.lives[seat]>0&&state.winner<0&&!paused&&menu.classList.contains('hidden')&&
+  !(mode==='guest'&&state.hostPaused);
+}
 function queuePilotRelease(){
- if(!pilotReleaseMode()||fireAim.pointerId===null)return false;
- const t=state.tanks[0],x=fireAim.active?fireAim.x:Math.cos(t.a),y=fireAim.active?fireAim.y:Math.sin(t.a);
+ if(!releaseMode()||fireAim.pointerId===null)return false;
+ const seat=mode==='guest'?1:0,t=state.tanks[seat];
+ const x=fireAim.active?fireAim.x:Math.cos(t.a),y=fireAim.active?fireAim.y:Math.sin(t.a);
  const mag=Math.hypot(x,y);if(mag<.6)return false;
- releaseShot={x:x/mag,y:y/mag,ttl:.7,matchId:state.matchId};return true;
+ const shot={x:x/mag,y:y/mag,ttl:1.6,matchId:state.matchId,seat};
+ releaseShot=shot;
+ if(mode==='guest'){
+  if(!connected||!Number.isInteger(state.matchId)){releaseShot=null;return false;}
+  guestFireSeq=(guestFireSeq%2147483600)+1;
+  nativePacket({type:'fire-request',seq:guestFireSeq,matchId:shot.matchId,aimX:shot.x,aimY:shot.y});
+ }
+ return true;
 }
 // Tactical scored-FFA test: let bounced shells work ahead of the tank.
 // Other modes and all shell speeds, bounce rules and caps remain untouched.
@@ -485,7 +497,7 @@ function applyPlaylistUI(){
 }
 function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){const st=p.settings||{};selectedRules={mapSize:MAP_SIZES[st.mapSize]?st.mapSize:'small',botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:2,bulletCap:[1,2,3,4,5,8].includes(st.bulletCap)?st.bulletCap:4,startLives:[2,3,5].includes(st.startLives)?st.startLives:2,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key];if(p.playlist?.version===1&&Array.isArray(p.playlist.enabled))setPlaylistModes(p.playlist.enabled)}}catch(_){}loadCustomDraft();loadCustomPresets();applyPrefsToUI()}
 function applyPrefsToUI(){const picks={mapSize:selectedRules.mapSize,botCount:selectedRules.botCount,bulletCap:selectedRules.bulletCap,startLives:selectedRules.startLives,teamMode:selectedRules.teamMode,botSkill:selectedRules.botSkill};const ids={mapSize:'map-size',botCount:'bot-count',bulletCap:'bullet-cap',startLives:'lives-choice',teamMode:'team-choice',botSkill:'bot-skill'};for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(el&&el.options&&[...el.options].some(o=>o.value===String(picks[key])))el.value=String(picks[key])}for(const key of Object.keys(comfort)){const el=document.getElementById('pref-'+key);if(el)el.checked=comfort[key]}const el=document.getElementById('fire-mode');if(el)el.textContent=comfort.autoFire?'AUTO ON':'HOLD TO FIRE';document.querySelector('.battlefield')?.classList.toggle('swap-controls',comfort.leftHanded);applyPlaylistUI();}
-function releaseControls(){touch.clear();pressed.clear();releaseShot=null;clearStick();clearFireAim();for(const el of document.querySelectorAll('[data-key]'))el.classList.remove('active')}
+function releaseControls(){touch.clear();pressed.clear();releaseShot=null;remoteReleaseShot=null;clearStick();clearFireAim();for(const el of document.querySelectorAll('[data-key]'))el.classList.remove('active')}
 
 function mazeRandom(seed){let x=(seed>>>0)||1;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296};}
 function createMaze(def,seed){const {cols,rows,cell}=def,rng=mazeRandom(seed),open=Array.from({length:cols*rows},()=>[]),visited=new Set([0]),stack=[0];
@@ -882,11 +894,14 @@ function inputFrom(keys,isLocal){const down=k=>menu.classList.contains('hidden')
  // as well; the guest sends its aim vector to the authoritative host.
  const localSeat=mode==='guest'?1:0;
  const localFoot=isLocal&&['solo','host','guest'].includes(mode)&&!!state?.tanks?.[localSeat]?.onFoot;
- const queuedAim=isLocal&&pilotReleaseMode()&&releaseShot?.matchId===state?.matchId?releaseShot:null;
-  const fineAim=fireAim.active&&localFoot&&fireAim.source==='fire'&&touch.has('fire');
- // Only on-foot pilots use independent FIRE-drag vectors; vehicle steering uses MOVE.
- return {moveX,moveY,aimX:queuedAim?.x??(fineAim?fireAim.x:undefined),aimY:queuedAim?.y??(fineAim?fireAim.y:undefined),fire:(down('fire')&&!(isLocal&&pilotReleaseMode()&&touch.has('fire')&&!pressed.has(keys.fire)))||
- (isLocal&&comfort.autoFire&&!pilotReleaseMode()&&mode!=='idle'&&menu.classList.contains('hidden')&&!paused)};}
+ const queuedAim=isLocal&&releaseMode()&&releaseShot?.matchId===state?.matchId?releaseShot:null;
+ const fineAim=isLocal&&fireAim.active&&fireAim.source==='fire'&&touch.has('fire')&&
+  ['solo','host','guest'].includes(mode);
+ return {moveX,moveY,aimX:queuedAim?.x??(fineAim?fireAim.x:undefined),
+  aimY:queuedAim?.y??(fineAim?fireAim.y:undefined),
+  fire:(down('fire')&&!(isLocal&&releaseMode()&&touch.has('fire')&&!pressed.has(keys.fire)))||
+   (isLocal&&comfort.autoFire&&!releaseMode()&&mode!=='idle'&&menu.classList.contains('hidden')&&!paused)};
+}
 function makeControl(isPlayer1){return isPlayer1?inputFrom(keys1,true):inputFrom(keys2,false)}
 function serializeState(){return {tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,vehicleDropTimer:state.vehicleDropTimer,dropIndex:state.dropIndex,vehicleBeacon:state.vehicleBeacon?{...state.vehicleBeacon}:null,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,elapsedSeconds:state.elapsedSeconds,deaths:state.deaths.slice(),hostPaused:mode==='host'&&paused};}
 function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
@@ -1038,10 +1053,14 @@ function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=c
  // AI, guest/host LAN, duel, and all vehicles retain their existing behavior.
  // Both human seats in LAN can independently aim a vulnerable pilot.
  // One local player remains seat 0 in offline Solo. No new tank AIM mode.
- const precisionFoot=t.onFoot&&!inp.bot&&((mode==='solo'&&i===0)||(mode==='host'&&(i===0||i===1)));
- const independentAim=precisionFoot;
+ const humanSeat=!inp.bot&&((mode==='solo'&&i===0)||(mode==='host'&&(i===0||i===1)));
+ const precisionFoot=t.onFoot&&humanSeat,independentAim=humanSeat;
  const aimed=independentAim&&Number.isFinite(inp.aimX)&&Number.isFinite(inp.aimY)&&Math.hypot(inp.aimX,inp.aimY)>.6;
- if(mag||aimed){const target=aimed?Math.atan2(inp.aimY,inp.aimX):Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a)),maxTurn=dt*(precisionFoot?SOLO_PILOT_TURN_RATE:tacticalVehicle?SCORED_FFA_VEHICLE_PACE.turnRate:12);t.a+=clamp(diff,-maxTurn,maxTurn)}
+ if(mag||aimed){const target=aimed?Math.atan2(inp.aimY,inp.aimX):Math.atan2(my,mx),
+  diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a)),
+  aimTurn=!t.onFoot&&aimed?(tacticalVehicle?SCORED_FFA_VEHICLE_PACE.turnRate:4.2):null,
+  maxTurn=dt*(aimTurn??(precisionFoot?SOLO_PILOT_TURN_RATE:tacticalVehicle?SCORED_FFA_VEHICLE_PACE.turnRate:12));
+  t.a+=clamp(diff,-maxTurn,maxTurn)}
  // Local Solo pilot only: tiny optional heading nudge when already shooting
  // almost directly at an on-screen enemy pilot. No auto-fire or homing shell.
  if(inp.fire&&precisionFoot&&mode==='solo'&&(fireCooldown[i]||0)<=dt)t.a+=softPilotAimOffset(t,i);
