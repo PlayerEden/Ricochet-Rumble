@@ -782,6 +782,7 @@ function initialState(arena=0,options=null,seed=null){const config={...readSetti
  const mazeSeed=seed||Math.floor(Math.random()*0x7fffffff)||1,id=setArena(0,mazeSeed,config.mapSize);
  const numBots=config.botCount,humans=count,total=humans+numBots;
  config.teamIds=assignMatchTeams(config,humans,total,mazeSeed);
+ config.teamIdsMode=config.teamMode;
  config.ffaColors=config.teamMode==='ffa'?shuffledMatchColors(mazeSeed,total):[];
  const tanks=Array.from({length:total},(_,i)=>freshTank(i));
  // In this opt-in team exercise each side starts at its own open, connected
@@ -831,7 +832,8 @@ function initialState(arena=0,options=null,seed=null){const config={...readSetti
 state=initialState();
 function teamOf(i,st=state){
  const ids=st?.config?.teamIds;
- if(Array.isArray(ids)&&ids.length===st.tanks?.length&&
+ if(st.config?.teamIdsMode===st.config?.teamMode&&
+    Array.isArray(ids)&&ids.length===st.tanks?.length&&
     Number.isInteger(ids[i]))return ids[i];
  const rules=st?.config?.teamMode||'ffa';
  if(rules==='ffa')return i;
@@ -2737,6 +2739,7 @@ function validRemoteSnapshot(s){
  if(n<2||n>6||!s.config||typeof s.config!=='object'||Array.isArray(s.config))return false;
  if(!Number.isInteger(s.mazeSeed)||s.mazeSeed<1||!Number.isFinite(s.elapsedSeconds)||s.elapsedSeconds<0)return false;
  if(!Array.isArray(s.lives)||s.lives.length!==n||!s.lives.every(v=>Number.isInteger(v)&&v>=0))return false;
+ if(s.config.teamIdsMode!==undefined&&s.config.teamIdsMode!==s.config.teamMode)return false;
  if(s.config.teamIds!==undefined&&(!Array.isArray(s.config.teamIds)||s.config.teamIds.length!==n||
   !s.config.teamIds.every((id,i)=>Number.isInteger(id)&&
    (s.config.teamMode==='ffa'?id===i:(id===0||id===1)))))return false;
