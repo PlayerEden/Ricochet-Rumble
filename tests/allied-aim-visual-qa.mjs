@@ -17,6 +17,9 @@ function hooks(){
    mode='solo';paused=false;menu.classList.add('hidden');
    state=initialState(0,{mapSize:'small',matchModeId:'scored_tdm',
     teamMode:'teams',botCount:3,pilotMode:true,botSkill:'normal'},202);
+   // Freeze simulation ticks; renderer still runs, but A3 botInput must
+   // not overwrite this controlled acquiring-shot brain between page calls.
+   step=function(){};
    botBrains.clear();const me=state.tanks[0],ally=state.tanks[2];
    let lane=null;
    outer:for(let row=1;row<mazeGrid.rows-1;row++)
