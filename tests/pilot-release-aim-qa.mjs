@@ -48,6 +48,8 @@ const errors=[],results=[];
 try{
  for(const viewport of [{width:740,height:360},{width:960,height:540}]){
   const page=await browser.newPage({viewport});
+  page.setDefaultTimeout(6000);
+  console.log('RELEASE_AIM_STAGE viewport '+viewport.width+'x'+viewport.height);
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:'+server.address().port,{waitUntil:'load'});
   await page.waitForFunction(()=>!!window.__pilotReleaseQA);
@@ -65,6 +67,7 @@ try{
   assert.ok(rect&&rect.width>=20&&rect.height>=20,'accessible existing checkbox');
   const fire=page.locator('.fire-btn');
   for(const seed of [101,202,303]){
+   console.log('RELEASE_AIM_STAGE seed '+seed+' start');
    const init=await page.evaluate(seed=>window.__pilotReleaseQA.setup(seed,true),seed);
    assert.equal(init.blocked,false,'actual pilot can stand in fixture');
    const fireRect=await fire.boundingBox();
@@ -88,6 +91,7 @@ try{
    // assert the production sidearm cooldown that shoot() sets on success.
    assert.ok(launched.cd>0&&launched.cd<=.43,'single real sidearm shot with normal cooldown');
    results.push({viewport,seed,kind:'release',queued,launched});
+   console.log('RELEASE_AIM_STAGE seed '+seed+' shot verified');
    // A cancelled or interrupted hold cannot queue a phantom shot.
    await page.evaluate(seed=>window.__pilotReleaseQA.setup(seed+10,true),seed);
    await page.mouse.move(cx,cy);await page.mouse.down();
@@ -103,6 +107,7 @@ try{
    const paused=await page.evaluate(()=>window.__pilotReleaseQA.pause());
    assert.equal(paused.pending,false,'pause discards pending single shot');
    results.push({viewport,seed,kind:'cancel-and-pause',cancelled,paused});
+   console.log('RELEASE_AIM_STAGE seed '+seed+' cancellation verified');
    // Old hold-to-fire path still shoots on the first physics tick.
    await page.evaluate(seed=>window.__pilotReleaseQA.setup(seed+30,false),seed);
    await page.mouse.move(cx,cy);await page.mouse.down();
@@ -117,6 +122,7 @@ try{
    assert.ok(keyboard.cd>0,'keyboard SPACE fires while release mode enabled');
    await page.keyboard.up('Space');
    results.push({viewport,seed,kind:'keyboard',keyboard});
+   console.log('RELEASE_AIM_STAGE seed '+seed+' complete');
   }
   await page.close();
  }
