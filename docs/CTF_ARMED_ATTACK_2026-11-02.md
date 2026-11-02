@@ -65,3 +65,22 @@ Same four fixed seeds and movement goal logic, but this first paired script did 
 - **Four seeds are far too few** for win-rate or balance inference. Results also reflect the input planner and controlled physics state; no owner Android validation.
 
 **Decision:** No AI damage, player hitbox, fire accuracy, ejection, respawn, map or vehicle spawn gameplay changes authorized by these observations. Run the corrected exact-head comparison; then create a single-purpose seed-102 bottleneck diagnostic with genuine collision and navigation traces before deciding to adjust production CTF.
+
+## Definitive corrected exact-head comparison — PASS
+
+[GitHub Actions #41506332651 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41506332651), exact test source `521eb1541771481257529c80c3c4754bd1ae4d8b`. The CI passed the paired 12 live engine matches, prior CTF/Forward Bay/Quick Play, backup, visual/browser and Web/Android mirror checks. Unlike the previous paired run, all controller profiles begin with fresh weapon cooldowns and empty queued release shots, matching real `newMatch()`.
+
+| Controller | Enemy flag pickups (out of 4 seed cases) | Actual shots | Total player KOs | Total human captures | Deaths |
+|---|---:|---:|---:|---:|---:|
+| Unarmed | 3 | 0 | 0 | 7 | 5 |
+| Precise | 2 | 42 | 19 | 5 | 2 |
+| Reaction-limited | 3 | 49 | 24 | 8 | 3 |
+
+**Not human win rates** and not a representative difficulty estimate. Same seeded fields, but bot engagement and exact simulation outcomes are sensitive to the scripted input path and timing.
+
+- **Seed 102:** all profiles failed to reach the enemy flag, while registering **zero player deaths**. They traveled only ~382–428 world units and remained at least ~721–773 units from the enemy flag. A route planner/physical obstruction diagnostic is now the priority.
+- **Seed 101:** unarmed and reaction-limited each captured three flags, but precise fire became navigation-stalled after ~163 units. Constant precise aiming can interfere with the scripted steering/path goals.
+- **Seed 104:** all three profiles achieved three captures, while the precise firing profile generated nine KOs rather than the previous non-reset case's 44; reset semantics materially affected the result.
+- **Seed 201:** unarmed captured once, precise twice, conservative twice.
+
+**Engineering decision:** do **not** nerf bot weapons or buff pilot sidearms based on this. Isolate seed 102 with movement/waypoint/wall/actor diagnostics first. Real Android player acceptance is still outstanding. This branch and PR are not a gameplay release.
