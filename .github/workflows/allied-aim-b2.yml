@@ -1,0 +1,32 @@
+name: Sector Rebound - B2 allied aiming + LAN privacy contract
+on:
+  push:
+    branches: [experiment/allied-aim-traces-b2]
+    paths:
+      - 'web/**'
+      - 'android/app/src/main/assets/**'
+      - 'tests/smoke.mjs'
+      - '.github/workflows/allied-aim-b2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  allied-aim:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Mirror source and validate JavaScript
+        run: |
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/index.html android/app/src/main/assets/index.html
+          node --check web/game.js
+          node --check tests/smoke.mjs
+      - name: Real-engine teammate intent + LAN snapshot privacy + ballistics
+        run: |
+          node tests/smoke.mjs
+          node tests/ballistic-trace-a2.mjs
+          node tests/save-backup.mjs
