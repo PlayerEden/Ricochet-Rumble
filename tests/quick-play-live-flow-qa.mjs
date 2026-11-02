@@ -19,7 +19,7 @@ const instrumented=game.replace(closing,`
 window.__flowQA={
  get state(){return state}, get mode(){return mode},
  get playlist(){return selectedPlaylistIds.slice()}, unlocksFromResult,
- freeze(){paused=true}, get aim(){return {...fireAim}}, get control(){return makeControl(true)}, registerHit, ejectPilot, refreshHUD, tryCqcRespawn, resetAll,
+ freeze(){paused=true}, unfreeze(){paused=false}, get aim(){return {...fireAim}}, get control(){return makeControl(true)}, registerHit, ejectPilot, refreshHUD, tryCqcRespawn, resetAll,
  expire(seconds=180){paused=false;step(seconds);paused=true;}
 };
 })();`);
@@ -252,6 +252,7 @@ try{
  const fireBox=await page.locator('.fire-btn').boundingBox();
  assert.ok(fireBox?.width>=35&&fireBox.height>=35,'right FIRE drag target has a mobile-sized hit area');
  const pressX=fireBox.x+fireBox.width/2,pressY=fireBox.y+fireBox.height/2;
+ await page.evaluate(()=>window.__flowQA.unfreeze());
  await page.mouse.move(pressX,pressY);await page.mouse.down();
  const untouched=await page.evaluate(()=>window.__flowQA.aim);
  assert.equal(untouched.active,false,'press and hold retains original fire action without instant swing');
@@ -259,10 +260,11 @@ try{
  const dragged=await page.evaluate(()=>({aim:window.__flowQA.aim,control:window.__flowQA.control}));
  assert.equal(dragged.aim.active,true,'actual captured right-button pointermove enables CQC aim');
  assert.ok(dragged.control.aimY<-.95,'independent right-thumb drag points the pistol up');
- assert.equal(dragged.control.fire,true,'right drag does not interrupt firing');
+ assert.equal(dragged.control.fire,false,'new default does not shoot before pointer release');
  await page.mouse.up();
  assert.equal((await page.evaluate(()=>window.__flowQA.aim)).active,false,'actual pointerup clears aim state');
- result.steps.push('real Chromium FIRE thumb drag independently aims while firing, with release reset');
+ await page.evaluate(()=>window.__flowQA.freeze());
+ result.steps.push('real Chromium FIRE thumb drag previews the aim before release, with no premature shot');
 
  const earned=await page.evaluate(()=>{
   const qa=window.__flowQA,s=qa.state,hits=[];
