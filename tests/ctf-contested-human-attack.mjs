@@ -38,7 +38,7 @@ function installQA(){
     humanPickups:0,firstHumanPickup:null,carriedFrames:0,defenderInterceptFrames:0,
     defenderIncorrectFrames:0,defenderChangedPosition:0,escortSupportFrames:0,
     humanCaptures:0,defenderFireFrames:0,enemyFlagReturns:0,
-    humanShots:0,aimCandidates:0,humanKOs:0,
+    humanShots:0,aimCandidates:0,humanKOs:0,stalls:[],lastStallBin:0,
     defenderTravelDuringCarry:0,firstDefenderCarrierRange:null,
     nearestDefenderCarrierRange:Infinity,lastDefenderFrame:null,events:[],
     invalid:[],nearestToEnemyFlag:Infinity,lastSeq:state.ctf.seq,
@@ -90,6 +90,28 @@ function installQA(){
    if(moved<.06&&dist>55)b.stuck+=1/60;else b.stuck=0;
    b.last={x:t.x,y:t.y};
    if(b.stuck>1)angle+=((Math.floor(b.stuck/.8)%2)?1:-1)*1.14;
+   // Real source, test-only trace for persistent route stalls. It never
+   // modifies actor position, maze, physics or AI and samples at most 8 times.
+   const stallBin=Math.floor(b.stuck/4);
+   if(stallBin>0&&stallBin!==m.lastStallBin&&m.stalls.length<8){
+    m.lastStallBin=stallBin;
+    const others=state.tanks.map((other,i)=>({seat:i,
+     dist:+Math.hypot(other.x-t.x,other.y-t.y).toFixed(1),
+     team:teamOf(i),alive:state.lives[i]>0}))
+     .filter(x=>x.seat!==0&&x.alive).sort((a,b)=>a.dist-b.dist);
+    const radius=t.onFoot?10:21;
+    m.stalls.push({at:+state.ctf.elapsed.toFixed(1),
+     since:+b.stuck.toFixed(1),x:+t.x.toFixed(1),y:+t.y.toFixed(1),
+     onFoot:t.onFoot,heading:+t.a.toFixed(2),headingDesired:+angle.toFixed(2),
+     cell:start,goal,waypointCell:b.path[0]??null,
+     waypointRange:+Math.hypot(waypoint.x-t.x,waypoint.y-t.y).toFixed(1),
+     flagRange:+dist.toFixed(1),
+     walls:[0,Math.PI/2,Math.PI,Math.PI*1.5].map(a=>
+      blocked(t.x+Math.cos(a)*35,t.y+Math.sin(a)*35,radius)),
+     desiredAheadBlocked:blocked(t.x+Math.cos(angle)*35,
+      t.y+Math.sin(angle)*35,radius),closestActors:others.slice(0,2)});
+   }
+   if(stallBin===0)m.lastStallBin=0;
    const pace=dist<26?.35:1;
    if(this.profile==='unarmed')return {
     moveX:Math.cos(angle)*pace,moveY:Math.sin(angle)*pace,fire:false
@@ -241,6 +263,7 @@ try{
    firstDefenderCarrierRange:result.firstDefenderCarrierRange,
    nearestDefenderCarrierRange:result.nearestDefenderCarrierRange,
    humanShots:result.humanShots,aimCandidates:result.aimCandidates,
+   stalls:result.stalls,
    humanKOs:result.humanKOs,humanCaptures:result.humanCaptures,
    humanDeaths:result.humanDeaths,invalid:result.invalid}));
   assert.deepEqual(result.invalid,[]);
