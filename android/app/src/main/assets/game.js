@@ -1776,7 +1776,8 @@ function step(dt){if(paused||state.winner>=0)return;
  // intercept is an allied actor under FF ON. This examines only current
  // physically simulated path, not future teammate movement. A teammate can
  // still step into the shell AFTER it leaves the muzzle.
- const botShotClear=!inputs[i]?.bot||!friendlyFireEnabled()||(()=>{
+ const botShotClear=!inputs[i]?.bot||!friendlyFireEnabled()||
+  !(inputs[i]?.fire&&fireCooldown[i]<=0)||(()=>{
   const path=traceProjectile(t,t.a,{maxDistance:t.onFoot?370:730,
    maxBounces:t.onFoot?0:1,checkActors:true});
   return path.hit===null||path.hit===i||!friendly(i,path.hit);
