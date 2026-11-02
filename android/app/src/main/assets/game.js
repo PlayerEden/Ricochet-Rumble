@@ -906,7 +906,8 @@ function makeControl(isPlayer1){return isPlayer1?inputFrom(keys1,true):inputFrom
 function serializeState(){return {tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,vehicleDropTimer:state.vehicleDropTimer,dropIndex:state.dropIndex,vehicleBeacon:state.vehicleBeacon?{...state.vehicleBeacon}:null,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,elapsedSeconds:state.elapsedSeconds,deaths:state.deaths.slice(),hostPaused:mode==='host'&&paused};}
 function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  document.getElementById('score0').textContent=state.lives[me]??0;document.getElementById('score1').textContent=state.lives[other]??0;
- const botLives=mode==='solo'?opposingCount(me):state.lives.slice(state.humanCount||2).filter(v=>v>0).length,active=state.bullets.filter(b=>b.owner===me).length;
+ const botLives=mode==='solo'?opposingCount(me):state.lives.slice(state.humanCount||2).filter(v=>v>0).length,
+ active=state.bullets.filter(b=>b.owner===me&&b.life>0).length; // Same live-projectile rule as shoot().
  const phase=document.getElementById('round'),localPilot=state.tanks[me],localVehicle=currentVehicle(localPilot),foot=!!localPilot?.onFoot,hostPaused=mode==='guest'&&state.hostPaused;
  const armor=localVehicle?.armor??0,maxArmor=vehicleDef(localVehicle).armor;
  phase.textContent=hostPaused?'HOST PAUSED':state.winner>=0?'MATCH OVER':isScoredMatch()&&state.lives[me]===0?'RESPAWNING · '+Math.max(0,state.tanks[me].respawnWait||0).toFixed(1)+'s':foot?(isCqcMatch()?'PILOT · CQC':'PILOT · ON FOOT'):`${vehicleDef(localVehicle).name} · ${armor}/${maxArmor}`;
@@ -933,9 +934,14 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  if(fireButton&&typeof fireButton.setAttribute==='function')fireButton.setAttribute('aria-label',releasePilot?
   'Drag to preview trajectory; release to fire once aligned':'Hold to fire');
  const shellMeter=document.getElementById('shell-meter');if(shellMeter){const cap=activeBulletCap(state.tanks[me]),available=Math.max(0,cap-active);
- shellMeter.textContent=active>=cap?`0/${cap} IN FLIGHT`:`${available}/${cap} READY`;
+ const cycling=(fireCooldown[me]??0)>.02;
+ const shotState=active>=cap?'IN FLIGHT':cycling?'CYCLING':'READY';
+ shellMeter.textContent=`${available}/${cap} ${shotState}`;
  shellMeter.classList.toggle('empty',active>=cap);
- shellMeter.title=active>=cap?'All projectiles are in flight; capacity returns when a shot expires':'Available simultaneous projectile slots';
+ shellMeter.classList.toggle('cycling',active<cap&&cycling);
+ shellMeter.title=active>=cap?'All projectiles are in flight; capacity returns when a shot expires':
+  cycling?'Weapon cycling; next shot waits for firing cooldown':'Projectile slot available; weapon ready to fire';
+ shellMeter.setAttribute('aria-label',`${available} of ${cap} projectile slots available; ${shotState.toLowerCase()}`);
  const slots=document.getElementById('shell-slots');
  if(slots&&cap<=12){const markup=Array.from({length:cap},(_,i)=>'<i class="shell-slot'+(i<available?' ready':'')+'"></i>').join('');if(slots.innerHTML!==markup)slots.innerHTML=markup;}
 }

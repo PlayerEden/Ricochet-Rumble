@@ -1064,6 +1064,7 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 .battlefield .shell-slot{display:block;width:clamp(7px,1vw,10px);height:6px;border:1px solid #8ab8c0;border-radius:2px;background:#102a33a8;box-shadow:0 1px 3px #0005}
 .battlefield .shell-slot.ready{background:#91dedb;border-color:#b5e7e2}
 .battlefield .shell-meter.empty{color:#ffb6a2}
+.battlefield .shell-meter.cycling:not(.empty){color:#f1d2a3}
 /* Pause confirmation is a small safety decision, no secondary controls. */
 #menu #panel:has(.pause-actions) .pause-actions button{min-height:44px}
 .after-action #lan-edit-rules.hidden{display:none!important}
