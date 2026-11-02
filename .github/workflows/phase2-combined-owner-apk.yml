@@ -48,7 +48,6 @@ jobs:
           node tests/test-signer-contract.mjs
           node tests/ctf-rules.mjs
           node tests/ctf-objective-ai.mjs
-          node tests/team-vehicle-route-qa.mjs
           node --check tests/pilot-combat-fairness-qa.mjs
           node --check tests/pilot-release-aim-qa.mjs
           node --check tests/bot-shot-parity-qa.mjs
@@ -78,6 +77,7 @@ jobs:
           node tests/landscape-hud-safe-zones-qa.mjs
           node tests/match-flow-truth-qa.mjs
           node tests/first-match-entry-browser-qa.mjs
+          VEHICLE_BALANCE_ENFORCE=1 node tests/team-vehicle-route-qa.mjs
       - name: Recover immutable public AOSP development key (never production)
         env:
           SR_TEST_STORE_FILE: ${{ runner.temp }}/sr-aosp-preview/public-testkey.p12
