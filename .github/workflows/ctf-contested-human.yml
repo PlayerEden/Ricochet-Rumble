@@ -1,7 +1,7 @@
 name: Sector Rebound - Contested CTF input-driven combat audit
 on:
   push:
-    branches: [experiment/ctf-contested-human-attack-v1, audit/ctf-armed-attacker-v1, experiment/ctf-human-escort-lane-clearance-v1, experiment/friendly-unit-pass-through-v1, experiment/combat-parity-trajectory-a1, experiment/trajectory-physics-core-a2, experiment/bot-trace-aim-a3-v1, experiment/friendly-fire-policy-b1]
+    branches: [experiment/ctf-contested-human-attack-v1, audit/ctf-armed-attacker-v1, experiment/ctf-human-escort-lane-clearance-v1, experiment/friendly-unit-pass-through-v1, experiment/combat-parity-trajectory-a1, experiment/trajectory-physics-core-a2, experiment/bot-trace-aim-a3-v1, experiment/friendly-fire-policy-b1, experiment/allied-aim-traces-b2]
   workflow_dispatch:
 permissions:
   contents: read
