@@ -165,6 +165,9 @@ try{
   if(viewport.width===740){
    await page.evaluate(()=>window.__shotParity.setup(304,'tank','normal'));
    const scout=await page.evaluate(()=>window.__shotParity.bankSurvey());
+   assert.ok(scout.banked,'real maze must yield at least one genuine LOS-blocked bank shot from stored sight');
+   assert.equal(scout.banked.directLOS,false,'bank shot does not require current direct LOS');
+   assert.ok(scout.banked.candidates<=7,'bank shot search stays bounded');
    console.log('BOT_A3_REAL_MAZE_BANK_SURVEY '+JSON.stringify(scout));
   }
   await page.close();
