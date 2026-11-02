@@ -46,3 +46,22 @@ The attack script uses instant perfect enemy coordinates for every currently vis
 A follow-on source commit `474ef3e649124a643eb198e2c1aaf5cf4d24521e` now reruns the same four seeded maps in three controller profiles: (1) no firing, (2) precise existing controller, and (3) conservative controller requiring 0.34s continuous visibility, 0.30s target-position sampling, up to 0.065rad deterministic aim imprecision and at least 0.78s between input FIRE pulses. Every profile uses the same movement route planner and unchanged game engine. Results are observational, not a claim of causal isolation if other game-wide pseudorandom inputs diverge. The exact-head GitHub run must finish before reporting these results as successful.
 
 No gameplay/Android asset changes; retain the parent stable/test build. If comparative results show unreasonable KOs, do not artificially nerf bots or grant player stats without physical owner feedback and further matched-seed evidence.
+
+## Matched three-profile first run — verified (pre-cooldown-reset)
+[All source and visual regression checks PASSED, GitHub Actions #41505975410](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41505975410), source `474ef3e649124a643eb198e2c1aaf5cf4d24521e`.
+
+| Input controller | Successful scenarios with pickup / 4 | Shots | KOs | Human captures | Deaths |
+|---|---:|---:|---:|---:|---:|
+| Unarmed | 3 | 0 | 0 | 5 | 8 |
+| Precise aiming | 2 | 76 | 53 | 4 | 2 |
+| Reaction-limited | 3 | 53 | 28 | 9 | 4 |
+
+Same four fixed seeds and movement goal logic, but this first paired script did not reset the preceding match's residual fire cooldown. Latest branch commit `521eb1541771481257529c80c3c4754bd1ae4d8b` explicitly resets it, matching `newMatch()`; **use that exact follow-up CI for any final A/B verdict**.
+
+### Immediate diagnostic flags
+- **Seed 102:** zero pickups and zero deaths for all three controllers; just 382–428 units of total human travel with 721–773 units remaining to the enemy flag. This is consistent with a noncombat movement/route obstruction in the scripted test, not evidence that bot weapons are too powerful. Instrument physical wall/actor proximity, selected grid waypoint, blocked movement attempts and stick/stall state next.
+- **Seed 101:** unarmed and conservative controllers each secured three captures; the precise controller stalled after ~190 units of movement. This suggests constant exact aim coupled to movement/turning can degrade navigation, rather than perfect aim necessarily improving match success.
+- **Seed 104:** precise controller achieved 44 KOs; conservative did 9 and unarmed zero. Do not set any official difficulty expectation or buffs from these scripted outcomes.
+- **Four seeds are far too few** for win-rate or balance inference. Results also reflect the input planner and controlled physics state; no owner Android validation.
+
+**Decision:** No AI damage, player hitbox, fire accuracy, ejection, respawn, map or vehicle spawn gameplay changes authorized by these observations. Run the corrected exact-head comparison; then create a single-purpose seed-102 bottleneck diagnostic with genuine collision and navigation traces before deciding to adjust production CTF.
