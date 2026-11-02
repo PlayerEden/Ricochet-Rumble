@@ -87,6 +87,52 @@ assert.equal(win.__test.combatColor(3),'#fc856e','all Red AI painted consistentl
 assert.equal(win.__test.opposingCount(0),2,'only red alive pilots appear in enemy HUD counter');
 assert.equal(node('score1').textContent,2,'team HUD excludes the allied bots');
 assert.equal(node('player1-label').textContent,'RED','HUD clearly shows the opposing team');
+
+ // Team-based physical collision: reproduce the narrow-corridor body block
+ // with real tankMove() and genuine teamOf() rules. Do not alter production
+ // physics, testing only in a controlled open maze cell, then restore state.
+ {
+  const game=st(),api=win.__test,units=game.tanks,backup=units.map(u=>({...u})),
+   savedTeam=game.config.teamMode,savedHumans=game.humanCount;
+  const grid=api.maze;
+  const site=Array.from({length:grid.rows*grid.cols},(_,n)=>({
+   x:((n%grid.cols)+.5)*grid.cell,
+   y:(Math.floor(n/grid.cols)+.5)*grid.cell
+  })).find(p=>!api.blocked(p.x,p.y,21)&&!api.blocked(p.x+40,p.y,21)&&
+   units.slice(1).every(t=>Math.hypot(t.x-p.x,t.y-p.y)>160));
+  assert.ok(site,'one clear walkable cell for friendly overlap tests');
+  const moveAgainst=(otherIndex,profile,ally)=> {
+   game.config.teamMode=profile;
+   game.humanCount=profile==='coop'?2:1;
+   units.forEach((t,i)=>Object.assign(t,backup[i]));
+   const p=units[0],other=units[otherIndex];
+   Object.assign(p,{x:site.x,y:site.y,a:0,vx:0,vy:0,onFoot:false});
+   Object.assign(other,{x:site.x+26,y:site.y,a:0,vx:0,vy:0,onFoot:false});
+   assert.equal(api.teamOf(0)===api.teamOf(otherIndex),ally,'fixture teammate identity');
+   const start=p.x;api.tankMove(p,{moveX:1,moveY:0},.12,0);
+   if(ally)assert.ok(p.x>start+12,'friendly tank is pass-through in '+profile);
+   else assert.ok(Math.abs(p.x-start)<.01,'enemy tank stays solid in '+profile);
+   Object.assign(p,{x:site.x,y:site.y,a:0,vx:0,vy:0,onFoot:true});
+   Object.assign(other,{x:site.x+26,y:site.y,a:0,vx:0,vy:0,onFoot:true});
+   const footStart=p.x;api.tankMove(p,{moveX:1,moveY:0},.12,0);
+   if(ally)assert.ok(p.x>footStart+12,'friendly pilot is pass-through in '+profile);
+   else assert.ok(Math.abs(p.x-footStart)<.01,'enemy pilot stays solid in '+profile);
+  };
+  try{
+   moveAgainst(2,'teams',true);
+   moveAgainst(1,'teams',false);
+   moveAgainst(1,'coop',true);
+   moveAgainst(2,'coop',false);
+   moveAgainst(2,'ffa',false);
+  }finally{
+   units.forEach((t,i)=>Object.assign(t,backup[i]));
+   game.config.teamMode=savedTeam;game.humanCount=savedHumans;
+  }
+  assert.ok(api.blocked(site.x+grid.cell/2,site.y,21)||api.blocked(
+   site.x-grid.cell/2,site.y,21),'maze walls remain solid independently of team physics');
+  console.log('PASS team pass-through: tank/pilot allied crossing, enemies solid, FFA intact, walls intact');
+ }
+
 const shooter=st().tanks[0];shooter.shield=0;
 assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),true);assert.equal(win.__test.shoot(0),false,'shell cap');
 assert.equal(win.__test.botInput(1,1/60).bot,true);
