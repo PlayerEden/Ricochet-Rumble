@@ -38,6 +38,8 @@ try{
    'existing brief coach is presented without a separate tutorial modal');
  assert.equal(await page.evaluate(()=>localStorage.getItem('rr-coach-fire-v0965-survival-release')),'1',
    'first-play hint records the updated release-to-fire instruction flag');
+ assert.equal(await page.evaluate(()=>localStorage.getItem('rr-coach-v0917')),'1',
+   'legacy Quick Play onboarding milestone remains marked after truthful coach');
  await page.locator('#menu-button').click();
  assert.equal(await page.locator('button[data-action="resume"]').isVisible(),true);
  await page.locator('button[data-action="close"]').click();

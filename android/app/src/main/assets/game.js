@@ -882,6 +882,11 @@ function firstMatchHint(){
    scoredVehicle?'DRAG FIRE TO AIM · RELEASE FOR ONE SHOT':
    'DRAG FIRE TO AIM · RELEASE TO SHOOT';
  try{
+  // Legacy flag is also the first-Quick-Play milestone: preserve it so
+  // returning players don't get forced into Solo Survival every launch.
+  // New hints still have their own per-control-scheme flags.
+  if(!cqc&&!scoredVehicle&&!window.localStorage?.getItem('rr-coach-v0917'))
+   window.localStorage?.setItem('rr-coach-v0917','1');
   if(window.localStorage?.getItem(key))return false;
   window.localStorage?.setItem(key,'1');
  }catch(_){}
