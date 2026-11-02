@@ -6,6 +6,7 @@ on:
       - 'web/**'
       - 'android/app/src/main/assets/**'
       - 'tests/smoke.mjs'
+      - 'tests/allied-aim-visual-qa.mjs'
       - '.github/workflows/allied-aim-b2.yml'
   workflow_dispatch:
 permissions:
