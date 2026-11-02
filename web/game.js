@@ -2160,7 +2160,7 @@ function traceProjectile(t,angle,options={}){
    if(firstBounceCount>=0)postBounce+=stepDistance;
    if(checkActors)for(let i=0;i<state.tanks.length;i++){
     const target=state.tanks[i];
-    if(state.lives[i]<=0||target.shield>0)continue;
+    if(state.lives[i]<=0||(i!==owner&&target.shield>0))continue;
     if(i===owner?!(b.age>.38&&b.bounces>0):owner>=0&&friendly(i,owner))continue;
     if((target.x-b.x)**2+(target.y-b.y)**2<projectileHitRadius(target,b)**2){
      hit=i;termination='actor';b.life=0;break;
