@@ -1230,6 +1230,43 @@ function chooseBotObjective(i,target,skill='normal',role='classic'){
  }
  return {kind:'engage',point:target};
 }
+// Solo bot perception: chase the last genuinely observed human position,
+// never continuously update pursuit to hidden coordinates behind solid cover.
+// CTF objective navigation and LAN host targeting retain their prior behavior.
+function soloBotPursuitPoint(i,target,brain,dt){
+ if(mode!=='solo'||isCtfMatch()||target!==state?.tanks?.[0])return target;
+ const bot=state.tanks[i];
+ const visible=Math.hypot(bot.x-target.x,bot.y-target.y)<385&&
+  hasLineOfSight(bot.x,bot.y,target.x,target.y)&&pilotBotFireFair(bot,target);
+ if(visible){
+  brain.lastSeenTarget=0;brain.lastSeenX=target.x;brain.lastSeenY=target.y;
+  brain.lastSeenTimer=1.8;brain.searchPoint=null;brain.searchHold=0;
+  return target;
+ }
+ brain.lastSeenTimer=Math.max(0,(brain.lastSeenTimer||0)-Math.max(0,dt));
+ if(brain.lastSeenTarget===0&&brain.lastSeenTimer>0&&
+    Number.isFinite(brain.lastSeenX)&&Number.isFinite(brain.lastSeenY))
+  return {x:brain.lastSeenX,y:brain.lastSeenY};
+ brain.searchHold=(brain.searchHold||0)-Math.max(0,dt);
+ if(!brain.searchPoint||brain.searchHold<=0||
+    Math.hypot(bot.x-brain.searchPoint.x,bot.y-brain.searchPoint.y)<24){
+  brain.searchLeg=(brain.searchLeg||0)+1;
+  if(mazeGrid){
+   const total=mazeGrid.cols*mazeGrid.rows;
+   const index=((state.mazeSeed>>>0)+Math.imul(i+3,37)+
+     Math.imul(brain.searchLeg,29))%total;
+   brain.searchPoint={x:((index%mazeGrid.cols)+.5)*mazeGrid.cell,
+    y:(Math.floor(index/mazeGrid.cols)+.5)*mazeGrid.cell};
+  }else{
+   const angle=((i*.619+brain.searchLeg*.381)%1)*Math.PI*2;
+   brain.searchPoint={
+    x:clamp(worldW/2+Math.cos(angle)*worldW*.31,42,worldW-42),
+    y:clamp(worldH/2+Math.sin(angle)*worldH*.31,42,worldH-42)};
+  }
+  brain.searchHold=4.5;
+ }
+ return brain.searchPoint;
+}
 function botInput(i,dt){
  const bot=state.tanks[i],enemies=state.tanks.map((t,j)=>({t,j})).filter(({j})=>j!==i&&state.lives[j]>0&&!friendly(i,j));
  if(!enemies.length&&!isCtfMatch()){
@@ -1246,9 +1283,10 @@ function botInput(i,dt){
  const target=priorityTarget?.t||enemies[0]?.t||state.forwardBays?.bays[1-teamOf(i)]||bot,
   rawSkill=state.config?.botSkill||'normal',skill=rawSkill==='varied'?'normal':rawSkill,role=botRoleFor(i);
  let brain=botBrains.get(i)||{timer:0,path:[],goal:-1,intent:'engage'};
+ const pursuitTarget=soloBotPursuitPoint(i,target,brain,dt);
  // CTF flag objectives replace the classic vehicle-recovery-first priority;
  // drivers may cross a maze in armor, but must exit to collect/return flags.
- const choice=ctfDecision||chooseBotObjective(i,target,skill,role);
+ const choice=ctfDecision||chooseBotObjective(i,pursuitTarget,skill,role);
  if(ctfDecision?.requiresPilot&&!bot.onFoot&&
   Math.hypot(bot.x-choice.point.x,bot.y-choice.point.y)<105&&
   hasLineOfSight(bot.x,bot.y,choice.point.x,choice.point.y))tryInteract(i);
@@ -1283,7 +1321,7 @@ function botInput(i,dt){
  }
  if(choice.kind==='recovery'&&Math.hypot(objective.x-bot.x,objective.y-bot.y)<58&&hasLineOfSight(bot.x,bot.y,objective.x,objective.y)){
   tryInteract(i);
-  if(!bot.onFoot){objective=target;}
+  if(!bot.onFoot){objective=pursuitTarget;}
  }
  let direction=Math.atan2(objective.y-bot.y,objective.x-bot.x);
  // Short local recovery when another actor or a narrow corner pins the bot.

@@ -1,7 +1,7 @@
 name: Sector Rebound - visible enemy aim readability QA
 on:
   push:
-    branches: [experiment/visible-bot-aim-telegraph-v1, experiment/combat-hud-shot-state-v1, experiment/combat-feedback-parity-v1]
+    branches: [experiment/visible-bot-aim-telegraph-v1, experiment/combat-hud-shot-state-v1, experiment/combat-feedback-parity-v1, experiment/solo-bot-last-seen-pursuit-v1]
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,6 +25,7 @@ jobs:
           node --check tests/bot-combat-cues-qa.mjs
           node --check tests/combat-hud-truth-qa.mjs
           node --check tests/combat-feedback-parity-qa.mjs
+          node --check tests/solo-bot-last-seen-qa.mjs
           node --check tests/pilot-release-aim-qa.mjs
           node tests/smoke.mjs
           node tests/save-backup.mjs
@@ -42,6 +43,7 @@ jobs:
           node tests/bot-combat-cues-qa.mjs
           node tests/combat-hud-truth-qa.mjs
           node tests/combat-feedback-parity-qa.mjs
+          node tests/solo-bot-last-seen-qa.mjs
           node tests/pilot-release-aim-qa.mjs
           VEHICLE_BALANCE_ENFORCE=1 node tests/team-vehicle-route-qa.mjs
           node tests/team-forward-bays-seed-matrix.mjs
@@ -65,6 +67,7 @@ jobs:
             qa-results/bot-combat-cues.json
             qa-results/combat-hud-truth.json
             qa-results/combat-feedback-parity.json
+            qa-results/solo-bot-last-seen.json
             qa-results/pilot-release-aim-qa.json
             qa-results/team-vehicle-route-audit.json
             qa-screens/
