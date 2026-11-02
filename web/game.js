@@ -915,7 +915,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  const fireCaption=document.getElementById('fire-mode');
  if(fireCaption)fireCaption.textContent=releasePilot?'DRAG / RELEASE':comfort.autoFire?'AUTO ON':'HOLD TO FIRE';
  const fireButton=document.querySelector('.fire-btn');
- if(fireButton)fireButton.setAttribute('aria-label',releasePilot?
+ if(fireButton&&typeof fireButton.setAttribute==='function')fireButton.setAttribute('aria-label',releasePilot?
   'Drag to preview pilot shot; release to fire once facing the chosen direction':'Hold to fire');
  const shellMeter=document.getElementById('shell-meter');if(shellMeter){const cap=activeBulletCap(state.tanks[me]),available=Math.max(0,cap-active);
  shellMeter.textContent=active>=cap?`0/${cap} IN FLIGHT`:`${available}/${cap} READY`;
