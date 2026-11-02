@@ -1530,7 +1530,7 @@ console.log('PASS pilot prototype visibility: label, arrow, shield and locator c
  node('bot-count').value='2';node('lives-choice').value='2';api.newMatch('solo');
  const live=st();assert.equal(live.config.botCount,2);
  live.lives[0]=0;live.lives[1]=0;live.lives[2]=1;
- live.winner=2;live.winnerTeam=0;live.event='TEAM BLUE WINS!';
+ live.winner=2;live.winnerTeam=api.teamOf(0);live.event='TEAM ALLIES WIN!';
  const result=api.finalizeRound();
  assert.equal(result.outcome,'victory','team victory counts even if human had died');
  assert.equal(result.livesRemaining,0,'team victory does not fake surviving personal lives');
