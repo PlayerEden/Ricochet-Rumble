@@ -1439,28 +1439,76 @@ function projectileHitRadius(target,bullet){
  // geometry, cover checks, shields and the other modes are unchanged.
  return (target.onFoot?(isScoredMatch()&&bullet.kind==='sidearm'?CQC_PILOT_HIT_RADIUS:14):26)+(bullet.kind==='mech'?5:0);
 }
-function shoot(owner){if(state.lives[owner]<=0)return false;
- const isFoot=isPilotMatch()&&state.tanks[owner].onFoot;
- const v=currentVehicle(state.tanks[owner]),def=vehicleDef(v);const cap=activeBulletCap(state.tanks[owner]);if(state.bullets.filter(b=>b.owner===owner&&b.life>0).length>=cap)return false;
- const t=state.tanks[owner],dx=Math.cos(t.a),dy=Math.sin(t.a);
- // Trace the visible weapon path, not the middle of the operator's head.
- // A muzzle too close to solid cover stops at the last unobstructed point,
- // preventing an offset pistol from firing through walls.
- let x=t.x+dx*(isFoot?7:12),y=t.y+dy*(isFoot?7:12);
- if(isFoot){
-  const muzzle=pilotMuzzlePoint(t);
+// A2: the authoritative shot and the preview use ONE muzzle definition.
+// No projectile is created or sent until shoot() has passed normal ammo gates.
+function projectileOrigin(t,angle,foot){
+ const dx=Math.cos(angle),dy=Math.sin(angle),radius=foot?3:5;
+ let x=t.x+dx*(foot?7:12),y=t.y+dy*(foot?7:12);
+ if(foot){
+  const muzzleX=t.x+dx*PILOT_MUZZLE_X-dy*PILOT_MUZZLE_Y,
+   muzzleY=t.y+dy*PILOT_MUZZLE_X+dx*PILOT_MUZZLE_Y;
   for(let k=1;k<=12;k++){
-   const bx=t.x+(muzzle.x-t.x)*k/12,by=t.y+(muzzle.y-t.y)*k/12;
-   if(blocked(bx,by,3))break;
+   const bx=t.x+(muzzleX-t.x)*k/12,by=t.y+(muzzleY-t.y)*k/12;
+   if(blocked(bx,by,radius))break;
    x=bx;y=by;
   }
  }else{
-  for(let distance=14;distance<=34;distance+=2){const bx=t.x+dx*distance,by=t.y+dy*distance;if(blocked(bx,by,5))break;x=bx;y=by;}
+  for(let d=14;d<=34;d+=2){const bx=t.x+dx*d,by=t.y+dy*d;
+   if(blocked(bx,by,radius))break;x=bx;y=by;}
  }
+ return {x,y};
+}
+function makeProjectile(t,owner,angle){
+ const foot=!!t.onFoot&&isPilotMatch(),v=currentVehicle(t),def=vehicleDef(v);
+ const start=projectileOrigin(t,angle,foot),dx=Math.cos(angle),dy=Math.sin(angle);
+ const speed=foot?475:def.projectileSpeed,baseLife=foot?.82:v?.type==='mech'?2.05:2.55;
+ const rapid=t.powerTimer>0&&t.powerType==='rapid';
+ return {x:start.x,y:start.y,vx:dx*speed,vy:dy*speed,owner,
+  life:rapid&&!foot?baseLife*.68:baseLife,bounces:0,age:0,
+  kind:foot?'sidearm':v?.type==='mech'?'mech':'shell'};
+}
+// The SAME microstep runs live projectiles and simulated dotted trajectories.
+// Optional effects are emitted ONLY by the live host stepping actual bullets.
+function advanceProjectileMicrostep(b,dt,onBounce=null){
+ const radius=b.kind==='sidearm'?3:5,nx=b.x+b.vx*dt,ny=b.y+b.vy*dt;
+ if(blocked(nx,b.y,radius)){
+  if(b.kind==='sidearm'){b.life=0;return;}
+  b.vx=-b.vx;b.bounces++;
+  if(onBounce)onBounce('wall',b.x,b.y,b);
+ }else b.x=nx;
+ if(blocked(b.x,ny,radius)){
+  if(b.kind==='sidearm'){b.life=0;return;}
+  b.vy=-b.vy;b.bounces++;
+  if(onBounce)onBounce('wall',b.x,b.y,b);
+ }else b.y=ny;
+ for(const bump of bumpers){const dx=b.x-bump.x,dy=b.y-bump.y,dist=Math.hypot(dx,dy);
+  if(dist>0&&dist<bump.r+6&&(b.bumpDelay||0)<=0){
+   const ux=dx/dist,uy=dy/dist,dot=b.vx*ux+b.vy*uy;
+   if(dot<0){b.vx-=2*dot*ux;b.vy-=2*dot*uy;
+    b.x=bump.x+ux*(bump.r+7);b.y=bump.y+uy*(bump.r+7);
+    b.bounces++;b.bumpDelay=.09;
+    if(onBounce)onBounce('bumper',b.x,b.y,b);
+   }
+  }
+ }
+ b.bumpDelay=Math.max(0,(b.bumpDelay||0)-dt);
+ if(b.bounces>(b.kind==='mech'?2:5))b.life=0;
+}
+function liveProjectileBounce(kind,x,y,b){
+ emitFx('bounce',x,y,kind==='bumper'?'#ffdf7b':combatColor(b.owner));
+ audioCue(kind==='bumper'?'bumper':'ricochet',x,y);
+}
+function shoot(owner){if(state.lives[owner]<=0)return false;
+ const t=state.tanks[owner],foot=t.onFoot&&isPilotMatch();
+ const v=currentVehicle(t),cap=activeBulletCap(t);
+ if(state.bullets.filter(b=>b.owner===owner&&b.life>0).length>=cap)return false;
+ const b=makeProjectile(t,owner,t.a);
  t.shield=0; // Shooting cancels spawn/ejection immunity.
- const speed=isFoot?475:def.projectileSpeed;const baselineLife=isFoot?.82:v?.type==='mech'?2.05:2.55;
- const rapid=t.powerTimer>0&&t.powerType==='rapid';const shellLife=rapid&&!isFoot?baselineLife*.68:baselineLife;
- state.bullets.push({x,y,vx:dx*speed,vy:dy*speed,owner,life:shellLife,bounces:0,age:0,kind:isFoot?'sidearm':v?.type==='mech'?'mech':'shell'});t.flash=.11;t.recoil=isFoot?.28:v?.type==='mech'?.56:.72;emitFx('shot',x,y,combatColor(owner),owner);audioCue(isFoot?'pilot-shot':v?.type==='mech'?'mech-shot':'tank-shot',x,y);refreshHUD();return true;}
+ state.bullets.push(b);t.flash=.11;t.recoil=foot?.28:v?.type==='mech'?.56:.72;
+ emitFx('shot',b.x,b.y,combatColor(owner),owner);
+ audioCue(foot?'pilot-shot':v?.type==='mech'?'mech-shot':'tank-shot',b.x,b.y);
+ refreshHUD();return true;
+}
 function respawn(victim){const enemies=state.tanks.filter((_,i)=>i!==victim&&state.lives[i]>0&&!friendly(victim,i));const spots=[];
  if(mazeGrid){for(let r=0;r<mazeGrid.rows;r++)for(let c=0;c<mazeGrid.cols;c++)spots.push([(c+.5)*mazeGrid.cell,(r+.5)*mazeGrid.cell]);}
  else spots.push(...[[130,300],[830,300],[130,100],[830,500],[480,96],[480,500],[130,480],[830,120],[340,70],[620,525]]);
@@ -1629,16 +1677,21 @@ function step(dt){if(paused||state.winner>=0)return;
   if(releaseReady){if(i===0)releaseShot=null;else remoteReleaseShot=null;}
  }
 }
- for(const b of state.bullets){b.age+=dt;b.life-=dt;const substeps=Math.max(1,Math.ceil(Math.max(Math.abs(b.vx),Math.abs(b.vy))*dt/5)),subDt=dt/substeps;
- for(let j=0;j<substeps&&b.life>0&&state.winner<0;j++){const nx=b.x+b.vx*subDt,ny=b.y+b.vy*subDt;
- if(blocked(nx,b.y,b.kind==='sidearm'?3:5)){if(b.kind==='sidearm'){b.life=0;break}b.vx=-b.vx;b.bounces++;emitFx('bounce',b.x,b.y,combatColor(b.owner));audioCue('ricochet',b.x,b.y)}else b.x=nx;
- if(blocked(b.x,ny,b.kind==='sidearm'?3:5)){if(b.kind==='sidearm'){b.life=0;break}b.vy=-b.vy;b.bounces++;emitFx('bounce',b.x,b.y,combatColor(b.owner));audioCue('ricochet',b.x,b.y)}else b.y=ny;
- for(const bump of bumpers){const dx=b.x-bump.x,dy=b.y-bump.y,dist=Math.hypot(dx,dy);if(dist>0&&dist<bump.r+6&&(b.bumpDelay||0)<=0){const ux=dx/dist,uy=dy/dist,dot=b.vx*ux+b.vy*uy;if(dot<0){b.vx-=2*dot*ux;b.vy-=2*dot*uy;b.x=bump.x+ux*(bump.r+7);b.y=bump.y+uy*(bump.r+7);b.bounces++;b.bumpDelay=.09;emitFx('bounce',b.x,b.y,'#ffdf7b');audioCue('bumper',b.x,b.y)}}}
- b.bumpDelay=Math.max(0,(b.bumpDelay||0)-subDt);if(b.bounces>(b.kind==='mech'?2:5)){b.life=0;break}
- // Unoccupied vehicle bays are non-solid training projections. Projectiles
- // pass through as well; only a piloted vehicle has physical armor.
- if(b.life<=0)break;
- for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]>0&&(i===b.owner?(b.age>.38&&b.bounces>0):!friendly(i,b.owner))&&t.shield<=0&&(t.x-b.x)**2+(t.y-b.y)**2<projectileHitRadius(t,b)**2){b.life=0;registerHit(b.owner,i);break}}}}
+ for(const b of state.bullets){b.age+=dt;b.life-=dt;
+ const steps=Math.max(1,Math.ceil(Math.max(Math.abs(b.vx),Math.abs(b.vy))*dt/5)),subDt=dt/steps;
+ for(let j=0;j<steps&&b.life>0&&state.winner<0;j++){
+  advanceProjectileMicrostep(b,subDt,liveProjectileBounce);
+  // Empty parked vehicles remain non-cover. Actual projectile hit rules are
+  // authoritative; the trace may only inspect a static snapshot of them.
+  if(b.life<=0)break;
+  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];
+   if(state.lives[i]>0&&(i===b.owner?(b.age>.38&&b.bounces>0):!friendly(i,b.owner))&&
+    t.shield<=0&&(t.x-b.x)**2+(t.y-b.y)**2<projectileHitRadius(t,b)**2){
+    b.life=0;registerHit(b.owner,i);break;
+   }
+  }
+ }
+}
  state.bullets=state.bullets.filter(b=>b.life>0);
  if(isCtfMatch()&&state.winner<0){
   applyCtf(window.SectorFlags.tick(state.ctf,ctfActors(),dt));
@@ -2075,53 +2128,58 @@ function unitTargetZoom(t){
 function cameraZoom(t=state?.tanks?.[mode==='guest'?1:0]){
  return mazeGrid?Math.max(unitTargetZoom(t),W/(worldW+CAMERA_APRON*2),H/(worldH+CAMERA_APRON*2)):1;
 }
-// Uses the real muzzle and x-then-y wall/bounce logic, but deliberately
-// shows only ONE reflected segment, not a solved full-map trick shot.
-function previewTrajectory(t,angle){
- const foot=t.onFoot&&isPilotMatch(),radius=foot?3:5,dx=Math.cos(angle),dy=Math.sin(angle);
- let x=t.x+dx*(foot?7:12),y=t.y+dy*(foot?7:12);
- if(foot){
-  const mx=t.x+dx*PILOT_MUZZLE_X-dy*PILOT_MUZZLE_Y,
-   my=t.y+dy*PILOT_MUZZLE_X+dx*PILOT_MUZZLE_Y;
-  for(let k=1;k<=12;k++){
-   const bx=t.x+(mx-t.x)*k/12,by=t.y+(my-t.y)*k/12;
-   if(blocked(bx,by,3))break;x=bx;y=by;
-  }
- }else for(let d=14;d<=34;d+=2){
-  const bx=t.x+dx*d,by=t.y+dy*d;
-  if(blocked(bx,by,5))break;x=bx;y=by;
- }
- let vx=dx,vy=dy,after=0,bounce=null,bumpDelay=0;
- const segments=[[{x,y}]],distance=foot?245:520,inc=4,
-  speed=foot?475:vehicleDef(currentVehicle(t)).projectileSpeed;
- for(let k=0;k<Math.ceil(distance/inc);k++){
-  const nx=x+vx*inc,ny=y+vy*inc;
-  const hitX=blocked(nx,y,radius),hitY=blocked(x,ny,radius);
-  if(hitX||hitY){
-   if(foot||bounce)break;
-   if(hitX)vx=-vx;else x=nx;
-   if(hitY)vy=-vy;else y=ny;
-   bounce={x,y};segments.push([{x,y}]);continue;
-  }
-  x=nx;y=ny;let bumped=false;
-  if(!foot)for(const bump of bumpers){
-   const bx=x-bump.x,by=y-bump.y,d=Math.hypot(bx,by);
-   if(d>0&&d<bump.r+6&&bumpDelay<=0){
-    const ux=bx/d,uy=by/d,dot=vx*ux+vy*uy;
-    if(dot<0){
-     vx-=2*dot*ux;vy-=2*dot*uy;
-     const len=Math.hypot(vx,vy);vx/=len;vy/=len;
-     x=bump.x+ux*(bump.r+7);y=bump.y+uy*(bump.r+7);
-     bumped=true;bumpDelay=.09;break;
+// A2: deterministic static-world shot prediction through the identical
+// muzzle/microstep used by live bullets. No effects, damage or state mutation.
+// Bounded by projectile lifetime and optional UI range; target checks are
+// opt-in and use current (not future) actor positions. AI integration is A3.
+function traceProjectile(t,angle,options={}){
+ const owner=state.tanks.indexOf(t),b=makeProjectile(t,owner,angle),foot=b.kind==='sidearm';
+ const maxDistance=Number.isFinite(options.maxDistance)?clamp(options.maxDistance,0,1300):1300;
+ const afterBounce=Number.isFinite(options.afterBounce)?clamp(options.afterBounce,0,1300):1300;
+ const maxBounces=Number.isInteger(options.maxBounces)?clamp(options.maxBounces,0,6):6;
+ const checkActors=options.checkActors===true;
+ const segments=[[{x:b.x,y:b.y}]];let distance=0,postBounce=0,bounce=null,hit=null;
+ let firstBounceCount=-1,termination='lifetime';
+ const maxFrames=Math.ceil(b.life/STEP)+1;
+ for(let frame=0;frame<maxFrames&&b.life>0;frame++){
+  b.age+=STEP;b.life-=STEP;
+  const substeps=Math.max(1,Math.ceil(Math.max(Math.abs(b.vx),Math.abs(b.vy))*STEP/5)),subDt=STEP/substeps;
+  for(let j=0;j<substeps&&b.life>0;j++){
+   const px=b.x,py=b.y,before=b.bounces;
+   advanceProjectileMicrostep(b,subDt);
+   if(b.life<=0){termination=foot?'wall':'bounce_limit';break;}
+   const stepDistance=Math.hypot(b.x-px,b.y-py);
+   distance+=stepDistance;
+   if(b.bounces>before){
+    if(!bounce)bounce={x:b.x,y:b.y};
+    if(firstBounceCount<0)firstBounceCount=b.bounces;
+    if(b.bounces>maxBounces){termination='bounce_window';b.life=0;break;}
+    segments[segments.length-1].push({x:b.x,y:b.y});
+    segments.push([{x:b.x,y:b.y}]);
+   }else segments[segments.length-1].push({x:b.x,y:b.y});
+   if(firstBounceCount>=0)postBounce+=stepDistance;
+   if(checkActors)for(let i=0;i<state.tanks.length;i++){
+    const target=state.tanks[i];
+    if(state.lives[i]<=0||target.shield>0)continue;
+    if(i===owner?!(b.age>.38&&b.bounces>0):owner>=0&&friendly(i,owner))continue;
+    if((target.x-b.x)**2+(target.y-b.y)**2<projectileHitRadius(target,b)**2){
+     hit=i;termination='actor';b.life=0;break;
     }
    }
+   if(b.life<=0)break;
+   if(distance>=maxDistance||postBounce>=afterBounce&&firstBounceCount>=0){
+    termination='hint_range';b.life=0;break;
+   }
   }
-  bumpDelay=Math.max(0,bumpDelay-inc/Math.max(1,speed));
-  segments[segments.length-1].push({x,y});
-  if(bumped){if(bounce)break;bounce={x,y};segments.push([{x,y}]);}
-  if(bounce&&(after+=inc)>=235)break;
  }
- return {segments,bounce,foot};
+ return {segments,bounce,foot,hit,bounces:b.bounces,termination,
+  distance,projectileKind:b.kind};
+}
+// Preserve the intentionally modest local dotted-line visual: first ricochet
+// and a short continuation, even though the shared evaluator can trace more.
+function previewTrajectory(t,angle){
+ return traceProjectile(t,angle,{maxDistance:t.onFoot?245:520,
+  maxBounces:1,afterBounce:235,checkActors:false});
 }
 function drawTrajectoryPreview(c,t,angle){
  const path=previewTrajectory(t,angle),color=path.foot?'#b4ffe0':'#b5e6ff';
