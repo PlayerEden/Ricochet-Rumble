@@ -14,7 +14,7 @@ function hooks(){
    localStorage.clear();
    mode='solo';paused=false;connected=false;menu.classList.add('hidden');
    const scored=id!=='survival_ffa';
-   state=initialState(0,{...selectedRules,matchModeId:id,pilotMode:true,botCount:2,
+   state=initialState(0,{...selectedRules,matchModeId:id,pilotMode:true,botCount:id==='scored_tdm'?3:2,
     mapSize:'small',teamMode:id==='scored_tdm'?'teams':'ffa'},203);
    state.winner=-1;state.lives[0]=3;state.lives[1]=3;
    comfort.autoFire=scheme==='auto';comfort.releaseFire=scheme==='release';
