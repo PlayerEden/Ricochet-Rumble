@@ -458,7 +458,7 @@ const LAN_GUEST_INPUT_TIMEOUT=.4;
 let guestInputAge=Infinity;
 function neutralizeGuestInput(){
  guestInput={moveX:0,moveY:0,fire:false};
- guestInputAge=Infinity;
+ guestInputAge=Infinity;remoteReleaseShot=null;
 }
 // Host-authoritative LAN pilot input. Explicit axes are accepted only as a
 // finite unit vector; malformed/partial aim can NEVER cause NaN rotation.
@@ -1496,610 +1496,29 @@ function step(dt){if(paused||state.winner>=0)return;
  state.vehicleDropTimer=(state.vehicleDropTimer??28)-dt;
  if(!isCqcMatch()&&state.vehicleDropTimer<=0){deployVehicle();state.vehicleDropTimer=30+mazeRandom(deploymentSeed(state.mazeSeed,state.dropIndex+9))()*12;}
  if(!isCqcMatch()&&state.pickupTimer<=0){if(state.pickups.length)state.pickups=[];spawnPickup();state.pickupTimer=state.pickups.length?13:3;}
- const inputs=state.tanks.map((t,i)=>i===0?makeControl(true):i===1&&mode==='duel'?makeControl(false):i===1&&mode==='host'?guestInput:botInput(i,dt));
+ const inputs=state.tanks.map((t,i)=>i===0?makeControl(true):i===1&&mode==='duel'?makeControl(false):i===1&&mode==='host'?{...guestInput}:botInput(i,dt));
+ if(mode==='host'&&remoteReleaseShot&&state.matchId===remoteReleaseShot.matchId){
+  inputs[1].aimX=remoteReleaseShot.x;inputs[1].aimY=remoteReleaseShot.y;
+ }
+ if(remoteReleaseShot&&(!connected||mode!=='host'||remoteReleaseShot.matchId!==state.matchId||
+  state.lives[1]<=0||paused||(remoteReleaseShot.ttl-=dt)<=0))remoteReleaseShot=null;
  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]<=0)continue;
  t.powerTimer=Math.max(0,(t.powerTimer||0)-dt);if(t.powerTimer<=0)t.powerType=null;t.flash=Math.max(0,(t.flash||0)-dt);t.recoil=Math.max(0,(t.recoil||0)-dt*6);t.ejectAnim=Math.max(0,(t.ejectAnim||0)-dt);
  t.shield=Math.max(0,t.shield-dt);tankMove(t,inputs[i],dt,i);
  for(const p of state.pickups){if(Math.hypot(t.x-p.x,t.y-p.y)<(t.onFoot?23:35)&&collectPickup(t,i,p))break}
  fireCooldown[i]=Math.max(0,(fireCooldown[i]||0)-dt);
- // Wait for the same 6.5rad/s physical turn before releasing the shot.
+ // Execute exactly one shot after physically rotating to the target.
+ const queued=i===0&&mode!=='guest'?releaseShot:i===1&&mode==='host'?remoteReleaseShot:null;
  let releaseReady=false;
- if(i===0&&releaseShot&&pilotReleaseMode()&&releaseShot.matchId===state.matchId){
-  const angle=Math.atan2(releaseShot.y,releaseShot.x);
-  const difference=Math.atan2(Math.sin(angle-t.a),Math.cos(angle-t.a));
-  releaseReady=Math.abs(difference)<.10&&fireCooldown[i]<=0;
+ if(queued&&queued.matchId===state.matchId&&state.lives[i]>0){
+  const angle=Math.atan2(queued.y,queued.x),
+   diff=Math.atan2(Math.sin(angle-t.a),Math.cos(angle-t.a));
+  releaseReady=Math.abs(diff)<.095&&fireCooldown[i]<=0;
  }
  if((inputs[i]?.fire||releaseReady)&&fireCooldown[i]<=0&&shoot(i)){
-  fireCooldown[i]=fireInterval(t);if(releaseReady)releaseShot=null;
+  fireCooldown[i]=fireInterval(t);
+  if(releaseReady){if(i===0)releaseShot=null;else remoteReleaseShot=null;}
  }
-}
- for(const b of state.bullets){b.age+=dt;b.life-=dt;const substeps=Math.max(1,Math.ceil(Math.max(Math.abs(b.vx),Math.abs(b.vy))*dt/5)),subDt=dt/substeps;
- for(let j=0;j<substeps&&b.life>0&&state.winner<0;j++){const nx=b.x+b.vx*subDt,ny=b.y+b.vy*subDt;
- if(blocked(nx,b.y,b.kind==='sidearm'?3:5)){if(b.kind==='sidearm'){b.life=0;break}b.vx=-b.vx;b.bounces++;emitFx('bounce',b.x,b.y,combatColor(b.owner));audioCue('ricochet',b.x,b.y)}else b.x=nx;
- if(blocked(b.x,ny,b.kind==='sidearm'?3:5)){if(b.kind==='sidearm'){b.life=0;break}b.vy=-b.vy;b.bounces++;emitFx('bounce',b.x,b.y,combatColor(b.owner));audioCue('ricochet',b.x,b.y)}else b.y=ny;
- for(const bump of bumpers){const dx=b.x-bump.x,dy=b.y-bump.y,dist=Math.hypot(dx,dy);if(dist>0&&dist<bump.r+6&&(b.bumpDelay||0)<=0){const ux=dx/dist,uy=dy/dist,dot=b.vx*ux+b.vy*uy;if(dot<0){b.vx-=2*dot*ux;b.vy-=2*dot*uy;b.x=bump.x+ux*(bump.r+7);b.y=bump.y+uy*(bump.r+7);b.bounces++;b.bumpDelay=.09;emitFx('bounce',b.x,b.y,'#ffdf7b');audioCue('bumper',b.x,b.y)}}}
- b.bumpDelay=Math.max(0,(b.bumpDelay||0)-subDt);if(b.bounces>(b.kind==='mech'?2:5)){b.life=0;break}
- // Unoccupied vehicle bays are non-solid training projections. Projectiles
- // pass through as well; only a piloted vehicle has physical armor.
- if(b.life<=0)break;
- for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]>0&&(i===b.owner?(b.age>.38&&b.bounces>0):!friendly(i,b.owner))&&t.shield<=0&&(t.x-b.x)**2+(t.y-b.y)**2<projectileHitRadius(t,b)**2){b.life=0;registerHit(b.owner,i);break}}}}
- state.bullets=state.bullets.filter(b=>b.life>0);
- if(isCtfMatch()&&state.winner<0){
-  applyCtf(window.SectorFlags.tick(state.ctf,ctfActors(),dt));
-  finishCtf();
- }
-}
-// Offline synthesized FIELDGRID audio. No downloaded samples or backing music.
-// One shared AudioContext, short tails and a ricochet throttle protect phone CPU.
-const AUDIO_CUES={
- 'tank-shot':{wave:'sawtooth',start:137,end:67,duration:.13,gain:.035},
- 'mech-shot':{wave:'sawtooth',start:94,end:43,duration:.19,gain:.038},
- 'pilot-shot':{wave:'square',start:510,end:190,duration:.075,gain:.019},
- 'ricochet':{wave:'triangle',start:820,end:490,duration:.052,gain:.012,minGap:75},
- 'bumper':{wave:'triangle',start:1050,end:650,duration:.086,gain:.018,minGap:95},
- 'armor-hit':{wave:'sawtooth',start:215,end:76,duration:.19,gain:.039},
- 'pilot-hit':{wave:'triangle',start:180,end:49,duration:.25,gain:.035},
- 'eject':{wave:'sawtooth',start:380,end:95,duration:.32,gain:.037},
- 'barrier':{wave:'triangle',start:640,end:1070,duration:.14,gain:.020},
- 'pickup':{wave:'sine',start:420,end:920,duration:.15,gain:.020},
- 'victory':{wave:'triangle',start:390,end:550,duration:.18,gain:.021},
- 'defeat':{wave:'triangle',start:240,end:85,duration:.25,gain:.022},
- // Deliberately quiet, short UI tones; existing SOUND FX preference governs them.
- 'ui-select':{wave:'sine',start:540,end:660,duration:.055,gain:.008,minGap:55},
- 'ui-back':{wave:'sine',start:480,end:360,duration:.065,gain:.007,minGap:55},
- 'deploy':{wave:'triangle',start:330,end:495,duration:.14,gain:.015,minGap:150}
-};
-// v0.9.21 original offline procedural music: same Web Audio context as SFX.
-// This is a tiny, consciously composed four-bar tonal pattern, not a copy
-// or a streaming track. Audio starts only after a real player gesture.
-let musicGesture=false,musicNext=0,musicStep=0,musicScene='';
-function armMusic(){
- musicGesture=true;
- if(!comfort.music)return;
- try{
-  const AC=window.AudioContext||window.webkitAudioContext;
-  if(!AC)return;
-  if(!window.rrAudio)window.rrAudio=new AC();
-  if(window.rrAudio.state==='suspended')window.rrAudio.resume();
- }catch(_){}
-}
-document.addEventListener('pointerdown',armMusic,{passive:true});
-function updateMusic(){
- if(!musicGesture||!comfort.music||document.hidden)return;
- const scene=(mode==='idle' || !menu.classList.contains('hidden'))?'menu':(!paused&&state?.winner<0?'combat':null);
- if(!scene)return;
- const ac=window.rrAudio;
- if(!ac||ac.state!=='running')return;
- if(musicScene!==scene){musicScene=scene;musicStep=0;musicNext=ac.currentTime+.035;}
- const beat=60/(scene==='menu'?96:116)/2; // steady quiet eighth notes
- const notes=[130.81,155.56,196.0,233.08,174.61,196.0,155.56,116.54];
- // Schedule only a short horizon; browser lifecycle/pause must stop cleanly.
- if(musicNext<ac.currentTime-.2)musicNext=ac.currentTime+.03;
- let scheduled=0;
- while(musicNext<ac.currentTime+.10&&scheduled++<2){
-  const k=musicStep%16,at=musicNext;
-  const pitch=notes[(Math.floor(k/2)+Math.floor(musicStep/16))%notes.length];
-  if(k%2===0){
-   const o=ac.createOscillator(),g=ac.createGain();
-   o.type='triangle';o.frequency.setValueAtTime(pitch/2,at);
-   g.gain.setValueAtTime(.0001,at);
-   g.gain.linearRampToValueAtTime(scene==='menu'?.005:.004,at+.025);
-   g.gain.exponentialRampToValueAtTime(.0001,at+beat*.88);
-   o.connect(g).connect(ac.destination);o.start(at);o.stop(at+beat*.90);
-  }
-  if((scene==='combat'&&k%4===2)||(scene==='menu'&&k===6)){
-   const o=ac.createOscillator(),g=ac.createGain();
-   o.type='sine';o.frequency.setValueAtTime(pitch*2,at);
-   g.gain.setValueAtTime(.0001,at);
-   g.gain.linearRampToValueAtTime(.0025,at+.012);
-   g.gain.exponentialRampToValueAtTime(.0001,at+beat*.3);
-   o.connect(g).connect(ac.destination);o.start(at);o.stop(at+beat*.32);
-  }
-  musicNext+=beat;musicStep++;
- }
-}
-
-const lastAudioCue=new Map();
-function audioCue(kind,x=null,y=null){
- if(!comfort.sound)return false;
- const cue=AUDIO_CUES[kind];if(!cue)return false;
- const now=performance.now();
- if(now-(lastAudioCue.get(kind)??-1e9)<(cue.minGap||0))return false;
- try{
-  const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;
-  if(!window.rrAudio)window.rrAudio=new AC();
-  const ac=window.rrAudio;if(ac.state==='suspended')ac.resume();
-  const me=state?.tanks?.[mode==='guest'?1:0],distance=Number.isFinite(x)&&Number.isFinite(y)&&me?Math.hypot(x-me.x,y-me.y):0;
-  const falloff=Math.max(.09,1-distance/1000),t=ac.currentTime;
-  function tone(start,end,delay=0,vol=1,duration=cue.duration){
-   const oscillator=ac.createOscillator(),gain=ac.createGain();
-   oscillator.type=cue.wave;
-   oscillator.frequency.setValueAtTime(Math.max(30,start),t+delay);
-   oscillator.frequency.exponentialRampToValueAtTime(Math.max(30,end),t+delay+duration);
-   const level=Math.max(.0002,cue.gain*falloff*vol);
-   gain.gain.setValueAtTime(.0001,t+delay);
-   gain.gain.linearRampToValueAtTime(level,t+delay+.009);
-   gain.gain.exponentialRampToValueAtTime(.0001,t+delay+duration);
-   oscillator.connect(gain).connect(ac.destination);
-   oscillator.start(t+delay);oscillator.stop(t+delay+duration+.008);
-  }
-  tone(cue.start,cue.end);
-  if(kind==='victory'){tone(490,680,.14,.67,.17);tone(620,940,.27,.55,.20)}
-  if(kind==='defeat')tone(170,60,.13,.65,.21);
-  lastAudioCue.set(kind,now);
-  return true;
- }catch(_){return false;}
-}
-// In-match audio controls share existing persisted preferences.
-function pauseAudioControls(){
- return '<div class="pause-audio" role="group" aria-label="In-match audio controls"><span class="pause-audio-label">AUDIO</span>'+
-  '<button type="button" data-action="toggle-sound" aria-pressed="'+comfort.sound+'">SFX · '+(comfort.sound?'ON':'OFF')+'</button>'+
-  '<button type="button" data-action="toggle-music" aria-pressed="'+comfort.music+'">MUSIC · '+(comfort.music?'ON':'OFF')+'</button></div>';
-}
-function togglePauseAudio(setting,button){
- if(setting!=='sound'&&setting!=='music')return false;
- comfort[setting]=!comfort[setting];
- savePrefs();
- if(button){button.textContent=(setting==='sound'?'SFX':'MUSIC')+' · '+(comfort[setting]?'ON':'OFF');button.setAttribute?.('aria-pressed',String(comfort[setting]));}
- if(setting==='music'){musicScene='';if(comfort.music)armMusic();}
- else if(comfort.sound)audioCue('ui-select');
- return comfort[setting];
-}
-function updateVisuals(dt){visualClock+=dt;if(coachRemaining>0){coachRemaining=Math.max(0,coachRemaining-dt);if(coachRemaining===0)document.getElementById('field-coach')?.classList.add('hidden');}screenKick=Math.max(0,screenKick-dt*22);damagePulse=Math.max(0,damagePulse-dt*1.65);for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.max(0,1-dt*3);p.vy*=Math.max(0,1-dt*3)}particles=particles.filter(p=>p.life>0)}
-
-
- // LAB E. Gameplay-only materials, separate from pilot dossier portraits or shop.
- // A skin ID changes three flat paint planes, never gameplay or team ownership.
- // Null armor/trim means: preserve existing per-player painted vehicle color.
-// Four free OFFLINE starter materials. No commerce or network entitlement.
-const HANGAR_KEY='rr-hangar-paint-v1';
-const OPERATOR_EMBLEMS=Object.freeze({
- 'mark.field':{label:'FIELD',glyph:'◇'},
- 'mark.vector':{label:'VECTOR',glyph:'△',metric:'matches',target:3},
- 'mark.ace':{label:'ACE',glyph:'✦',metric:'kos',target:10},
- 'mark.command':{label:'COMMAND',glyph:'◆',metric:'wins',target:12}
-});
-let equippedEmblem='mark.field';
-function emblemProgress(id,info=currentDossier()){
- const def=Object.prototype.hasOwnProperty.call(OPERATOR_EMBLEMS,id)?OPERATOR_EMBLEMS[id]:null;
- if(!def)return {eligible:false,current:0,target:0,metric:'unknown'};
- if(!def.metric)return {eligible:true,current:0,target:0,metric:'free'};
- const current=Number.isSafeInteger(info?.[def.metric])&&info[def.metric]>=0?info[def.metric]:0;
- return {eligible:current>=def.target,current,target:def.target,metric:def.metric};
-}
-const HANGAR_PAINTS=Object.freeze({
- 'fieldgrid.standard':{label:'STANDARD'},
- 'fieldgrid.moss':{label:'MOSS'},
- 'fieldgrid.dune':{label:'DUNE'},
- 'fieldgrid.oxide':{label:'OXIDE'},
- 'fieldgrid.vanguard':{label:'VANGUARD',metric:'matches',target:5},
- 'fieldgrid.veteran':{label:'VETERAN',metric:'wins',target:12}
-});
-let equippedPaint='fieldgrid.standard';
-function paintProgress(id,info=currentDossier()){
- const def=Object.prototype.hasOwnProperty.call(HANGAR_PAINTS,id)?HANGAR_PAINTS[id]:null;
- if(!def)return {eligible:false,current:0,target:0,metric:'unknown'};
- if(!def.metric)return {eligible:true,current:0,target:0,metric:'free'};
- const current=Number.isSafeInteger(info?.[def.metric])&&info[def.metric]>=0?info[def.metric]:0;
- return {eligible:current>=def.target,current,target:def.target,metric:def.metric};
-}
-// Reward notices only reflect thresholds crossed by one successfully saved Solo match.
-function unlocksFromResult(before,after){
- if(!before||!after)return [];
- const unlocked=[];
- for(const [id,def] of Object.entries(HANGAR_PAINTS))
-  if(def.metric&&!paintProgress(id,before).eligible&&paintProgress(id,after).eligible)unlocked.push(def.label+' PAINT');
- for(const [id,def] of Object.entries(OPERATOR_EMBLEMS))
-  if(def.metric&&!emblemProgress(id,before).eligible&&emblemProgress(id,after).eligible)unlocked.push(def.glyph+' '+def.label+' INSIGNIA');
- return unlocked;
-}
-function normalizePaint(id){return paintProgress(id).eligible?id:'fieldgrid.standard';}
-function normalizeEmblem(id){return emblemProgress(id).eligible?id:'mark.field';}
-// Keep v1 backward compatible: legacy paint-only files remain valid and
-// retain their exact old JSON shape until an operator chooses an emblem.
-function hangarRecord(paint,emblem){
- const data={version:1,equipped:paint};
- if(emblem!=='mark.field')data.emblem=emblem;
- return JSON.stringify(data);
-}
-function saveHangar(paint,emblem){
- const data=hangarRecord(paint,emblem);
- try{window.localStorage?.setItem(HANGAR_KEY,data);
-  if(window.localStorage?.getItem(HANGAR_KEY)!==data)return false;
- }catch(_){return false;}
- equippedPaint=paint;equippedEmblem=emblem;return true;
-}
-function loadPaint(){
- equippedPaint='fieldgrid.standard';equippedEmblem='mark.field';
- try{const raw=JSON.parse(window.localStorage?.getItem(HANGAR_KEY)||'null');
-  if(raw?.version===1){equippedPaint=normalizePaint(raw.equipped);equippedEmblem=normalizeEmblem(raw.emblem||'mark.field');}
- }catch(_){}
- return equippedPaint;
-}
-function equipPaint(id){
- if(!paintProgress(id).eligible)return false;
- return saveHangar(id,equippedEmblem);
-}
-function equipEmblem(id){
- if(!emblemProgress(id).eligible)return false;
- return saveHangar(equippedPaint,id);
-}
-const FIELDGRID_UNIT_SKINS=Object.freeze({
- 'fieldgrid.standard':{
-  pilot:{armor:'#607a85',shadow:'#294650',light:'#9fb7bc',trim:'#78949b'},
-  tank:{armor:null,shadow:'#193845',light:'#bfe3e6',trim:null},
-  mech:{armor:null,shadow:'#243d55',light:'#e5e5ff',trim:null}},
- 'fieldgrid.moss':{
-  pilot:{armor:'#71866f',shadow:'#354b3f',light:'#b5c6a0',trim:'#98ad7c'},
-  tank:{armor:'#759376',shadow:'#354e42',light:'#c6d9ad',trim:'#93b58f'},
-  mech:{armor:'#779480',shadow:'#3a5145',light:'#c2d3ae',trim:'#93ae96'}},
- 'fieldgrid.dune':{
-  pilot:{armor:'#b49c74',shadow:'#5e5142',light:'#ead8aa',trim:'#d2b788'},
-  tank:{armor:'#c0a675',shadow:'#5c4f40',light:'#f0dfb0',trim:'#d5be89'},
-  mech:{armor:'#b6a27f',shadow:'#615548',light:'#f0e0bd',trim:'#d3c398'}},
- 'fieldgrid.oxide':{
-  pilot:{armor:'#9e6858',shadow:'#512f31',light:'#d9a18c',trim:'#bf795f'},
-  tank:{armor:'#a66d5b',shadow:'#573637',light:'#e5b5a2',trim:'#c4836f'},
-  mech:{armor:'#a46c64',shadow:'#573940',light:'#dfaaa1',trim:'#be8479'}},
- 'fieldgrid.vanguard':{
-  pilot:{armor:'#648f9d',shadow:'#253f4d',light:'#a5cbd1',trim:'#80b5bd'},
-  tank:{armor:'#5d8899',shadow:'#254454',light:'#afd5db',trim:'#78aebe'},
-  mech:{armor:'#688c9d',shadow:'#2b4359',light:'#b9d4e1',trim:'#80acbb'}},
- 'fieldgrid.veteran':{
-  pilot:{armor:'#9e9070',shadow:'#514a3b',light:'#dbcaa0',trim:'#d1b873'},
-  tank:{armor:'#9a8b67',shadow:'#4b4639',light:'#e0d5ac',trim:'#c0a468'},
-  mech:{armor:'#a09470',shadow:'#534a3d',light:'#dfd1a6',trim:'#c4af77'}}
-});
-function resolveUnitMaterials(unit,teamPaint,skinId='fieldgrid.standard'){
- const preset=FIELDGRID_UNIT_SKINS[skinId]||FIELDGRID_UNIT_SKINS['fieldgrid.standard'];
- const role=preset[unit]||preset.pilot;
- return {armor:role.armor||teamPaint,shadow:role.shadow,light:role.light,
-         trim:role.trim||teamPaint,team:teamPaint};
-}
-
-function drawTopTank(c,paint,parked=false,trackLeft=0,trackRight=0,recoil=0,suspension=0,skinId='fieldgrid.standard'){
- const skin=resolveUnitMaterials('tank',paint,skinId);
- // Art contract v0.9.6: vehicle local +X is FORWARD (toward the barrel).
- // Tracks run parallel to +X at BOTH sides of the hull. Mirror them from
- // one geometry definition, never draw the right tread with separate offsets.
- c.save();c.translate(-2.2*recoil,Math.sin((trackLeft+trackRight)*.35)*suspension*.35);c.lineJoin='miter';c.lineWidth=2;c.strokeStyle='#071820';
- for(const side of [-1,1]){
-   c.save();c.scale(1,side);
-   // Road track and six identically-spaced treads: all seams are perpendicular to travel.
-   c.fillStyle='#091b25';c.fillRect(-27,15,54,12);
-   c.strokeStyle='#06131c';c.strokeRect(-27,15,54,12);
-   c.fillStyle='#36505d';c.fillRect(-24,17,48,8);
-   c.fillStyle='#7b929b';
-   const phase=side<0?trackLeft:trackRight;
-   const offset=((phase%8)+8)%8;
-   for(let n=0;n<6;n++){const x=-24+((3+n*8+offset)%48);c.fillRect(x,16,2,10);}
-   // Dark end caps mask the cycling belt seams at either end.
-   c.fillStyle='#091b25';c.fillRect(-27,15,3,12);c.fillRect(24,15,3,12);
-   c.fillStyle='#142b38';c.fillRect(-20,25,40,2);
-   c.restore();
- }
- // Center chassis is bilaterally symmetric; armor plate has a visible forward nose.
- c.fillStyle='#0a1d27';c.fillRect(-23,-16,46,32);
- c.fillStyle=skin.armor;c.fillRect(-22,-15,43,30);c.strokeStyle='#071a22';c.strokeRect(-22,-15,43,30);
- c.fillStyle=skin.shadow;c.fillRect(-17,-11,34,22);
- c.fillStyle='#3d6673';c.fillRect(-17,-11,7,22);
- c.fillStyle=skin.armor;c.fillRect(-12,-10,24,20);c.strokeRect(-12,-10,24,20);
- c.fillStyle=skin.light;c.fillRect(-7,-5,8,10);
- // A single centerline weapon (not an extra sideways track or misaligned gun).
- c.fillStyle='#081924';c.fillRect(10,-6,25,12);c.strokeRect(10,-6,25,12);
- c.fillStyle='#477e8b';c.fillRect(13,-3,22,6);
- c.fillStyle=skin.armor;c.fillRect(33,-5,6,10);
- c.fillStyle='#eaf9f5';c.fillRect(38,-3,3,6);
- if(parked){c.strokeStyle='#83bba9';c.lineWidth=1.7;c.strokeRect(-29,-30,58,60)}
- c.restore();
-}
-function drawTopMech(c,paint,parked=false,stride=0,recoil=0,bob=0,skinId='fieldgrid.standard'){
- const skin=resolveUnitMaterials('mech',paint,skinId);
- // True top-down walker: two separate articulated legs, shoulders and central cockpit.
- // Readable at phone scale; the dark gaps distinguish the mech from tracked tanks.
- // Weight is subtle and only affects this unit's own art, not physics.
- c.save();c.translate(-1.3*recoil,bob);c.lineWidth=2;c.strokeStyle='#071723';
- for(const side of [-1,1]){
-   c.save();c.scale(1,side);
-   // Alternating walking gait; mirrored limbs retain their geometry at rest.
-   c.translate(side*stride,0);
-   c.fillStyle='#111f2c';c.fillRect(-25,12,17,12);c.fillRect(-22,19,15,17);
-   c.fillStyle=skin.armor;c.fillRect(-23,15,12,9);c.strokeRect(-23,15,12,9);
-   c.fillStyle='#6c84a0';c.fillRect(-20,28,16,7);c.strokeRect(-20,28,16,7);
-   // Forward shoulder/arm, separated visibly from the torso.
-   c.fillStyle=skin.armor;c.fillRect(2,17,17,12);c.strokeRect(2,17,17,12);
-   c.fillStyle='#192a3e';c.fillRect(13,19,12,7);c.strokeRect(13,19,12,7);
-   c.restore();
- }
- c.fillStyle='#17283a';c.fillRect(-14,-17,32,34);
- c.fillStyle=skin.armor;c.fillRect(-13,-15,27,30);c.strokeRect(-13,-15,27,30);
- c.fillStyle=skin.shadow;c.fillRect(-8,-10,16,20);
- c.fillStyle=skin.light;c.fillRect(-3,-8,9,16);
- c.fillStyle='#162639';c.fillRect(12,-6,20,12);c.strokeRect(12,-6,20,12);
- c.fillStyle=skin.armor;c.fillRect(27,-5,8,10);c.fillStyle='#e6f8ff';c.fillRect(33,-3,5,6);
- if(parked){c.strokeStyle='#cfb4fd';c.lineWidth=2;c.strokeRect(-29,-38,67,76)}
- c.restore();
-}
-// Main lobby uses the actual in-game tank renderer. No stock-art background.
-// Live showroom uses actual game renderers — no disconnected asset images.
-let lobbyDrawClock=0,lobbyPreviewClock=0,lobbyLastUnit=-1;
-function drawLobbyPreview(dt){
- const preview=document.getElementById('menu-preview');
- if(!preview?.getContext||menu.classList.contains('hidden'))return;
- const reduced=!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
- if(!reduced)lobbyPreviewClock+=Math.max(0,dt);
- lobbyDrawClock+=Math.max(0,dt);
- if(lobbyDrawClock<1/24)return;
- lobbyDrawClock=0;
- const showMech=!reduced&&Math.floor(lobbyPreviewClock/8)%2===1;
- const index=showMech?1:0;
- if(index!==lobbyLastUnit){
-  const type=document.getElementById('home-unit-type'),name=document.getElementById('home-unit-name');
-  if(type)type.textContent=showMech?'MECH / FIELD UNIT':'TANK / FIELD UNIT';
-  if(name)name.textContent=showMech?'MECHANIZED RESPONSE':'ARMORED RESPONSE';
-  lobbyLastUnit=index;
- }
- const c=preview.getContext('2d'),w=preview.width,h=preview.height;
- c.clearRect(0,0,w,h);
- c.fillStyle='#142f3d';c.fillRect(0,0,w,h);
- c.strokeStyle='#335766';c.lineWidth=2;
- for(let x=17;x<w;x+=78){c.beginPath();c.moveTo(x,0);c.lineTo(x,h);c.stroke()}
- for(let y=22;y<h;y+=78){c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke()}
- c.fillStyle='#203f4c';c.fillRect(0,h*.72,w,17);
- c.fillStyle='#779da7';c.fillRect(0,h*.72,w,3);
- // Subtle conveyor-like track below the unit, not a strobing UI animation.
- const phase=reduced?0:lobbyPreviewClock*.6;
- c.globalAlpha=.25;c.strokeStyle='#81bec7';c.lineWidth=1;
- c.beginPath();c.arc(w*.5,h*.43,109,0,Math.PI*2);c.stroke();
- c.globalAlpha=1;
- c.save();c.translate(w*.51,h*.40);
- c.rotate(-.25+(reduced?0:Math.sin(phase)*.14));
- c.scale(2.55,2.55);
- const amount=!reduced?lobbyPreviewClock:0;
- if(showMech)drawTopMech(c,'#d5bb77',false,Math.sin(amount*2.3)*1.7,0,Math.sin(amount*3)*.5,equippedPaint);
- else drawTopTank(c,'#6bcde0',false,amount*10,amount*10,0,.38,equippedPaint);
- c.restore();
- c.fillStyle='#73c7d6';c.globalAlpha=.4;
- c.fillRect(w*.12,h*.26,55,2);c.fillRect(w*.77,h*.66,47,2);
- c.globalAlpha=1;
-}
-function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0,skinId='fieldgrid.standard',squadPaint=false){
- // v0.9.45 FIELDGRID P-03: compact overhead operator; no exposed legs.
- // +X is forward for the pilot, tank, mech AND the real projectile muzzle.
- // Only shoulders and short arms mirror across Y; two hands hold ONE pistol.
- // No foreshortened face/profile, segmented circles, fake depth or glow rings.
- const skin=resolveUnitMaterials('pilot',paint,skinId);
- const armorPaint=squadPaint&&skinId==='fieldgrid.standard'?paint:skin.armor;
- // Movement rhythm is driven by real velocity in render(), not fake foot steps.
- // Only the unified vest and shoulder plates move. Helmet, hands, pistol,
- // muzzle and projectile origin stay on the exact same forward axis.
- const gait=clamp(stride,-3.5,3.5);
- c.save();c.translate(-recoil*.15,bob*.25);
- c.lineJoin='miter';c.lineWidth=1.6;c.strokeStyle='#071923';
- // Tiny grounded upper-body sway while moving, zero movement at rest.
- // The rear vest sways as ONE solid block; no boots/knees are drawn.
- c.save();c.translate(-Math.abs(gait)*.18,gait*.32);
- c.fillStyle='#071923';c.fillRect(-20,-10,28,20);
- c.fillStyle=armorPaint;c.fillRect(-18,-8,24,16);
- c.fillStyle=skin.shadow;c.fillRect(-16,-7,8,14);
- c.fillStyle=skin.light;c.fillRect(-14,-8,3,15);
- c.fillStyle='#132c38';c.fillRect(-19,-5,4,10);
- c.fillStyle=skin.trim;c.fillRect(-17,-8,2,3);
- c.restore();
- // Mirrored shoulder plates gently counter-shift along the pilot's forward
- // axis; the actual two-hand gun hold remains fixed and fully aligned.
- // There is deliberately no counterstepping lower-body animation.
- for(const side of [-1,1]){
-  c.save();c.scale(1,side);
-  // Both shoulders subtly travel in opposing phases. No leg geometry.
-  c.save();c.translate(side*gait*.5,0);
-  c.fillStyle='#071923';c.fillRect(-9,11,17,11);
-  c.fillStyle=armorPaint;c.fillRect(-7,13,14,7);
-  c.fillStyle=skin.light;c.fillRect(-6,13,10,2);
-  c.fillStyle=skin.team;c.fillRect(-7,19,6,2);
-  c.restore();
-  // Weapon-gripping forearms do not move with the animated shoulder plates,
-  // so drawn muzzle position stays in sync with actual sidearm projectiles.
-  // Each arm is one angular armored bent limb — not a second barrel.
-  c.fillStyle='#071923';c.beginPath();
-  c.moveTo(6,16);c.lineTo(11,15);c.lineTo(20,6);
-  c.lineTo(20,3);c.lineTo(16,3);c.lineTo(8,12);c.closePath();c.fill();
-  c.fillStyle=armorPaint;c.beginPath();
-  c.moveTo(9,14);c.lineTo(12,14);c.lineTo(19,6);
-  c.lineTo(19,5);c.lineTo(17,5);c.lineTo(9,12);c.closePath();c.fill();
-  c.fillStyle=skin.light;c.fillRect(16,6,3,2);
-  // One glove per hand on a shared centerline sidearm.
-  c.fillStyle='#071923';c.fillRect(16,2,8,6);
-  c.fillStyle='#bdcac8';c.fillRect(18,3,5,3);
-  c.restore();
- }
- // Compact chamfered helmet, viewed entirely from above — no face in profile.
- c.fillStyle='#071923';c.beginPath();
- c.moveTo(-11,-7);c.lineTo(-7,-12);c.lineTo(6,-12);
- c.lineTo(12,-7);c.lineTo(12,7);c.lineTo(6,12);
- c.lineTo(-7,12);c.lineTo(-11,7);c.closePath();c.fill();
- c.fillStyle=armorPaint;c.fillRect(-8,-9,17,18);
- c.fillStyle=skin.shadow;c.fillRect(-7,4,15,4);
- c.fillStyle=skin.light;c.fillRect(-6,-9,11,3);
- // Narrow forward visor band makes facing direction visible at zoomed-out scale.
- c.fillStyle='#112a36';c.fillRect(6,-6,5,12);
- c.fillStyle=skin.trim;c.fillRect(9,-5,2,10);
- c.fillStyle='#d5eeea';c.fillRect(10,-3,1,6);
- // Shared real weapon muzzle remains exactly local-space (28,2).
- c.fillStyle='#071923';c.fillRect(17,0,11,4);
- c.fillStyle='#849fa8';c.fillRect(19,0,7,1);
- c.fillStyle='#3f5963';c.fillRect(18,4,5,2);
- c.fillStyle='#e1f3d8';c.fillRect(PILOT_MUZZLE_X-1,PILOT_MUZZLE_Y-1,2,2);
- if(shooting){c.fillStyle='#ffda91';c.beginPath();
-  c.moveTo(PILOT_MUZZLE_X+1,2);c.lineTo(PILOT_MUZZLE_X+5,-2);
-  c.lineTo(PILOT_MUZZLE_X+4,2);c.lineTo(PILOT_MUZZLE_X+5,6);
-  c.closePath();c.fill();}
- c.restore();
-}
-// Four fixed WORLD-SPACE corner brackets, not a rotating ring/turret silhouette.
-// Team color replaces player color for team matches; never stack both locators.
-function drawPilotLocator(c,x,y,color){
- c.save();c.strokeStyle=color;c.globalAlpha=.54;c.lineWidth=1.4;
- c.beginPath();
- for(const sx of [-1,1])for(const sy of [-1,1]){
-  const bx=x+sx*26,by=y+sy*25;
-  c.moveTo(bx-sx*6,by);c.lineTo(bx,by);c.lineTo(bx,by-sy*6);
- }
- c.stroke();c.restore();
-}
-// v0.9.22-dev5: final small vehicle-only pullback after owner phone feedback.
-// Keep pilot at approved scale for future pilot-only Close Quarters.
-const CAMERA_APRON=420;
-function unitTargetZoom(t){
- if(!t)return 1.00;
- if(t.onFoot)return 1.07; // Explicitly unchanged from dev3 / dev4.
- const v=currentVehicle(t);
- return v?.type==='mech'?.77:v?.type==='tank'?.82:1.00;
-}
-function cameraZoom(t=state?.tanks?.[mode==='guest'?1:0]){
- return mazeGrid?Math.max(unitTargetZoom(t),W/(worldW+CAMERA_APRON*2),H/(worldH+CAMERA_APRON*2)):1;
-}
-function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick>0)c.translate(Math.sin(visualClock*130)*screenKick,Math.cos(visualClock*98)*screenKick*.5);// Widened tactical camera. The perimeter includes enough rendered exterior
- // floor tiles so wide Android screens do not reveal blank side gutters.
- const me=mode==='guest'?1:0,localTank=state.lives[me]>0?state.tanks[me]:(state.tanks.find((t,i)=>state.lives[i]>0)||state.tanks[me]||state.tanks[0]);
- const zoomTarget=cameraZoom(localTank);
- if(!Number.isFinite(camera.zoom))camera.zoom=zoomTarget;
- const zoomFloor=mazeGrid?Math.max(W/(worldW+CAMERA_APRON*2),H/(worldH+CAMERA_APRON*2)):1;
- camera.zoom=Math.max(zoomFloor,camera.zoom+(zoomTarget-camera.zoom)*(1-Math.exp(-Math.min(.1,Math.max(0,dt))*5.2)));
- const zoom=camera.zoom,viewW=W/zoom,viewH=H/zoom;
- const apron=mazeGrid?CAMERA_APRON:0;const desiredX=clamp((localTank?.x||W/2)-viewW/2,-apron,Math.max(-apron,worldW+apron-viewW)),desiredY=clamp((localTank?.y||H/2)-viewH/2,-apron,Math.max(-apron,worldH+apron-viewH));
- const follow=1-Math.exp(-Math.min(.1,dt)*13);camera.x+=(desiredX-camera.x)*follow;camera.y+=(desiredY-camera.y)*follow;if(!mazeGrid){camera.x=0;camera.y=0}
- c.scale(zoom,zoom);c.translate(-camera.x,-camera.y);
- // Paint past the playable perimeter so a small camera pullback remains
- // immersive rather than showing untextured side gutters.
- c.fillStyle='#112631';c.fillRect(camera.x-8,camera.y-8,viewW+16,viewH+16);
- c.fillStyle='#101f2b';c.fillRect(0,0,worldW,worldH);
- // Modular FIELDGRID surface, deterministic from cell coordinates with no per-frame randomness.
- // Culling ensures large mazes don't draw decorative details outside the camera.
- const left=camera.x-56,right=camera.x+viewW+56,top=camera.y-56,bottom=camera.y+viewH+56;
- const tile=132,apronCells=Math.ceil(CAMERA_APRON/tile)+1;
- const xmin=Math.max(-apronCells,Math.floor(left/tile)),xmax=Math.min(Math.ceil(worldW/tile)+apronCells,Math.ceil(right/tile)),ymin=Math.max(-apronCells,Math.floor(top/tile)),ymax=Math.min(Math.ceil(worldH/tile)+apronCells,Math.ceil(bottom/tile));
- for(let gy=ymin;gy<ymax;gy++)for(let gx=xmin;gx<xmax;gx++){
-   const x=gx*tile,y=gy*tile,hash=(gx*19+gy*37+currentSeed%23)%11;
-   if(x<0||y<0||x>=worldW||y>=worldH){c.fillStyle='#10242e';c.fillRect(x+1,y+1,tile-2,tile-2);c.strokeStyle='#25414b';c.lineWidth=1;c.strokeRect(x+2,y+2,tile-4,tile-4);continue;}
-   c.fillStyle=hash%3===0?'#132632':hash%3===1?'#142733':'#162a36';c.fillRect(x+1,y+1,tile-2,tile-2);
-   c.strokeStyle='#29424e';c.lineWidth=1;c.strokeRect(x+2,y+2,tile-4,tile-4);
-   c.fillStyle='#29424e';for(const dx of [12,tile-16])for(const dy of [12,tile-16])c.fillRect(x+dx,y+dy,3,3);
-   if(hash===0||hash===6){c.fillStyle='#264654';c.fillRect(x+15,y+16,36,4);c.fillRect(x+15,y+22,20,2)}
-   if(hash===4){c.fillStyle='#33454b';c.fillRect(x+tile-32,y+tile-24,20,8);c.fillStyle='#91773d';c.fillRect(x+tile-32,y+tile-26,8,2)}
-   if(hash===8){c.fillStyle='#314c54';c.font='800 13px system-ui';c.textAlign='left';c.fillText('FG',x+17,y+tile-18)}
-   if(hash===2){c.fillStyle='#564f3b';for(let stripe=0;stripe<4;stripe++)c.fillRect(x+65+stripe*12,y+tile-22,7,3)}
-   if(hash===10){c.strokeStyle='#345261';c.lineWidth=2;c.strokeRect(x+tile-40,y+tile-40,24,24)}
- }
- // Forward Bay markings sit UNDER solid walls, leaving collision and
- // ricochet gameplay untouched. These are not capture flags or safe zones.
- for(const bay of state.forwardBays?.bays||[]){
-  const clr=bay.team===0?'#64d5e9':'#ff9b85';
-  c.fillStyle=bay.team===0?'#183b48':'#45302d';
-  c.fillRect(bay.x-47,bay.y-47,94,94);
-  c.strokeStyle=clr;c.lineWidth=3;c.strokeRect(bay.x-47,bay.y-47,94,94);
-  c.setLineDash([7,5]);c.lineWidth=1.5;c.strokeRect(bay.x-35,bay.y-35,70,70);c.setLineDash([]);
-  c.fillStyle=clr;c.font='bold 12px monospace';c.textAlign='center';
-  c.fillText(bay.team===0?'CYAN FOB':'CORAL FOB',bay.x,bay.y-10);
-  c.fillStyle='#d9e8e4';c.font='10px monospace';c.fillText('DEPLOY',bay.x,bay.y+12);
-  for(const gate of bay.entrances){
-   const dx=gate.x-bay.x,dy=gate.y-bay.y,len=Math.hypot(dx,dy)||1;
-   c.beginPath();c.moveTo(bay.x+dx/len*48,bay.y+dy/len*48);
-   c.lineTo(bay.x+dx/len*62,bay.y+dy/len*62);c.stroke();
-  }
-  c.strokeStyle=clr;c.strokeRect(bay.parking.x-23,bay.parking.y-23,46,46);
-  c.fillStyle=clr;c.fillText('P',bay.parking.x,bay.parking.y+5);
- }
- // Facility perimeter is solid in play and visually signals a different layer than floor tiles.
- c.fillStyle='#253f4e';c.fillRect(0,0,worldW,15);c.fillRect(0,worldH-15,worldW,15);c.fillRect(0,0,15,worldH);c.fillRect(worldW-15,0,15,worldH);
- c.fillStyle='#66a7b3';c.fillRect(0,0,worldW,3);c.fillRect(0,worldH-3,worldW,3);c.fillRect(0,0,3,worldH);c.fillRect(worldW-3,0,3,worldH);
- for(const w of wallSet){
-   if(w.x>right+26||w.x+w.w<left-26||w.y>bottom+26||w.y+w.h<top-26)continue;
-   c.fillStyle='#071620';c.fillRect(w.x+5,w.y+7,w.w,w.h);
-   c.fillStyle='#293f4d';c.fillRect(w.x,w.y,w.w,w.h);
-   c.fillStyle='#456574';c.fillRect(w.x+2,w.y+2,w.w-4,Math.max(3,w.h-5));
-   c.fillStyle='#304c5b';c.fillRect(w.x+4,w.y+5,w.w-8,Math.max(2,w.h-10));
-   c.fillStyle='#83a7b1';if(w.w>w.h)c.fillRect(w.x+7,w.y+3,Math.max(0,w.w-14),2);else c.fillRect(w.x+3,w.y+7,2,Math.max(0,w.h-14));
-   c.fillStyle='#9b8250';if(w.w>w.h){if(w.w>70)c.fillRect(w.x+w.w/2-7,w.y+4,14,3)}else if(w.h>70)c.fillRect(w.x+4,w.y+w.h/2-7,3,14);
-   c.fillStyle='#162a36';if(w.w>w.h){for(let x=w.x+25;x<w.x+w.w-10;x+=65)c.fillRect(x,w.y+7,3,4)}else for(let y=w.y+25;y<w.y+w.h-10;y+=65)c.fillRect(w.x+7,y,4,3);
- }
- 
-// CTF flag markers: visible game objects, not solid cover or pickups.
- for(const flag of state.ctf?.flags||[]){
-  const clr=flag.team===0?'#64d5e9':'#ff9b85',x=flag.x,y=flag.y;
-  c.save();c.strokeStyle=clr;c.lineWidth=3;
-  c.beginPath();c.moveTo(x,y-21);c.lineTo(x+18,y);c.lineTo(x,y+21);c.lineTo(x-18,y);c.closePath();
-  c.fillStyle=flag.carrier!==null?'#fff2da':flag.droppedFor>0?'#73543e':'#142931';
-  c.fill();c.stroke();
-  c.fillStyle=clr;c.font='900 11px monospace';c.textAlign='center';
-  c.fillText(flag.team===0?'C':'R',x,y+4);
-  if(flag.carrier!==null){c.font='900 10px monospace';c.fillText('CARRIED',x,y-28);}
-  if(flag.droppedFor>0){c.font='900 10px monospace';c.fillText('RETURN '+Math.max(0,Math.ceil(window.SectorFlags.AUTO_RETURN_SECONDS-flag.droppedFor)),x,y-29);}
-  c.restore();
- }
-for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();c.arc(bump.x,bump.y,bump.r+glow,0,Math.PI*2);c.fillStyle='#34464b';c.fill();c.strokeStyle='#ffd67d';c.lineWidth=4;c.stroke();c.beginPath();c.arc(bump.x,bump.y,11,0,Math.PI*2);c.fillStyle='#ffc76a';c.fill()}
- for(const p of state.pickups||[]){const def=PICKUPS[p.type];if(!def)continue;
-   const pulse=Math.sin(visualClock*4.8+p.x*.013),radius=24+pulse*2.5;
-   c.save();c.translate(p.x,p.y);
-   c.globalAlpha=.16;c.fillStyle=def.color;c.beginPath();c.arc(0,0,radius+9,0,Math.PI*2);c.fill();
-   c.globalAlpha=1;c.fillStyle='#071e29';c.fillRect(-21,-21,42,42);c.strokeStyle=def.color;c.lineWidth=2;c.strokeRect(-21,-21,42,42);
-   c.strokeStyle='#b8e4e2';c.globalAlpha=.8;c.lineWidth=2;
-   for(const sx of [-1,1])for(const sy of [-1,1]){c.beginPath();c.moveTo(sx*24,sy*13);c.lineTo(sx*24,sy*24);c.lineTo(sx*13,sy*24);c.stroke();}
-   c.globalAlpha=1;c.fillStyle=def.color;c.font='900 23px monospace';c.textAlign='center';c.fillText(def.label,0,8);
-   c.font='700 9px monospace';c.fillStyle='#d0e9ec';c.fillText(p.type.toUpperCase(),0,35);
-   c.restore();
- }
- if(isPilotMatch())for(const v of state.vehicles){if(v.occupant!==-1)continue;
-   if(v.armor>0){c.beginPath();c.arc(v.x,v.y,v.type==='mech'?42:35,0,Math.PI*2);c.strokeStyle=v.type==='mech'?'#6a5486':'#3e7568';c.lineWidth=2;c.stroke();}
-   c.save();c.translate(v.x,v.y);c.rotate(v.a);
-   if(v.armor<=0){c.fillStyle='#192b31';c.fillRect(-19,-18,38,36);c.strokeStyle='#fd7858';c.lineWidth=3;c.strokeRect(-19,-18,38,36);}
-   else {c.globalAlpha=.64;
-    if(v.type==='mech')drawTopMech(c,'#b69aff',true);else drawTopTank(c,'#72c3a8',true);}
-   c.restore();if(v.armor>0){const me=state.tanks[mode==='guest'?1:0];const near=me?.onFoot&&Math.hypot(me.x-v.x,me.y-v.y)<68;
-     if(near){ // The real ENTER action is in the touch HUD; a floating label
-       // used to cover the small pilot standing beside this vehicle.
-       c.strokeStyle='#aaf3da';c.lineWidth=1.5;c.beginPath();c.arc(v.x,v.y,36+Math.sin(visualClock*5)*2,0,Math.PI*2);c.stroke();
-      }}
- }
- for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]<=0)continue;
- if(state.config?.teamMode!=='ffa'&&!t.onFoot){c.beginPath();c.arc(t.x,t.y,29,0,Math.PI*2);c.strokeStyle=teamOf(i)===0?'#60dfff':'#ffb06e';c.lineWidth=4;c.stroke()}
- if(t.onFoot)drawPilotLocator(c,t.x,t.y,state.config?.teamMode!=='ffa'?(teamOf(i)===0?'#60dfff':'#ffb06e'):combatColor(i));
- const paint=combatColor(i);
- c.save();c.translate(t.x,t.y);c.rotate(t.a);
- if(t.onFoot){
-   const stride=Math.sin(visualClock*15+i*1.7)*Math.min(3.5,Math.hypot(t.vx,t.vy)/65);
-   // No permanent ring. Fixed world-space FIELDGRID brackets render behind the operator.
-   drawTopPilot(c,paint,t.flash>0,stride,t.recoil||0,Math.sin(visualClock*15+i*1.7)*Math.min(.45,Math.hypot(t.vx,t.vy)/400),mode==='solo'&&i===0?equippedPaint:'fieldgrid.standard',state.config?.teamMode!=='ffa');
-   c.restore();
-   if(t.ejectAnim>0){c.save();c.globalAlpha=Math.min(.7,t.ejectAnim/.62);c.strokeStyle='#e5faff';c.lineWidth=2;c.beginPath();c.arc(t.x,t.y,18+(1-t.ejectAnim/.62)*22,0,Math.PI*2);c.stroke();c.restore();}
- }else{
- if(t.shield>0){c.globalAlpha=.65+.25*Math.sin(t.shield*15)}
- (currentVehicle(t)?.type==='mech'?drawTopMech(c,paint,false,Math.sin(visualClock*10+i*1.9)*Math.min(3.2,Math.hypot(t.vx,t.vy)/55),t.recoil||0,Math.sin(visualClock*20+i*3.8)*Math.min(.65,Math.hypot(t.vx,t.vy)/320),mode==='solo'&&i===0?equippedPaint:'fieldgrid.standard'):drawTopTank(c,paint,false,t.trackLeft||0,t.trackRight||0,t.recoil||0,Math.min(1,Math.hypot(t.vx,t.vy)/240),mode==='solo'&&i===0?equippedPaint:'fieldgrid.standard'));if(t.flash>0){c.fillStyle='#fff3a0';c.beginPath();c.arc(39,0,8+t.flash*70,0,Math.PI*2);c.fill()}c.restore();
- if(isPilotMatch()){const v=state.vehicles?.[t.vehicleId];if(v){c.fillStyle='#16313b';c.fillRect(t.x-19,t.y+29,38,5);c.fillStyle='#79eab2';c.fillRect(t.x-19,t.y+29,38*v.armor/vehicleDef(v).armor,5);}}}
- if(t.powerType&&t.powerTimer>0&&PICKUPS[t.powerType]){c.fillStyle=PICKUPS[t.powerType].color;c.font='800 10px monospace';c.textAlign='center';c.fillText(PICKUPS[t.powerType].name+' '+Math.ceil(t.powerTimer)+'s',t.x,t.y+49)}
- if(t.shield>0){c.beginPath();c.arc(t.x,t.y,32+Math.sin(t.shield*10)*2,0,Math.PI*2);c.strokeStyle=paint;c.globalAlpha=clamp(t.shield/1.8*(t.onFoot?.42:.8),0,t.onFoot?.42:.8);c.lineWidth=t.onFoot?1.8:3;c.stroke();c.globalAlpha=1}
- c.fillStyle=paint;c.font='bold 13px system-ui';c.textAlign='center';
- // Ground personnel stand close to parked vehicles. Move their label
- // to the side, rather than painting it across the abandoned tank.
- c.fillText(i<state.humanCount?'P'+(i+1):state.config?.teamMode==='teams'&&friendly(i,mode==='guest'?1:0)?'ALLY '+(i-state.humanCount+1):'AI'+(i-state.humanCount+1),t.x+(t.onFoot?42:0),t.y+(t.onFoot?-18:-38));
- if(i===(mode==='guest'?1:0)){
-  c.beginPath();
-  if(t.onFoot){c.moveTo(t.x-30,t.y);c.lineTo(t.x-40,t.y-6);c.lineTo(t.x-40,t.y+6);}
-  else{c.moveTo(t.x,t.y-59);c.lineTo(t.x-8,t.y-71);c.lineTo(t.x+8,t.y-71);}
-  c.closePath();c.fillStyle='#ffffff';c.fill();
- }}
- if(releaseMode()&&(fireAim.pointerId!==null||releaseShot)){
-  const t=state.tanks[0];
-  const vx=releaseShot?.x??(fireAim.active?fireAim.x:Math.cos(t.a));
-  const vy=releaseShot?.y??(fireAim.active?fireAim.y:Math.sin(t.a));
-  let reach=0;
-  for(let distance=16;distance<=135;distance+=5){
-   if(blocked(t.x+vx*distance,t.y+vy*distance,3))break;
-   reach=distance;
-  }
-  if(reach>16){c.save();c.globalAlpha=.65;c.strokeStyle='#a9f4d6';c.lineWidth=1.5;
-   c.beginPath();c.moveTo(t.x+vx*24,t.y+vy*24);c.lineTo(t.x+vx*reach,t.y+vy*reach);c.stroke();
-   c.globalAlpha=.95;c.beginPath();c.arc(t.x+vx*reach,t.y+vy*reach,3,0,Math.PI*2);c.stroke();c.restore();}
  }
  for(const b of state.bullets){
    const foot=b.kind==='sidearm',heavy=b.kind==='mech';
@@ -2184,6 +1603,9 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  }
 function nativePacket(packet){if(!window.AndroidBridge)return;try{window.AndroidBridge.sendPacket(JSON.stringify(packet))}catch(e){notice('Network send failed')}}
 function loop(now){const dt=clamp((now-lastTime)/1000,0,.085);lastTime=now;
+ if(mode==='guest'&&releaseShot){releaseShot.ttl-=dt;
+  if(!releaseMode()||releaseShot.ttl<=0||releaseShot.matchId!==state.matchId)releaseShot=null;
+ }
  if(mode==='solo'||mode==='duel'||mode==='host'){if(!paused&&state.winner<0){fixedAccumulator=Math.min(.12,fixedAccumulator+dt);let ticks=0;while(fixedAccumulator>=STEP&&ticks++<5){step(STEP);fixedAccumulator-=STEP}}else fixedAccumulator=0;}
  updateVisuals(dt);hudTimer+=dt;if(hudTimer>.15){hudTimer=0;refreshHUD();}
  if(mode==='host'&&connected&&!(lanLobby&&lanLobby.active)){snapshotTimer+=dt;if(snapshotTimer>.09){snapshotTimer=0;nativePacket({type:'state',state:serializeState()})}}
@@ -2423,7 +1845,7 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
  case 'found':{const r=document.getElementById('rooms');if(r&&!r.querySelector('[data-host="'+msg.host+'"]')){const b=document.createElement('button');b.textContent='JOIN '+(msg.name||'NEARBY GAME');b.dataset.host=msg.host;b.onclick=()=>{window.AndroidBridge.joinGame(msg.host,msg.port);document.getElementById('find-status').textContent='Connecting...'};r.appendChild(b)}break}
  case 'connected':{
  if(mode!=='host'&&mode!=='guest')break;
- if(mode==='host')neutralizeGuestInput();
+ if(mode==='host'){neutralizeGuestInput();lastGuestFireSeq=0;remoteReleaseShot=null;}
  connected=true;paused=true;
  document.getElementById('mode-label').textContent=mode==='guest'?'YOU: CORAL':'YOU: CYAN';
  if(mode==='host'){if(!lanLobby)startLanLobby();lanLobby.guestReady=false;refreshLanLobby();publishLanLobby();}
@@ -2454,6 +1876,18 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
  if(event.kind==='guard')audioCue('barrier',event.x,event.y);
  if(event.kind==='pickup')audioCue('pickup',event.x,event.y);lastRemoteFxId=event.id}}state=upcoming;setArena(0,state.mazeSeed,state.config?.mapSize);refreshHUD()}break;
  case 'input':if(mode==='host'&&connected&&!paused&&state.winner<0&&msg.input){guestInput=normalizeLanInput(msg.input);guestInputAge=0;}break;
+ case 'fire-request':{
+  // LAN player gesture travels once over the reliable host socket.
+  // The host checks origin state, sequence, match and finite aim before firing.
+  if(mode!=='host'||!connected||paused||state.winner>=0||state.lives[1]<=0||
+    msg.matchId!==state.matchId||!Number.isInteger(msg.seq)||
+    msg.seq<=lastGuestFireSeq||msg.seq>2147483600)break;
+  const x=Number(msg.aimX),y=Number(msg.aimY),len=Math.hypot(x,y);
+  if(!Number.isFinite(len)||len<.6||len>1.1)break;
+  lastGuestFireSeq=msg.seq;
+  remoteReleaseShot={x:x/len,y:y/len,ttl:1.6,matchId:state.matchId};
+  break;
+ }
  case 'interact':if(mode==='host'&&connected&&!paused)tryInteract(1);break;
  case 'disconnected':connected=false;paused=true;lanLobby=null;neutralizeGuestInput();clearStick();notice('Other player disconnected');setPanel('<h2>CONNECTION LOST</h2><p>Return to the main menu and reconnect.</p><button data-action="close">MAIN MENU</button>');break;
  case 'error':notice(msg.message||'Network error');break;}}};
