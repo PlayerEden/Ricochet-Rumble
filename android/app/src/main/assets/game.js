@@ -1153,27 +1153,87 @@ function pilotBotReactionReady(brain,target,skill,dt,visible){
  brain.pilotAcquire=Math.min(delay,Math.max(0,Number(brain.pilotAcquire)||0)+clamp(dt,0,.05));
  return brain.pilotAcquire+1e-8>=delay;
 }
-// All bots use the player's deliberate aim -> commit -> recover firing loop.
-// Their heading turns through real vehicle/pilot physics and shots obey the
-// same projectile cap and cooldown. No automatic perfect ricochet solver.
-function botFireCommit(brain,bot,target,skill,dt,visible,oldPilotGate,i){
+// A3: a bot may examine only a SMALL fixed set of real shot paths when
+// acquiring a target. The same side-effect-free physics drives the user dots.
+// Target coordinates must come from actual line-of-sight or stored LAST sight,
+// not an omniscient view of an actor currently behind a maze wall.
+function botTraceAim(bot,owner,seen,skill,shotNumber,canSee){
+ const base=Math.atan2(seen.y-bot.y,seen.x-bot.x);
+ const wobble=skill==='casual'?.085:skill==='spicy'?.025:.05;
+ const offset=Math.sin((owner+1)*13.79+shotNumber*7.17)*wobble;
+ const candidates=[{angle:base+offset,bank:false}];
+ // Up to six geometry-derived ONE-bounce attempts. Never brute-force 360
+ // degrees or use future target positions. Only walls close enough to reach
+ // in a normal shell lifetime are eligible; on-foot sidearms cannot bank.
+ if(!bot.onFoot){
+  const walls=[];
+  for(const w of wallSet){
+   const rx=clamp(bot.x,w.x,w.x+w.w),ry=clamp(bot.y,w.y,w.y+w.h);
+   const ds=Math.hypot(bot.x-rx,bot.y-ry);
+   if(ds>385)continue;
+   const px=clamp(seen.x,w.x,w.x+w.w),py=clamp(seen.y,w.y,w.y+w.h);
+   const score=ds+Math.hypot(seen.x-px,seen.y-py);
+   if(score>720)continue;
+   walls.push({w,score});
+  }
+  walls.sort((a,b)=>a.score-b.score);
+  for(const {w} of walls.slice(0,12)){
+   const vertical=w.h>w.w;
+   const surface=vertical?(bot.x<=w.x?w.x:w.x+w.w):
+    (bot.y<=w.y?w.y:w.y+w.h);
+   const mirrored=vertical?{x:2*surface-seen.x,y:seen.y}:
+    {x:seen.x,y:2*surface-seen.y};
+   const angle=Math.atan2(mirrored.y-bot.y,mirrored.x-bot.x)+offset*.45;
+   if(candidates.some(c=>Math.abs(Math.atan2(Math.sin(c.angle-angle),Math.cos(c.angle-angle)))<.025))continue;
+   candidates.push({angle,bank:true});
+   if(candidates.length>=7)break;
+  }
+ }
+ let best=null;
+ const targetRadius=seen.onFoot?(isScoredMatch()?CQC_PILOT_HIT_RADIUS:14):26;
+ for(const c of candidates){
+  // No actual-target checks when using stale sight: only the *remembered*
+  // point and its last-observed hitbox determine the decision.
+  const result=traceProjectile(bot,c.angle,{
+   maxDistance:bot.onFoot?370:730,maxBounces:bot.onFoot?0:1,
+   checkActors:canSee});
+  if(canSee&&result.hit!==null&&result.hit!==seen.index)continue;
+  let closest=Infinity;
+  for(const line of result.segments)for(const p of line){
+   const distance=(p.x-seen.x)**2+(p.y-seen.y)**2;
+   if(distance<closest)closest=distance;
+  }
+  const hit=(canSee?result.hit===seen.index:closest<targetRadius*targetRadius);
+  if(!hit)continue;
+  const banked=result.bounces>0;
+  // Direct shots are economical; choose a bank only when it actually works
+  // and the direct path doesn't. More skill means better planning, not speed.
+  const score=banked?100+Math.sqrt(closest)*.05:Math.sqrt(closest)*.05;
+  if(!best||score<best.score)best={angle:c.angle,banked,score};
+  if(!banked)break;
+ }
+ return {aim:best,examined:candidates.length};
+}
+// All bots use acquire -> turn -> lock -> fire -> recover.
+// No frame-perfect tracking or course corrections AFTER the lock.
+function botFireCommit(brain,bot,target,skill,dt,visible,oldPilotGate,i,seen=null){
  brain.fireRecover=Math.max(0,(brain.fireRecover||0)-Math.max(0,dt));
  const index=state.tanks.indexOf(target);
- if(!visible||index<0){
-  brain.fireTarget=-1;brain.fireTrack=0;return {fire:false,aimX:undefined,aimY:undefined};
+ if(!visible||index<0||!seen){
+  brain.fireTarget=-1;brain.fireTrack=0;brain.fireAngle=NaN;
+  return {fire:false,aimX:undefined,aimY:undefined};
  }
- const targetKind=target.onFoot?'pilot':'vehicle';
+ const targetKind=seen.onFoot?'pilot':'vehicle';
  if(brain.fireTarget!==index||brain.fireTargetKind!==targetKind||!Number.isFinite(brain.fireAngle)){
   brain.fireTarget=index;brain.fireTargetKind=targetKind;brain.fireTrack=0;
-  // Fixed per-shot aim and small deterministic error: no frame-perfect target
-  // tracking, random state, or increased damage/shot speed.
-  const wobble=skill==='casual'?.085:skill==='spicy'?.025:.05;
-  const shotIndex=brain.fireShots||0;
-  const offset=Math.sin((i+1)*13.79+shotIndex*7.17)*wobble;
-  brain.fireAngle=Math.atan2(target.y-bot.y,target.x-bot.x)+offset;
+  const candidate=botTraceAim(bot,i,{...seen,index},skill,brain.fireShots||0,
+   seen.live===true);
+  brain.fireCandidateCount=candidate.examined;
+  brain.fireBank=candidate.aim?.banked===true;
+  brain.fireAngle=candidate.aim?candidate.aim.angle:NaN;
  }
- const a=brain.fireAngle;
- const aimX=Math.cos(a),aimY=Math.sin(a);
+ if(!Number.isFinite(brain.fireAngle))return {fire:false,aimX:undefined,aimY:undefined};
+ const a=brain.fireAngle,aimX=Math.cos(a),aimY=Math.sin(a);
  if(brain.fireRecover>0)return {fire:false,aimX,aimY};
  const humanPilot=mode==='solo'&&state.tanks[0]===target&&target.onFoot;
  const delay=humanPilot?(skill==='casual'?.32:skill==='spicy'?.16:.24):
@@ -1414,9 +1474,22 @@ function botInput(i,dt){
  const hasLine=enemyDist<(mazeGrid?385:750)&&hasLineOfSight(bot.x,bot.y,target.x,target.y)&&
    pilotBotFireFair(bot,target);
  const acquired=pilotBotReactionReady(brain,target,skill,dt,hasLine);
- // A shot must now be committed after a physical aim turn, not fired on
- // every frame the target is inside the generous old combat cone.
- const committed=botFireCommit(brain,bot,target,skill,dt,hasLine,acquired,i);
+ // Only real, current line-of-sight refreshes combat memory. A hidden bot
+ // target cannot disclose its new coordinates to the shot evaluator.
+ if(hasLine){
+  brain.shotLastSeen={x:target.x,y:target.y,onFoot:!!target.onFoot,
+   index:state.tanks.indexOf(target),live:true};
+  brain.shotSightRemaining=.85;
+  if(acquired)brain.shotSightAcquired=true;
+ }else brain.shotSightRemaining=Math.max(0,(brain.shotSightRemaining||0)-dt);
+ const stored=brain.shotLastSeen;
+ const remembered=!hasLine&&brain.shotSightAcquired&&
+  brain.shotSightRemaining>0&&stored?.index===state.tanks.indexOf(target);
+ const seen=hasLine?brain.shotLastSeen:remembered?{...stored,live:false}:null;
+ // Lock chosen angle once; do not chase a dodging target's updated position
+ // throughout the aim animation or magically cancel a shot mid-flight.
+ const committed=botFireCommit(brain,bot,target,skill,dt,
+  hasLine||remembered,hasLine?acquired:remembered,i,seen);
  // Base defense and teammate escort hold a sensible standoff distance.
  const ctfHold=!!ctfDecision&&!ctfYield&&
   ((choice.kind==='defend'&&objectiveDistance<34)||
@@ -1424,7 +1497,7 @@ function botInput(i,dt){
  const chasePace=ctfHold||choice.kind==='hold'?0:
   choice.kind==='engage'&&hasLine&&enemyDist<115?pace*(role==='hunter'?.72:.34):pace;
  return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,
-  aimX:committed.aimX,aimY:committed.aimY,fireAim:hasLine,fire:committed.fire,bot:true};
+  aimX:committed.aimX,aimY:committed.aimY,fireAim:hasLine||remembered,fire:committed.fire,bot:true};
 }
 // One shared local-space pistol muzzle anchor, used by BOTH art and physics.
 // +X is actor facing; +Y is the tiny visual hand offset in top-down view.
