@@ -29,7 +29,7 @@ for(const name of ['scored-match','forward-bays','dossier'])
  vm.runInNewContext(fs.readFileSync(new URL('../web/'+name+'.js',import.meta.url),'utf8'),env,{filename:name+'.js'});
 let source=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
 assert.ok(/\}\)\(\);\s*$/.test(source),'recognizable game closure');
-source=source.replace(/\}\)\(\);\s*$/,\`window.__trajA2={
+source=source.replace(/\}\)\(\);\s*$/,`window.__trajA2={
  reset(seed=123,kind='pilot',botCount=1){
   mode='solo';paused=false;
   state=initialState(0,{mapSize:'standard',botCount,teamMode:'ffa',
@@ -47,7 +47,7 @@ source=source.replace(/\}\)\(\);\s*$/,\`window.__trajA2={
  blocked,hasLineOfSight,projectileOrigin,makeProjectile,advanceProjectileMicrostep,
  traceProjectile,previewTrajectory,shoot,step,
  get fx(){return fxSeq}
-};})();\`);
+};})();`);
 vm.runInNewContext(source,env,{filename:'game.js'});
 assert.ok(frame,'real game RAF initialized');
 const a=win.__trajA2;
