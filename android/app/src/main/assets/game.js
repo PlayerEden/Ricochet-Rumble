@@ -2087,6 +2087,54 @@ function drawTrajectoryPreview(c,t,angle){
   c.arc(finalPoint.x,finalPoint.y,3,0,Math.PI*2);c.stroke();}
  c.restore();
 }
+// Compact combat cues use the actual bot acquisition state. Never reveal a
+// concealed shooter, and never infer unsynced AI state on a LAN guest.
+function enemyBotCue(i,me=mode==='guest'?1:0){
+ if(mode!=='solo'&&mode!=='host')return null;
+ if(!state||paused||state.winner>=0||i===me||i<state.humanCount||
+    state.lives[i]<=0||state.lives[me]<=0||friendly(i,me))return null;
+ const enemy=state.tanks[i],local=state.tanks[me],brain=botBrains.get(i);
+ if(!enemy||!local||!brain)return null;
+ const zoom=camera.zoom;
+ if(!Number.isFinite(zoom)||zoom<=0)return null;
+ const x=(enemy.x-camera.x)*zoom,y=(enemy.y-camera.y)*zoom;
+ const tx=(local.x-camera.x)*zoom,ty=(local.y-camera.y)*zoom;
+ if(x<40||x>W-40||y<40||y>H-40||tx<0||tx>W||ty<0||ty>H)return null;
+ const distance=Math.hypot(enemy.x-local.x,enemy.y-local.y);
+ if(distance>385||!hasLineOfSight(enemy.x,enemy.y,local.x,local.y))return null;
+ const angle=Number.isFinite(enemy.a)?enemy.a:0;
+ // The existing true muzzle flash takes priority over reacquisition.
+ if(enemy.flash>0)return {phase:'shot',angle,progress:1};
+ if(brain.fireTarget!==me||brain.fireRecover>0||
+    !(brain.fireTrack>0)||!Number.isFinite(brain.fireAngle))return null;
+ const skill=state.config?.botSkill==='casual'?'casual':
+   state.config?.botSkill==='spicy'?'spicy':'normal';
+ const delay=local.onFoot?(skill==='casual'?.32:skill==='spicy'?.16:.24):
+   (skill==='casual'?.44:skill==='spicy'?.24:.32);
+ const progress=clamp(brain.fireTrack/delay,0,1);
+ if(progress<.23)return null;
+ return {phase:'acquire',angle,progress};
+}
+function drawEnemyBotCue(c,t,cue){
+ const radius=t.onFoot?27:44;
+ c.save();c.translate(t.x,t.y);c.rotate(cue.angle);
+ if(cue.phase==='shot'){
+  c.globalAlpha=.75;c.fillStyle='#ffe5a6';
+  c.beginPath();c.moveTo(radius+4,0);c.lineTo(radius+14,-5);
+  c.lineTo(radius+20,0);c.lineTo(radius+14,5);c.closePath();c.fill();
+ }else{
+  // Three restrained readiness ticks by the muzzle; no full predictive laser.
+  c.lineWidth=2.25;c.lineCap='round';
+  for(let n=0;n<3;n++){
+   const fraction=clamp(cue.progress*3-n,0,1);if(fraction<=0)continue;
+   c.globalAlpha=(.26+.52*fraction)*Math.min(1,(cue.progress-.20)*4);
+   c.strokeStyle=cue.progress>.87?'#ffe1a2':'#ffcc86';
+   const start=-.42+n*.29;
+   c.beginPath();c.arc(0,0,radius,start,start+.22*fraction);c.stroke();
+  }
+ }
+ c.restore();
+}
 function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick>0)c.translate(Math.sin(visualClock*130)*screenKick,Math.cos(visualClock*98)*screenKick*.5);// Widened tactical camera. The perimeter includes enough rendered exterior
  // floor tiles so wide Android screens do not reveal blank side gutters.
  const me=mode==='guest'?1:0,localTank=state.lives[me]>0?state.tanks[me]:(state.tanks.find((t,i)=>state.lives[i]>0)||state.tanks[me]||state.tanks[0]);
@@ -2219,6 +2267,11 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  if(releaseMode()&&(fireAim.pointerId!==null||releaseShot)){
   const t=state.tanks[mode==='guest'?1:0],aim=releaseShot??(fireAim.active?fireAim:null);
   drawTrajectoryPreview(c,t,aim?Math.atan2(aim.y,aim.x):t.a);
+ }
+ // Small warning only when an enemy actually sees the local player.
+ for(let i=state.humanCount;i<state.tanks.length;i++){
+  const cue=enemyBotCue(i,mode==='guest'?1:0);
+  if(cue)drawEnemyBotCue(c,state.tanks[i],cue);
  }
  for(const b of state.bullets){
    const foot=b.kind==='sidearm',heavy=b.kind==='mech';
