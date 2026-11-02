@@ -1966,6 +1966,80 @@ function unitTargetZoom(t){
 function cameraZoom(t=state?.tanks?.[mode==='guest'?1:0]){
  return mazeGrid?Math.max(unitTargetZoom(t),W/(worldW+CAMERA_APRON*2),H/(worldH+CAMERA_APRON*2)):1;
 }
+// Uses the real muzzle and x-then-y wall/bounce logic, but deliberately
+// shows only ONE reflected segment, not a solved full-map trick shot.
+function previewTrajectory(t,angle){
+ const foot=t.onFoot&&isPilotMatch(),radius=foot?3:5,dx=Math.cos(angle),dy=Math.sin(angle);
+ let x=t.x+dx*(foot?7:12),y=t.y+dy*(foot?7:12);
+ if(foot){
+  const mx=t.x+dx*PILOT_MUZZLE_X-dy*PILOT_MUZZLE_Y,
+   my=t.y+dy*PILOT_MUZZLE_X+dx*PILOT_MUZZLE_Y;
+  for(let k=1;k<=12;k++){
+   const bx=t.x+(mx-t.x)*k/12,by=t.y+(my-t.y)*k/12;
+   if(blocked(bx,by,3))break;x=bx;y=by;
+  }
+ }else for(let d=14;d<=34;d+=2){
+  const bx=t.x+dx*d,by=t.y+dy*d;
+  if(blocked(bx,by,5))break;x=bx;y=by;
+ }
+ let vx=dx,vy=dy,after=0,bounce=null,bumpDelay=0;
+ const segments=[[{x,y}]],distance=foot?245:520,inc=4,
+  speed=foot?475:vehicleDef(currentVehicle(t)).projectileSpeed;
+ for(let k=0;k<Math.ceil(distance/inc);k++){
+  const nx=x+vx*inc,ny=y+vy*inc;
+  const hitX=blocked(nx,y,radius),hitY=blocked(x,ny,radius);
+  if(hitX||hitY){
+   if(foot||bounce)break;
+   if(hitX)vx=-vx;else x=nx;
+   if(hitY)vy=-vy;else y=ny;
+   bounce={x,y};segments.push([{x,y}]);continue;
+  }
+  x=nx;y=ny;let bumped=false;
+  if(!foot)for(const bump of bumpers){
+   const bx=x-bump.x,by=y-bump.y,d=Math.hypot(bx,by);
+   if(d>0&&d<bump.r+6&&bumpDelay<=0){
+    const ux=bx/d,uy=by/d,dot=vx*ux+vy*uy;
+    if(dot<0){
+     vx-=2*dot*ux;vy-=2*dot*uy;
+     const len=Math.hypot(vx,vy);vx/=len;vy/=len;
+     x=bump.x+ux*(bump.r+7);y=bump.y+uy*(bump.r+7);
+     bumped=true;bumpDelay=.09;break;
+    }
+   }
+  }
+  bumpDelay=Math.max(0,bumpDelay-inc/Math.max(1,speed));
+  segments[segments.length-1].push({x,y});
+  if(bumped){if(bounce)break;bounce={x,y};segments.push([{x,y}]);}
+  if(bounce&&(after+=inc)>=235)break;
+ }
+ return {segments,bounce,foot};
+}
+function drawTrajectoryPreview(c,t,angle){
+ const path=previewTrajectory(t,angle),color=path.foot?'#b4ffe0':'#b5e6ff';
+ c.save();
+ for(let n=0;n<path.segments.length;n++){
+  const line=path.segments[n];c.globalAlpha=n===0?.76:.34;c.fillStyle=color;
+  let lengthSoFar=0,nextDot=11;
+  for(let i=1;i<line.length;i++){
+   const p=line[i-1],q=line[i],length=Math.hypot(q.x-p.x,q.y-p.y);
+   if(length<.001)continue;
+   while(lengthSoFar+length>=nextDot){
+    const f=(nextDot-lengthSoFar)/length;
+    c.beginPath();c.arc(p.x+(q.x-p.x)*f,p.y+(q.y-p.y)*f,1.8,0,Math.PI*2);c.fill();
+    nextDot+=13;
+   }
+   lengthSoFar+=length;
+  }
+ }
+ if(path.bounce){
+  c.globalAlpha=.92;c.strokeStyle='#ffe0a4';c.lineWidth=1.4;c.beginPath();
+  c.arc(path.bounce.x,path.bounce.y,5,0,Math.PI*2);c.stroke();
+ }
+ const finalPoint=path.segments.at(-1)?.at(-1);
+ if(finalPoint){c.globalAlpha=.5;c.strokeStyle=color;c.lineWidth=1.2;c.beginPath();
+  c.arc(finalPoint.x,finalPoint.y,3,0,Math.PI*2);c.stroke();}
+ c.restore();
+}
 function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick>0)c.translate(Math.sin(visualClock*130)*screenKick,Math.cos(visualClock*98)*screenKick*.5);// Widened tactical camera. The perimeter includes enough rendered exterior
  // floor tiles so wide Android screens do not reveal blank side gutters.
  const me=mode==='guest'?1:0,localTank=state.lives[me]>0?state.tanks[me]:(state.tanks.find((t,i)=>state.lives[i]>0)||state.tanks[me]||state.tanks[0]);
@@ -2096,17 +2170,8 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
   c.closePath();c.fillStyle='#ffffff';c.fill();
  }}
  if(releaseMode()&&(fireAim.pointerId!==null||releaseShot)){
-  const t=state.tanks[0];
-  const vx=releaseShot?.x??(fireAim.active?fireAim.x:Math.cos(t.a));
-  const vy=releaseShot?.y??(fireAim.active?fireAim.y:Math.sin(t.a));
-  let reach=0;
-  for(let distance=16;distance<=135;distance+=5){
-   if(blocked(t.x+vx*distance,t.y+vy*distance,3))break;
-   reach=distance;
-  }
-  if(reach>16){c.save();c.globalAlpha=.65;c.strokeStyle='#a9f4d6';c.lineWidth=1.5;
-   c.beginPath();c.moveTo(t.x+vx*24,t.y+vy*24);c.lineTo(t.x+vx*reach,t.y+vy*reach);c.stroke();
-   c.globalAlpha=.95;c.beginPath();c.arc(t.x+vx*reach,t.y+vy*reach,3,0,Math.PI*2);c.stroke();c.restore();}
+  const t=state.tanks[mode==='guest'?1:0],aim=releaseShot??(fireAim.active?fireAim:null);
+  drawTrajectoryPreview(c,t,aim?Math.atan2(aim.y,aim.x):t.a);
  }
  for(const b of state.bullets){
    const foot=b.kind==='sidearm',heavy=b.kind==='mech';
