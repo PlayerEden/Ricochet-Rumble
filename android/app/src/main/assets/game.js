@@ -496,7 +496,7 @@ function applyPlaylistUI(){
  }
 }
 function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){const st=p.settings||{};selectedRules={mapSize:MAP_SIZES[st.mapSize]?st.mapSize:'small',botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:2,bulletCap:[1,2,3,4,5,8].includes(st.bulletCap)?st.bulletCap:4,startLives:[2,3,5].includes(st.startLives)?st.startLives:2,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key];if(p.playlist?.version===1&&Array.isArray(p.playlist.enabled))setPlaylistModes(p.playlist.enabled)}}catch(_){}loadCustomDraft();loadCustomPresets();applyPrefsToUI()}
-function applyPrefsToUI(){const picks={mapSize:selectedRules.mapSize,botCount:selectedRules.botCount,bulletCap:selectedRules.bulletCap,startLives:selectedRules.startLives,teamMode:selectedRules.teamMode,botSkill:selectedRules.botSkill};const ids={mapSize:'map-size',botCount:'bot-count',bulletCap:'bullet-cap',startLives:'lives-choice',teamMode:'team-choice',botSkill:'bot-skill'};for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(el&&el.options&&[...el.options].some(o=>o.value===String(picks[key])))el.value=String(picks[key])}for(const key of Object.keys(comfort)){const el=document.getElementById('pref-'+key);if(el)el.checked=comfort[key]}const el=document.getElementById('fire-mode');if(el)el.textContent=comfort.releaseFire?'AIM · RELEASE':comfort.autoFire?'AUTO ON':'HOLD TO FIRE';document.querySelector('.battlefield')?.classList.toggle('swap-controls',comfort.leftHanded);applyPlaylistUI();}
+function applyPrefsToUI(){const picks={mapSize:selectedRules.mapSize,botCount:selectedRules.botCount,bulletCap:selectedRules.bulletCap,startLives:selectedRules.startLives,teamMode:selectedRules.teamMode,botSkill:selectedRules.botSkill};const ids={mapSize:'map-size',botCount:'bot-count',bulletCap:'bullet-cap',startLives:'lives-choice',teamMode:'team-choice',botSkill:'bot-skill'};for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(el&&el.options&&[...el.options].some(o=>o.value===String(picks[key])))el.value=String(picks[key])}for(const key of Object.keys(comfort)){const el=document.getElementById('pref-'+key);if(el)el.checked=comfort[key]}const el=document.getElementById('fire-mode');if(el)el.textContent=comfort.autoFire?'AUTO ON':comfort.releaseFire?'AIM · RELEASE':'HOLD TO FIRE';document.querySelector('.battlefield')?.classList.toggle('swap-controls',comfort.leftHanded);applyPlaylistUI();}
 function releaseControls(){touch.clear();pressed.clear();releaseShot=null;remoteReleaseShot=null;clearStick();clearFireAim();for(const el of document.querySelectorAll('[data-key]'))el.classList.remove('active')}
 
 function mazeRandom(seed){let x=(seed>>>0)||1;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296};}
@@ -900,7 +900,7 @@ function inputFrom(keys,isLocal){const down=k=>menu.classList.contains('hidden')
  return {moveX,moveY,aimX:queuedAim?.x??(fineAim?fireAim.x:undefined),
   aimY:queuedAim?.y??(fineAim?fireAim.y:undefined),
   fire:(down('fire')&&!(isLocal&&releaseMode()&&touch.has('fire')&&!pressed.has(keys.fire)))||
-   (isLocal&&comfort.autoFire&&!releaseMode()&&mode!=='idle'&&menu.classList.contains('hidden')&&!paused)};
+   (isLocal&&comfort.autoFire&&mode!=='idle'&&menu.classList.contains('hidden')&&!paused)};
 }
 function makeControl(isPlayer1){return isPlayer1?inputFrom(keys1,true):inputFrom(keys2,false)}
 function serializeState(){return {tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,vehicleDropTimer:state.vehicleDropTimer,dropIndex:state.dropIndex,vehicleBeacon:state.vehicleBeacon?{...state.vehicleBeacon}:null,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,elapsedSeconds:state.elapsedSeconds,deaths:state.deaths.slice(),hostPaused:mode==='host'&&paused};}
@@ -928,7 +928,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  document.getElementById('game-screen')?.classList.toggle('pilot-match',isPilotMatch());
  const releasePilot=['solo','host','guest'].includes(mode)&&comfort.releaseFire;
  const fireCaption=document.getElementById('fire-mode');
- if(fireCaption)fireCaption.textContent=releasePilot?'AIM · RELEASE':comfort.autoFire?'AUTO ON':'HOLD TO FIRE';
+ if(fireCaption)fireCaption.textContent=comfort.autoFire?'AUTO ON':releasePilot?'AIM · RELEASE':'HOLD TO FIRE';
  const fireButton=document.querySelector('.fire-btn');
  if(fireButton&&typeof fireButton.setAttribute==='function')fireButton.setAttribute('aria-label',releasePilot?
   'Drag to preview trajectory; release to fire once aligned':'Hold to fire');
@@ -1004,7 +1004,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
     ' · CORAL '+(window.SectorFlags.flagHome(enemy)?'HOME':enemy.carrier!==null?'CARRIED':'DROPPED');
   }
  }
- const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=comfort.releaseFire&&['solo','host','guest'].includes(mode)?'AIM · RELEASE':comfort.autoFire?'AUTO ON':'HOLD TO FIRE';
+ const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=comfort.autoFire?'AUTO ON':comfort.releaseFire&&['solo','host','guest'].includes(mode)?'AIM · RELEASE':'HOLD TO FIRE';
  const clock=document.getElementById('score-clock'),life=document.querySelector('.scorestrip .hud-life');
  if(clock){clock.classList.toggle('hidden',!isScoredMatch());if(isScoredMatch())clock.textContent=durationLabel(Math.ceil(Math.max(0,ctf?state.ctf.clock-state.ctf.elapsed:state.scored.clockSeconds-state.scored.elapsedSeconds)));}
  if(life)life.classList.toggle('hidden',isScoredMatch());
