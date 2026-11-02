@@ -30,3 +30,20 @@ jobs:
           node tests/smoke.mjs
           node tests/ballistic-trace-a2.mjs
           node tests/save-backup.mjs
+      - name: Chromium two-viewport allied aiming visibility audit
+        run: |
+          set -euo pipefail
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          npm install --no-save --ignore-scripts playwright-core@1.56.1
+          node tests/allied-aim-visual-qa.mjs
+      - name: Upload real visual audit screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allied-aim-b2-visual-evidence
+          path: |
+            qa-screens/allied-aim-*.png
+            qa-results/allied-aim-b2.json
+          if-no-files-found: ignore
+          retention-days: 14
