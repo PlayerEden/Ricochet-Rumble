@@ -1198,18 +1198,22 @@ function botTraceAim(bot,owner,seen,skill,shotNumber,canSee){
    maxDistance:bot.onFoot?370:730,maxBounces:bot.onFoot?0:1,
    checkActors:canSee});
   if(canSee&&result.hit!==null&&result.hit!==seen.index)continue;
-  let closest=Infinity;
-  for(const line of result.segments)for(const p of line){
+  let closest=Infinity,firstInterceptSegment=-1;
+  for(let n=0;n<result.segments.length;n++)for(const p of result.segments[n]){
    const distance=(p.x-seen.x)**2+(p.y-seen.y)**2;
    if(distance<closest)closest=distance;
+   if(firstInterceptSegment<0&&distance<targetRadius*targetRadius)
+    firstInterceptSegment=n;
   }
-  // Existing spawn shields still allow acquisition and the normal firing
-  // cycle; their actual hit immunity stays fully authoritative in step().
+  // A bullet that passes a target and ricochets later was a DIRECT shot at
+  // that target. Only count a bank when its first target crossing is after a
+  // reflection. In particular, targets with a temporary shield still count
+  // as lined up even if the actual trace continues harmlessly past them.
+  const intersects=firstInterceptSegment>=0;
   const hit=canSee?(result.hit===seen.index||
-   (state.tanks[seen.index]?.shield>0&&closest<targetRadius*targetRadius)):
-   closest<targetRadius*targetRadius;
+   (state.tanks[seen.index]?.shield>0&&intersects)):intersects;
   if(!hit)continue;
-  const banked=result.bounces>0;
+  const banked=firstInterceptSegment>0;
   // Direct shots are economical; choose a bank only when it actually works
   // and the direct path doesn't. More skill means better planning, not speed.
   const score=banked?100+Math.sqrt(closest)*.05:Math.sqrt(closest)*.05;
