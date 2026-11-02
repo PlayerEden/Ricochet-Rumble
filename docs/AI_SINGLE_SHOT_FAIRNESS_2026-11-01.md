@@ -32,3 +32,17 @@ A further targeted browser matrix at `tests/bot-shot-parity-qa.mjs` evaluates **
 ## Rollback and Android continuity
 
 Rollback source: `experiment/universal-release-ricochet-v2`, [full verified CI 41373810780](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41373810780). Its owner-preview Android APK versionCode **240001**, app ID `com.playereden.ricochetrumble.preview`, and signer SHA256 `a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc` must remain install-over-compatible. If an AI fairness APK is built, it requires the same signer and a versionCode strictly greater than **240001**. Do not merge main or overwrite accepted Android tester assets without a green QA gate.
+
+## Verified end-to-end audit — PASS
+
+[GitHub Actions #41384505125](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41384505125) **passed**, tested source SHA `e3700ea405c75acbb2cd9b18afec26e1e242e297`. [Auditable QA artifact #13115320255](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41384505125/artifacts/13115320255) includes `qa-results/bot-shot-parity.json`, pilot/control results, team route balance and visual screenshots.
+
+Actual **controlled still-target** physics results: each column below is observed in both 740×360 and 960×540 Chrome viewports, using 1/60-second frames. Values are first-shot delay / minimum inter-shot interval in seconds (rounded):
+
+| Weapon | Casual | Normal | Spicy |
+| --- | --- | --- | --- |
+| Pilot | 0.33 / 0.90 | 0.25 / 0.67 | 0.17 / 0.52 |
+| Tank | 0.42–0.45 / 1.02 | 0.33 / 0.75 | 0.25 / 0.60 |
+| Mech | 0.45 / 1.02 | 0.33 / 0.75 | 0.25 / 0.63 |
+
+18 test fixtures and all full-game browser/CTF/Forward Bay/vehicle/backup/visual regression tests passed. These are synthetic controlled-target timings, **not** measured actual difficulty or competitive human-vs-bot accuracy. The test also verified no off-screen first shot on a human vehicle, reset after camera occlusion, and re-acquisition on ejection. Main remains untouched.
