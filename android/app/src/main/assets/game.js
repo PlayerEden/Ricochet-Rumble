@@ -681,7 +681,7 @@ function closestAvailableVehicle(i){
 }
 // Empty vehicles are pass-through, but must have a clear deployment footprint
 // before a new driver materializes. Otherwise two live actors can overlap.
-function vehicleEntryClear(i,v){return !state.tanks.some((other,j)=>j!==i&&state.lives[j]>0&&Math.hypot(other.x-v.x,other.y-v.y)<(other.onFoot?37:47));}
+function vehicleEntryClear(i,v){return !state.tanks.some((other,j)=>solidOpponent(i,j)&&state.lives[j]>0&&Math.hypot(other.x-v.x,other.y-v.y)<(other.onFoot?37:47));}
 function nearestEmptyVehicle(i){if(!isPilotMatch()||state.lives[i]<=0)return null;const t=state.tanks[i];let best=null,bestD=58;
  for(const v of state.vehicles||[]){if(v.occupant!==-1||v.armor<=0||!vehicleEntryClear(i,v))continue;const d=Math.hypot(v.x-t.x,v.y-t.y);if(d<bestD&&hasLineOfSight(t.x,t.y,v.x,v.y)){best=v;bestD=d}}
  return best;}
@@ -691,7 +691,7 @@ function pilotExitSite(i,vehicleId){const t=state.tanks[i];
  for(const radius of [46,57,70])for(let n=0;n<16;n++){
    const a=n*Math.PI/8,px=t.x+Math.cos(a)*radius,py=t.y+Math.sin(a)*radius;
    if(blocked(px,py,11)||!hasLineOfSight(t.x,t.y,px,py))continue;
-   if(state.tanks.some((other,j)=>j!==i&&state.lives[j]>0&&Math.hypot(other.x-px,other.y-py)<(other.onFoot?27:39)))continue;
+   if(state.tanks.some((other,j)=>solidOpponent(i,j)&&state.lives[j]>0&&Math.hypot(other.x-px,other.y-py)<(other.onFoot?27:39)))continue;
    return [px,py];
  }
  return null;
@@ -795,6 +795,9 @@ function teamOf(i,st=state){
  return i%2;
 }
 function friendly(a,b){return teamOf(a)===teamOf(b)}
+// Use actual teams for collision: allies overlap in team/co-op; opponents
+// remain solid. FFA's distinct teams keep its original solid-unit behavior.
+function solidOpponent(a,b){return a!==b&&!friendly(a,b)}
 function combatColor(i,st=state){
  return st.config?.teamMode==='ffa'?colors[i]:(teamOf(i,st)===0?'#46d2f5':'#fc856e');
 }
@@ -1100,7 +1103,9 @@ function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=c
  const nx=t.x+t.vx*dt,ny=t.y+t.vy*dt;
  const radius=t.onFoot?10:21;
  const collides=(x,y)=>blocked(x,y,radius)||state.tanks.some((other,j)=>{
-  if(i===j||state.lives[j]<=0)return false;
+  // Friendly units are non-solid: both player and bots use the same
+  // rule, so no invisible collision or special CTF escort workaround.
+  if(!solidOpponent(i,j)||state.lives[j]<=0)return false;
   const limit=(radius+(other.onFoot?12:21))**2;
   const nextDist=(other.x-x)**2+(other.y-y)**2;
   if(nextDist>=limit)return false;
@@ -1397,41 +1402,6 @@ function botInput(i,dt){
    ctfYield=true;
   }else brain.ctfLaneSide=0;
  }
- // Solo CTF escort steps aside when it occupies the human's forward lane.
- // This uses standard input/physics; no collision bypass, bonus speed or LAN.
- let ctfHumanWait=false;
- if(ctfDecision?.kind==='escort'&&mode==='solo'&&state.lives[0]>0&&friendly(i,0)){
-  const human=state.tanks[0],fx=Math.cos(human.a),fy=Math.sin(human.a),
-   dx=bot.x-human.x,dy=bot.y-human.y,dist=Math.hypot(dx,dy),
-   ahead=dx*fx+dy*fy,lateral=dx*fy-dy*fx;
-  if(dist<115&&ahead>8&&ahead<96&&Math.abs(lateral)<70){
-   const sideX=-fy,sideY=fx,radius=bot.onFoot?10:21;
-   const openSide=sign=>{
-    const x=bot.x+sideX*sign*48,y=bot.y+sideY*sign*48;
-    return !blocked(x,y,radius)&&hasLineOfSight(bot.x,bot.y,x,y)&&
-     state.tanks.every((other,j)=>j===i||state.lives[j]<=0||
-      Math.hypot(other.x-x,other.y-y)>=radius+(other.onFoot?12:21)+5);
-   };
-   const first=Math.abs(brain.ctfHumanYieldSide)===1?brain.ctfHumanYieldSide:1;
-   const sign=openSide(first)?first:openSide(-first)?-first:0;
-   if(Math.abs(lateral)>=48)ctfHumanWait=true;
-   else if(sign){
-    brain.ctfHumanYieldSide=sign;
-    direction=Math.atan2(sideY*sign,sideX*sign);
-    ctfYield=true;
-   }else{
-    // An actual one-cell-wide maze lane has no lateral pocket. Escort
-    // advances in front of the human instead of holding the corridor shut.
-    const x=bot.x+fx*36,y=bot.y+fy*36;
-    if(!blocked(x,y,radius)&&
-     state.tanks.every((other,j)=>j===i||state.lives[j]<=0||
-      Math.hypot(other.x-x,other.y-y)>=radius+(other.onFoot?12:21)+3)){
-     direction=Math.atan2(fy,fx);
-     ctfYield=true;
-    }
-   }
-  }else brain.ctfHumanYieldSide=0;
- }
  botBrains.set(i,brain);
  const delta=Math.atan2(Math.sin(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a),Math.cos(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a));
  const basePace=skill==='casual'?.61:skill==='spicy'?.98:.81;
@@ -1448,7 +1418,7 @@ function botInput(i,dt){
  const ctfHold=!!ctfDecision&&!ctfYield&&
   ((choice.kind==='defend'&&objectiveDistance<34)||
    (choice.kind==='escort'&&objectiveDistance<90));
- const chasePace=ctfHumanWait||ctfHold||choice.kind==='hold'?0:
+ const chasePace=ctfHold||choice.kind==='hold'?0:
   choice.kind==='engage'&&hasLine&&enemyDist<115?pace*(role==='hunter'?.72:.34):pace;
  return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,
   aimX:committed.aimX,aimY:committed.aimY,fireAim:hasLine,fire:committed.fire,bot:true};
