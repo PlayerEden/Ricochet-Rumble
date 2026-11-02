@@ -54,6 +54,7 @@ function hooks(){
    const secret={x:human.x,y:human.y};
    human.x=wallPair[1].x+cell*.05;
    const another=soloBotPursuitPoint(1,human,brain,1/60);
+   const patrolActive=!!brain.searchPoint; // Capture BEFORE reacquisition clears search.
    // Host/CTF retain their old objective behavior, unchanged by the Solo-only prototype.
    mode='host';const lan=soloBotPursuitPoint(1,human,brain,1/60)===human;
    mode='solo';state.ctf={};state.config.ctfExercise=true;
@@ -68,7 +69,7 @@ function hooks(){
     afterMovementX:remembered.x,afterMovementY:remembered.y,
     seen,hiddenActual,blockedFire:blockedFire.fire,
     searchX:searched.x,searchY:searched.y,searchOtherX:another.x,
-    searchOtherY:another.y,secret,patrolActive:!!brain.searchPoint,
+    searchOtherY:another.y,secret,patrolActive,
     lan,ctf,reacquiredActual:reacquired===human};
   }
  };
