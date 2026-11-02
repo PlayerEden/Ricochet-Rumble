@@ -175,7 +175,7 @@ const QUICK_PLAY_MODE_IDS=Object.freeze([...RELEASED_MATCH_MODES,...QUICK_PLAY_O
 let selectedPlaylistIds=RELEASED_MATCH_MODES.slice(),playlistBag=[],lastSoloModeId=null,matchSerial=0;
 
 const CUSTOM_MODE_IDS=Object.freeze(['survival_ffa','survival_teams','cqc','scored_ffa','scored_tdm']);
-const CUSTOM_DEFAULT=Object.freeze({modeId:'survival_ffa',mapSize:'standard',botCount:2,botSkill:'normal',startLives:2,bulletCap:4});
+const CUSTOM_DEFAULT=Object.freeze({modeId:'survival_ffa',mapSize:'standard',botCount:2,botSkill:'normal',startLives:2,bulletCap:4,friendlyFire:false});
 let customDraft={...CUSTOM_DEFAULT};
 
 const CUSTOM_PRESET_LIMIT=5,CUSTOM_PRESET_NAME_LIMIT=24;
@@ -252,7 +252,8 @@ function normalizeCustomDraft(raw){
  const choose=(key,values)=>values.includes(p[key])?p[key]:CUSTOM_DEFAULT[key];
  return {modeId:choose('modeId',CUSTOM_MODE_IDS),mapSize:choose('mapSize',['small','standard','large']),
  botCount:choose('botCount',[0,1,2,3,4]),botSkill:choose('botSkill',['casual','normal','spicy','varied']),
- startLives:choose('startLives',[2,3,5]),bulletCap:choose('bulletCap',[1,2,3,4,5,8])};
+ startLives:choose('startLives',[2,3,5]),bulletCap:choose('bulletCap',[1,2,3,4,5,8]),
+  friendlyFire:p.friendlyFire===true};
 }
 function saveCustomDraft(){try{window.localStorage?.setItem(CUSTOM_PREF_KEY,JSON.stringify({version:1,rules:customDraft}))}catch(_){}return {...customDraft}}
 function loadCustomDraft(){try{const p=JSON.parse(window.localStorage?.getItem(CUSTOM_PREF_KEY)||'null');if(p?.version===1)customDraft=normalizeCustomDraft(p.rules)}catch(_){}return {...customDraft}}
@@ -261,20 +262,26 @@ function customOptionsFor(raw=customDraft){
  const d=normalizeCustomDraft(raw),scored=SCORED_MATCH_RULES[d.modeId];
  if(scored)return {...selectedRules,matchModeId:d.modeId,customMatch:true,pilotMode:true,
   mapSize:d.modeId==='cqc'?'small':'standard',botCount:3,botSkill:d.botSkill,
-  bulletCap:4,startLives:2,teamMode:scored.mode==='teams'?'teams':'ffa'};
+  bulletCap:4,startLives:2,teamMode:scored.mode==='teams'?'teams':'ffa',
+   friendlyFire:scored.mode==='teams'&&d.friendlyFire};
  const base={...selectedRules,mapSize:d.mapSize,botCount:d.botCount,botSkill:d.botSkill,
-  bulletCap:d.bulletCap,startLives:d.startLives,teamMode:d.modeId==='survival_teams'?'teams':'ffa'};
+  bulletCap:d.bulletCap,startLives:d.startLives,teamMode:d.modeId==='survival_teams'?'teams':'ffa',
+   friendlyFire:d.modeId==='survival_teams'&&d.friendlyFire};
  return {...soloOptionsFor(d.modeId,base),customMatch:true};
 }
 function refreshCustomUI(){
  const root=document.getElementById('custom-match');if(!root)return;
- const ids={modeId:'custom-mode',mapSize:'custom-size',botCount:'custom-bots',botSkill:'custom-skill',startLives:'custom-lives',bulletCap:'custom-shells'};
+ const ids={modeId:'custom-mode',mapSize:'custom-size',botCount:'custom-bots',botSkill:'custom-skill',startLives:'custom-lives',bulletCap:'custom-shells',friendlyFire:'custom-friendly'};
  const scored=!!SCORED_MATCH_RULES[customDraft.modeId],options=customOptionsFor();
  for(const [key,id] of Object.entries(ids)){
   const el=document.getElementById(id);
-  if(el)el.value=String(scored&&['mapSize','botCount','startLives','bulletCap'].includes(key)?options[key]:customDraft[key]);
+  if(el)el.value=key==='friendlyFire'?(customDraft.friendlyFire?'on':'off'):String(scored&&['mapSize','botCount','startLives','bulletCap'].includes(key)?options[key]:customDraft[key]);
  }
  for(const id of ['custom-size','custom-bots','custom-lives','custom-shells']){const el=document.getElementById(id);if(el)el.disabled=scored}
+ const ff=document.getElementById('custom-friendly'),team=options.teamMode!=='ffa';
+ if(ff){ff.disabled=!team;ff.value=team&&customDraft.friendlyFire?'on':'off';}
+ const ffNote=document.getElementById('custom-friendly-note');
+ if(ffNote)ffNote.textContent=team?(options.friendlyFire?'ON · ALLIES SOLID · TEAM DAMAGE ENABLED · NO TEAM-KILL POINTS':'OFF · ALLIES PASS THROUGH · NO TEAM DAMAGE'):'FFA · NO ALLIED UNITS';
  const count=options.botCount,p=document.getElementById('custom-preview');
  if(p)p.textContent=soloModeLabel(options)+' · '+options.mapSize.toUpperCase()+' · '+(count?count+1+' COMBATANTS':'PRACTICE · NO OPPONENTS')+' · '+(scored?'SCORE '+SCORED_MATCH_RULES[customDraft.modeId].scoreTarget+' KOs / '+SCORED_MATCH_RULES[customDraft.modeId].clockSeconds/60+' MIN':'LAST SIDE STANDING');
  const note=document.getElementById('custom-rule-note');
@@ -282,8 +289,8 @@ function refreshCustomUI(){
 }
 function readCustomScreen(){
  if(!document.getElementById('custom-match'))return {...customDraft};
- const ids={modeId:'custom-mode',mapSize:'custom-size',botCount:'custom-bots',botSkill:'custom-skill',startLives:'custom-lives',bulletCap:'custom-shells'},patch={};
- for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(!el||el.disabled)continue;patch[key]=['botCount','startLives','bulletCap'].includes(key)?Number(el.value):el.value}
+ const ids={modeId:'custom-mode',mapSize:'custom-size',botCount:'custom-bots',botSkill:'custom-skill',startLives:'custom-lives',bulletCap:'custom-shells',friendlyFire:'custom-friendly'},patch={};
+ for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(!el||el.disabled)continue;patch[key]=key==='friendlyFire'?el.value==='on':['botCount','startLives','bulletCap'].includes(key)?Number(el.value):el.value}
  return setCustomDraft(patch);
 }
 function openCustomScreen(){setPanel(document.getElementById('custom-template').innerHTML);refreshCustomUI();refreshCustomPresetUI();}
@@ -735,6 +742,9 @@ function deploySquadsAtBays(tanks,config,humans,bays){
  }
 }
 function initialState(arena=0,options=null,seed=null){const config={...readSettings(),pilotMode:true,recoveryPolicy:'corridor-v1',...(options||{})};let count=mode==='solo'?1:2;
+ // Freeze the match policy at deployment. Legacy saves/packets default OFF;
+ // FFA never has allies, regardless of stale Custom/LAN selections.
+ config.friendlyFire=config.teamMode!=='ffa'&&config.friendlyFire===true;
  // Normal Team Survival/TDM, LAN teams and CTF share actual Forward Bay territory.
  // Preserve distributed FFA, independent solo survival, and pilot-only CQC.
  const usesTeamBays=(config.teamMode==='teams'||config.teamMode==='coop')&&config.matchModeId!=='cqc';
@@ -795,9 +805,14 @@ function teamOf(i,st=state){
  return i%2;
 }
 function friendly(a,b){return teamOf(a)===teamOf(b)}
-// Use actual teams for collision: allies overlap in team/co-op; opponents
-// remain solid. FFA's distinct teams keep its original solid-unit behavior.
-function solidOpponent(a,b){return a!==b&&!friendly(a,b)}
+function friendlyFireEnabled(st=state){return st?.config?.teamMode!=='ffa'&&st?.config?.friendlyFire===true}
+// OFF: friends can cross and can't deal friendly damage. ON: friends are solid,
+// their projectiles cause damage, but teammate kills never award KO points.
+function solidOpponent(a,b){return a!==b&&(friendlyFireEnabled()||!friendly(a,b))}
+function projectileCanHit(owner,victim,bullet){
+ if(owner===victim)return bullet.age>.38&&bullet.bounces>0;
+ return friendlyFireEnabled()||!friendly(owner,victim);
+}
 function combatColor(i,st=state){
  return st.config?.teamMode==='ffa'?colors[i]:(teamOf(i,st)===0?'#46d2f5':'#fc856e');
 }
@@ -1196,7 +1211,7 @@ function botTraceAim(bot,owner,seen,skill,shotNumber,canSee){
   // point and its last-observed hitbox determine the decision.
   const result=traceProjectile(bot,c.angle,{
    maxDistance:bot.onFoot?370:730,maxBounces:bot.onFoot?0:1,
-   checkActors:canSee});
+   checkActors:canSee||friendlyFireEnabled()});
   let closest=Infinity,firstInterceptSegment=-1;
   for(let n=0;n<result.segments.length;n++)for(const p of result.segments[n]){
    const distance=(p.x-seen.x)**2+(p.y-seen.y)**2;
@@ -1209,8 +1224,8 @@ function botTraceAim(bot,owner,seen,skill,shotNumber,canSee){
   // reflection. In particular, targets with a temporary shield still count
   // as lined up even if the actual trace continues harmlessly past them.
   const intersects=firstInterceptSegment>=0;
-  if(canSee&&result.hit!==null&&result.hit!==seen.index&&
-     !(state.tanks[seen.index]?.shield>0&&intersects))continue;
+  if((canSee||friendlyFireEnabled())&&result.hit!==null&&result.hit!==seen.index&&
+     !(canSee&&state.tanks[seen.index]?.shield>0&&intersects))continue;
   const hit=canSee?(result.hit===seen.index||
    (state.tanks[seen.index]?.shield>0&&intersects)):intersects;
   if(!hit)continue;
@@ -1617,7 +1632,7 @@ function respawn(victim){const enemies=state.tanks.filter((_,i)=>i!==victim&&sta
  }
  const [x,y]=selected||startingPosition(victim),t=state.tanks[victim];Object.assign(t,{x,y,a:0,vx:0,vy:0,shield:1.8,powerType:null,powerTimer:0,flash:0,recoil:0,trackLeft:0,trackRight:0,ejectAnim:0,onFoot:isPilotMatch()?true:false,vehicleId:null});
  state.bullets=state.bullets.filter(b=>Math.hypot(b.x-x,b.y-y)>50);}
-function registerHit(attacker,victim){if(state.winner>=0||state.lives[victim]<=0||state.tanks[victim].shield>0||(attacker!==victim&&friendly(attacker,victim)))return false;
+function registerHit(attacker,victim){if(state.winner>=0||state.lives[victim]<=0||state.tanks[victim].shield>0||(attacker!==victim&&friendly(attacker,victim)&&!friendlyFireEnabled()))return false;
  quietContactSeconds=0;const target=state.tanks[victim];if(target.powerType==='guard'&&target.powerTimer>0){target.powerType=null;target.powerTimer=0;emitFx('guard',target.x,target.y,'#b59aff');audioCue('barrier',target.x,target.y);state.event='BARRIER BLOCKED THE HIT!';state.eventTimer=.8;return false;}
  if(isScoredMatch()&&target.onFoot)return creditScoredPilotKO(attacker,victim);
  if(isPilotMatch()&&!target.onFoot){const vehicle=state.vehicles?.[target.vehicleId];if(vehicle&&vehicle.armor>0){
@@ -1628,7 +1643,7 @@ function registerHit(attacker,victim){if(state.winner>=0||state.lives[victim]<=0
  }}
  // A scored vehicle life can ONLY end when its pilot is genuinely on foot.
  if(isScoredMatch())return false;
- emitFx('hit',target.x,target.y,combatColor(victim),attacker,victim);if(victim===(mode==='guest'?1:0)){screenKick=comfort.shake?3.2:0;damagePulse=.58;}state.lives[victim]--;if(state.deaths)state.deaths[victim]++;if(attacker!==victim)state.kos[attacker]++;state.event=label(victim)+' LOSES A LIFE!';state.eventTimer=.85;audioCue('pilot-hit',target.x,target.y);
+ emitFx('hit',target.x,target.y,combatColor(victim),attacker,victim);if(victim===(mode==='guest'?1:0)){screenKick=comfort.shake?3.2:0;damagePulse=.58;}state.lives[victim]--;if(state.deaths)state.deaths[victim]++;if(attacker!==victim&&!friendly(attacker,victim))state.kos[attacker]++;state.event=attacker!==victim&&friendly(attacker,victim)?'FRIENDLY HIT · NO KO':label(victim)+' LOSES A LIFE!';state.eventTimer=.85;audioCue('pilot-hit',target.x,target.y);
  if(state.lives[victim]>0){respawn(victim);if(state.respawns)state.respawns[victim]++;}else{target.vx=target.vy=0;target.powerType=null;target.powerTimer=0;state.bullets=state.bullets.filter(b=>b.owner!==victim);
  const active=state.tanks.map((_,i)=>i).filter(i=>state.lives[i]>0),teams=[...new Set(active.map(i=>teamOf(i)))];
  if(teams.length<=1){state.winnerTeam=teams[0]??teamOf(attacker);state.winner=active[0]??attacker;state.event=state.config.teamMode==='coop'?(state.winnerTeam===0?'HUMANS WIN!':'BOTS WIN!'):state.config.teamMode==='teams'?(`TEAM ${state.winnerTeam===0?'BLUE':'RED'} WINS!`):(label(state.winner)+' WINS!');state.eventTimer=0;}}
@@ -1648,7 +1663,10 @@ function finishScoredMatch(){
 function creditScoredPilotKO(attacker,victim){
  const t=state.tanks[victim];if(!t.onFoot)return false;const api=window.SectorScored;
  if(isCtfMatch())applyCtf(window.SectorFlags.drop(state.ctf,victim,t.x,t.y));
- let next=api.recordPilotKO(state.scored,{matchId:state.matchId,incidentId:state.config.matchModeId+':'+state.matchId+':'+(++state.scoreSerial),attacker,victim,kind:'pilot_ko'});
+ const teamKill=attacker!==victim&&friendly(attacker,victim)&&friendlyFireEnabled();
+ // The scored kernel already supports attacker:null: it records a genuine
+ // death but awards no score. Keep that invariant for accidental team kills.
+ let next=api.recordPilotKO(state.scored,{matchId:state.matchId,incidentId:state.config.matchModeId+':'+state.matchId+':'+(++state.scoreSerial),attacker:teamKill?null:attacker,victim,kind:'pilot_ko'});
  if(next===state.scored)return false;
  // The scored kernel still tracks true pilot deaths but cannot decide CTF.
  if(isCtfMatch()&&next.finished)next=Object.freeze({...next,finished:false,result:null});
@@ -1658,7 +1676,7 @@ function creditScoredPilotKO(attacker,victim){
  emitFx('hit',t.x,t.y,combatColor(victim),attacker,victim);
  if(victim===0){screenKick=comfort.shake?3.2:0;damagePulse=.58;}
  audioCue('pilot-hit',t.x,t.y);const teamScore=next.mode==='teams'?next.operatorKOs.reduce((sum,k,i)=>sum+(next.teamIds[i]===next.teamIds[attacker]?k:0),0):null;
-  state.event=attacker===victim?'SELF RICOCHET · NO KO':next.mode==='teams'?(next.teamIds[attacker]===0?'BLUE':'RED')+' TEAM KO · '+teamScore+'/'+next.scoreTarget:label(attacker)+' KO · '+state.kos[attacker]+'/'+next.scoreTarget;state.eventTimer=.9;
+  state.event=teamKill?'FRIENDLY FIRE · NO KO':attacker===victim?'SELF RICOCHET · NO KO':next.mode==='teams'?(next.teamIds[attacker]===0?'BLUE':'RED')+' TEAM KO · '+teamScore+'/'+next.scoreTarget:label(attacker)+' KO · '+state.kos[attacker]+'/'+next.scoreTarget;state.eventTimer=.9;
  finishScoredMatch();refreshHUD();return true;
 }
 // Shared scored delayed spawn: pilots recover on foot; surviving empty vehicles
@@ -1776,7 +1794,7 @@ function step(dt){if(paused||state.winner>=0)return;
   // authoritative; the trace may only inspect a static snapshot of them.
   if(b.life<=0)break;
   for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];
-   if(state.lives[i]>0&&(i===b.owner?(b.age>.38&&b.bounces>0):!friendly(i,b.owner))&&
+   if(state.lives[i]>0&&projectileCanHit(b.owner,i,b)&&
     t.shield<=0&&(t.x-b.x)**2+(t.y-b.y)**2<projectileHitRadius(t,b)**2){
     b.life=0;registerHit(b.owner,i);break;
    }
@@ -2252,7 +2270,7 @@ function traceProjectile(t,angle,options={}){
    if(checkActors)for(let i=0;i<state.tanks.length;i++){
     const target=state.tanks[i];
     if(state.lives[i]<=0||(i!==owner&&target.shield>0))continue;
-    if(i===owner?!(b.age>.38&&b.bounces>0):owner>=0&&friendly(i,owner))continue;
+    if(owner>=0&&!projectileCanHit(owner,i,b))continue;
     if((target.x-b.x)**2+(target.y-b.y)**2<projectileHitRadius(target,b)**2){
      hit=i;termination='actor';b.life=0;break;
     }
@@ -2608,9 +2626,10 @@ function sanitizeLanOptions(raw){
   botCount:Number.isInteger(v.botCount)&&v.botCount>=0&&v.botCount<=4?v.botCount:0,
   teamMode:LAN_SIDES[v.teamMode]?v.teamMode:'ffa',
   startLives:[2,3,5].includes(v.startLives)?v.startLives:base.startLives,
-  botSkill:LAN_SKILL[v.botSkill]?v.botSkill:base.botSkill};
+  botSkill:LAN_SKILL[v.botSkill]?v.botSkill:base.botSkill,
+  friendlyFire:v.teamMode!=='ffa'&&v.friendlyFire===true};
 }
-function lanDescription(r){return (r.botCount===0?'NO BOTS':r.botCount+' BOT'+(r.botCount===1?'':'S'))+' · '+LAN_SIZE[r.mapSize]+' · '+r.startLives+' LIVES'}
+function lanDescription(r){return (r.botCount===0?'NO BOTS':r.botCount+' BOT'+(r.botCount===1?'':'S'))+' · '+LAN_SIZE[r.mapSize]+' · '+r.startLives+' LIVES · FF '+(r.friendlyFire?'ON':'OFF')}
 function lanCanStart(){return !!(lanLobby&&mode==='host'&&connected&&lanLobby.guestReady&&!(lanLobby.rules.teamMode==='coop'&&lanLobby.rules.botCount===0));}
 function lanLobbyHTML(hostRole){
  const name=hostRole?'HOST MATCH':'JOINED MATCH';
@@ -2619,7 +2638,8 @@ function lanLobbyHTML(hostRole){
  '<label>AI OPPONENTS<select data-lan-setting="botCount"><option value="0">0 · 1v1 NO BOTS</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>'+
  '<label>MAZE<select data-lan-setting="mapSize"><option value="small">SMALL</option><option value="standard">STANDARD</option><option value="large">LARGE</option></select></label>'+
  '<label>PILOT LIVES<select data-lan-setting="startLives"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>'+
- '<label>BOT SKILL<select data-lan-setting="botSkill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>'+
+ '<label>BOT SKILL<select data-lan-setting="botSkill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>'+ 
+ '<label>FRIENDLY FIRE<select data-lan-setting="friendlyFire"><option value="off">OFF · ALLIES PASS THROUGH</option><option value="on">ON · ALLIES SOLID</option></select></label>'+
  '</div>':'<div class="lan-summary"><strong id="lan-guest-rules">AWAITING HOST RULES</strong><span>Only the host can change the match setup.</span></div>';
  return '<section class="lan-lobby" aria-label="Local multiplayer waiting room">'+
  '<header class="lan-lobby-head"><div class="eyebrow">LOCAL WI-FI / PRIVATE MATCH</div><h2>'+name.replace(' ',' <span>')+'</span></h2><p>Two Android phones. The host starts when the guest is ready.</p></header>'+
@@ -2633,7 +2653,8 @@ function lanLobbyHTML(hostRole){
 function refreshLanLobby(){
  if(!lanLobby||!document.getElementById('lan-lobby-message'))return;
  const r=lanLobby.rules,hostRole=mode==='host';
- if(hostRole)for(const el of document.querySelectorAll('[data-lan-setting]'))el.value=String(r[el.dataset.lanSetting]);
+ if(hostRole)for(const el of document.querySelectorAll('[data-lan-setting]'))el.value=el.dataset.lanSetting==='friendlyFire'?(r.friendlyFire?'on':'off'):String(r[el.dataset.lanSetting]);
+ const ffLabel=document.querySelector('[data-lan-setting="friendlyFire"]')?.closest?.('label');if(ffLabel)ffLabel.hidden=r.teamMode==='ffa';
  const skillLabel=document.querySelector('[data-lan-setting="botSkill"]')?.closest?.('label');
  if(skillLabel)skillLabel.hidden=r.botCount===0;
  const guestPresence=document.getElementById('lan-guest-presence');
@@ -2660,8 +2681,8 @@ function startLanLobby(fromResults=false){
 function changeLanRule(el){
  if(!lanLobby||mode!=='host'||!lanLobby.active)return;
  const key=el.dataset.lanSetting;
- if(!['teamMode','botCount','mapSize','startLives','botSkill'].includes(key))return;
- const next=sanitizeLanOptions({...lanLobby.rules,[key]:['botCount','startLives'].includes(key)?Number(el.value):el.value});
+ if(!['teamMode','botCount','mapSize','startLives','botSkill','friendlyFire'].includes(key))return;
+ const next=sanitizeLanOptions({...lanLobby.rules,[key]:key==='friendlyFire'?el.value==='on':['botCount','startLives'].includes(key)?Number(el.value):el.value});
  if(JSON.stringify(next)===JSON.stringify(lanLobby.rules))return;
  lanLobby.rules=next;lanLobby.revision++;lanLobby.guestReady=false;
  refreshLanLobby();publishLanLobby();
