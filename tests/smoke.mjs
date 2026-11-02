@@ -1823,7 +1823,8 @@ console.log('PASS scored vehicle FFA: tank armor not KO, real ejection, safe pil
  assert.equal(api.fireInterval(human),.36,'fire cooldown still forces deliberate timing');
  assert.ok(415/166>2.49,'shell outruns scored FFA player tank >2.3x');
  assert.ok(415/222<1.9,'previous shell-to-hull pace was below 1.9x');
- assert.ok(fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8').includes('b.age>.38&&b.bounces>0'),'returning owner ricochet can still hit the original shooter');
+ assert.equal(api.projectileCanHit(0,0,{age:.39,bounces:1}),true,'returning owner ricochet can still hit the original shooter');
+ assert.equal(api.projectileCanHit(0,0,{age:.2,bounces:1}),false,'early owner ricochet cannot self-hit');
 
  api.newMatch('solo');
  const old=st().tanks[0];old.a=0;old.vx=0;old.vy=0;
