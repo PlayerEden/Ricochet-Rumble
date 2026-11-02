@@ -1589,7 +1589,7 @@ console.log('PASS playable CQC contract: real 10 pilot KOs, protected safe respa
  assert.equal(api.fireAim.y,-1);
  api.touch.add('fire');
  let input=api.makeControl(true);
- assert.equal(input.fire,true,'dragging FIRE continues firing');
+ assert.equal(input.fire,false,'release-to-fire suppresses a shot while dragging');
  assert.equal(input.aimX,0);
  assert.equal(input.aimY,-1);
  api.clearFireAim();
