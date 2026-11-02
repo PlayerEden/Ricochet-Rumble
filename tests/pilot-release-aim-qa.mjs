@@ -14,9 +14,9 @@ function hooks(){
    t.x=mazeGrid.cell*4.5;t.y=mazeGrid.cell*3.5;t.a=0;t.onFoot=true;t.vx=t.vy=0;t.shield=0;
    bot.x=mazeGrid.cell*10.5;bot.y=mazeGrid.cell*7.5;bot.onFoot=true;bot.a=Math.PI;
    state.lives=[1,1];state.winner=-1;state.bullets=[];fireCooldown.fill(0);releaseControls();
-   comfort.pilotRelease=release;comfort.autoFire=false;comfort.pilotAssist=false;
+   comfort.releaseFire=release;comfort.autoFire=false;comfort.pilotAssist=false;
    camera.zoom=1.07;camera.x=0;camera.y=0;
-   return {mode,foot:t.onFoot,release:comfort.pilotRelease,blocked:blocked(t.x,t.y,10)};
+   return {mode,foot:t.onFoot,release:comfort.releaseFire,blocked:blocked(t.x,t.y,10)};
   },
   pump(frames=1){for(let i=0;i<frames;i++)step(1/60);return this.status();},
   status(){
@@ -54,16 +54,16 @@ try{
   await page.goto('http://127.0.0.1:'+server.address().port,{waitUntil:'load'});
   await page.waitForFunction(()=>!!window.__pilotReleaseQA);
   await page.locator('button[data-action="settings"]').click();
-  const option=page.locator('#pref-pilotRelease');
-  assert.equal(await option.isChecked(),false,'release aim opt-in defaults OFF');
-  await option.check();
-  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-options-v06')).comfort.pilotRelease),true);
+  const option=page.locator('#pref-releaseFire');
+  assert.equal(await option.isChecked(),true,'release shooting defaults ON');
+  await option.uncheck();
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-options-v06')).comfort.releaseFire),false);
   await page.reload();
   await page.locator('button[data-action="settings"]').click();
-  assert.equal(await page.locator('#pref-pilotRelease').isChecked(),true,'opt-in survives reload');
-  await option.uncheck();
-  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-options-v06')).comfort.pilotRelease),false);
-  const rect=await page.locator('#pref-pilotRelease').boundingBox();
+  assert.equal(await page.locator('#pref-releaseFire').isChecked(),false,'classic control setting persists');
+  await option.check();
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-options-v06')).comfort.releaseFire),true);
+  const rect=await page.locator('#pref-releaseFire').boundingBox();
   assert.ok(rect&&rect.width>=20&&rect.height>=20,'accessible existing checkbox');
   const fire=page.locator('.fire-btn');
   for(const seed of [101,202,303]){
@@ -130,6 +130,6 @@ try{
  fs.mkdirSync('qa-results',{recursive:true});
  fs.writeFileSync('qa-results/pilot-release-aim-qa.json',JSON.stringify({results},null,2));
  console.log('PILOT_RELEASE_AIM_REAL_POINTER_PASS '+JSON.stringify({viewports:2,seeds:3,
-  cases:results.length,defaultOff:true,settingsPersist:true,previewNoPrematureShot:true,
+  cases:results.length,defaultOn:true,settingsPersist:true,previewNoPrematureShot:true,
   cancelAndPauseSafe:true,legacyHoldUnaffected:true,keyboardUnaffected:true}));
 }finally{await browser.close();await new Promise(ok=>server.close(ok));}
