@@ -1,7 +1,7 @@
 name: Sector Rebound - Contested CTF input-driven combat audit
 on:
   push:
-    branches: [experiment/ctf-contested-human-attack-v1, audit/ctf-armed-attacker-v1, experiment/ctf-human-escort-lane-clearance-v1, experiment/friendly-unit-pass-through-v1]
+    branches: [experiment/ctf-contested-human-attack-v1, audit/ctf-armed-attacker-v1, experiment/ctf-human-escort-lane-clearance-v1, experiment/friendly-unit-pass-through-v1, experiment/combat-parity-trajectory-a1]
   workflow_dispatch:
 permissions:
   contents: read
@@ -33,6 +33,9 @@ jobs:
           export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           test -n "$CHROME_BIN"
           npm install --no-save --ignore-scripts playwright-core@1.56.1
+          node tests/pilot-combat-fairness-qa.mjs
+          node tests/bot-shot-parity-qa.mjs
+          node tests/bot-combat-cues-qa.mjs
           node tests/ctf-contested-human-attack.mjs
           node tests/ctf-objective-bots-live-qa.mjs
           node tests/ctf-natural-match-qa.mjs
