@@ -195,7 +195,21 @@ function installQA(){
         human.y+Math.sin(direction)*30,radius),
        nearbyWalls:[0,Math.PI/2,Math.PI,1.5*Math.PI].map(a=>blocked(
         human.x+Math.cos(a)*35,human.y+Math.sin(a)*35,radius)),
-       nearestActors:others.slice(0,2)
+       nearestActors:others.slice(0,2),
+       escort:(()=>{
+        const a=state.tanks[2],r=a.onFoot?10:21,
+         fx=Math.cos(human.a),fy=Math.sin(human.a),
+         ax=a.x-human.x,ay=a.y-human.y,brain=botBrains.get(2),
+         pick=window.SectorCtfAI.choose({index:2,humanCount:1,
+          actors:ctfActors(),flags:state.ctf.flags,bays:state.forwardBays.bays});
+        return {x:+a.x.toFixed(1),y:+a.y.toFixed(1),
+         foot:a.onFoot,kind:pick?.kind,
+         ahead:+(ax*fx+ay*fy).toFixed(1),
+         lateral:+(ax*fy-ay*fx).toFixed(1),
+         leftBlocked:blocked(a.x-fy*48,a.y+fx*48,r),
+         rightBlocked:blocked(a.x+fy*48,a.y-fx*48,r),
+         lastYieldSide:brain?.ctfHumanYieldSide||0};
+       })()
       });
      }
      m.humanTravel+=Math.hypot(human.x-px,human.y-py);
@@ -318,6 +332,10 @@ try{
  assert.ok(results.some(x=>x.carriedFrames>0),'at least one genuine flag pickup');
  assert.ok(results.some(x=>x.defenderInterceptFrames>0),'defender reacts to carrier');
  assert.ok(results.some(x=>x.escortSupportFrames>0),'escort responds to carrier');
+ // Seed 102 previously stalled behind the allied escort in every profile.
+ const obstruction=results.filter(x=>x.seed===102);
+ assert.ok(obstruction.some(x=>x.nearestToEnemyFlag<680),
+  'a normal-input contestant must clear the friendly corridor bottleneck');
  const summary=g=>({shots:g.reduce((n,x)=>n+x.humanShots,0),
   captures:g.reduce((n,x)=>n+x.humanCaptures,0),
   pickups:g.filter(x=>x.firstHumanPickup!==null).length,
