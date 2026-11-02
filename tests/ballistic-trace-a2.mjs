@@ -101,7 +101,7 @@ for(const kind of ['pilot','tank','mech']){
  }
 }
 {
- const s=a.reset(105,'pilot',0),p=s.tanks[0],g=a.maze;
+ const s=a.reset(105,'pilot',1),p=s.tanks[0],g=a.maze;
  let wall=null;
  for(let row=0;row<g.rows&&!wall;row++)for(let col=0;col<g.cols-1;col++){
   const x=(col+.5)*g.cell,y=(row+.5)*g.cell;
