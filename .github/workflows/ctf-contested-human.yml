@@ -1,7 +1,7 @@
-name: Sector Rebound - Contested CTF real human-input audit
+name: Sector Rebound - Contested CTF input-driven combat audit
 on:
   push:
-    branches: [experiment/ctf-contested-human-attack-v1]
+    branches: [experiment/ctf-contested-human-attack-v1, audit/ctf-armed-attacker-v1]
   workflow_dispatch:
 permissions:
   contents: read
@@ -46,7 +46,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-ctf-contested-human-qa
+          name: sector-rebound-ctf-armed-attacker-qa
           path: |
             qa-results/ctf-contested-human-attack.json
             qa-screens/
