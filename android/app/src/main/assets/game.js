@@ -175,7 +175,7 @@ const QUICK_PLAY_MODE_IDS=Object.freeze([...RELEASED_MATCH_MODES,...QUICK_PLAY_O
 let selectedPlaylistIds=RELEASED_MATCH_MODES.slice(),playlistBag=[],lastSoloModeId=null,matchSerial=0;
 
 const CUSTOM_MODE_IDS=Object.freeze(['survival_ffa','survival_teams','cqc','scored_ffa','scored_tdm']);
-const CUSTOM_DEFAULT=Object.freeze({modeId:'survival_ffa',mapSize:'standard',botCount:2,botSkill:'normal',startLives:2,bulletCap:4,friendlyFire:false});
+const CUSTOM_DEFAULT=Object.freeze({modeId:'survival_ffa',mapSize:'standard',botCount:2,botSkill:'normal',startLives:2,bulletCap:4,friendlyFire:false,sidePreference:'random'});
 let customDraft={...CUSTOM_DEFAULT};
 
 const CUSTOM_PRESET_LIMIT=5,CUSTOM_PRESET_NAME_LIMIT=24;
@@ -253,7 +253,7 @@ function normalizeCustomDraft(raw){
  return {modeId:choose('modeId',CUSTOM_MODE_IDS),mapSize:choose('mapSize',['small','standard','large']),
  botCount:choose('botCount',[0,1,2,3,4]),botSkill:choose('botSkill',['casual','normal','spicy','varied']),
  startLives:choose('startLives',[2,3,5]),bulletCap:choose('bulletCap',[1,2,3,4,5,8]),
-  friendlyFire:p.friendlyFire===true};
+  friendlyFire:p.friendlyFire===true,sidePreference:choose('sidePreference',['random','cyan','coral'])};
 }
 function saveCustomDraft(){try{window.localStorage?.setItem(CUSTOM_PREF_KEY,JSON.stringify({version:1,rules:customDraft}))}catch(_){}return {...customDraft}}
 function loadCustomDraft(){try{const p=JSON.parse(window.localStorage?.getItem(CUSTOM_PREF_KEY)||'null');if(p?.version===1)customDraft=normalizeCustomDraft(p.rules)}catch(_){}return {...customDraft}}
@@ -263,15 +263,15 @@ function customOptionsFor(raw=customDraft){
  if(scored)return {...selectedRules,matchModeId:d.modeId,customMatch:true,pilotMode:true,
   mapSize:d.modeId==='cqc'?'small':'standard',botCount:3,botSkill:d.botSkill,
   bulletCap:4,startLives:2,teamMode:scored.mode==='teams'?'teams':'ffa',
-   friendlyFire:scored.mode==='teams'&&d.friendlyFire};
+   friendlyFire:scored.mode==='teams'&&d.friendlyFire,sidePreference:d.sidePreference};
  const base={...selectedRules,mapSize:d.mapSize,botCount:d.botCount,botSkill:d.botSkill,
   bulletCap:d.bulletCap,startLives:d.startLives,teamMode:d.modeId==='survival_teams'?'teams':'ffa',
-   friendlyFire:d.modeId==='survival_teams'&&d.friendlyFire};
+   friendlyFire:d.modeId==='survival_teams'&&d.friendlyFire,sidePreference:d.sidePreference};
  return {...soloOptionsFor(d.modeId,base),customMatch:true};
 }
 function refreshCustomUI(){
  const root=document.getElementById('custom-match');if(!root)return;
- const ids={modeId:'custom-mode',mapSize:'custom-size',botCount:'custom-bots',botSkill:'custom-skill',startLives:'custom-lives',bulletCap:'custom-shells',friendlyFire:'custom-friendly'};
+ const ids={modeId:'custom-mode',mapSize:'custom-size',botCount:'custom-bots',botSkill:'custom-skill',startLives:'custom-lives',bulletCap:'custom-shells',friendlyFire:'custom-friendly',sidePreference:'custom-side'};
  const scored=!!SCORED_MATCH_RULES[customDraft.modeId],options=customOptionsFor();
  for(const [key,id] of Object.entries(ids)){
   const el=document.getElementById(id);
@@ -279,6 +279,7 @@ function refreshCustomUI(){
  }
  for(const id of ['custom-size','custom-bots','custom-lives','custom-shells']){const el=document.getElementById(id);if(el)el.disabled=scored}
  const ff=document.getElementById('custom-friendly'),team=options.teamMode!=='ffa';
+ const sideEl=document.getElementById('custom-side');if(sideEl)sideEl.disabled=!team;
  if(ff){ff.disabled=!team;ff.value=team&&customDraft.friendlyFire?'on':'off';}
  const ffNote=document.getElementById('custom-friendly-note');
  if(ffNote)ffNote.textContent=team?(options.friendlyFire?'ON · ALLIES SOLID · TEAM DAMAGE ENABLED · NO TEAM-KILL POINTS':'OFF · ALLIES PASS THROUGH · NO TEAM DAMAGE'):'FFA · NO ALLIED UNITS';
@@ -289,7 +290,7 @@ function refreshCustomUI(){
 }
 function readCustomScreen(){
  if(!document.getElementById('custom-match'))return {...customDraft};
- const ids={modeId:'custom-mode',mapSize:'custom-size',botCount:'custom-bots',botSkill:'custom-skill',startLives:'custom-lives',bulletCap:'custom-shells',friendlyFire:'custom-friendly'},patch={};
+ const ids={modeId:'custom-mode',mapSize:'custom-size',botCount:'custom-bots',botSkill:'custom-skill',startLives:'custom-lives',bulletCap:'custom-shells',friendlyFire:'custom-friendly',sidePreference:'custom-side'},patch={};
  for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(!el||el.disabled)continue;patch[key]=key==='friendlyFire'?el.value==='on':['botCount','startLives','bulletCap'].includes(key)?Number(el.value):el.value}
  return setCustomDraft(patch);
 }
@@ -393,6 +394,30 @@ const WALL_BUCKET=128;let wallLookup=new Map();
 function rebuildWallLookup(){wallLookup=new Map();for(const w of wallSet){const x0=Math.floor(w.x/WALL_BUCKET),x1=Math.floor((w.x+w.w)/WALL_BUCKET),y0=Math.floor(w.y/WALL_BUCKET),y1=Math.floor((w.y+w.h)/WALL_BUCKET);for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const key=x+','+y;if(!wallLookup.has(key))wallLookup.set(key,[]);wallLookup.get(key).push(w)}}}
 function nearWall(x,y,r){const x0=Math.floor((x-r)/WALL_BUCKET),x1=Math.floor((x+r)/WALL_BUCKET),y0=Math.floor((y-r)/WALL_BUCKET),y1=Math.floor((y+r)/WALL_BUCKET);for(let yb=y0;yb<=y1;yb++)for(let xb=x0;xb<=x1;xb++){const nearby=wallLookup.get(xb+','+yb);if(nearby)for(const w of nearby){const nx=Math.max(w.x,Math.min(x,w.x+w.w)),ny=Math.max(w.y,Math.min(y,w.y+w.h));if((x-nx)**2+(y-ny)**2<r*r)return true}}return false}
 const PALETTE=['#46d2f5','#fc856e','#ffdc77','#b69aff','#82e6a1','#fc8bde'];
+const COLOR_NAMES=['CYAN','CORAL','AMBER','VIOLET','MINT','PINK'];
+// Seeded per-match identity; never use actor number as a color or team rule.
+function shuffledMatchColors(seed,count){
+ const order=Array.from({length:PALETTE.length},(_,i)=>i),rnd=mazeRandom((seed^0x4c7db9e3)>>>0);
+ for(let i=order.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
+ return order.slice(0,count).map(i=>PALETTE[i]);
+}
+function matchColorName(hex){const i=PALETTE.indexOf(hex);return COLOR_NAMES[i]||'UNASSIGNED';}
+let lastQuickPlayTeamSide=null;
+function assignMatchTeams(config,humans,total,seed){
+ if(config.teamMode==='ffa')return Array.from({length:total},(_,i)=>i);
+ if(config.teamMode==='coop')return Array.from({length:total},(_,i)=>i<humans?0:1);
+ let side=0;
+ // Explicit Custom preference; only Quick Play/opt-in random sides rotate.
+ if(config.sidePreference==='coral')side=1;
+ else if(config.sidePreference==='random'||config.quickPlayMatch===true){
+  const initial=(Math.imul(seed^(seed>>>16),0x45d9f3b)>>>0)&1;
+  side=config.quickPlayMatch===true&&lastQuickPlayTeamSide!==null?
+   1-lastQuickPlayTeamSide:initial;
+  if(config.quickPlayMatch===true)lastQuickPlayTeamSide=side;
+ }
+ // LAN remains host Cyan, guest Coral until Stage D's explicit team roster.
+ return Array.from({length:total},(_,i)=>(i%2)^side);
+}
 const gameNames=['CYAN','CORAL','GOLD','VIOLET','MINT','PINK'];
 // No map picker: every match is a newly generated connected battlefield.
 const MAP_SIZES={small:{cols:9,rows:6,cell:132},standard:{cols:13,rows:9,cell:132},large:{cols:18,rows:12,cell:132}};
@@ -722,7 +747,8 @@ function ejectPilot(i){const t=state.tanks[i],v=state.vehicles?.[t.vehicleId];if
 }
 // Forward Bay staging and scored respawns share a single team assignment.
 function teamForDeployment(i,config,humans){
- return config.teamMode==='coop'?(i<humans?0:1):i%2;
+ return Array.isArray(config.teamIds)&&config.teamIds.length>=i+1?config.teamIds[i]:
+  config.teamMode==='coop'?(i<humans?0:1):i%2;
 }
 function deploySquadsAtBays(tanks,config,humans,bays){
  const {open,cols,cell}=mazeGrid;
@@ -754,7 +780,10 @@ function initialState(arena=0,options=null,seed=null){const config={...readSetti
  if(!usesTeamBays)config.forwardBayExercise=false;
  // Zero bots is a legitimate free-roam practice setting; don't silently add an enemy.
  const mazeSeed=seed||Math.floor(Math.random()*0x7fffffff)||1,id=setArena(0,mazeSeed,config.mapSize);
- const numBots=config.botCount,humans=count,total=humans+numBots,tanks=Array.from({length:total},(_,i)=>freshTank(i));
+ const numBots=config.botCount,humans=count,total=humans+numBots;
+ config.teamIds=assignMatchTeams(config,humans,total,mazeSeed);
+ config.ffaColors=config.teamMode==='ffa'?shuffledMatchColors(mazeSeed,total):[];
+ const tanks=Array.from({length:total},(_,i)=>freshTank(i));
  // In this opt-in team exercise each side starts at its own open, connected
  // Forward Bay; ordinary Survival / TDM / LAN use the original spawn points.
  const forwardBays=config.teamBasesEnabled&&window.SectorForwardBays?
@@ -789,20 +818,20 @@ function initialState(arena=0,options=null,seed=null){const config={...readSetti
  if(cqc)for(const t of tanks){t.onFoot=true;t.vehicleId=null;t.shield=1.5;t.respawnWait=0;}
  const matchId=++matchSerial;
  // Shared real scoring system for both on-foot CQC and tank/mech Free-for-All.
- const scored=scoredRules?window.SectorScored.createScoredMatch({mode:scoredRules.mode,playerCount:total,teamIds:scoredRules.mode==='teams'?Array.from({length:total},(_,i)=>i%2):null,
+ const scored=scoredRules?window.SectorScored.createScoredMatch({mode:scoredRules.mode,playerCount:total,teamIds:scoredRules.mode==='teams'?config.teamIds:null,
  scoreTarget:config.ctfExercise?100:scoredRules.scoreTarget,clockSeconds:config.ctfExercise?1800:scoredRules.clockSeconds,matchId}):null;
  const ctf=config.ctfExercise&&forwardBays&&window.SectorFlags?window.SectorFlags.create(forwardBays.bays):null;
  if(config.ctfExercise&&!ctf)throw Error('CTF flags or Forward Bays unavailable');
  camera.x=0;camera.y=0;botBrains.clear();return {tanks,vehicles,forwardBays,ctf,vehicleDropTimer:28,dropIndex:0,vehicleBeacon:null,bullets:[],pickups:[],pickupTimer:5.5,arenaId:id,mazeSeed,config,humanCount:humans,fxEvents:[],lives:Array(total).fill(scoredRules?1:config.startLives),kos:Array(total).fill(0),winner:-1,winnerTeam:-1,event:'',eventTimer:0,matchId,elapsedSeconds:0,deaths:Array(total).fill(0),respawns:Array(total).fill(0),scored,scoreSerial:0,finalResult:null};}
 state=initialState();
 function teamOf(i,st=state){
- const rules=st.config?.teamMode||'ffa';
+ const ids=st?.config?.teamIds;
+ if(Array.isArray(ids)&&ids.length===st.tanks?.length&&
+    Number.isInteger(ids[i]))return ids[i];
+ const rules=st?.config?.teamMode||'ffa';
  if(rules==='ffa')return i;
  if(rules==='coop')return i<st.humanCount?0:1;
- // Solo Team Survival: human BLUE, AI1 RED, AI2 BLUE, AI3 RED, AI4 BLUE.
- // In two-human matches, player indices 0/1 sit on opposite teams.
- // Keep this deterministic for network state, scoring, and bot target filters.
- return i%2;
+ return i%2; // Compatible with pre-C1 LAN snapshots.
 }
 function friendly(a,b){return teamOf(a)===teamOf(b)}
 function friendlyFireEnabled(st=state){return st?.config?.teamMode!=='ffa'&&st?.config?.friendlyFire===true}
@@ -814,13 +843,17 @@ function projectileCanHit(owner,victim,bullet){
  return friendlyFireEnabled()||!friendly(owner,victim);
 }
 function combatColor(i,st=state){
- return st.config?.teamMode==='ffa'?colors[i]:(teamOf(i,st)===0?'#46d2f5':'#fc856e');
+ return st.config?.teamMode==='ffa'?
+  (PALETTE.includes(st.config?.ffaColors?.[i])?st.config.ffaColors[i]:colors[i]):
+  (teamOf(i,st)===0?'#46d2f5':'#fc856e');
 }
 function opposingCount(i,st=state){
  return st.lives.reduce((sum,lives,j)=>sum+(lives>0&&!friendlyForState(i,j,st)?1:0),0);
 }
 function friendlyForState(a,b,st){return teamOf(a,st)===teamOf(b,st);}
-function label(i){return i===0?'CYAN':i===1&&state.humanCount===2?'CORAL':`BOT ${i-state.humanCount+1}`;}
+function label(i){return i<state.humanCount?
+ (state.config?.teamMode==='ffa'?matchColorName(combatColor(i)):(teamOf(i)===0?'CYAN':'CORAL')):
+ `BOT ${i-state.humanCount+1}`;}
 // A completed result is a frozen per-match record. HUD refreshes must never re-score it.
 function finalizeRound(){
  if(isCtfMatch()&&state.winner>=0){
