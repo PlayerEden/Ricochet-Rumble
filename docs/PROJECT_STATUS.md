@@ -1,3 +1,17 @@
+# 2026-11-02 — B2 ALLIED AIM TRACE UI (EXPERIMENTAL)
+
+**Status:** [draft PR #94](https://github.com/PlayerEden/Ricochet-Rumble/pull/94), branch `experiment/allied-aim-traces-b2`; stable `main`, owner v0.9.68 test APK and existing saves unchanged.
+
+**Implementation:** one per-device **SHOW ALLIED AIM TRACES** toggle (default ON, Match Settings → collapsed Advanced Rules). While a nearby friendly AI is actively acquiring a shot, show short translucent same-faction dotted preview from the physical muzzle direction using actual shared bullet physics; maximum two allied bot guides, no FFA/no walls/no offscreen/no recovery; not an enemy wallhack, no AI target angle or hit calculations exposed. Host snapshots carry a guest-filtered `allyAim` array of at most two **friendly bot indexes**, not any private bot target/plan; guest rechecks team, range, LOS and preference and accepts old snapshots without the field. No gameplay balance or B1 friendly-fire policy change. Web/Android `game.js` blob `8ffc717176e9e038987a6ce55e0fd2552b5d27bb` and `index.html` blob `dcb8bc75bd80481a1ff6ce11183a568761be0de3` mirror precisely.
+
+**Focused QA SUCCESS**: [#41531676033](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41531676033) at exact final game+HTML source: real-engine A2 ballistics, aim gating, FF OFF/ON collision, strict LAN guest metadata; **14 real Chromium render cases**, 740×360 and 960×540 with ON/OFF, recovery/idle/FFA/range/wall suppression, plus archived game screenshot evidence. Earlier failed B2 fast run was fixture-only (autonomous AI tick overwrote controlled state), fixed by freezing only simulated ticks during screenshot. Earlier full visual run caught the option creating scrolling at 915×412; fixed by moving into collapsed Advanced Rules with unchanged accessibility/touch targets.
+
+**Full same-source QA SUCCESS:** [#41531676023](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41531676023) at final mirrored gameplay+HTML source commit `47b53334d52530e7598f379ff0f874819044c90e`. Passed B1 friendly fire, B2 opt-in/off targeting and guest privacy, A2/A3 projectile physics and 18 bot shot scenarios, CTF scripted actual-input battles, 300 Forward Bay seeds, Quick Play and save/backup, **44 visual snapshots** and compact Settings overflow check. New test-only owner APK [build #41532430586](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41532430586) must independently verify Android signer/version/package/assets before sharing; don't claim available until artifact verified.
+
+**Next:** Stage C real factions / shuffled FFA colors and solo side rotation; Stage D full LAN scored TDM team rosters. Physical Android/2-phone LAN tests remain pending, not certified by CI. [B2 technical handoff](ALLIED_AIM_B2_2026-11-02.md). Keep PR draft / do not merge.
+
+---
+
 # 2026-11-02 — PHASE B1 FRIENDLY FIRE / COLLISION RULES
 
 **Experiment:** `experiment/friendly-fire-policy-b1`, [draft PR #93](https://github.com/PlayerEden/Ricochet-Rumble/pull/93); based on A3 trace-AI. Stable `main`, verified v0.9.68 APK (`com.playereden.ricochetrumble.preview` code 300001) and local save data unchanged.
