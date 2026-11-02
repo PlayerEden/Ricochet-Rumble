@@ -156,7 +156,7 @@ function doBackupAction(action){
 
 
 const CUSTOM_PRESETS_KEY='rr-custom-presets-v1';
-let comfort={sound:true,music:true,shake:false,autoFire:false,leftHanded:false,pilotAssist:false,pilotRelease:false,releaseFire:true},fixedAccumulator=0;
+let comfort={sound:true,music:true,shake:false,autoFire:false,leftHanded:false,pilotAssist:false,pilotRelease:false,releaseFire:true,alliedTraces:true},fixedAccumulator=0;
 let selectedRules={botCount:2,bulletCap:4,startLives:2,teamMode:'ffa',botSkill:'normal',mapSize:'small'};
 // v0.9.22 / Slice A: stable solo presets backed by CURRENT survival combat, not proposed score modes.
 const MATCH_MODE_PRESETS=Object.freeze({
@@ -929,7 +929,7 @@ function inputFrom(keys,isLocal){const down=k=>menu.classList.contains('hidden')
    (isLocal&&comfort.autoFire&&mode!=='idle'&&menu.classList.contains('hidden')&&!paused)};
 }
 function makeControl(isPlayer1){return isPlayer1?inputFrom(keys1,true):inputFrom(keys2,false)}
-function serializeState(){return {tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,vehicleDropTimer:state.vehicleDropTimer,dropIndex:state.dropIndex,vehicleBeacon:state.vehicleBeacon?{...state.vehicleBeacon}:null,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,elapsedSeconds:state.elapsedSeconds,deaths:state.deaths.slice(),hostPaused:mode==='host'&&paused};}
+function serializeState(){return {allyAim:alliedAimIntentIndices(1),tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,vehicleDropTimer:state.vehicleDropTimer,dropIndex:state.dropIndex,vehicleBeacon:state.vehicleBeacon?{...state.vehicleBeacon}:null,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,elapsedSeconds:state.elapsedSeconds,deaths:state.deaths.slice(),hostPaused:mode==='host'&&paused};}
 function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  document.getElementById('score0').textContent=state.lives[me]??0;document.getElementById('score1').textContent=state.lives[other]??0;
  const botLives=mode==='solo'?opposingCount(me):state.lives.slice(state.humanCount||2).filter(v=>v>0).length,
@@ -2305,6 +2305,70 @@ function previewTrajectory(t,angle){
  return traceProjectile(t,angle,{maxDistance:t.onFoot?245:520,
   maxBounces:1,afterBounce:235,checkActors:false});
 }
+// B2: ally intent is display-only. It never changes shot physics/AI. A
+// network guest receives ONLY filtered bot indexes, not target ids, headings,
+// angles or any hidden aim solution. Bot headings already exist in snapshots.
+function alliedAimActive(i,me,source=state){
+ if(source?.config?.teamMode==='ffa'||source?.winner>=0||source?.lives?.[me]<=0||
+    i<source.humanCount||i===me||source.lives?.[i]<=0||
+    !friendlyForState(i,me,source))return false;
+ const bot=source.tanks[i],observer=source.tanks[me];
+ if(!bot||!observer||bot.flash>0||Math.hypot(bot.x-observer.x,bot.y-observer.y)>330||
+    !hasLineOfSight(bot.x,bot.y,observer.x,observer.y))return false;
+ if(mode==='guest'){
+  return Array.isArray(source.allyAim)&&source.allyAim.includes(i);
+ }
+ const brain=botBrains.get(i);
+ return !!brain&&brain.fireTrack>0&&brain.fireRecover<=0&&
+  Number.isFinite(brain.fireAngle)&&Number.isInteger(brain.fireTarget)&&
+  brain.fireTarget>=0&&source.lives[brain.fireTarget]>0&&
+  !friendlyForState(i,brain.fireTarget,source);
+}
+// Host sends only those ally bots eligible for guest seat 1; never targets.
+function alliedAimIntentIndices(me){
+ if(mode!=='host'||!state||paused||state.winner>=0)return [];
+ return state.tanks.map((t,i)=>i).filter(i=>alliedAimActive(i,me))
+  .sort((a,b)=>Math.hypot(state.tanks[a].x-state.tanks[me].x,state.tanks[a].y-state.tanks[me].y)-
+   Math.hypot(state.tanks[b].x-state.tanks[me].x,state.tanks[b].y-state.tanks[me].y))
+  .slice(0,2);
+}
+function visibleAlliedAimIndices(me){
+ if(!comfort.alliedTraces||paused||state?.hostPaused||state?.winner>=0||
+   (mode!=='solo'&&mode!=='host'&&mode!=='guest'))return [];
+ const zoom=camera.zoom;
+ if(!Number.isFinite(zoom)||zoom<=0)return [];
+ const eligible=state.tanks.map((t,i)=>i).filter(i=>{
+  if(!alliedAimActive(i,me))return false;
+  const t=state.tanks[i],sx=(t.x-camera.x)*zoom,sy=(t.y-camera.y)*zoom;
+  return sx>=28&&sx<=W-28&&sy>=28&&sy<=H-28;
+ });
+ return eligible.sort((a,b)=>Math.hypot(state.tanks[a].x-state.tanks[me].x,state.tanks[a].y-state.tanks[me].y)-
+  Math.hypot(state.tanks[b].x-state.tanks[me].x,state.tanks[b].y-state.tanks[me].y)).slice(0,2);
+}
+function drawAlliedAimTrace(c,i){
+ const t=state.tanks[i];
+ // The true CURRENT muzzle heading, not the bot's still-unreached plan.
+ const path=traceProjectile(t,t.a,{maxDistance:t.onFoot?150:225,
+  maxBounces:1,afterBounce:85,checkActors:false});
+ const color=combatColor(i);
+ c.save();c.fillStyle=color;
+ for(let n=0;n<path.segments.length;n++){
+  c.globalAlpha=n===0?.38:.20;
+  let lengthSoFar=0,nextDot=14;
+  const segment=path.segments[n];
+  for(let k=1;k<segment.length;k++){
+   const a=segment[k-1],b=segment[k],d=Math.hypot(b.x-a.x,b.y-a.y);
+   if(d<.001)continue;
+   while(lengthSoFar+d>=nextDot){
+    const factor=(nextDot-lengthSoFar)/d;
+    c.beginPath();c.arc(a.x+(b.x-a.x)*factor,a.y+(b.y-a.y)*factor,1.45,0,Math.PI*2);c.fill();
+    nextDot+=18;
+   }
+   lengthSoFar+=d;
+  }
+ }
+ c.restore();
+}
 function drawTrajectoryPreview(c,t,angle){
  const path=previewTrajectory(t,angle),color=path.foot?'#b4ffe0':'#b5e6ff';
  c.save();
@@ -2508,6 +2572,8 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
   else{c.moveTo(t.x,t.y-59);c.lineTo(t.x-8,t.y-71);c.lineTo(t.x+8,t.y-71);}
   c.closePath();c.fillStyle='#ffffff';c.fill();
  }}
+ // Friendly dotted paths are quiet secondary information; show at most two.
+ for(const i of visibleAlliedAimIndices(me))drawAlliedAimTrace(c,i);
  if(releaseMode()&&(fireAim.pointerId!==null||releaseShot)){
   const t=state.tanks[mode==='guest'?1:0],aim=releaseShot??(fireAim.active?fireAim:null);
   drawTrajectoryPreview(c,t,aim?Math.atan2(aim.y,aim.x):t.a);
@@ -2633,6 +2699,12 @@ function validRemoteSnapshot(s){
  if(!s.vehicles.every(v=>point(v)&&Number.isFinite(v.armor)))return false;
  if(!s.pickups.every(point))return false;
  if(!s.fxEvents.every(e=>point(e)&&Number.isFinite(e.id)))return false;
+ // Optional host-approved local visibility metadata: never accept enemy or
+ // player indices, malformed arrays, duplicates or more than two entries.
+ if(s.allyAim!==undefined&&(!Array.isArray(s.allyAim)||s.allyAim.length>2||
+  new Set(s.allyAim).size!==s.allyAim.length||
+  !s.allyAim.every(i=>Number.isInteger(i)&&i>=s.humanCount&&i<n&&
+    teamOf(i,s)===teamOf(1,s))))return false;
  return true;
 }
 function sanitizeLanOptions(raw){
