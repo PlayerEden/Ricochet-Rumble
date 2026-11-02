@@ -877,7 +877,7 @@ console.log('PASS v0.9.14 end-of-life powerup state audit.');
 }
 {
  click('solo');
- const game=st();game.winner=0;game.winnerTeam=0;game.event='CYAN WINS!';
+ const game=st();game.winner=0;game.winnerTeam=win.__test.teamOf(0);game.event='PLAYER TEAM WINS!';
  game.kos[0]=2;game.lives[0]=3;
  win.__test.refreshHUD();
  assert.equal(node('after-action').classList.contains('hidden'),false,'results surfaced');
