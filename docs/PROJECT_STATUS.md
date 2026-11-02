@@ -1,3 +1,17 @@
+# 2026-11-02 — PHASE B1 FRIENDLY FIRE / COLLISION RULES
+
+**Experiment:** `experiment/friendly-fire-policy-b1`, [draft PR #93](https://github.com/PlayerEden/Ricochet-Rumble/pull/93); based on A3 trace-AI. Stable `main`, verified v0.9.68 APK (`com.playereden.ricochetrumble.preview` code 300001) and local save data unchanged.
+
+**Implemented:** Frozen `friendlyFire` match rule in Custom Match and LAN host settings. OFF default: allies pass through, friendly bullets cannot injure. ON: all allied pilots/tanks/mechs solid and damageable; authentic friendly pilot deaths/respawns but zero awarded KO points (the scoring kernel's attacker:null death path). A3 bots run a single full-life physical friendly-intercept safety check at shot commit only when FF ON; shots already in flight aren't canceled if a teammate moves into the line. FFA automatically OFF. Old Custom presets and LAN rules without the field default OFF. Web/Android `game.js` blob `c6a7386f889d7514652710fa5758f80733dfe13f` and `index.html` blob `9f70d91f1af1bc366d938f551a5d417510ea82eb` mirrored exactly.
+
+**Focused QA PASS:** [#41524269169](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41524269169) at exact gameplay/test commit `0ec6b75c6255e16b780b48273f2f2f49d642a073`: allied tank+pilot collision ON/OFF; enemy and FFA walls; Custom & LAN rule serialization; actual in-game bullet touching ally OFF harmless / ON causes scored pilot death **without team points**; scored TDM/Survival score integrity, owner self-ricochet, real maze AI friend-lane shot refusal, and unchanged A2 projectile contract.
+
+**Full browser/CTF/44-screenshot gate:** [#41524269128](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41524269128) at exact same gameplay/test source started; terminal pass must be verified before B1 is locked or a new Android APK is built. Hardware LAN (two phones) and physical Android upgrade/subjective fairness remain outstanding.
+
+[Technical handoff](FRIENDLY_FIRE_B1_2026-11-02.md) · [Combat/faction/LAN development plan](COMBAT_FACTION_LAN_ARC_2026-11-02.md). B2 optional allied shot lines, C random FFA colors/faction side, D LAN scored squads are **not** yet implemented. **DO NOT MERGE** draft.
+
+---
+
 # 2026-11-02 — A3 AI TRAJECTORY/COMMIT PHASE (EXPERIMENTAL)
 
 **Owner goal:** bots should calculate credible shot paths, rotate physically toward an intended angle, and sometimes execute earned bank shots—but cannot instantly snap or adjust shots already committed. The teammate pass-through v0.9.67 owner preview remains the installed fallback.
