@@ -1065,7 +1065,6 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
      document.getElementById('aa-lives').textContent=String(isCtfMatch()?state.ctf.target:isScoredMatch()?state.scored.scoreTarget:soloResult?.livesRemaining??state.lives[me]??0);
      const metric=document.getElementById('aa-lives-label');if(metric)metric.textContent=isCtfMatch()?'FLAG TARGET':isScoredMatch()?(state.scored.mode==='teams'?'TEAM KO TARGET':'KO TARGET'):'LIVES LEFT';
      document.getElementById('aa-outcome').textContent=scoredDraw?'DRAW':localWon?'VICTORY':'DEFEAT';
-     const series=state.lanSeries;
      const seriesText=series?'ROUND '+series.round+'/'+series.rounds+
       ' · CYAN '+series.wins[0]+' : '+series.wins[1]+' CORAL · '+
       (series.concluded?(series.winner===null?'SERIES DRAW':(series.winner===0?'CYAN':'CORAL')+' WINS SERIES'):'NEXT ROUND AVAILABLE'):null;
