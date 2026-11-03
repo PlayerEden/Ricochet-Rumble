@@ -89,7 +89,7 @@ try{
    assert.ok(geometry.scrollWidth<=geometry.clientWidth+2,'no horizontal scroll');
    assert.ok(geometry.minimumStats>=9,'small-screen stats readable');
    assert.ok(geometry.buttons.every(b=>b.height>=43.5),'all action targets at least 44 px');
-   const m=geometry.menu,other=geometry.buttons.filter(b=>b.id!==m.id);
+   const m=geometry.menu,other=geometry.buttons.filter(b=>b.id!=='results-menu');
    if(config.custom||config.lan){
     assert.equal(geometry.buttons.length,3,'results have three actions');
     assert.ok(m.width>=geometry.actions.width-3,'main menu fills complete second row');
