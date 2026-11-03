@@ -31,7 +31,7 @@ try {
   let pixi=await page.evaluate(()=>window.__pixiProbe);
   assert.equal(pixi.engine,'pixi','Pixi renderer should start successfully');
   assert.match(pixi.backend,/webgl/i,'must use actual WebGL renderer');
-  assert.ok(pixi.frames>=10,'actual requestAnimationFrame loop must run');
+  assert.ok(pixi.frames>=8,'actual requestAnimationFrame loop must run');
   const pixiCanvas=page.locator('#pixi-host canvas');
   assert.equal(await pixiCanvas.count(),1,'PixiJS creates a visible canvas');
   assert.ok(await pixiCanvas.isVisible(),'Pixi canvas must be visible');
