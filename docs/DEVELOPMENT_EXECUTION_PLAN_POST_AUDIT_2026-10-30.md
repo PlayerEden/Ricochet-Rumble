@@ -1,5 +1,9 @@
 # Sector Rebound — Development Execution Plan After Open-Book Audit
 
+**Canonical master plan update (2026-11-02):** [Sector Rebound Master Development Plan](MASTER_DEVELOPMENT_PLAN_2026-11-02.md) now owns the ordered roadmap, implemented-vs-designed inventory, D3 one-phone first milestone, open issue/PR reconciliation, Android/Google Play gates and owner decisions. This older plan is a **historical technical reference**, not the current next-task list. Follow the master and newest [Project Status](PROJECT_STATUS.md); do not interpret older "NOT IMPLEMENTED" design bullets as current runtime truth.
+
+
+
 ## 2026-11-02 owner-approved D3 extension — persistent LAN rooms (planning ONLY)
 
 The owner approved planning a **host-first persistent local Wi-Fi room**: host launches full games alone versus AI while room remains visible; an eventual joining device spectates immediately and queues for the next eligible round/match. **One-phone testing is the central near-term goal; no second phone or live guest needed for the first playable milestone.** [Complete D3 design/technical/QA specification](design/LAN_PERSISTENT_ROOMS_D3_SPEC_2026-11-02.md); [owner one-phone test card](LAN_D3_ONE_PHONE_OWNER_QA_2026-11-02.md).

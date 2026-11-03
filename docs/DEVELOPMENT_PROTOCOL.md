@@ -1,5 +1,9 @@
 # Sector Rebound — Development & Handoff Protocol
 
+**Canonical master plan update (2026-11-02):** [Sector Rebound Master Development Plan](MASTER_DEVELOPMENT_PLAN_2026-11-02.md) now owns the ordered roadmap, implemented-vs-designed inventory, D3 one-phone first milestone, open issue/PR reconciliation, Android/Google Play gates and owner decisions. This older plan is a **historical technical reference**, not the current next-task list. Follow the master and newest [Project Status](PROJECT_STATUS.md); do not interpret older "NOT IMPLEMENTED" design bullets as current runtime truth.
+
+
+
 **Maintained with:** [Project Status & Handoff](PROJECT_STATUS.md)  
 **Purpose:** Keep the repo readable, reproducible, and resilient when a ChatGPT conversation ends or an assistant changes.
 

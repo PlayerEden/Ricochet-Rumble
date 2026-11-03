@@ -1,5 +1,9 @@
 # Branch register — Sector Rebound
 
+**Canonical master plan update (2026-11-02):** [Sector Rebound Master Development Plan](MASTER_DEVELOPMENT_PLAN_2026-11-02.md) now owns the ordered roadmap, implemented-vs-designed inventory, D3 one-phone first milestone, open issue/PR reconciliation, Android/Google Play gates and owner decisions. This older plan is a **historical technical reference**, not the current next-task list. Follow the master and newest [Project Status](PROJECT_STATUS.md); do not interpret older "NOT IMPLEMENTED" design bullets as current runtime truth.
+
+
+
 **2026-11-02 D3 handoff (planning only):** This register's older rows are historical. New active experimental lineage and its protected rollback:
 
 | Branch | Purpose | Status |

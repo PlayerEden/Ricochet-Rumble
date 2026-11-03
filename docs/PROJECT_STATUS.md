@@ -1,3 +1,14 @@
+## 2026-11-02 canonical master roadmap reconciliation
+
+[**MASTER DEVELOPMENT PLAN — CURRENT CROSS-PROJECT PRIORITIES**](MASTER_DEVELOPMENT_PLAN_2026-11-02.md) now supersedes older "next task" advice where it conflicts with v0.9.71 experimental source and the owner's D3 direction.
+
+Audit counts at this planning checkpoint: **56 open draft PRs** (mostly chained ancestry/prototypes) and **18 stand-alone open issues**, which **must not** be mistaken for 74 unimplemented features. Actual source `333fc9d9ffc5f5ff5e136121217240112def531e`, signed v0.9.71 330001, D2 automation success and one-phone-only owner play define the factual baseline. **D3 rooms/spectators/queued joining remain design only.**
+
+Master order: M0 preserve lineage/docs → **M1 D3-A0/A1 first playable one-phone host room** → M2 measured gameplay fun/balance → M3 D3-A2/B1/B2/C LAN maturity → M4 controlled integration/rollback → M5 audio/onboarding polish → M6 physical Android/Google Play release preflight → M7 curated postbeta content → M8 separate internet/commerce. Hard gates for actual two phones and production Play cannot be autocompleted by CI. Public Solo-first vs LAN-required remains explicit owner decision.
+
+Historical audit/roadmap docs stay intact for references; no gameplay/runtime/build/branch-merge change results from this documentation update.
+
+---
 # 2026-11-02 — D3 PERSISTENT LAN ROOMS / SOLO-HOST TESTING (OWNER-APPROVED PLAN, NOT BUILT)
 
 **Decision:** The owner wants a discoverable LAN room that stays open while they play bots **on one phone**, with a late second player watching live and entering at the next eligible round or match. This is a **documented future implementation**, not a feature in v0.9.71. [D3 architecture, phased milestones and QA gates](design/LAN_PERSISTENT_ROOMS_D3_SPEC_2026-11-02.md) · [one-phone owner playtest card](LAN_D3_ONE_PHONE_OWNER_QA_2026-11-02.md) · [updated execution roadmap](DEVELOPMENT_EXECUTION_PLAN_POST_AUDIT_2026-10-30.md).
