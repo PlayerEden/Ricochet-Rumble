@@ -2585,3 +2585,29 @@ console.log('PASS v0.9.46 presentation: interactive pause SFX/music, persistence
  api.setModeForTest('solo');
  console.log('PASS D1 LAN: 3v3 Coral host, paired bots, scored 30-KO target, guest score sync and ready revision');
 }
+
+// Solo onboarding: one-tap practice never changes Quick Play or Dossier.
+// Uses the real game action delegate and the real initialState constructor.
+{
+ const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
+ assert.ok(html.includes('data-action="practice"'),'Practice must be reachable in game UI');
+ assert.ok(html.includes('Drag FIRE to aim; release to shoot.'),'Help must describe approved default release-fire controls');
+ // Earlier QA deliberately changes in-memory playlist without persisting it.
+ // Establish a consistent saved baseline before testing practice's isolation.
+ win.__test.savePrefs();
+ const prefBefore=savedStorage.get('rr-options-v06');
+ const dossierBefore=JSON.stringify(win.__test.dossierStore?.snapshot?.()??null);
+ click('practice');
+ assert.equal(st().config.botCount,0,'Practice is zero-bot Solo');
+ assert.equal(st().tanks.length,1,'No phantom AI actors in Practice');
+ assert.equal(st().config.teamMode,'ffa','Practice ignores any saved team preference for only this match');
+ assert.equal(st().config.quickPlayMatch,false,'Practice is not part of Quick Play rotation');
+ assert.equal(st().config.customMatch,false,'Practice does not claim Custom Match');
+ assert.equal(node('mode-label').textContent,'PRACTICE FIELD');
+ assert.equal(savedStorage.get('rr-options-v06'),prefBefore,'Practice does not overwrite preferred match settings');
+ assert.equal(JSON.stringify(win.__test.dossierStore?.snapshot?.()??null),dossierBefore,'Practice launch never awards progression');
+ click('solo');
+ assert.ok(st().config.botCount>0,'Normal Quick Play restores real bot opposition');
+ assert.equal(savedStorage.get('rr-options-v06'),prefBefore,'Quick Play preferences preserved');
+ console.log('PASS solo practice shortcut: no bots, no rewards, saved settings and normal Quick Play protected.');
+}
