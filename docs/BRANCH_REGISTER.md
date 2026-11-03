@@ -1,5 +1,9 @@
 # Branch register — Sector Rebound
 
+**D3-A2 verified owner Android v0.9.73 (Nov 2 local):** [A2 draft PR #101](https://github.com/PlayerEden/Ricochet-Rumble/pull/101) exact signed APK SHA `08580417bb43877b472f5b378d449f77e74bd4de`; preserved `checkpoint/sector-rebound-v0973-lan-modes-signed-ci-350001`; [CI host game/visual PASS 41573556329](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41573556329), [Android signing/source PASS 41574012652](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41574012652); [owner APK artifact ZIP](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41574012652/artifacts/13203185715), version code 350001, same public preview signer. Manual owner installation/modes and physical two phones pending. Main unchanged.
+
+
+
 **Updated: 2026-10-27 through v0.9.22-dev5 / roadmap audit.** These preserved branches are history/rollback references; don't delete or force-push simply to reduce clutter. The next feature starts from tested `main`.
 
 ## Active and preserved checkpoints

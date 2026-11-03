@@ -1,3 +1,11 @@
+# 2026-11-02 — D3-A2 VERIFIED v0.9.73 SIGNED OWNER PREVIEW (PHONE ACCEPTANCE PENDING)
+
+**Signed test APK ready:** [owner handoff](LAN_MODES_D3_A2_ANDROID_OWNER_v0973.md) · [download GitHub ZIP](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41574012652/artifacts/13203185715). Experimental source **`08580417bb43877b472f5b378d449f77e74bd4de`** with checkpoint `checkpoint/sector-rebound-v0973-lan-modes-signed-ci-350001`; versionCode **350001**, versionName `0.9.73-lanmodes.1`, same public AOSP test signer SHA256 `a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc` as prior preview. Signed APK and embedded source **CI SUCCESS [41574012652](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41574012652)**. Full game/regression **SUCCESS [41573556329](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41573556329)** (47 A2 real matches + 32 A1 host-bot checks + 101 D2 two-browser LAN checks, 102 mobile layout scenes, 44 visual screens). 
+
+**A2 player change:** host alone can play FFA 1–5 enemy bots, balanced Team Survival 1v1/2v2/3v3, Co-op with AI ally and 1–4 opposing bots, plus previous TDM Best-of-3. No second device required to launch. **Next owner gate:** backup/install over without uninstall, test all four modes on phone, preserve progress and report feel/bug/UX. **Not finished:** genuine two-phone Wi-Fi testing, late spectating/queued joining, native repeat accept and public Google Play production. Keep stable main and v0.9.72/0.9.71 rollback untouched.
+
+---
+
 # 2026-11-02 — D3-A2 FFA / TEAM SURVIVAL / CO-OP BOT-FILLED LAN ROOMS (EXPERIMENT)
 
 Implemented on `experiment/lan-mode-compatibility-d3-a2`: host alone can launch FFA (1–5 bots), balanced Team Survival 1v1–3v3, and Co-op host+AI ally against 1–4 enemy bots; corrected no-guest room/HUD truth and legacy human-guest gate. [A2 technical acceptance](LAN_MODES_D3_A2_2026-11-02.md). **Status: code awaiting exact-source CI**, NOT phone accepted, no new Android preview yet; previous v0.9.72 signed checkpoint and stable main untouched.
