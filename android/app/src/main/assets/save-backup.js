@@ -84,11 +84,17 @@ function makeBackup(storage){
 function previewImport(storage,text){
  const parsed=checkedEntries(text);if(!parsed.ok)return parsed;
  if(!storage)return {ok:false,error:'DEVICE STORAGE UNAVAILABLE'};
- try{for(const k of parsed.names){
-  const old=storage.getItem(k);
-  if(old!==null&&hasUnsupportedVersion(k,old))return {ok:false,error:'NEWER LOCAL '+k+' IS PROTECTED: NO OVERWRITE'};
- }}catch(_){return {ok:false,error:'CANNOT READ EXISTING DATA'}}
- return {...parsed,willReplace:parsed.names.filter(k=>storage.getItem(k)!==null)};
+ const willReplace=[];
+ try{
+  // Read each local target exactly once; all exceptions must fail closed.
+  // A second, unguarded getItem could crash the preview before confirmation.
+  for(const k of parsed.names){
+   const old=storage.getItem(k);
+   if(old!==null&&hasUnsupportedVersion(k,old))return {ok:false,error:'NEWER LOCAL '+k+' IS PROTECTED: NO OVERWRITE'};
+   if(old!==null)willReplace.push(k);
+  }
+ }catch(_){return {ok:false,error:'CANNOT READ EXISTING DATA'}}
+ return {...parsed,willReplace};
 }
 function restore(storage,text){
  const pre=previewImport(storage,text);if(!pre.ok)return pre;
@@ -96,8 +102,11 @@ function restore(storage,text){
  try{
   for(const k of pre.names)previous[k]=storage.getItem(k);
   // Recovery copy of every targeted pre-existing value is committed *before* first mutation.
-  storage.setItem(RECOVERY_KEY,JSON.stringify({format:FORMAT,version:VERSION,entries:previous}));
-  if(!storage.getItem(RECOVERY_KEY))throw Error('recovery_write');
+  const snapshotText=JSON.stringify({format:FORMAT,version:VERSION,entries:previous});
+  storage.setItem(RECOVERY_KEY,snapshotText);
+  // localStorage can be shimmed or truncated on unusual WebView failures.
+  // Check exact contents, not just that *something* was written.
+  if(storage.getItem(RECOVERY_KEY)!==snapshotText)throw Error('recovery_write');
   wroteRecovery=true;
   for(const k of pre.names){storage.setItem(k,pre.entries[k]);if(storage.getItem(k)!==pre.entries[k])throw Error('verify_write')}
   return {ok:true,count:pre.names.length,message:'RESTORED '+pre.names.length+' LOCAL RECORDS · RELOAD TO APPLY'};

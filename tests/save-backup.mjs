@@ -128,3 +128,66 @@ const modest=B.makeBackup(storage(modestEntries));
 assert.equal(modest.ok,true,'within-limit backup continues to work');
 assert.equal(B.checkedEntries(modest.text).ok,true,'generated backup must be accepted by the same importer');
 console.log('PASS fail-closed export cap: no un-restorable oversized backup, saved values intact and regular large records roundtrip.');
+
+
+// M5 mainline reliability: local storage failures must fail closed, without
+// touching user records or pretending a truncated safety copy is complete.
+{
+ const probe=storage({'rr-options-v06':prefs,'rr-dossier-v1':dossier});
+ const reads=new Map();
+ const observed={
+  getItem(key){reads.set(key,(reads.get(key)||0)+1);return probe.getItem(key)},
+  setItem:probe.setItem,removeItem:probe.removeItem
+ };
+ const backup=B.makeBackup(probe);
+ const plan=B.previewImport(observed,backup.text);
+ assert.equal(plan.ok,true,'ordinary preview remains supported');
+ assert.equal(plan.willReplace.length,2);
+ assert.equal(reads.get('rr-options-v06'),1,'preview reads each target only once');
+ assert.equal(reads.get('rr-dossier-v1'),1,'preview reads each target only once');
+ assert.equal(probe.getItem(B.RECOVERY_KEY),null,'preview never writes recovery');
+
+ const unreadable=storage({'rr-options-v06':prefs,'rr-dossier-v1':dossier});
+ const unreadableTarget={
+  getItem(k){if(k==='rr-dossier-v1')throw new Error('Android storage read failed');return unreadable.getItem(k)},
+  setItem:unreadable.setItem,removeItem:unreadable.removeItem
+ };
+ const blockedPreview=B.previewImport(unreadableTarget,backup.text);
+ assert.equal(blockedPreview.ok,false,'storage read faults cannot escape as uncaught errors');
+ assert.match(blockedPreview.error,/CANNOT READ EXISTING DATA/);
+ assert.equal(B.restore(unreadableTarget,backup.text).ok,false,'cannot restore with unreadable target');
+ assert.equal(unreadable.getItem('rr-options-v06'),prefs,'no data touched on failed preview');
+ assert.equal(unreadable.getItem('rr-dossier-v1'),dossier,'no dossier touched on failed preview');
+
+ const silentlyShortened=storage({'rr-options-v06':prefs,'rr-dossier-v1':dossier});
+ const tamperSnapshot={
+  getItem:silentlyShortened.getItem,
+  setItem(k,v){silentlyShortened.setItem(k,k===B.RECOVERY_KEY?String(v).slice(0,24):v)},
+  removeItem:silentlyShortened.removeItem
+ };
+ const aborted=B.restore(tamperSnapshot,backup.text);
+ assert.equal(aborted.ok,false,'truncated recovery copy blocks all import writes');
+ assert.match(aborted.error,/COULD NOT SAVE PRE-RESTORE RECOVERY COPY/);
+ assert.equal(silentlyShortened.getItem('rr-options-v06'),prefs,'original options preserved');
+ assert.equal(silentlyShortened.getItem('rr-dossier-v1'),dossier,'original dossier preserved');
+
+ const partiallyWritten=storage({'rr-options-v06':prefs,'rr-dossier-v1':dossier});
+ let corruptOnce=true;
+ const tamperData={
+  getItem:partiallyWritten.getItem,
+  setItem(k,v){
+   if(k==='rr-dossier-v1'&&corruptOnce){corruptOnce=false;partiallyWritten.setItem(k,'{truncated');return}
+   partiallyWritten.setItem(k,v);
+  },
+  removeItem:partiallyWritten.removeItem
+ };
+ const rolledBack=B.restore(tamperData,backup.text);
+ assert.equal(rolledBack.ok,false,'silent target corruption must trigger verification and rollback');
+ assert.match(rolledBack.error,/PREVIOUS DATA RECOVERED/);
+ assert.equal(partiallyWritten.getItem('rr-options-v06'),prefs);
+ assert.equal(partiallyWritten.getItem('rr-dossier-v1'),dossier);
+ const safety=JSON.parse(partiallyWritten.getItem(B.RECOVERY_KEY));
+ assert.equal(safety.entries['rr-options-v06'],prefs,'verified recovery copy preserved');
+ assert.equal(safety.entries['rr-dossier-v1'],dossier);
+ console.log('PASS M5 restore safety: single guarded read per target, denied reads, exact recovery verification and silent-write rollback.');
+}
