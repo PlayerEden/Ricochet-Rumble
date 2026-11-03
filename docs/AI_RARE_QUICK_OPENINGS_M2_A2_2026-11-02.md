@@ -14,3 +14,7 @@
 - New browser tests `tests/bot-rare-opportunities-m2-a2.mjs` cover 42 shot counters × three skills × two phone viewports, actual in-game target and maze geometry, on-foot protection, LOS/bank restrictions, speed/heading gates, rare frequency and cue timing. Existing M2-AI1 physical posture, A3 bank shot, pilot fairness, bot cues, LAN A2 47/A1 32/D2 101 and responsive visual tests must all stay green before any Android package.
 - After full source CI, build a new same-test-cert Android preview with monotonically higher versionCode, exact source/embedded asset parity, reproducible rollback and owner one-phone A/B. User's v0.9.74 impression “pretty good” makes **v0.9.74 baseline approved for feel**, but the extra opportunistic mechanic is **not yet physically tested**.
 - Owner comparison: Standard AI 1v1/2v2 long enough for repeated shots, then Challenge in FFA/Co-op. Look for an occasional rapid but visibly aligned direct opening, not constant rapid fire. If too many lucky shots, decrease frequency, not physical fair aim. Physical phone and two-phone acceptance remain separate.
+
+
+## Verified owner Android APK checkpoint
+[Signed v0.9.75 APK and physical A/B instructions](AI_RARE_QUICK_OPENINGS_M2_A2_ANDROID_OWNER_v0975.md); exact-source [CI PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41578089841), SHA `45e06297cf440a4d5f5606c8f282957dba602d4f`. Physical phone acceptance still pending.

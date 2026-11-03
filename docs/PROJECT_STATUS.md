@@ -1,3 +1,11 @@
+# 2026-11-02 — M2-AI2 RARE QUICK OPENINGS v0.9.75 SIGNED OWNER PREVIEW (PHONE FEEL REVIEW PENDING)
+
+**New same-signer Android APK verified:** [v0.9.75 one-phone handoff and A/B playtest](AI_RARE_QUICK_OPENINGS_M2_A2_ANDROID_OWNER_v0975.md); [download artifact #13204632545](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41578089841/artifacts/13204632545). Source **`45e06297cf440a4d5f5606c8f282957dba602d4f`**, checkpoint `checkpoint/sector-rebound-v0975-rare-ai-openings-signed-ci-370001`, app `com.playereden.ricochetrumble.preview`, versionCode **370001**, versionName `0.9.75-aiquick.1`, same public AOSP developer signer SHA256 `a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc` as v0.9.74. [Android signing/assets CI SUCCESS #41578089841](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41578089841); [real-game QA SUCCESS #41577565867](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41577565867). New bot opportunity tests verify rare low-frequency direct vehicle shots, real turn/speed gate, full pilot fairness and cue parity, plus 47 A2, 32 A1 and 101 two-Chromium LAN regressions, 44 visual screens.
+
+**Owner v0.9.74 baseline “pretty good for now”; the new quick-opportunity variant needs actual Android gameplay acceptance**. Existing v0.9.74 signed checkpoint and stable main untouched; actual two-phone LAN, live spectator and human queues still pending. Next code D3-B1 after this narrow fairness confirmation.
+
+---
+
 # 2026-11-02 — M2-AI2 OCCASIONAL QUICK BOT OPENINGS (EXPERIMENT)
 
 Owner accepted v0.9.74 AI aiming as “pretty good for now” and requested **rare faster on-the-spot shots**, so a skilled player can still occasionally be surprised. Separate experimental [M2-AI2 design and QA](AI_RARE_QUICK_OPENINGS_M2_A2_2026-11-02.md) modifies only aim timing for occasional **earned, visible direct vehicle shots**, preserving physical braking/turning and pilot protection. This is not dynamic unfairness or added damage. Exact base v0.9.74 signed checkpoint safe, draft code/CI and owner side-by-side test pending. D3-B1 spectating remains next networking milestone.

@@ -1,5 +1,9 @@
 # Branch register — Sector Rebound
 
+**M2-AI2 v0.9.75 “rare quick openings” signed owner APK:** [draft PR #103](https://github.com/PlayerEden/Ricochet-Rumble/pull/103), [full game CI PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41577565867), [Android PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41578089841), [APK ZIP](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41578089841/artifacts/13204632545); exact signed SHA `45e06297cf440a4d5f5606c8f282957dba602d4f`, version code `370001`, same preview signer and checkpoint `checkpoint/sector-rebound-v0975-rare-ai-openings-signed-ci-370001`. Owner phone fair challenge acceptance PENDING, v0.9.74 safe baseline and main untouched.
+
+
+
 **Updated: 2026-10-27 through v0.9.22-dev5 / roadmap audit.** These preserved branches are history/rollback references; don't delete or force-push simply to reduce clutter. The next feature starts from tested `main`.
 
 ## Active and preserved checkpoints
