@@ -1,8 +1,8 @@
 # Sector Rebound — Current Project Status
 
-**Last reconciled:** 2026-11-02 Kentucky local / 2026-11-03 UTC after D3-B1 merge · **repository:** `PlayerEden/Ricochet-Rumble` · **game name:** Sector Rebound.
+**Last reconciled:** 2026-11-03 after [D3-B2 PR #108](https://github.com/PlayerEden/Ricochet-Rumble/pull/108) merged · **repository:** `PlayerEden/Ricochet-Rumble` · **game name:** Sector Rebound.
 
-> **Current development `main`:** v0.9.75 gameplay consolidated by [PR #104](https://github.com/PlayerEden/Ricochet-Rumble/pull/104), SHA `b55e1ea1f59ca72663896d8f37d612547e253fbe`; true read-only spectator B1 merged by [PR #105](https://github.com/PlayerEden/Ricochet-Rumble/pull/105), SHA `20e8e9f0ab8f1b5ee57f7536df298b715a9198cb`. **Development CI only, not a new same-signer owner preview or a Google Play release. Physical two-phone LAN remains unverified.**
+> **Current development `main`:** v0.9.75 code consolidated in [PR #104](https://github.com/PlayerEden/Ricochet-Rumble/pull/104), spectator B1 in [PR #105](https://github.com/PlayerEden/Ricochet-Rumble/pull/105), and real JOIN NEXT B2 in [PR #108](https://github.com/PlayerEden/Ricochet-Rumble/pull/108), source merge SHA `bd7162619daf16496e17fbb332d7a8aebdd7e75d`. B2 exact-PR Android/visual, two-browser LAN, B1 and canonical regression **PASS**. **Real two-phone testing, Android owner-upgrade APK and Google Play approval remain pending**.
 
 **Current canonical navigation:** [Master development plan](MASTER_DEVELOPMENT_PLAN.md) · [Archive index](ARCHIVE_INDEX.md) · [preconsolidation full project log](PROJECT_STATUS_HISTORY_THROUGH_2026-11-02.md).
 
@@ -10,6 +10,7 @@
 
 | Milestone | Code / evidence | Acceptance |
 | --- | --- | --- |
+| **D3-B2 JOIN NEXT merged** | [PR #108](https://github.com/PlayerEden/Ricochet-Rumble/pull/108), merge SHA `bd7162619daf16496e17fbb332d7a8aebdd7e75d` | **Full exact-PR CI PASS**: [B2 50-case test](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41654551525), [Android/visual](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41654551614), [canonical LAN](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41654551623); physical devices pending |
 | **D3-B1 live spectator merged** | `main` merge SHA `20e8e9f0ab8f1b5ee57f7536df298b715a9198cb`; [PR #105](https://github.com/PlayerEden/Ricochet-Rumble/pull/105) | **Full exact-source CI passed, two physical phones pending** |
 | D3-B1 source checkpoint | [protected branch](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-d3-b1-spectator-source-ci-2026-11-02), SHA `89bfe4bb7d57af90f9ec8267fef14ce5a48e96bf` | Source snapshot, **not signed owner APK** |
 | D3-B1 browser regression | [45 spectator cases](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41588400421), [canonical full LAN](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41588400439) | **PASS** |
@@ -31,14 +32,15 @@
 - Web/Android offline gameplay: pilot/tank/mech, bank shots and procedural arenas, FFA and Team Survival, scored FFA/TDM, pilot-only CQC, Quick Play, custom presets, Dossier/earned cosmetics, Hangar, backup/export.
 - Local Wi-Fi beta: host/join/Ready and authoritative rounds/Best of 3; **host alone can start** FFA, balanced Team Survival, Co-op and scored TDM against real AI with one vacant guest seat.
 - Fair AI: bounded trajectory plan, finite turn/speed/aim cues; rare v0.9.75 **shorter aim acquisition** under eligible direct vehicle shot conditions. Human controls, projectile physics and production Play status unaffected.
-- **Merged development D3-B1:** genuine late-joining spectator camera, active host snapshots, read-only input gate and host rematch continuity, [CI passed](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41588400421). **Not built:** B2 Join Next/AI-to-human promotion, C native repeat-accept/reconnect, remote internet games, account/friends/ranked and purchases.
+- **Merged D3-B1 + D3-B2 development source:** late spectating, live camera/snapshots, read-only guard, JOIN NEXT/cancel, host queue acknowledgement, boundary-only human promotion and AI fallback. [Exact-PR QA PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41654551525). **Still unbuilt/unverified:** D3-C native repeat-accept/reconnect, physical two-phone Wi-Fi, real signed compatible owner-upgrade APK; internet multiplayer/accounts/ranked/purchases are deferred.
 
 ## Open gates and immediate next action
 
 1. **M0 consolidation verified:** current v0.9.75 baseline merged to `main` with old main archived; post-merge smoke and full LAN regression PASS.
-2. **Next D3-B2 JOIN NEXT:** after [merged D3-B1 #105](https://github.com/PlayerEden/Ricochet-Rumble/pull/105) passed [final 45-case dual-browser QA](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41588400421) and [full Android build QA](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41588400422), safely queue a late spectator for the next eligible round or match. **No mid-round bot seat takeover or inherited personal KOs**. D3-C native repeated accept/reconnect and **real two-phone tests** follow.
-3. **Manual device:** compare v0.9.75 rare fast bot shots with accepted v0.9.74; verify save-preserving install-over, landscape/portrait, play duration/FPS/heat, Dossier, controls and one-phone match fun.
-4. **Google Play is NO-GO:** production signer/AAB, authentic approved store assets, public privacy/support, Data safety, account testing, local data migration and release owner GO not complete.
+2. **D3-B2 JOIN NEXT complete as tested source:** merged [#108](https://github.com/PlayerEden/Ricochet-Rumble/pull/108) with queue/cancel and safe bot→human seat promotion; automated tests PASS. No mid-round actor takeover or inherited personal KOs. Separate pure contract [draft #107](https://github.com/PlayerEden/Ricochet-Rumble/pull/107) remains an independent unmerged experiment, not part of B2 runtime.
+3. **Next D3-C:** implement native Android reaccept/reconnect/background and explicit busy/open status; then physically connect two Android phones and verify reconnect/input safety. Generate a **same-signer higher-version owner preview** before asking for phone testing.
+4. **Manual device:** compare v0.9.75 rare fast bot shots with accepted v0.9.74; verify save-preserving install-over, landscape/portrait, play duration/FPS/heat, Dossier, controls and one-phone match fun.
+5. **Google Play is NO-GO:** production signer/AAB, authentic approved store assets, public privacy/support, Data safety, account testing, local data migration and release owner GO not complete.
 
 ## Engineering and publication rules
 
@@ -50,4 +52,4 @@
 
 ## Resume prompt for a new developer/assistant
 
-“Open `docs/PROJECT_STATUS.md`, `docs/MASTER_DEVELOPMENT_PLAN.md` and `docs/ARCHIVE_INDEX.md` on the **current `main`**, verify the latest source SHA and active PRs. Continue **D3-B2 queued JOIN NEXT promotion** after merged B1, validating next-round/match state with two real browser runtimes; leave physical 2-phone LAN and Play GO still pending. Use protected v0.9.75 signed checkpoint and v0.9.74 fair AI rollback. Never copy an outdated older ‘next’ label or modify release credentials.”
+“Open `docs/PROJECT_STATUS.md`, `docs/MASTER_DEVELOPMENT_PLAN.md` and `docs/ARCHIVE_INDEX.md` on current `main`; verify latest SHA. B1 spectators [#105] and B2 JOIN NEXT [#108] are merged/CI passed. Continue **D3-C native LAN repeat-accept/reconnect**, preserve boundary-only guest promotion, run true two-phone QA and provide compatible owner preview when verified. Keep #107 separate until reviewed. Do not infer production Play readiness or alter release credentials.”
