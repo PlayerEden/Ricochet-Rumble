@@ -26,6 +26,10 @@
 
 ## Pull request and prototype hygiene
 
+[**Full historical PR inventory and inclusion-vs-divergence audit**](HISTORICAL_PR_INVENTORY_2026-11-02.md): 60 old PRs categorized as 13 commit ancestors of current source versus 47 independent/divergent old experiments. Branches and PR discussions are preserved; closed historical PRs do **not** imply their divergent commits were merged.
+
+
+
 - **Mainline integration:** preserve all 415+ verified history commits rather than squash to one unexplained commit. Some old PRs are merely ancestor milestones; other **side experiments have diverged** (e.g., old PR #85 integration rehearsal, PR #98 planning branch) and must **not** be called merged without verification.
 - **Historical PR #1–17:** previously closed after owner-approved v0.9.21 work. Their GitHub discussion and original commits remain available.
 - **Former experimental chains:** pilots/CQC/scoring/custom/UI/AI/CTF through D2 LAN #24–97, D3 room #99–101, AI fairness #102–103. Once `main` is verified, close *only* clearly superseded PRs after a recorded ancestry or contents review. Divergent prototype branches and docs-only planning PRs remain archived for later comparison; **do not bulk merge** them into runtime.
