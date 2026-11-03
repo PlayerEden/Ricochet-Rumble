@@ -53,8 +53,8 @@ try{
   const initial=await read(),ratio=Math.min(1.6,Math.max(1,c.dpr));
   assert.equal(initial.width,Math.round(c.w*ratio));
   assert.equal(initial.height,Math.round(c.h*ratio));
-  assert.equal(initial.scale,ratio,'Canvas logical coordinate scale');
-  assert.equal(initial.verticalScale,ratio);
+  assert.ok(Math.abs(initial.scale-ratio)<1e-5,'Canvas logical coordinate scale');
+  assert.ok(Math.abs(initial.verticalScale-ratio)<1e-5,'Vertical Canvas logical coordinate scale');
   // System events and orientation callbacks can fire repeatedly with the
   // exact same viewport. None should reset the canvas bitmap or draw state.
   await page.evaluate(()=>{
@@ -65,7 +65,7 @@ try{
   });
   const redundant=await read();
   assert.deepEqual(redundant.writes,initial.writes,'24 unchanged events must never reallocate backing canvas');
-  assert.equal(redundant.scale,ratio);
+  assert.ok(Math.abs(redundant.scale-ratio)<1e-5,'Duplicate resize preserves effective DPR');
   // Real viewport width-only change: only the width buffer may be assigned.
   await page.setViewportSize({width:c.w+41,height:c.h});
   await page.waitForFunction(([width,scale])=>
@@ -75,7 +75,7 @@ try{
   assert.equal(resized.height,initial.height);
   assert.equal(resized.writes.width,redundant.writes.width+1,'real width change reallocates once');
   assert.equal(resized.writes.height,redundant.writes.height,'unchanged height should not be rewritten');
-  assert.equal(resized.scale,ratio);
+  assert.ok(Math.abs(resized.scale-ratio)<1e-5,'Actual resize preserves effective DPR');
   await page.evaluate(()=>window.dispatchEvent(new Event('orientationchange')));
   assert.deepEqual((await read()).writes,resized.writes,'post-resize duplicate event does not reallocate');
   data.push({viewport:c.w+'x'+c.h,dpr:c.dpr,backingScale:ratio,unchangedEvents:24,unnecessaryBufferWrites:0,realResizeWidthWrites:1});
