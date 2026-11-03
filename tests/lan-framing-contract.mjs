@@ -6,5 +6,5 @@ assert.ok(java.includes('BoundedLanReader.readPacket(reader, MAX_PACKET)'),'netw
 assert.ok(!java.includes('reader.readLine()'),'unbounded reader must not return');
 assert.ok(frame.includes('line.length() >= maxChars'),'guard before append');
 assert.ok(frame.includes('throw new IOException'),'overlength must fail closed');
-assert.ok(java.includes('if (myGen == generation.get())')&&java.includes('signalType("disconnected")'),'disconnect cleanup preserved');
+assert.ok(java.includes('if (myGen == generation.get() && admission.release(sock))')&&java.includes('signalType("disconnected")'),'disconnect must be generation- and identity-guarded');
 console.log('LAN_FRAMING_SOURCE_GUARD_PASS: size cap enforced during untrusted peer reads');
