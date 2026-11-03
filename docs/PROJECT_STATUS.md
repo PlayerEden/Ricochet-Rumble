@@ -1,3 +1,15 @@
+# 2026-11-02 — D3 PERSISTENT LAN ROOMS / SOLO-HOST TESTING (OWNER-APPROVED PLAN, NOT BUILT)
+
+**Decision:** The owner wants a discoverable LAN room that stays open while they play bots **on one phone**, with a late second player watching live and entering at the next eligible round or match. This is a **documented future implementation**, not a feature in v0.9.71. [D3 architecture, phased milestones and QA gates](design/LAN_PERSISTENT_ROOMS_D3_SPEC_2026-11-02.md) · [one-phone owner playtest card](LAN_D3_ONE_PHONE_OWNER_QA_2026-11-02.md) · [updated execution roadmap](DEVELOPMENT_EXECUTION_PLAN_POST_AUDIT_2026-10-30.md).
+
+**Exact current baseline:** signed experimental **v0.9.71** `com.playereden.ricochetrumble.preview`, versionCode **330001**, source SHA `333fc9d9ffc5f5ff5e136121217240112def531e`, same dev signer as v0.9.70. [Signed Android QA SUCCESS #41566002036](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41566002036), [D2 whole-game/two-client/visual QA SUCCESS #41565384859](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41565384859) (**101 two-client checks**, **102 layout scenes, 0 failures/0 warnings**, **44 full visual screens**). [D2 draft PR #97](https://github.com/PlayerEden/Ricochet-Rumble/pull/97). Source rollback: `checkpoint/sector-rebound-v0971-lan-series-signed-ci-330001`. **The user played v0.9.71 on one phone**, but **has not tested two phones**. Do not claim physical multiplayer or real device LAN success.
+
+**D3 order:** A0 room state/actor-controller contracts; A1 usable one-phone host-versus-bots lobby (highest priority); A2 mode compatibility; B1 join-in-progress spectator; B2 queue→safe round/match boundary promotion with AI backfill; C multi-session native socket/reconnect/performance/two-phone acceptance. Native Android currently does a one-time socket accept, and host requires guest Ready; this needs an explicit, bounded room/peer state-machine update, **not** just another menu. First D3 has **one remote spectator/guest at most**; online internet server, multiple spectators and full 3+ human PvP later.
+
+**Guardrails:** This commit is documentation only. No D3 runtime, new APK, score/camera/physics change, approval to merge to `main`, background LAN service, or Google Play release. All D3 features require new source, automated gates and owner phone checks; LAN remains experimental until actual two-device acceptance.
+
+---
+
 # 2026-11-02 — C1 MATCH IDENTITIES AND SOLO TEAM SIDE ROTATION
 
 **VERIFIED experimental checkpoint:** [draft PR #95](https://github.com/PlayerEden/Ricochet-Rumble/pull/95) on `experiment/match-identity-colors-c1`, built over B2 v0.9.69. Stable `main` remains unchanged.

@@ -1,4 +1,24 @@
 # Sector Rebound — Development Execution Plan After Open-Book Audit
+
+## 2026-11-02 owner-approved D3 extension — persistent LAN rooms (planning ONLY)
+
+The owner approved planning a **host-first persistent local Wi-Fi room**: host launches full games alone versus AI while room remains visible; an eventual joining device spectates immediately and queues for the next eligible round/match. **One-phone testing is the central near-term goal; no second phone or live guest needed for the first playable milestone.** [Complete D3 design/technical/QA specification](design/LAN_PERSISTENT_ROOMS_D3_SPEC_2026-11-02.md); [owner one-phone test card](LAN_D3_ONE_PHONE_OWNER_QA_2026-11-02.md).
+
+**Baseline:** signed, automated-verified experimental v0.9.71 (source `333fc9d9ffc5f5ff5e136121217240112def531e`, 330001, [Android CI](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41566002036), [D2 full QA](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41565384859)); D1 #96, D2 #97 remain drafts; two-phone physical LAN is NOT passed. This D3 update makes no game/source or Android changes.
+
+| D3 stage | Ordered deliverable | One-phone gate | Further gate |
+|---|---|---|---|
+| **A0** | Host room lifecycle, reserved human seat controlled by AI until claimed, role/packet contract | Validate UI/rules and fixture concepts | Pure state-machine tests, engine regression, no unstable protocol migration |
+| **A1 FIRST** | Host opens persistent discoverable LAN room **without any connected guest**, plays bot matches and Best of 3, returns to lobby, edits settings | **Real playable owner Android APK**: TDM 1v1/2v2/3v3, FF/side changes, result→next round/new series, status, leave/reopen | Same approved controls; source parity, combat/save suite, CI/Android signer; no ghost idle player |
+| **A2** | One-phone full compatible LAN mode set (FFA/Survival/Co-op as independently validated) | Mode-by-mode solo host phone check | Meaningful scores and bot rosters, no fake human/online reward claims |
+| **B1** | Active discoverable room + late join spectator camera and no input | Host still plays normally; spectator acceptance **needs 2 clients** | Browser pair and native socket lifecycle; two physical phones later |
+| **B2** | Queue to next round/match, spectator becomes seat 1 on boundary; AI refill on exit | Visible pending status on host; cannot physically validate queued remote human alone | No mid-fight actor mutation, duplicate/stale packet defenses, true 2-phone round/role transitions |
+| **C** | Full/busy, reconnect, stale input, private/IP fallback, Android pause/stop, geometry/performance, two-phone field acceptance | Solo host stability and crash/thermal impressions | Hard native socket tests, 10-match real same-Wi-Fi session, rollback and no premature LAN release claims |
+
+**Design constraints:** 2 reserved human seats, but empty guest seat is driven by real AI; don't equate `humanCount` with connected humans. Frozen team IDs and ≤6 actor limit; 1 remote client/spectator initially; host owns wins/series and role changes; v2 handshake/allowlists with version-mismatch rejection; Android one-shot accept loop must be replaced intentionally. The room exists only while foreground Android host is running, **not** a cloud server. Plan explicitly defers internet rooms, friend system, many spectators and remote ranked. Use small draft PR slices with physical one-phone review **after A1**, then two-phone acceptance when available.
+
+---
+
 **Created:** 2026-10-30  
 **Decision:** owner requests a practical staged plan **and to start implementation**.  
 **Status:** APPROVED TO PLAN AND BEGIN LOW-RISK BASELINE/QA IMPLEMENTATION. Gameplay balance changes, branch integration, production signing and release require later measured evidence and explicit review.

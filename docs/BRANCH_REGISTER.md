@@ -1,5 +1,21 @@
 # Branch register — Sector Rebound
 
+**2026-11-02 D3 handoff (planning only):** This register's older rows are historical. New active experimental lineage and its protected rollback:
+
+| Branch | Purpose | Status |
+| --- | --- | --- |
+| `main` | Last merged stable development runtime | **UNCHANGED**, no D1/D2/D3 code merged |
+| `experiment/match-identity-colors-c1` | C1 faction identities | [draft #95](https://github.com/PlayerEden/Ricochet-Rumble/pull/95), preserve |
+| `experiment/lan-squad-tdm-d1` | D1 actual LAN scored squads | [draft #96](https://github.com/PlayerEden/Ricochet-Rumble/pull/96), CI [PASS 41564344765](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41564344765) |
+| `experiment/lan-series-d2` | D2 best of three + signed v0.9.71 | [draft #97](https://github.com/PlayerEden/Ricochet-Rumble/pull/97), [whole game PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41565384859), [APK PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41566002036), physical LAN pending |
+| `checkpoint/sector-rebound-v0971-lan-series-signed-ci-330001` | Immutable source pointer for v0.9.71 owner preview | Source `333fc9d9ffc5f5ff5e136121217240112def531e`, **do not force-push/delete** |
+| `plan/d3-persistent-lan-rooms` | Approved D3 **documentation only**, on exact D2 source | No runtime change; separate D3-A0/A1 implementation draft branches to follow |
+
+[D3 design spec](design/LAN_PERSISTENT_ROOMS_D3_SPEC_2026-11-02.md) · [one-phone test card](LAN_D3_ONE_PHONE_OWNER_QA_2026-11-02.md).
+
+---
+
+
 **Updated: 2026-10-27 through v0.9.22-dev5 / roadmap audit.** These preserved branches are history/rollback references; don't delete or force-push simply to reduce clutter. The next feature starts from tested `main`.
 
 ## Active and preserved checkpoints
