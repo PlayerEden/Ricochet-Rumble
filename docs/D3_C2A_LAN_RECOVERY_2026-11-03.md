@@ -1,6 +1,6 @@
 # D3-C2A — Explicit LAN recovery, same-host retry and host-offline restart
 
-**Development source only, 2026-11-03. Physical two-phone Wi-Fi still unverified.**
+**Development source merged 2026-11-03 via [PR #111](https://github.com/PlayerEden/Ricochet-Rumble/pull/111), merge `b055623fc69b8dc38cd65ab470267193d5e2d9ee`. All seven exact-PR QA workflows PASS (including [recovery Chromium](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41670513016) and [full Android/visual](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41670512826)). Physical two-phone Wi-Fi still unverified.**
 
 ## Scope
 - Guest remembers one attempted IP and port only in memory for the current session. Manual IP and NSD room selection use the same safe join path; no passwords, persistence or automatic background reconnect.
