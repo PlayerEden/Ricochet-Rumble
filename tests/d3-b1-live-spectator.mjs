@@ -49,6 +49,7 @@ try{
   await host.locator('#menu [data-action="nearby"]').click();await host.locator('[data-action="host"]').click();
   await host.locator('[data-lan-setting="teamMode"]').selectOption('tdm');
   await host.locator('[data-lan-setting="botCount"]').selectOption('2');
+  await host.locator('[data-lan-setting="hostSide"]').selectOption('coral');
   await host.locator('[data-lan-setting="mapSize"]').selectOption('large');
   await host.locator('[data-action="lan-start"]').click();
   const initial=await inspect(host);
@@ -74,6 +75,9 @@ try{
     await guest.locator('.touch-right').evaluate(x=>getComputedStyle(x).display)==='none',
     'spectator controls genuinely hidden and non-clickable');
   check((await host.locator('#spectator-status').textContent()).includes('GUEST WATCHING'),'host sees watching status');
+  check((await guest.locator('#player0-label').textContent()).includes('CYAN KOs')&&
+    (await guest.locator('#player1-label').textContent()).includes('CORAL KOs'),
+    'spectator sees factual Cyan/Coral KO scores, not a fake personal side');
   await new Promise(ok=>setTimeout(ok,170));
   check((await packets(guest,'input')).length===0,'spectator sends no input updates');
   check(await guest.evaluate(()=>window.__spec.release())===false,'spectator cannot queue shot');

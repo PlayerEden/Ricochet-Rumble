@@ -1129,8 +1129,9 @@ function refreshHUD(){const me=mode==='guest'&&!lanSpectating?1:0,other=me===0?1
   else if(observed)badge.textContent='GUEST WATCHING';
  }
  if(mode==='guest'&&lanSpectating){
-  const hostLabel=document.getElementById('player0-label');if(hostLabel)hostLabel.textContent='HOST · LIVES';
-  const enemyLabel=document.getElementById('player1-label');if(enemyLabel)enemyLabel.textContent='AI OPPONENTS';
+  const teamScores=isScoredMatch()&&state.scored?.mode==='teams';
+  const hostLabel=document.getElementById('player0-label');if(hostLabel)hostLabel.textContent=teamScores?'CYAN KOs':'HOST · LIVES';
+  const enemyLabel=document.getElementById('player1-label');if(enemyLabel)enemyLabel.textContent=teamScores?'CORAL KOs':'AI OPPONENTS';
   if(!isScoredMatch())document.getElementById('score1').textContent=opposingCount(0);
   if(state.winner>=0){
    const outcome=document.getElementById('aa-outcome');if(outcome)outcome.textContent='MATCH COMPLETE';
@@ -2718,15 +2719,15 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  c.fillStyle=paint;c.font='bold 13px system-ui';c.textAlign='center';
  // Ground personnel stand close to parked vehicles. Move their label
  // to the side, rather than painting it across the abandoned tank.
- c.fillText(!lanBotSeat(i)?'P'+(i+1):state.config?.teamMode==='teams'&&friendly(i,mode==='guest'?1:0)?'ALLY '+botOrdinal(i):'AI'+botOrdinal(i),t.x+(t.onFoot?42:0),t.y+(t.onFoot?-18:-38));
- if(i===(mode==='guest'?1:0)){
+ c.fillText(!lanBotSeat(i)?'P'+(i+1):state.config?.teamMode==='teams'&&friendly(i,mode==='guest'&&!lanSpectating?1:0)?'ALLY '+botOrdinal(i):'AI'+botOrdinal(i),t.x+(t.onFoot?42:0),t.y+(t.onFoot?-18:-38));
+ if(i===(mode==='guest'&&!lanSpectating?1:0)){
   c.beginPath();
   if(t.onFoot){c.moveTo(t.x-30,t.y);c.lineTo(t.x-40,t.y-6);c.lineTo(t.x-40,t.y+6);}
   else{c.moveTo(t.x,t.y-59);c.lineTo(t.x-8,t.y-71);c.lineTo(t.x+8,t.y-71);}
   c.closePath();c.fillStyle='#ffffff';c.fill();
  }}
  // Friendly dotted paths are quiet secondary information; show at most two.
- for(const i of visibleAlliedAimIndices(me))drawAlliedAimTrace(c,i);
+ if(!lanSpectating)for(const i of visibleAlliedAimIndices(me))drawAlliedAimTrace(c,i);
  if(releaseMode()&&(fireAim.pointerId!==null||releaseShot)){
   const t=state.tanks[mode==='guest'?1:0],aim=releaseShot??(fireAim.active?fireAim:null);
   drawTrajectoryPreview(c,t,aim?Math.atan2(aim.y,aim.x):t.a);
