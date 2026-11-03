@@ -39,7 +39,8 @@ window.__pipelineProfile={
 };
 })();`;
 const game=source.replace(trailer,instrument);
-const allowed=new Set(['index.html','style.css','game.js','scored-match.js','dossier.js','save-backup.js']);
+// Current Forward Bay + LAN helpers load before game.js in both WebView and web.
+const allowed=new Set(['index.html','style.css','game.js','scored-match.js','dossier.js','save-backup.js','forward-bays.js','lan-series.js','lan-room.js']);
 const missing=[];
 const server=http.createServer((req,res)=>{
  const name=new URL(req.url,'http://127.0.0.1/').pathname.replace(/^\/+/,'')||'index.html';

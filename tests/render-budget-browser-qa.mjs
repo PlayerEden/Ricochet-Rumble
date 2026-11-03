@@ -11,7 +11,8 @@ const tail=/\}\)\(\);\s*$/;
 assert.ok(tail.test(src));
 const hook='window.__renderQA={sample(size,frames,seed){mode="solo";paused=true;state=initialState(0,{...selectedRules,mapSize:size,botCount:3,pilotMode:true},seed);camera.zoom=null;const samples=[];for(let n=0;n<frames;n++){const start=performance.now();render(1/60);samples.push(performance.now()-start)}samples.sort((a,b)=>a-b);return {size,frames,msMedian:samples[Math.floor(samples.length*.5)],msP95:samples[Math.min(samples.length-1,Math.floor(samples.length*.95))],msMax:samples.at(-1),walls:wallSet.length,actors:state.tanks.length,vehicles:state.vehicles.length,canvasPixels:canvas.width*canvas.height,canvasWidth:canvas.width,canvasHeight:canvas.height,dom:document.querySelectorAll("*").length}}};})();';
 const game=src.replace(tail,hook);
-const allowed=new Set(['index.html','style.css','game.js','scored-match.js','dossier.js','save-backup.js']);
+// Serve every script dependency referenced by the actual current index.html.
+const allowed=new Set(['index.html','style.css','game.js','scored-match.js','dossier.js','save-backup.js','forward-bays.js','lan-series.js','lan-room.js']);
 const missing=[];
 const server=http.createServer((req,res)=>{
  const name=new URL(req.url,'http://127.0.0.1/').pathname.replace(/^\/+/,'')||'index.html';

@@ -8,7 +8,7 @@ import {chromium} from 'playwright-core';
 
 assert.ok(process.env.CHROME_BIN,'CHROME_BIN required: do not skip browser QA');
 const root=path.resolve('web');
-const names=new Set(['index.html','style.css','game.js','scored-match.js','forward-bays.js','dossier.js','save-backup.js']);
+const names=new Set(['index.html','style.css','game.js','scored-match.js','forward-bays.js','dossier.js','save-backup.js','lan-series.js','lan-room.js']);
 const server=http.createServer((req,res)=>{
  const pathname=new URL(req.url,'http://127.0.0.1').pathname.slice(1)||'index.html';
  if(!names.has(pathname)){res.writeHead(404);res.end();return}
