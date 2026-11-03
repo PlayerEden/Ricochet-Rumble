@@ -2408,11 +2408,15 @@ function drawPilotLocator(c,x,y,color){
 // v0.9.22-dev5: final small vehicle-only pullback after owner phone feedback.
 // Keep pilot at approved scale for future pilot-only Close Quarters.
 const CAMERA_APRON=420;
+// M2 camera-awareness pass: pull each unit back approximately 9-10% in
+// visible world span while preserving pilot > tank > mech magnification.
+// This changes the viewport only: no changes to player size, input, physics,
+// AI acquisition rates, projectile lifetime or simulation camera authority.
 function unitTargetZoom(t){
- if(!t)return 1.00;
- if(t.onFoot)return 1.07; // Explicitly unchanged from dev3 / dev4.
+ if(!t)return .98;
+ if(t.onFoot)return .98;
  const v=currentVehicle(t);
- return v?.type==='mech'?.77:v?.type==='tank'?.82:1.00;
+ return v?.type==='mech'?.71:v?.type==='tank'?.75:.98;
 }
 function cameraZoom(t=state?.tanks?.[mode==='guest'?1:0]){
  return mazeGrid?Math.max(unitTargetZoom(t),W/(worldW+CAMERA_APRON*2),H/(worldH+CAMERA_APRON*2)):1;
