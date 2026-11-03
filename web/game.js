@@ -1156,8 +1156,8 @@ function newMatch(which,dailyOptions=null){
  if(which==='solo'&&!selectedPlaylistIds.length){notice('SELECT A QUICK PLAY MODE IN MATCH SETTINGS',2300);return false;}
  const playlistId=which==='solo'?firstQuickPlayMode():null;
  if(bridgeReady())window.AndroidBridge.stopNetwork();mode=scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch?'solo':which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;neutralizeGuestInput();lanSpectating=false;lanSpectatePending=null;
- lanHostJoinNext=null;lanHostPromotedMatchId=0;
- lanGuestJoinNext='none';lanGuestQueueBoundary='match';lanGuestJoinSeq=0;lanGuestPromotePending=null;document.getElementById('game-screen')?.classList.remove('spectating');
+ lanHostJoinNext=null;lanHostJoinSeq=0;lanHostPromotedMatchId=0;
+ lanGuestJoinNext='none';lanGuestQueueBoundary='match';lanGuestJoinSeq=0;lanGuestJoinPending=false;lanGuestPromotePending=null;document.getElementById('game-screen')?.classList.remove('spectating');
  const arena=selectArena(),options=ctfLaunch?{...selectedRules,matchModeId:'scored_tdm',
  mapSize:'standard',teamMode:'teams',botCount:3,botSkill:'normal',pilotMode:true,
  forwardBayExercise:true,ctfExercise:true,quickPlayMatch:false}:bayLaunch?{...selectedRules,matchModeId:'scored_tdm',mapSize:'standard',teamMode:'teams',botCount:3,botSkill:'normal',pilotMode:true,forwardBayExercise:true,quickPlayMatch:false}:dailyLaunch?dailyOptions:customLaunch?customOptionsFor():scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:which==='scored_tdm'?'teams':'ffa',matchModeId:which,pilotMode:true}:playlistId?quickPlayOptionsFor(playlistId):{...selectedRules,pilotMode:true};
@@ -2859,17 +2859,18 @@ function bridgeReady(){return !!window.AndroidBridge}
 let lanLobby=null;
 // D3-B1 read-only spectator + D3-B2 host-owned next-round/match queue.
 let lanSpectating=false,lanSpectatePending=null;
-let lanHostJoinNext=null,lanHostPromotedMatchId=0;
-let lanGuestJoinNext='none',lanGuestQueueBoundary='match',lanGuestJoinSeq=0,lanGuestPromotePending=null;
+let lanHostJoinNext=null,lanHostJoinSeq=0,lanHostPromotedMatchId=0;
+let lanGuestJoinNext='none',lanGuestQueueBoundary='match',lanGuestJoinSeq=0,
+ lanGuestJoinPending=false,lanGuestPromotePending=null;
 function joinNextBoundary(){
  return state?.lanSeries&&!state.lanSeries.concluded&&state.lanSeries.round<3?'round':'match';
 }
 function guestJoinNextAction(action){
- if(mode!=='guest'||!connected||!lanSpectating||!lanLobby||
+ if(mode!=='guest'||!connected||!lanSpectating||!lanLobby||lanGuestJoinPending||
   !['join','cancel'].includes(action)||!Number.isSafeInteger(state?.matchId)||
   (action==='join'&&lanGuestJoinNext!=='none')||
   (action==='cancel'&&lanGuestJoinNext!=='queued'))return false;
- lanGuestJoinSeq++;
+ lanGuestJoinSeq++;lanGuestJoinPending=true;
  nativePacket({type:'join-next',version:2,revision:lanLobby.revision,
   matchId:state.matchId,seq:lanGuestJoinSeq,action});
  return true;
@@ -3078,6 +3079,7 @@ function guestLanReady(){
 function returnToLanRules(){
  if(mode!=='host'||(!connected&&state.config?.lanHostSolo!==true)||state.winner<0||lanLobby?.active)return;
  paused=true;neutralizeGuestInput();releaseControls();
+ lanHostJoinNext=null;lanHostJoinSeq=0;
  startLanLobby(true);publishLanLobby();
 }
 function launchLanMatch(){
@@ -3107,8 +3109,8 @@ function host(){if(!bridgeReady()){notice('Nearby mode requires the Android APK'
 function find(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('guest');setPanel('<div class="eyebrow">NEARBY PLAY</div><h2>FIND A MATCH</h2><p id="find-status">Looking for games on the same Wi-Fi...</p><div id="rooms"></div><button data-action="manual">JOIN BY LOCAL IP</button><button data-action="close">BACK</button>');window.AndroidBridge.findGames()}
 function manual(){if(!bridgeReady()){notice('Manual LAN join requires the Android APK');return}newMatch('guest');setPanel('<div class="eyebrow">FALLBACK</div><h2>JOIN BY ADDRESS</h2><p>Enter the IP:port shown on the host screen, such as 192.168.1.25:47321</p><input id="lan-address" placeholder="192.168.1.25:47321" inputmode="url" autocapitalize="off"><button data-action="ip-join">CONNECT</button><button data-action="find">FIND NEARBY</button>')}
 function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;lanLobby=null;lanSpectating=false;lanSpectatePending=null;
- lanHostJoinNext=null;lanHostPromotedMatchId=0;
- lanGuestJoinNext='none';lanGuestQueueBoundary='match';lanGuestJoinSeq=0;lanGuestPromotePending=null;
+ lanHostJoinNext=null;lanHostJoinSeq=0;lanHostPromotedMatchId=0;
+ lanGuestJoinNext='none';lanGuestQueueBoundary='match';lanGuestJoinSeq=0;lanGuestJoinPending=false;lanGuestPromotePending=null;
  document.getElementById('game-screen')?.classList.remove('spectating');neutralizeGuestInput();mode='idle';playlistBag=[];lastSoloModeId=null;releaseControls();document.getElementById('mode-label').textContent='NO GAME ACTIVE';panel.innerHTML=originalPanel;applyPrefsToUI();menu.classList.remove('hidden')}
 const originalPanel=panel.innerHTML;
 panel.addEventListener('change',e=>{const el=e.target;if(el?.dataset?.lanSetting){changeLanRule(el);return;}if(el.id==='custom-preset-select'){pendingPresetDelete='';refreshCustomPresetUI();customPresetStatus('SELECT LOAD TO APPLY SAVED RULES');return;}if(el.id?.startsWith('custom-')){readCustomScreen();refreshCustomUI();return;}if(el.id?.startsWith('pref-')){const key=el.id.slice(5);if(key in comfort)comfort[key]=el.checked;applyPrefsToUI()}savePrefs()});
@@ -3163,6 +3165,9 @@ function showPauseMenu(){releaseControls();if(mode==='idle')return;
  if(mode==='solo'||mode==='duel'){paused=true;setPanel(state.config?.dailySector?'<div class="eyebrow">DAILY SECTOR / PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">The daily maze remains fixed for this attempt.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">RETRY SECTOR</button><button data-action="close">MAIN MENU</button></div>'+pauseAudioControls():'<div class="eyebrow">FIELDGRID / PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">The field is frozen. Continue or generate a fresh sector.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">NEW FIELD</button><button data-action="close">MAIN MENU</button></div>'+pauseAudioControls())}
  else if(mode==='host'){paused=true;neutralizeGuestInput();setPanel('<div class="eyebrow">FIELDGRID / HOST PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">Both players are paused.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">NEW FIELD</button><button data-action="close">DISCONNECT</button></div>'+pauseAudioControls())}
  else if(mode==='guest'){if(connected&&!lanSpectating)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}});setPanel('<div class="eyebrow">FIELDGRID / PLAYER MENU</div><h2>SECTOR <span>MENU</span></h2><p class="pause-hint">'+(lanSpectating?'SPECTATING · READ ONLY. The host controls the match.':'The host controls rematches.')+'</p><div class="pause-actions"><button class="primary" data-action="resume">BACK TO ARENA</button><button data-action="close">DISCONNECT</button></div>'+pauseAudioControls())}}
+document.getElementById('spectator-queue')?.addEventListener('click',()=>{
+ guestJoinNextAction(lanGuestJoinNext==='queued'?'cancel':'join');
+});
 document.getElementById('menu-button').addEventListener('click',()=>{if(mode!=='idle')audioCue('ui-select');showPauseMenu()});
 document.getElementById('quick-rematch')?.addEventListener('click',()=>{if(state.winner>=0&&mode!=='guest'&&mode!=='idle'){if(resetAll(mode==='solo'&&!!state.config?.quickPlayMatch)!==false){audioCue('deploy');notice(state.config?.dailySector?'SAME DAILY SECTOR · NEW ATTEMPT':'NEW FIELD · NEW FIGHT',1400)}}});
  document.getElementById('results-menu')?.addEventListener('click',()=>{if(state.winner>=0&&mode!=='idle'){audioCue('ui-back');stop()}});
@@ -3227,7 +3232,7 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
  if(mode!=='host'&&mode!=='guest')break;
  if(mode==='host'&&state.config?.lanHostSolo===true&&lanLobby&&!lanLobby.active){
   connected=true;neutralizeGuestInput();remoteReleaseShot=null;
-  lanHostJoinNext=null;lanHostPromotedMatchId=0;
+  lanHostJoinNext=null;lanHostJoinSeq=0;lanHostPromotedMatchId=0;
   nativePacket({type:'lobby',version:1,revision:lanLobby.revision,rules:lanLobby.rules,
    postMatch:false,hostBusy:true});
   nativePacket({type:'spectate',version:2,revision:lanLobby.revision,matchId:state.matchId,role:'spectator'});
@@ -3235,7 +3240,7 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
   refreshHUD();notice('GUEST JOINED · SPECTATING LIVE MATCH',2300);break;
  }
  if(mode==='host'){neutralizeGuestInput();lastGuestFireSeq=0;remoteReleaseShot=null;
-  lanHostJoinNext=null;lanHostPromotedMatchId=0;}
+  lanHostJoinNext=null;lanHostJoinSeq=0;lanHostPromotedMatchId=0;}
  connected=true;paused=true;
  document.getElementById('mode-label').textContent=mode==='guest'?'YOU: CORAL':'YOU: CYAN';
  if(mode==='host'){if(!lanLobby)startLanLobby();lanLobby.guestReady=false;refreshLanLobby();publishLanLobby();}
@@ -3246,6 +3251,7 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
  if(!lanLobby.active){
   if((state.winner<0&&msg.postMatch!==true)||msg.revision<=lanLobby.revision)break;
   paused=true;neutralizeGuestInput();lanSpectating=false;lanSpectatePending=null;
+  lanGuestJoinNext='none';lanGuestJoinPending=false;lanGuestPromotePending=null;
   document.getElementById('game-screen')?.classList.remove('spectating');
   lanLobby.active=true;lanLobby.myReady=false;setPanel(lanLobbyHTML(false));
  }
@@ -3261,6 +3267,42 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
     !(lanSpectating||(lanLobby.active&&lanLobby.hostBusy===true)))break;
   lanSpectatePending={matchId:msg.matchId,revision:msg.revision};break;
  }
+ case 'join-next':{
+  // Host owns the queue. Existing active combat is strictly read-only.
+  if(mode!=='host'||!connected||!lanLobby||lanLobby.active||
+   state.config?.lanHostSolo!==true||msg.version!==2||
+   msg.revision!==lanLobby.revision||msg.matchId!==state.matchId||
+   !Number.isSafeInteger(msg.seq)||msg.seq<=lanHostJoinSeq||msg.seq>2147483600||
+   !['join','cancel'].includes(msg.action)||
+   (msg.action==='join'&&lanHostJoinNext?.queued)||
+   (msg.action==='cancel'&&!lanHostJoinNext?.queued))break;
+  lanHostJoinSeq=msg.seq;
+  lanHostJoinNext=msg.action==='join'?{queued:true,boundary:joinNextBoundary(),seq:msg.seq}:null;
+  nativePacket({type:'join-next-status',version:2,revision:lanLobby.revision,
+   matchId:state.matchId,seq:msg.seq,role:lanHostJoinNext?.queued?'queued':'spectator',
+   boundary:lanHostJoinNext?.boundary||'match'});
+  refreshHUD();break;
+ }
+ case 'join-next-status':{
+  if(mode!=='guest'||!connected||!lanSpectating||!lanLobby||
+   msg.version!==2||msg.revision!==lanLobby.revision||
+   msg.matchId!==state.matchId||msg.seq!==lanGuestJoinSeq||
+   !lanGuestJoinPending||!['queued','spectator'].includes(msg.role)||
+   !['round','match'].includes(msg.boundary))break;
+  lanGuestJoinPending=false;lanGuestJoinNext=msg.role;
+  lanGuestQueueBoundary=msg.boundary;
+  refreshHUD();notice(msg.role==='queued'?
+   'JOIN RESERVED · NEXT '+msg.boundary.toUpperCase():'JOIN NEXT CANCELLED',1600);break;
+ }
+ case 'join-next-promote':{
+  if(mode!=='guest'||!connected||!lanSpectating||!lanLobby||
+   lanGuestJoinNext!=='queued'||msg.version!==2||
+   msg.revision!==lanLobby.revision||msg.role!=='player'||
+   !['round','match'].includes(msg.boundary)||
+   msg.previousMatchId!==state.matchId||
+   !Number.isSafeInteger(msg.matchId)||msg.matchId<=state.matchId)break;
+  lanGuestPromotePending={matchId:msg.matchId,revision:msg.revision};break;
+ }
  case 'ready':{
  if(mode!=='host'||!connected||!paused||!lanLobby||!lanLobby.active||msg.revision!==lanLobby.revision||typeof msg.ready!=='boolean')break;
  lanLobby.guestReady=msg.ready;refreshLanLobby();break;}
@@ -3270,9 +3312,17 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
  case 'state':if(mode==='guest'&&(!lanLobby||!lanLobby.active||lanSpectatePending)&&validRemoteSnapshot(msg.state)){
  const upcoming=msg.state;
  if(lanSpectatePending&&(upcoming.matchId!==lanSpectatePending.matchId||upcoming.config?.lanHostSolo!==true))break;
- if(lanSpectating&&upcoming.config?.lanHostSolo!==true)break;
- if(lanLobby?.active&&!lanSpectatePending)break;
- if(lanSpectatePending&&!lanSpectating){
+ if(lanGuestPromotePending&&(upcoming.matchId!==lanGuestPromotePending.matchId||
+  upcoming.config?.lanHostSolo!==false))break;
+ if(lanSpectating&&upcoming.config?.lanHostSolo!==true&&!lanGuestPromotePending)break;
+ if(lanLobby?.active&&!lanSpectatePending&&!lanGuestPromotePending)break;
+ if(lanGuestPromotePending){
+  lanSpectating=false;lanGuestJoinNext='none';lanGuestJoinPending=false;
+  lanGuestPromotePending=null;releaseControls();lastRemoteFxId=0;guestFireSeq=0;
+  document.getElementById('game-screen')?.classList.remove('spectating');
+  exitMenu();notice('JOINED · YOUR SEAT IS ACTIVE',1900);
+ }
+ if(lanSpectatePending&&!lanSpectating&&upcoming.config?.lanHostSolo===true){
   lanSpectating=true;lanLobby.active=false;paused=false;releaseControls();
   document.getElementById('game-screen')?.classList.add('spectating');
   exitMenu();notice('LIVE SPECTATOR · HOST IN CONTROL',1700);
@@ -3307,12 +3357,16 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
  case 'interact':if(mode==='host'&&connected&&!paused&&state.config?.lanHostSolo!==true&&
    (!lanHostPromotedMatchId||(msg.matchId===state.matchId&&msg.revision===lanLobby?.revision)))tryInteract(1);break;
  case 'disconnected':
-  if(mode==='host'&&(lanLobby?.active===true||state.config?.lanHostSolo===true)){
-   connected=false;neutralizeGuestInput();
+  if(mode==='host'&&(lanLobby?.active===true||state.config?.lanHostSolo===true||lanHostPromotedMatchId)){
+   connected=false;neutralizeGuestInput();lanHostJoinNext=null;lanHostJoinSeq=0;
+   if(lanHostPromotedMatchId&&state?.config){
+    state.config.lanHostSolo=true;lanHostPromotedMatchId=0;
+   }
    if(lanLobby?.active){lanLobby.guestReady=false;refreshLanLobby();}
-   refreshHUD();notice('GUEST LEFT · HOST CONTINUES',2200);break;
+   refreshHUD();notice('GUEST LEFT · BOT RESUMES',2200);break;
   }
   connected=false;paused=true;lanLobby=null;lanSpectating=false;lanSpectatePending=null;
+  lanGuestJoinNext='none';lanGuestJoinPending=false;lanGuestPromotePending=null;
   document.getElementById('game-screen')?.classList.remove('spectating');
   neutralizeGuestInput();clearStick();notice('Other player disconnected');
   setPanel('<h2>CONNECTION LOST</h2><p>Return to the main menu and reconnect.</p><button data-action="close">MAIN MENU</button>');break;

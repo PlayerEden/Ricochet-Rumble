@@ -1160,6 +1160,10 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
    surfaces; do not display fake FIRE/MOVE controls over a watch-only feed. */
 .spectator-status{flex-shrink:0;max-width:33vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:clamp(9px,1.15vw,12px);font-weight:900;color:#bff5e4;letter-spacing:.55px;padding:5px 8px;border:1px solid #477e72;border-radius:6px;background:#14312c}
 .spectator-status.hidden{display:none}
+.spectator-queue{flex-shrink:0;min-height:34px;max-width:26vw;padding:5px 10px;border:1px solid #71a7a4;background:#173e3b;color:#d9fff0;border-radius:6px;font-size:clamp(9px,1.16vw,12px);font-weight:900;letter-spacing:.5px}
+.spectator-queue.hidden{display:none}
+.spectator-queue:focus-visible{outline:2px solid #bff5e4;outline-offset:2px}
+@media(max-width:850px){.spectator-queue{max-width:23vw;padding:4px 6px;min-height:32px;font-size:9px}}
 .game-screen.spectating .touch-zone{display:none!important;pointer-events:none!important}
 .game-screen.spectating .battlefield{grid-template-columns:minmax(0,1fr)}
 @media(max-width:850px){.spectator-status{max-width:25vw;font-size:9px;padding:4px 5px}}
