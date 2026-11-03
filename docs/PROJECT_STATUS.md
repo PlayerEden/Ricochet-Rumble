@@ -1,3 +1,11 @@
+# 2026-11-02 — D3-A1 VERIFIED SIGNED ANDROID v0.9.72 OWNER PREVIEW (EXPERIMENT)
+
+**Installable preview READY — no real-device acceptance yet.** [Full owner handoff, signed artifact and safe install instructions](LAN_HOST_BOTS_D3_A1_ANDROID_OWNER_v0972.md). **APK-source SHA `848a14832d03486239b30d510f2fe5ae28fac7e6`**, checkpoint `checkpoint/sector-rebound-v0972-host-bots-signed-ci-340001`, app `com.playereden.ricochetrumble.preview`, code **340001**, name `0.9.72-hostbots.1`. Public development signer SHA256 `a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc` matches v0.9.71. [GitHub Actions signed build #41572106373 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41572106373), [APK ZIP artifact](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41572106373/artifacts/13201384029). **Game+client verification:** [#41571580793 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41571580793) (32 host-alone gameplay checks + 101 two-browser-client D2 checks, UI/visual/source parity); owner APK CI repeated expanded combat/browser checks and validated embedded assets/signing. 
+
+**Owner next:** backup existing data then **install over**, no uninstall; physically test one-phone host-vs-bots 1v1, 2v2, 3v3, round/Best of 3, CHANGE RULES, mobile controls and local save retention. The host-only scope is currently TDM. **Not yet:** actual 2-phone native Wi-Fi acceptance, late live spectators, queued human promotion, multiple native reconnects, production Play signing. Main and v0.9.71 rollback untouched.
+
+---
+
 # 2026-11-02 — D3-A1 FIRST HOST-ALONE BOT TDM PROTOTYPE
 
 Experiment branch: experiment/lan-host-bots-d3-a1. Real code enables LAN host to start TDM with real bot in vacant remote seat; 1v1/2v2/3v3, Best of 3, safe rule edit and same-room loop, and late guest waiting without hijacking AI. Full technical handoff: [D3 A1](LAN_HOST_BOTS_D3_A1_2026-11-02.md). This is still NOT physically tested on Android and NOT released in an owner APK. Await exact-source CI and signed preview validation. Original D2 v0.9.71 signer/version, main, and physical two-phone gate untouched.
