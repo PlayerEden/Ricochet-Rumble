@@ -833,7 +833,7 @@ function initialState(arena=0,options=null,seed=null){const config={...readSetti
  scoreTarget:config.ctfExercise?100:config.lanScoredTdm===true&&[15,30].includes(config.lanScoreTarget)?config.lanScoreTarget:scoredRules.scoreTarget,clockSeconds:config.ctfExercise?1800:scoredRules.clockSeconds,matchId}):null;
  const ctf=config.ctfExercise&&forwardBays&&window.SectorFlags?window.SectorFlags.create(forwardBays.bays):null;
  if(config.ctfExercise&&!ctf)throw Error('CTF flags or Forward Bays unavailable');
- camera.x=0;camera.y=0;botBrains.clear();return {tanks,vehicles,forwardBays,ctf,vehicleDropTimer:28,dropIndex:0,vehicleBeacon:null,bullets:[],pickups:[],pickupTimer:5.5,arenaId:id,mazeSeed,config,humanCount:humans,fxEvents:[],lives:Array(total).fill(scoredRules?1:config.startLives),kos:Array(total).fill(0),winner:-1,winnerTeam:-1,event:'',eventTimer:0,matchId,elapsedSeconds:0,deaths:Array(total).fill(0),respawns:Array(total).fill(0),scored,scoreSerial:0,finalResult:null};}
+ camera.x=0;camera.y=0;botBrains.clear();return {tanks,vehicles,forwardBays,ctf,lanSeries:config.lanScoredTdm===true&&config.lanSeriesRounds===3?window.SectorLanSeries.createSeries(3):null,vehicleDropTimer:28,dropIndex:0,vehicleBeacon:null,bullets:[],pickups:[],pickupTimer:5.5,arenaId:id,mazeSeed,config,humanCount:humans,fxEvents:[],lives:Array(total).fill(scoredRules?1:config.startLives),kos:Array(total).fill(0),winner:-1,winnerTeam:-1,event:'',eventTimer:0,matchId,elapsedSeconds:0,deaths:Array(total).fill(0),respawns:Array(total).fill(0),scored,scoreSerial:0,finalResult:null};}
 state=initialState();
 function teamOf(i,st=state){
  const ids=st?.config?.teamIds;
@@ -974,7 +974,7 @@ function inputFrom(keys,isLocal){const down=k=>menu.classList.contains('hidden')
    (isLocal&&comfort.autoFire&&mode!=='idle'&&menu.classList.contains('hidden')&&!paused)};
 }
 function makeControl(isPlayer1){return isPlayer1?inputFrom(keys1,true):inputFrom(keys2,false)}
-function serializeState(){return {allyAim:alliedAimIntentIndices(1),tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,vehicleDropTimer:state.vehicleDropTimer,dropIndex:state.dropIndex,vehicleBeacon:state.vehicleBeacon?{...state.vehicleBeacon}:null,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,scored:state.scored,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,elapsedSeconds:state.elapsedSeconds,deaths:state.deaths.slice(),hostPaused:mode==='host'&&paused};}
+function serializeState(){return {allyAim:alliedAimIntentIndices(1),tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,vehicleDropTimer:state.vehicleDropTimer,dropIndex:state.dropIndex,vehicleBeacon:state.vehicleBeacon?{...state.vehicleBeacon}:null,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,scored:state.scored,lanSeries:state.lanSeries,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,elapsedSeconds:state.elapsedSeconds,deaths:state.deaths.slice(),hostPaused:mode==='host'&&paused};}
 function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  document.getElementById('score0').textContent=state.lives[me]??0;document.getElementById('score1').textContent=state.lives[other]??0;
  const botLives=mode==='solo'?opposingCount(me):state.lives.slice(state.humanCount||2).filter(v=>v>0).length,
@@ -1041,7 +1041,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
     roundUnlocks=saved.ok?unlocksFromResult(before,dossierStore.snapshot()):[];
    }
  }
- const scoredDraw=!!soloResult&&soloResult.outcome==='draw';
+ const scoredDraw=ended&&(soloResult?.outcome==='draw'||(!soloResult&&state.scored?.result?.isDraw===true));
  const localWon=ended&&(soloResult?soloResult.outcome==='victory':teamOf(me)===state.winnerTeam);
  if(!ended)resultCuePlayed=false;
  else if(!resultCuePlayed){resultCuePlayed=true;audioCue(scoredDraw?'ui-select':localWon?'victory':'defeat');}
@@ -1052,7 +1052,12 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
    if(rewardEl){rewardEl.classList.toggle('hidden',!newRewards);rewardEl.textContent=newRewards?'NEW IN HANGAR · '+roundUnlocks.join(' · ')+' · VIEW HANGAR':'';}
    if(ended){
      const modeTitle=document.getElementById('aa-mode-label');if(modeTitle){if(mode==='solo')modeTitle.textContent=(state.config?.ctfExercise?'CAPTURE THE FLAG · TEST':state.config?.forwardBayExercise?'FORWARD BAY EXERCISE':state.config?.dailySector?'DAILY SECTOR · '+state.config.dailyDate+' UTC':(state.config?.customMatch?'CUSTOM · ':'')+soloModeLabel(state.config));else if(mode==='host'||mode==='guest')modeTitle.textContent='LOCAL MATCH · '+(state.config?.teamMode==='coop'?'CO-OP':state.config?.teamMode==='teams'?'TEAMS':'FREE FOR ALL');}
-     document.getElementById('aa-title').textContent=scoredDraw?'MATCH DRAW':localWon?'SECTOR CLEARED':'SECTOR LOST';
+     const series=state.lanSeries;
+     const seriesWinner=series?.concluded?series.winner:null;
+     document.getElementById('aa-title').textContent=series?
+      (series.concluded?(seriesWinner===null?'SERIES DRAW':seriesWinner===teamOf(me)?'SERIES WON':'SERIES LOST'):
+       scoredDraw?'ROUND DRAW':localWon?'ROUND CLEARED':'ROUND LOST'):
+      scoredDraw?'MATCH DRAW':localWon?'SECTOR CLEARED':'SECTOR LOST';
      document.getElementById('aa-event').textContent=soloResult?.event??String(state.event||'EXERCISE COMPLETE');
      document.getElementById('aa-kos').textContent=String(soloResult?.operatorKOs??state.kos[me]??0);
      document.getElementById('aa-deaths').textContent=soloResult?String(soloResult.deaths):Number.isInteger(state.deaths?.[me])?String(state.deaths[me]):'—';
@@ -1060,10 +1065,13 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
      document.getElementById('aa-lives').textContent=String(isCtfMatch()?state.ctf.target:isScoredMatch()?state.scored.scoreTarget:soloResult?.livesRemaining??state.lives[me]??0);
      const metric=document.getElementById('aa-lives-label');if(metric)metric.textContent=isCtfMatch()?'FLAG TARGET':isScoredMatch()?(state.scored.mode==='teams'?'TEAM KO TARGET':'KO TARGET'):'LIVES LEFT';
      document.getElementById('aa-outcome').textContent=scoredDraw?'DRAW':localWon?'VICTORY':'DEFEAT';
-     document.getElementById('aa-note').textContent=state.config?.ctfExercise?'CTF EXERCISE · NO DOSSIER PROGRESS':state.config?.forwardBayExercise?'TEAM DEPOT TEST · NO DOSSIER PROGRESS':state.config?.dailySector?(dailyLastRecord?.ok&&dailyLastRecord?.entry?('DAILY · BEST '+dailyLastRecord.entry.best.outcome.toUpperCase()+' '+dailyLastRecord.entry.best.kos+' KOs · '+dailyLastRecord.entry.attempts+' ATTEMPT'+(dailyLastRecord.entry.attempts===1?'':'S')+' · UTC'):'DAILY RESULT NOT SAVED · CHECK STORAGE'):mode==='guest'?'WAITING FOR HOST · REMATCH OR NEW RULES':mode==='host'?'HOST CHOOSES REMATCH OR NEW RULES':state.config?.customMatch?'SAME RULES · FRESH MAZE':mode==='solo'&&state.config?.botCount===0?'PRACTICE · NO DOSSIER RECORD':state.config?.quickPlayMatch?(selectedPlaylistIds.length>1?'NEXT MATCH · ROTATING MODES':'NEXT MATCH · SAME MODE, NEW MAZE'):'NEW MAZE · SAME MODE';
+     const seriesText=series?'ROUND '+series.round+'/'+series.rounds+
+      ' · CYAN '+series.wins[0]+' : '+series.wins[1]+' CORAL · '+
+      (series.concluded?(series.winner===null?'SERIES DRAW':(series.winner===0?'CYAN':'CORAL')+' WINS SERIES'):'NEXT ROUND AVAILABLE'):null;
+     document.getElementById('aa-note').textContent=seriesText??(state.config?.ctfExercise?'CTF EXERCISE · NO DOSSIER PROGRESS':state.config?.forwardBayExercise?'TEAM DEPOT TEST · NO DOSSIER PROGRESS':state.config?.dailySector?(dailyLastRecord?.ok&&dailyLastRecord?.entry?('DAILY · BEST '+dailyLastRecord.entry.best.outcome.toUpperCase()+' '+dailyLastRecord.entry.best.kos+' KOs · '+dailyLastRecord.entry.attempts+' ATTEMPT'+(dailyLastRecord.entry.attempts===1?'':'S')+' · UTC'):'DAILY RESULT NOT SAVED · CHECK STORAGE'):mode==='guest'?'WAITING FOR HOST · REMATCH OR NEW RULES':mode==='host'?'HOST CHOOSES REMATCH OR NEW RULES':state.config?.customMatch?'SAME RULES · FRESH MAZE':mode==='solo'&&state.config?.botCount===0?'PRACTICE · NO DOSSIER RECORD':state.config?.quickPlayMatch?(selectedPlaylistIds.length>1?'NEXT MATCH · ROTATING MODES':'NEXT MATCH · SAME MODE, NEW MAZE'):'NEW MAZE · SAME MODE');
    }
  }
- const replay=document.getElementById('quick-rematch');if(replay){replay.textContent=state.config?.dailySector?'↻ RETRY SAME SECTOR':state.config?.customMatch?'↻ SAME RULES · NEW SECTOR':mode==='solo'?'↻ NEXT MATCH':'↻ NEW SECTOR';replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));}
+ const replay=document.getElementById('quick-rematch');if(replay){replay.textContent=state.lanSeries?(state.lanSeries.concluded?'↻ NEW SERIES':'↻ NEXT ROUND '+(state.lanSeries.round+1)+'/3'):state.config?.dailySector?'↻ RETRY SAME SECTOR':state.config?.customMatch?'↻ SAME RULES · NEW SECTOR':mode==='solo'?'↻ NEXT MATCH':'↻ NEW SECTOR';replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));}
  const tdm=isScoredMatch()&&state.scored.mode==='teams',ctf=isCtfMatch();
  const editRules=document.getElementById('custom-edit');if(editRules)editRules.classList.toggle('hidden',!(ended&&mode==='solo'&&!!state.config?.customMatch));
  const lanEdit=document.getElementById('lan-edit-rules');if(lanEdit)lanEdit.classList.toggle('hidden',!(ended&&mode==='host'&&connected));
@@ -1093,7 +1101,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  }
  const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=comfort.autoFire?'AUTO ON':comfort.releaseFire&&['solo','host','guest'].includes(mode)?'AIM · RELEASE':'HOLD TO FIRE';
  const clock=document.getElementById('score-clock'),life=document.querySelector('.scorestrip .hud-life');
- if(clock){clock.classList.toggle('hidden',!isScoredMatch()||ctf);if(isScoredMatch()&&!ctf)clock.textContent=durationLabel(Math.ceil(Math.max(0,state.scored.clockSeconds-state.scored.elapsedSeconds)));}
+ if(clock){clock.classList.toggle('hidden',!isScoredMatch()||ctf);if(isScoredMatch()&&!ctf)clock.textContent=durationLabel(Math.ceil(Math.max(0,state.scored.clockSeconds-state.scored.elapsedSeconds)))+(state.lanSeries?' · R'+state.lanSeries.round+'/3':'');}
  if(life)life.classList.toggle('hidden',isScoredMatch());
  if(ctf){
   document.getElementById('score0').textContent=state.ctf.scores[0];
@@ -1116,6 +1124,8 @@ function newMatch(which,dailyOptions=null){
  state=initialState(arena,options,dailyLaunch?options.dailySeed:freshSectorSeed(state?.mazeSeed));dailyAttemptedKey='';dailyLastRecord=null;roundUnlocks=[];camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();releaseShot=null;remoteReleaseShot=null;refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(ctfLaunch?'CAPTURE THE FLAG · TEST':bayLaunch?'FORWARD BAY · TEAM EXERCISE':dailyLaunch?'DAILY SECTOR':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config))):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch){exitMenu();audioCue('deploy');if(mode==='solo')firstMatchHint();}}
 function resetAll(advancePlaylist=false){
  const previousSeed=state.mazeSeed;
+ const carriedSeries=mode==='host'&&state.winner>=0&&state.lanSeries?
+  window.SectorLanSeries.nextRound(state.lanSeries):null;
  let options={...state.config};
  if(advancePlaylist&&mode==='solo'&&state.config?.quickPlayMatch&&!state.config?.customMatch){
   const id=nextPlaylistMode();if(!id){notice('SELECT A QUICK PLAY MODE IN MATCH SETTINGS',2300);return false;}
@@ -1124,10 +1134,14 @@ function resetAll(advancePlaylist=false){
   // Prevent a 1-bot FFA silently becoming 2 bots after Team Survival.
   options=quickPlayOptionsFor(id,selectedRules);
  }
- state=initialState(0,options,options.dailySector?options.dailySeed:freshSectorSeed(previousSeed));dailyAttemptedKey='';dailyLastRecord=null;
+ state=initialState(0,options,options.dailySector?options.dailySeed:freshSectorSeed(previousSeed));
+ if(carriedSeries)state.lanSeries=carriedSeries;
+ dailyAttemptedKey='';dailyLastRecord=null;
  if(mode==='host')neutralizeGuestInput();
  if(mode==='solo')document.getElementById('mode-label').textContent=options.botCount===0?'PRACTICE FIELD':options.dailySector?'DAILY SECTOR':options.ctfExercise?'CAPTURE THE FLAG · TEST':options.forwardBayExercise?'FORWARD BAY · TEAM EXERCISE':(options.customMatch?'CUSTOM · ':'')+soloModeLabel(options);
- camera.zoom=null;resultCuePlayed=false;roundUnlocks=[];quietContactSeconds=0;radarReminderShown=false;coachRemaining=0;document.getElementById('field-coach')?.classList.add('hidden');fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();clearFireAim();releaseShot=null;remoteReleaseShot=null;paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();if(mode!=='guest')notice(options.dailySector?'SAME DAILY SECTOR · RETRY':'NEW FIELD GENERATED — GO!');}
+ camera.zoom=null;resultCuePlayed=false;roundUnlocks=[];quietContactSeconds=0;radarReminderShown=false;coachRemaining=0;document.getElementById('field-coach')?.classList.add('hidden');fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();clearFireAim();releaseShot=null;remoteReleaseShot=null;paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();
+ if(mode==='host'&&connected&&lanLobby&&!lanLobby.active)nativePacket({type:'state',state:serializeState()});
+ if(mode!=='guest')notice(options.dailySector?'SAME DAILY SECTOR · RETRY':'NEW FIELD GENERATED — GO!');}
 function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
 function circlesRect(x,y,r,w){const nx=clamp(x,w.x,w.x+w.w),ny=clamp(y,w.y,w.y+w.h);return (x-nx)**2+(y-ny)**2<r*r}
 function blocked(x,y,r=21){return x<r+13||x>worldW-r-13||y<r+13||y>worldH-r-13||nearWall(x,y,r)}
@@ -1711,6 +1725,8 @@ function finishScoredMatch(){
  state.winnerTeam=state.scored.mode==='teams'?(state.scored.result.winningSide??-1):-1;
  state.event=state.scored.result.isDraw?soloModeLabel(state.config)+' · DRAW':state.scored.result.reason==='time_limit'?'TIME LIMIT':'KO TARGET REACHED';
  state.eventTimer=0;
+ if(state.lanSeries)state.lanSeries=window.SectorLanSeries.awardRound(state.lanSeries,
+  {matchId:state.matchId,winningSide:state.scored.result.winningSide});
  finalizeRound();
  refreshHUD();
 }
@@ -2777,6 +2793,11 @@ function validRemoteSnapshot(s){
   if(m.finished&&((!Number.isInteger(m.result.winningSide)&&m.result.winningSide!==null)||
    m.result.scoreTarget!==m.scoreTarget||m.result.scores.length!==(m.mode==='teams'?2:n)))return false;
  }
+ if(s.config.lanScoredTdm===true&&s.config.lanSeriesRounds===3){
+  if(!window.SectorLanSeries?.valid(s.lanSeries,{matchId:s.matchId,finished:s.scored?.finished===true}))return false;
+  if(s.winner>=0&&s.scored?.result?.winningSide!==undefined&&
+    s.lanSeries.wins[s.scored.result.winningSide]===undefined&&s.scored.result.winningSide!==null)return false;
+ }else if(s.lanSeries!==undefined&&s.lanSeries!==null)return false;
  if(!Array.isArray(s.kos)||s.kos.length!==n||!s.kos.every(v=>Number.isInteger(v)&&v>=0))return false;
  if(!Array.isArray(s.bullets)||s.bullets.length>128||!Array.isArray(s.vehicles)||s.vehicles.length>10
     ||!Array.isArray(s.pickups)||s.pickups.length>8||!Array.isArray(s.fxEvents)||s.fxEvents.length>12)return false;
@@ -2803,12 +2824,13 @@ function sanitizeLanOptions(raw){
   botCount,teamMode,
   hostSide:v.hostSide==='coral'||v.lanHostSide==='coral'?'coral':'cyan',
   scoreTarget:[15,30].includes(v.scoreTarget)?v.scoreTarget:[15,30].includes(v.lanScoreTarget)?v.lanScoreTarget:15,
+  rounds:teamMode==='tdm'&&(v.rounds===3||v.lanSeriesRounds===3)?3:1,
   startLives:[2,3,5].includes(v.startLives)?v.startLives:base.startLives,
   botSkill:LAN_SKILL[v.botSkill]?v.botSkill:base.botSkill,
   friendlyFire:teamMode!=='ffa'&&v.friendlyFire===true};
 }
 function lanDescription(r){
- const score=r.teamMode==='tdm'?' · FIRST TO '+r.scoreTarget+' KOs':' · '+r.startLives+' LIVES';
+ const score=r.teamMode==='tdm'?' · FIRST TO '+r.scoreTarget+' KOs · '+(r.rounds===3?'BEST OF 3':'SINGLE MATCH'):' · '+r.startLives+' LIVES';
  const sides=(r.teamMode==='tdm'||r.teamMode==='teams')?
   ' · HOST '+(r.hostSide==='coral'?'CORAL':'CYAN')+' / GUEST '+(r.hostSide==='coral'?'CYAN':'CORAL'):'';
  return (r.botCount===0?'NO BOTS':r.botCount+' BOT'+(r.botCount===1?'':'S'))+
@@ -2825,6 +2847,7 @@ function lanLobbyHTML(hostRole){
  '<label>SIDES<select data-lan-setting="teamMode"><option value="ffa">FREE FOR ALL</option><option value="coop">CO-OP VS BOTS</option><option value="teams">OPPOSING TEAMS</option><option value="tdm">TEAM DEATHMATCH · SCORE</option></select></label>'+
  '<label>HOST FACTION<select data-lan-setting="hostSide"><option value="cyan">CYAN · GUEST CORAL</option><option value="coral">CORAL · GUEST CYAN</option></select></label>'+
  '<label>KO TARGET<select data-lan-setting="scoreTarget"><option value="15">15 TEAM KOs</option><option value="30">30 TEAM KOs</option></select></label>'+
+ '<label>MATCH SERIES<select data-lan-setting="rounds"><option value="1">SINGLE MATCH</option><option value="3">BEST OF 3</option></select></label>'+
  '<label>AI OPPONENTS<select data-lan-setting="botCount"><option value="0">0 · 1v1 NO BOTS</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>'+
  '<label>MAZE<select data-lan-setting="mapSize"><option value="small">SMALL</option><option value="standard">STANDARD</option><option value="large">LARGE</option></select></label>'+
  '<label>PILOT LIVES<select data-lan-setting="startLives"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>'+
@@ -2849,6 +2872,8 @@ function refreshLanLobby(){
  if(sideLabel)sideLabel.hidden=!(r.teamMode==='teams'||r.teamMode==='tdm');
  const targetLabel=document.querySelector('[data-lan-setting="scoreTarget"]')?.closest?.('label');
  if(targetLabel)targetLabel.hidden=r.teamMode!=='tdm';
+ const seriesLabel=document.querySelector('[data-lan-setting="rounds"]')?.closest?.('label');
+ if(seriesLabel)seriesLabel.hidden=r.teamMode!=='tdm';
  const livesLabel=document.querySelector('[data-lan-setting="startLives"]')?.closest?.('label');
  if(livesLabel)livesLabel.hidden=r.teamMode==='tdm';
  const botSelect=document.querySelector('[data-lan-setting="botCount"]');
@@ -2884,8 +2909,8 @@ function startLanLobby(fromResults=false){
 function changeLanRule(el){
  if(!lanLobby||mode!=='host'||!lanLobby.active)return;
  const key=el.dataset.lanSetting;
- if(!['teamMode','botCount','mapSize','startLives','botSkill','friendlyFire','hostSide','scoreTarget'].includes(key))return;
- const next=sanitizeLanOptions({...lanLobby.rules,[key]:key==='friendlyFire'?el.value==='on':['botCount','startLives','scoreTarget'].includes(key)?Number(el.value):el.value});
+ if(!['teamMode','botCount','mapSize','startLives','botSkill','friendlyFire','hostSide','scoreTarget','rounds'].includes(key))return;
+ const next=sanitizeLanOptions({...lanLobby.rules,[key]:key==='friendlyFire'?el.value==='on':['botCount','startLives','scoreTarget','rounds'].includes(key)?Number(el.value):el.value});
  if(JSON.stringify(next)===JSON.stringify(lanLobby.rules))return;
  lanLobby.rules=next;lanLobby.revision++;lanLobby.guestReady=false;
  refreshLanLobby();publishLanLobby();
@@ -2907,7 +2932,7 @@ function launchLanMatch(){
  // Lobby 'tdm' maps to the already tested teams/KO scorer at deployment.
  const config={...selectedRules,...r,teamMode:tdm?'teams':r.teamMode,
   lanMode:r.teamMode,lanSquads:tdm||r.teamMode==='teams',lanHostSide:r.hostSide,
-  lanScoredTdm:tdm,lanScoreTarget:r.scoreTarget,pilotMode:true,
+  lanScoredTdm:tdm,lanScoreTarget:r.scoreTarget,lanSeriesRounds:r.rounds,pilotMode:true,
   matchModeId:tdm?'scored_tdm':null,quickPlayMatch:false,customMatch:false};
  if(config.teamMode==='coop'&&config.botCount===0)return;
  state=initialState(0,config,freshSectorSeed(state?.mazeSeed));
@@ -3071,7 +3096,7 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
   if(event.kind==='hit')audioCue('pilot-hit',event.x,event.y);
  if(event.kind==='eject')audioCue('eject',event.x,event.y);
  if(event.kind==='guard')audioCue('barrier',event.x,event.y);
- if(event.kind==='pickup')audioCue('pickup',event.x,event.y);lastRemoteFxId=event.id}}state=upcoming;setArena(0,state.mazeSeed,state.config?.mapSize);
+ if(event.kind==='pickup')audioCue('pickup',event.x,event.y);lastRemoteFxId=event.id}}if(state?.matchId!==upcoming.matchId){resultCuePlayed=false;camera.zoom=null;lastRemoteFxId=0;}state=upcoming;setArena(0,state.mazeSeed,state.config?.mapSize);
  document.getElementById('mode-label').textContent=state.config?.teamMode==='teams'?'YOU: '+(teamOf(1,state)===0?'CYAN':'CORAL'):'JOIN MATCH';refreshHUD()}break;
  case 'input':if(mode==='host'&&connected&&!paused&&state.winner<0&&msg.input){guestInput=normalizeLanInput(msg.input);guestInputAge=0;}break;
  case 'fire-request':{

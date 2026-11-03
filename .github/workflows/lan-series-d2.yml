@@ -1,0 +1,55 @@
+name: Sector Rebound - D2 LAN series and two-client regression
+on:
+  push:
+    branches: [experiment/lan-series-d2]
+    paths:
+      - 'web/**'
+      - 'android/app/src/main/assets/**'
+      - 'tests/**'
+      - '.github/workflows/lan-series-d2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  series:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact gameplay and Android source parity
+        run: |
+          set -euo pipefail
+          for file in game.js index.html lan-series.js scored-match.js style.css; do cmp "web/$file" "android/app/src/main/assets/$file"; done
+          node --check web/game.js
+          node --check web/lan-series.js
+          node --check tests/lan-series-kernel.mjs
+          node --check tests/lan-lobby-flow-qa.mjs
+      - name: Run deterministic series and full game smoke
+        run: |
+          node tests/lan-series-kernel.mjs
+          node tests/smoke.mjs
+          node tests/scored-match-kernel.mjs
+          node tests/ballistic-trace-a2.mjs
+          node tests/save-backup.mjs
+      - name: Install Chromium test dependency
+        run: npm install --no-save --ignore-scripts playwright-core@1.56.1
+      - name: Test dual-client LAN series and responsive lobby
+        run: |
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          node tests/lan-lobby-flow-qa.mjs
+          node tests/ui-layout-geometry-v0948.mjs
+          node tests/visual-qa.mjs
+      - name: Archive dual-client LAN and UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sector-rebound-lan-d2
+          path: |
+            qa-screens/
+            qa-layout/
+          if-no-files-found: warn
+          retention-days: 14
