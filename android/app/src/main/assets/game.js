@@ -2913,7 +2913,7 @@ function launchLanMatch(){
  state=initialState(0,config,freshSectorSeed(state?.mazeSeed));
  neutralizeGuestInput();camera.zoom=null;roundUnlocks=[];lastRemoteFxId=0;
  lanLobby.active=false;paused=false;fixedAccumulator=0;
- document.getElementById('mode-label').textContent=config.teamMode==='teams'?'YOU: '+(config.teamIds[0]===0?'CYAN':'CORAL'):'HOST MATCH';
+ document.getElementById('mode-label').textContent=config.teamMode==='teams'?'YOU: '+(state.config.teamIds[0]===0?'CYAN':'CORAL'):'HOST MATCH';
  refreshHUD();
  // Separate start event precedes the first authoritative snapshot on TCP.
  nativePacket({type:'start',revision:lanLobby.revision});
