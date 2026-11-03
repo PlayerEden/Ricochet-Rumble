@@ -41,5 +41,5 @@ assert.equal(draw3.winner,null,'three draws make series draw');
 assert.equal(s.valid({...draw3,wins:[1,1,1]}),false,'malformed wins rejected');
 assert.equal(s.valid({...r1,completedMatchId:99},{matchId:4,finished:true}),false,'wrong-match award rejected');
 assert.equal(s.valid({...r2,concluded:true}),false,'cannot conclude between rounds');
-assert.throws(()=>s.createSeries(2),RangeError);
+assert.throws(()=>s.createSeries(2),e=>e?.name==='RangeError');
 console.log('PASS D2 series kernel: win, clinch, 1-1 decider, draws, replay protection and strict guest validation');
