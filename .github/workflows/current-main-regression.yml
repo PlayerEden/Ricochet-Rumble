@@ -47,6 +47,7 @@ jobs:
           node --check tests/ai-aim-posture-m2-a1.mjs
           node --check tests/m2-camera-widen-qa.mjs
           node --check tests/solo-practice-onboarding.mjs
+          node --check tests/backup-share-ui.mjs
       - name: Run pure room, gameplay, save, update and ballistic safeguards
         run: |
           set -euo pipefail
@@ -74,6 +75,7 @@ jobs:
           node tests/lan-host-bots-d3-a1.mjs
           node tests/lan-lobby-flow-qa.mjs
           node tests/solo-practice-onboarding.mjs
+          node tests/backup-share-ui.mjs
           node tests/ui-layout-geometry-v0948.mjs
           node tests/visual-qa.mjs
           node tests/m2-camera-widen-qa.mjs

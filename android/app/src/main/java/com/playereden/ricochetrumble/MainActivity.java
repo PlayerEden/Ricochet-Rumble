@@ -3,6 +3,8 @@ package com.playereden.ricochetrumble;
 import android.app.Activity;
 import android.os.Bundle;
 import android.content.Context;
+import android.content.Intent;
+import android.content.ActivityNotFoundException;
 import android.graphics.Color;
 import android.view.View;
 import android.view.WindowManager;
@@ -353,7 +355,38 @@ public final class MainActivity extends Activity {
             }
         } catch (Exception ignored) { }
     }
+    // Only the game's bundled, explicitly exported offline snapshot may enter
+    // Android's share chooser. No automatic network upload or background send.
+    private void shareOfflineBackup(String text) {
+        if (text == null || text.length() < 20 || text.length() > 60000) {
+            Toast.makeText(this, "Generate a valid backup first", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        try {
+            JSONObject data = new JSONObject(text);
+            if (!"sector-rebound-local-v1".equals(data.optString("format"))
+                    || data.optInt("version", -1) != 1
+                    || data.optJSONObject("entries") == null
+                    || data.getJSONObject("entries").length() < 1
+                    || data.getJSONObject("entries").length() > 6) {
+                Toast.makeText(this, "Backup format is not supported", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            Intent send = new Intent(Intent.ACTION_SEND);
+            send.setType("text/plain");
+            send.putExtra(Intent.EXTRA_SUBJECT, "Sector Rebound offline backup");
+            send.putExtra(Intent.EXTRA_TEXT, text);
+            startActivity(Intent.createChooser(send, "Save or share backup"));
+        } catch (ActivityNotFoundException ex) {
+            Toast.makeText(this, "No share destination available; use Copy", Toast.LENGTH_LONG).show();
+        } catch (Exception ex) {
+            Toast.makeText(this, "Could not open backup sharing; use Copy", Toast.LENGTH_LONG).show();
+        }
+    }
     private final class GameBridge {
+        @JavascriptInterface public void shareBackup(String text) {
+            runOnUiThread(() -> shareOfflineBackup(text));
+        }
         @JavascriptInterface public void hostGame() { runOnUiThread(() -> startHost()); }
         @JavascriptInterface public void findGames() { runOnUiThread(() -> startDiscovery()); }
         @JavascriptInterface public void joinGame(String ip, int port) { runOnUiThread(() -> join(ip, port)); }

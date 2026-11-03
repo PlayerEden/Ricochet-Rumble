@@ -134,6 +134,27 @@ function doBackupAction(action){
   let copied=false;try{copied=!!document.execCommand('copy')}catch(_){}
   backupNotice(copied?'COPIED · SAVE THE TEXT OUTSIDE THE GAME':'TEXT SELECTED · USE YOUR DEVICE COPY MENU');
  }
+ if(action==='backup-share'){
+  const el=document.getElementById('backup-output'),code=el?.value||'';
+  if(!code){backupNotice('GENERATE BACKUP TEXT FIRST');return}
+  // Never hand unvalidated or oversized data to an external share target.
+  const checked=backups.checkedEntries(code);
+  if(!checked.ok){backupNotice(checked.error);return}
+  if(typeof window.AndroidBridge?.shareBackup==='function'){
+   try{window.AndroidBridge.shareBackup(code);backupNotice('CHOOSE AN APP TO SAVE YOUR BACKUP · NOTHING SHARED AUTOMATICALLY')}
+   catch(_){backupNotice('SHARE UNAVAILABLE · USE COPY SELECTED TEXT')}
+   return;
+  }
+  if(typeof navigator!=='undefined'&&typeof navigator.share==='function'){
+   try{
+    const request=navigator.share({title:'Sector Rebound backup',text:code});
+    Promise.resolve(request).catch(()=>backupNotice('SHARE NOT COMPLETED · USE COPY SELECTED TEXT'));
+    backupNotice('CHOOSE WHERE TO SAVE YOUR BACKUP');
+   }catch(_){backupNotice('SHARE UNAVAILABLE · USE COPY SELECTED TEXT')}
+   return;
+  }
+  backupNotice('SHARE NOT SUPPORTED · USE COPY SELECTED TEXT');
+ }
  if(action==='backup-preview'){
   pendingRestoreText='';
   const btn=document.getElementById('backup-restore');if(btn)btn.disabled=true;
@@ -3176,7 +3197,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
    const ok=equipEmblem(b.dataset.emblemId);refreshHangar();
    const status=document.getElementById('emblem-status');
    if(!ok&&status)status.textContent=emblemProgress(b.dataset.emblemId).eligible?'COULD NOT SAVE INSIGNIA':'INSIGNIA LOCKED · COMPLETE DOSSIER MILESTONE';
-  }else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel(document.getElementById('help-template').innerHTML)}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='practice')newMatch('practice');else if(a==='daily')launchDailySector();else if(a==='forwardbay')launchForwardBayExercise();else if(a==='ctf')launchCtfExercise();else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){openModes();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
+  }else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-share','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel(document.getElementById('help-template').innerHTML)}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='practice')newMatch('practice');else if(a==='daily')launchDailySector();else if(a==='forwardbay')launchForwardBayExercise();else if(a==='ctf')launchCtfExercise();else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){openModes();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
  else if(a==='custom-reset'){resetCustomDraft();refreshCustomUI();customPresetStatus('DEFAULT RULES RESTORED · SAVED PRESETS KEPT');}
  else if(a==='custom-preset-save'){
   readCustomScreen();const input=document.getElementById('custom-preset-name'),name=cleanPresetName(input?.value);
