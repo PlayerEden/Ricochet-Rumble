@@ -1,3 +1,9 @@
+# 2026-11-02 — D3-A1 FIRST HOST-ALONE BOT TDM PROTOTYPE
+
+Experiment branch: experiment/lan-host-bots-d3-a1. Real code enables LAN host to start TDM with real bot in vacant remote seat; 1v1/2v2/3v3, Best of 3, safe rule edit and same-room loop, and late guest waiting without hijacking AI. Full technical handoff: [D3 A1](LAN_HOST_BOTS_D3_A1_2026-11-02.md). This is still NOT physically tested on Android and NOT released in an owner APK. Await exact-source CI and signed preview validation. Original D2 v0.9.71 signer/version, main, and physical two-phone gate untouched.
+
+---
+
 # 2026-11-02 — D3-A0 REAL SOURCE IMPLEMENTATION / PURE ROOM CONTROLLER (EXPERIMENT)
 
 **Actual code milestone:** `experiment/lan-room-state-d3-a0` based on exact signed D2 source `333fc9d9ffc5f5ff5e136121217240112def531e`. New `SectorLanRoom` pure immutable room/seat kernel + mirrored Web/Android assets + tests + dedicated CI. [Technical handoff](LAN_ROOM_KERNEL_D3_A0_2026-11-02.md) · [master plan](MASTER_DEVELOPMENT_PLAN_2026-11-02.md). **This is an A0 code foundation, NOT a playable host-alone lobby, spectator, queued guest or APK.** The D2 engine, Java transport, tested v0.9.71 and `main` remain unchanged.
