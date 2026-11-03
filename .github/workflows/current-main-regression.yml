@@ -46,6 +46,7 @@ jobs:
           node --check tests/bot-rare-opportunities-m2-a2.mjs
           node --check tests/ai-aim-posture-m2-a1.mjs
           node --check tests/m2-camera-widen-qa.mjs
+          node --check tests/solo-practice-onboarding.mjs
       - name: Run pure room, gameplay, save, update and ballistic safeguards
         run: |
           set -euo pipefail
@@ -75,6 +76,7 @@ jobs:
           node tests/ui-layout-geometry-v0948.mjs
           node tests/visual-qa.mjs
           node tests/m2-camera-widen-qa.mjs
+          node tests/solo-practice-onboarding.mjs
       - name: Preserve inspectable QA outputs
         if: always()
         uses: actions/upload-artifact@v4
