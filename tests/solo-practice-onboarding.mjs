@@ -86,7 +86,7 @@ try {
   const quick=await page.evaluate(()=>window.__practiceQA.status());
   assert.equal(quick.mode,'solo');
   assert.ok(quick.botCount>0,'normal Quick Play still has opponents');
-  assert.equal(quick.savedSettings,before.savedSettings,'Quick Play selection retained');
+  assert.deepEqual(JSON.parse(quick.savedSettings),JSON.parse(before.savedSettings),'Quick Play selection retained');
   assert.equal(quick.cameraPilot,.94);
   cases.push({viewport:width+'x'+height,practiceBots:practice.botCount,normalBots:quick.botCount,helpAndModes:true,prefsUnchanged:true});
   await page.close();
