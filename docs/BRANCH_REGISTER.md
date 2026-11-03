@@ -1,5 +1,45 @@
 # Branch register — Sector Rebound
 
+**M2-AI2 v0.9.75 signed owner A/B (Nov 2 local):** [PR #103](https://github.com/PlayerEden/Ricochet-Rumble/pull/103); [game CI PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41577565867), [signed APK CI PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41578089841), [APK ZIP artifact](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41578089841/artifacts/13204632545), SHA `45e06297cf440a4d5f5606c8f282957dba602d4f`, code `370001`, checkpoint `checkpoint/sector-rebound-v0975-rare-ai-openings-signed-ci-370001`. Owner phone acceptance pending; v0.9.74 baseline still preserved.
+
+
+
+**M2 AI fairness v0.9.74 owner preview:** [draft PR #102](https://github.com/PlayerEden/Ricochet-Rumble/pull/102), signed source `0797cc8f18b6da35a1bdcaf62e4d49c2dd52c1aa`, [game test SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41575543007), [Android signer/asset SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41576134341), [APK artifact ZIP](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41576134341/artifacts/13202544914), code 360001, same public AOSP preview signer. Exact source rollback `checkpoint/sector-rebound-v0974-ai-shot-posture-signed-ci-360001`, **do not delete/force push**, phone acceptance pending. v0.9.73 and main preserved.
+
+
+
+**D3-A2 one-phone LAN four-mode signed preview (Nov 2 local):** [draft PR #101](https://github.com/PlayerEden/Ricochet-Rumble/pull/101), exact signed source `08580417bb43877b472f5b378d449f77e74bd4de`, versionCode `350001`, [Android PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41574012652), [game PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41573556329), [owner ZIP](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41574012652/artifacts/13203185715), checkpoint `checkpoint/sector-rebound-v0973-lan-modes-signed-ci-350001`. Owner phone/manual save acceptance and true two-phone Wi-Fi still pending; stable main and v0.9.71/72 unchanged.
+
+
+
+**M1 owner preview verified 2026-11-02:** D3-A1 [PR #100](https://github.com/PlayerEden/Ricochet-Rumble/pull/100) staged source `848a14832d03486239b30d510f2fe5ae28fac7e6`, signed v0.9.72 owner preview versionCode `340001`, [CI SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41572106373), [artifact](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41572106373/artifacts/13201384029); exact-source rollback at `checkpoint/sector-rebound-v0972-host-bots-signed-ci-340001`. [A0 #99](https://github.com/PlayerEden/Ricochet-Rumble/pull/99) also GREEN. **Both drafts unmerged**, owner phone installation and two-phone acceptance pending; stable main unchanged.
+
+
+
+**2026-11-02 M1 implementation branches:** [D3-A0 #99](https://github.com/PlayerEden/Ricochet-Rumble/pull/99) pure LAN room kernel `35b7ed75b049a3b7e0fb9a16f88cf5c84a980a58` [full QA PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41570686213); [D3-A1 #100](https://github.com/PlayerEden/Ricochet-Rumble/pull/100) real one-phone host-only bot TDM source `860e15432cc32dfbf08f38f324f04a0937922289`, full QA/owner Android **pending**. Both are experimental descendants of D2 v0.9.71; stable main, rollback and signed APK unchanged.
+
+
+
+**Canonical master plan update (2026-11-02):** [Sector Rebound Master Development Plan](MASTER_DEVELOPMENT_PLAN_2026-11-02.md) now owns the ordered roadmap, implemented-vs-designed inventory, D3 one-phone first milestone, open issue/PR reconciliation, Android/Google Play gates and owner decisions. This older plan is a **historical technical reference**, not the current next-task list. Follow the master and newest [Project Status](PROJECT_STATUS.md); do not interpret older "NOT IMPLEMENTED" design bullets as current runtime truth.
+
+
+
+**2026-11-02 D3 handoff (planning only):** This register's older rows are historical. New active experimental lineage and its protected rollback:
+
+| Branch | Purpose | Status |
+| --- | --- | --- |
+| `main` | Last merged stable development runtime | **UNCHANGED**, no D1/D2/D3 code merged |
+| `experiment/match-identity-colors-c1` | C1 faction identities | [draft #95](https://github.com/PlayerEden/Ricochet-Rumble/pull/95), preserve |
+| `experiment/lan-squad-tdm-d1` | D1 actual LAN scored squads | [draft #96](https://github.com/PlayerEden/Ricochet-Rumble/pull/96), CI [PASS 41564344765](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41564344765) |
+| `experiment/lan-series-d2` | D2 best of three + signed v0.9.71 | [draft #97](https://github.com/PlayerEden/Ricochet-Rumble/pull/97), [whole game PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41565384859), [APK PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41566002036), physical LAN pending |
+| `checkpoint/sector-rebound-v0971-lan-series-signed-ci-330001` | Immutable source pointer for v0.9.71 owner preview | Source `333fc9d9ffc5f5ff5e136121217240112def531e`, **do not force-push/delete** |
+| `plan/d3-persistent-lan-rooms` | Approved D3 **documentation only**, on exact D2 source | No runtime change; separate D3-A0/A1 implementation draft branches to follow |
+
+[D3 design spec](design/LAN_PERSISTENT_ROOMS_D3_SPEC_2026-11-02.md) · [one-phone test card](LAN_D3_ONE_PHONE_OWNER_QA_2026-11-02.md).
+
+---
+
+
 **Updated: 2026-10-27 through v0.9.22-dev5 / roadmap audit.** These preserved branches are history/rollback references; don't delete or force-push simply to reduce clutter. The next feature starts from tested `main`.
 
 ## Active and preserved checkpoints

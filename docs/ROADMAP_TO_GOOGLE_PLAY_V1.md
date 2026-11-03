@@ -1,5 +1,9 @@
 # Sector Rebound — Roadmap to Google Play v1.0
 
+**Canonical master plan update (2026-11-02):** [Sector Rebound Master Development Plan](MASTER_DEVELOPMENT_PLAN_2026-11-02.md) now owns the ordered roadmap, implemented-vs-designed inventory, D3 one-phone first milestone, open issue/PR reconciliation, Android/Google Play gates and owner decisions. This older plan is a **historical technical reference**, not the current next-task list. Follow the master and newest [Project Status](PROJECT_STATUS.md); do not interpret older "NOT IMPLEMENTED" design bullets as current runtime truth.
+
+
+
 **Planning checkpoint:** 2026-10-27  
 **Status:** Ordered development plan for review, **not a record of implemented features**.
 **Completeness / missing gates:** [Prioritized roadmap audit and launch decisions (2026-10-27)](ROADMAP_COMPLETENESS_AUDIT_2026-10-27.md) — tracks first-run onboarding, testable fairness/bot targets, durable saves, Play/signing/license and exact v1 scope, without inflating the active feature list.  

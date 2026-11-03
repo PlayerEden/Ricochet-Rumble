@@ -1,3 +1,74 @@
+# 2026-11-02 — M2-AI2 BOT FAIRNESS RARE QUICK SHOTS BUILT, SIGNED v0.9.75 AND QA GREEN
+
+[Owner Android install/update and one-phone acceptance](https://github.com/PlayerEden/Ricochet-Rumble/blob/experiment/ai-rare-opportunity-m2-a2/docs/AI_RARE_QUICK_OPENINGS_M2_A2_ANDROID_OWNER_v0975.md) · [APK ZIP #13204632545](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41578089841/artifacts/13204632545) · [signed CI PASS #41578089841](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41578089841) · [full browser QA PASS #41577565867](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41577565867). Draft PR #103 M2-AI2 rare quick direct vehicle shots, source `45e06297cf440a4d5f5606c8f282957dba602d4f` protected at `checkpoint/sector-rebound-v0975-rare-ai-openings-signed-ci-370001`, versionCode 370001, exact same public development signer as v0.9.74. User liked the preceding M2-AI1 baseline; **new occasional shots physically unreviewed**. No main merge or true physical two-phone claim. D3-B1 spectator next after targeted phone feedback.
+
+---
+
+# 2026-11-02 — M2-AI2 PROVISIONAL FEEL ACCEPTANCE / RARE QUICK REACTION EXPERIMENT
+
+Owner described v0.9.74 physical bot fairness as “pretty good for now”; wants a **rare earned faster moment** that keeps skilled players on their toes without reversing deliberate aim. [Experimental draft #103](https://github.com/PlayerEden/Ricochet-Rumble/pull/103) implements chance-like *deterministic staggered, per completed shot* quick openings (Relaxed 1/7, Standard 1/5, Challenge 1/4). Only live direct vehicle shots after two prior actual shots, with physical turn, low speed, final aim cone, human-readable charge cues and original damage/cooldown. Pilot/hiding/banked shots excluded. [Code design and QA](https://github.com/PlayerEden/Ricochet-Rumble/blob/experiment/ai-rare-opportunity-m2-a2/docs/AI_RARE_QUICK_OPENINGS_M2_A2_2026-11-02.md). **Automated CI and new APK/phone acceptance pending** in this checkpoint. Previous signed v0.9.74 protected; next networking work D3-B1 after targeted M2 pass.
+
+---
+
+# 2026-11-02 — MASTER M2 AI FAIRNESS OWNER TEST READY (v0.9.74)
+
+Bot firing realism updated after v0.9.73 phone feedback: physically align muzzle, brake while aiming, only acquire shot while aligned and moving slowly. [AI game CI PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41575543007), [same-signer Android build PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41576134341), [owner APK ZIP](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41576134341/artifacts/13202544914) v0.9.74 code 360001. Signed source `0797cc8f18b6da35a1bdcaf62e4d49c2dd52c1aa`, rollback `checkpoint/sector-rebound-v0974-ai-shot-posture-signed-ci-360001`; prior v0.9.73 rollback remains. [D3/M2 owner test card](https://github.com/PlayerEden/Ricochet-Rumble/blob/experiment/ai-shot-posture-m2-a1/docs/AI_SHOT_POSTURE_M2_A1_ANDROID_OWNER_v0974.md). **Phone install and perceived fairness still not accepted**. Follow M2 observed refinement if necessary; resume D3-B1 spectating after owner reports. Stable main unchanged.
+
+---
+
+# 2026-11-02 — M2 OWNER AI FAIRNESS: PHYSICAL v0.9.73 FEEDBACK
+
+**Physical device feedback:** bots can appear to shoot while driving without turning and lining up. Actual source root cause: aim acquisition timer did not wait for physical alignment or reasonable traveling speed. [Targeted AI aim-posture experiment PR #102](https://github.com/PlayerEden/Ricochet-Rumble/pull/102) and [design/acceptance report](https://github.com/PlayerEden/Ricochet-Rumble/blob/experiment/ai-shot-posture-m2-a1/docs/AI_SHOT_POSTURE_M2_A1_2026-11-02.md). Experimental code slows while locking, counts aim time only while aligned/settled, and requires real physical heading to fire. **Not yet automated-accepted or user-playtested in new APK** at this note. Older verified v0.9.73 is safe rollback. Next: CI → signed preview with exact signer → owner phone A/B → D3-B1 spectator.
+
+---
+
+# 2026-11-02 — M1 D3-A2 HOST-ONLY FOUR MODE PLAY VERIFIED, PHONE REVIEW OPEN
+
+**D3-A2 completed in tested experimental source:** [PR #101](https://github.com/PlayerEden/Ricochet-Rumble/pull/101). One phone can now host FFA (1–5 AI), balanced Team Survival (1v1–3v3), Co-op (host+AI ally vs enemy bots), and prior scored TDM / Best of 3 without a second phone. Exact game SHA `d7efddfec93a2249c7e488555beb06c7b6856a37`, [full QA PASS #41573556329](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41573556329), [signed v0.9.73 Android QA PASS #41574012652](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41574012652). [APK ZIP](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41574012652/artifacts/13203185715) versionCode `350001`, exact signed code SHA `08580417bb43877b472f5b378d449f77e74bd4de`, immutable `checkpoint/sector-rebound-v0973-lan-modes-signed-ci-350001`, existing development signing certificate. [Physical one-phone test card](https://github.com/PlayerEden/Ricochet-Rumble/blob/experiment/lan-mode-compatibility-d3-a2/docs/LAN_MODES_D3_A2_ANDROID_OWNER_v0973.md).
+
+**Status:** implemented and CI verified, **NOT user-phone accepted** and **NOT physical two-phone LAN verified**. No source merge to stable `main`; older rollback remains. Next after owner phone review: D3-B1 active room discoverability and spectator-only mode, D3-B2 guest queue and AI→human swap, D3-C repeat native accept/reconnect, M2 gameplay-quality refinement alongside.
+
+---
+
+# 2026-11-02 — M1 D3-A1 SIGNED v0.9.72 OWNER PREVIEW GREEN (REAL SOURCE, PHONE REVIEW PENDING)
+
+The user's master-plan first playable milestone **is implemented experimentally** in [draft PR #100](https://github.com/PlayerEden/Ricochet-Rumble/pull/100) / `experiment/lan-host-bots-d3-a1`: one-phone Android host creates a LAN room and can start scored 1v1/2v2/3v3 TDM against bots without a second phone, including true AI at the reserved remote player seat and D2 Best-of-3 series. **Browser/scoring/LAN/UI CI SUCCESS [41571580793](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41571580793)** (32 host-bot game checks + 101 original two-browser LAN checks). **Signed Android preview v0.9.72 SUCCESS [41572106373](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41572106373)**; exact owner APK source SHA `848a14832d03486239b30d510f2fe5ae28fac7e6`, versionCode `340001`, same public test certificate as v0.9.71, preserved checkpoint `checkpoint/sector-rebound-v0972-host-bots-signed-ci-340001`, [download APK ZIP](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41572106373/artifacts/13201384029). [Full owner Android acceptance handoff](https://github.com/PlayerEden/Ricochet-Rumble/blob/experiment/lan-host-bots-d3-a1/docs/LAN_HOST_BOTS_D3_A1_ANDROID_OWNER_v0972.md).
+
+**Next:** actual one-phone owner physical install-over, data retention, TDM/bot/round/UI playtest. Then address observed defects. D3-A2 host-alone other modes; D3-B1 spectator; D3-B2 joining queue and bot takeover; D3-C native accept/reconnect and real two-phone Wi-Fi still NOT implemented/accepted. Keep `main`, v0.9.71 rollback and production signer untouched. **Master plan remains the priority; no new feature detour.**
+
+---
+
+# 2026-11-02 — M1 EXECUTION CHECKPOINT: D3-A0 GREEN, D3-A1 EXPERIMENTAL
+
+**D3-A0 code BUILT and full automated QA SUCCESS:** [draft PR #99](https://github.com/PlayerEden/Ricochet-Rumble/pull/99), source `35b7ed75b049a3b7e0fb9a16f88cf5c84a980a58`, [Actions run 41570686213](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41570686213). Pure room/role and absent AI-seat contract, Web/Android mirror, old D2 two-client, layout and 44-view tests completed. This is kernel, **not yet playable**.
+
+**D3-A1 real host-only TDM gameplay is now on isolated [draft PR #100](https://github.com/PlayerEden/Ricochet-Rumble/pull/100)**. New source `860e15432cc32dfbf08f38f324f04a0937922289` allows one-phone host to start scored TDM against real AI in reserved guest seat, with Best-of-3 and room return. [Live browser/full regression run](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41571580793) **PENDING at this note**, so no acceptance or APK claim. Next: verify CI, fix failures, build properly signed higher-version preview, then owner single-phone check. Legacy D2 v0.9.71 and `main` preserved; physical two-phone still untested.
+
+---
+
+## 2026-11-02 canonical master roadmap reconciliation
+
+[**MASTER DEVELOPMENT PLAN — CURRENT CROSS-PROJECT PRIORITIES**](MASTER_DEVELOPMENT_PLAN_2026-11-02.md) now supersedes older "next task" advice where it conflicts with v0.9.71 experimental source and the owner's D3 direction.
+
+Audit counts at this planning checkpoint: **56 open draft PRs** (mostly chained ancestry/prototypes) and **18 stand-alone open issues**, which **must not** be mistaken for 74 unimplemented features. Actual source `333fc9d9ffc5f5ff5e136121217240112def531e`, signed v0.9.71 330001, D2 automation success and one-phone-only owner play define the factual baseline. **D3 rooms/spectators/queued joining remain design only.**
+
+Master order: M0 preserve lineage/docs → **M1 D3-A0/A1 first playable one-phone host room** → M2 measured gameplay fun/balance → M3 D3-A2/B1/B2/C LAN maturity → M4 controlled integration/rollback → M5 audio/onboarding polish → M6 physical Android/Google Play release preflight → M7 curated postbeta content → M8 separate internet/commerce. Hard gates for actual two phones and production Play cannot be autocompleted by CI. Public Solo-first vs LAN-required remains explicit owner decision.
+
+Historical audit/roadmap docs stay intact for references; no gameplay/runtime/build/branch-merge change results from this documentation update.
+
+---
+# 2026-11-02 — D3 PERSISTENT LAN ROOMS / SOLO-HOST TESTING (OWNER-APPROVED PLAN, NOT BUILT)
+
+**Decision:** The owner wants a discoverable LAN room that stays open while they play bots **on one phone**, with a late second player watching live and entering at the next eligible round or match. This is a **documented future implementation**, not a feature in v0.9.71. [D3 architecture, phased milestones and QA gates](design/LAN_PERSISTENT_ROOMS_D3_SPEC_2026-11-02.md) · [one-phone owner playtest card](LAN_D3_ONE_PHONE_OWNER_QA_2026-11-02.md) · [updated execution roadmap](DEVELOPMENT_EXECUTION_PLAN_POST_AUDIT_2026-10-30.md).
+
+**Exact current baseline:** signed experimental **v0.9.71** `com.playereden.ricochetrumble.preview`, versionCode **330001**, source SHA `333fc9d9ffc5f5ff5e136121217240112def531e`, same dev signer as v0.9.70. [Signed Android QA SUCCESS #41566002036](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41566002036), [D2 whole-game/two-client/visual QA SUCCESS #41565384859](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41565384859) (**101 two-client checks**, **102 layout scenes, 0 failures/0 warnings**, **44 full visual screens**). [D2 draft PR #97](https://github.com/PlayerEden/Ricochet-Rumble/pull/97). Source rollback: `checkpoint/sector-rebound-v0971-lan-series-signed-ci-330001`. **The user played v0.9.71 on one phone**, but **has not tested two phones**. Do not claim physical multiplayer or real device LAN success.
+
+**D3 order:** A0 room state/actor-controller contracts; A1 usable one-phone host-versus-bots lobby (highest priority); A2 mode compatibility; B1 join-in-progress spectator; B2 queue→safe round/match boundary promotion with AI backfill; C multi-session native socket/reconnect/performance/two-phone acceptance. Native Android currently does a one-time socket accept, and host requires guest Ready; this needs an explicit, bounded room/peer state-machine update, **not** just another menu. First D3 has **one remote spectator/guest at most**; online internet server, multiple spectators and full 3+ human PvP later.
+
+**Guardrails:** This commit is documentation only. No D3 runtime, new APK, score/camera/physics change, approval to merge to `main`, background LAN service, or Google Play release. All D3 features require new source, automated gates and owner phone checks; LAN remains experimental until actual two-device acceptance.
+
+---
+
 # 2026-11-02 — C1 MATCH IDENTITIES AND SOLO TEAM SIDE ROTATION
 
 **VERIFIED experimental checkpoint:** [draft PR #95](https://github.com/PlayerEden/Ricochet-Rumble/pull/95) on `experiment/match-identity-colors-c1`, built over B2 v0.9.69. Stable `main` remains unchanged.

@@ -1,5 +1,18 @@
 # Sector Rebound — Future Product Roadmap & Idea Bank (DRAFT)
 
+**Canonical master plan update (2026-11-02):** [Sector Rebound Master Development Plan](MASTER_DEVELOPMENT_PLAN_2026-11-02.md) now owns the ordered roadmap, implemented-vs-designed inventory, D3 one-phone first milestone, open issue/PR reconciliation, Android/Google Play gates and owner decisions. This older plan is a **historical technical reference**, not the current next-task list. Follow the master and newest [Project Status](PROJECT_STATUS.md); do not interpret older "NOT IMPLEMENTED" design bullets as current runtime truth.
+
+
+
+## 2026-11-02 owner-approved D3 LAN rooms supersession note — NOT IMPLEMENTED
+
+The earlier broad roadmap is historical proposal. **New owner-approved planned arc:** [D3 persistent LAN room specification](design/LAN_PERSISTENT_ROOMS_D3_SPEC_2026-11-02.md), [prioritized execution/gates](DEVELOPMENT_EXECUTION_PLAN_POST_AUDIT_2026-10-30.md), and [one-phone owner test card](LAN_D3_ONE_PHONE_OWNER_QA_2026-11-02.md).
+
+D3 is an **incremental extension of experimental LAN**, not a new remote/internet matchmaker and not a prerequisite to a Solo-first store beta. Put **one-phone host vs bots** first (A1), then one-guest late spectator/queue/bot backfill (B1–B2) and measured Android reconnect/two-phone validation (C). A local room stays visible while active only if its host remains in the foreground and Wi-Fi is available. This plan supersedes any older implication that the host must always wait for guest Ready; that is a current implementation limitation to remove, **not** already fixed in v0.9.71. The current verified signed preview is v0.9.71 code 330001, source `333fc9d9ffc5f5ff5e136121217240112def531e` and D2 draft PR #97; physical two-phone LAN remains pending.
+
+---
+
+
 **Planning date:** 2026-11-01  
 **Status:** DISCUSSION DRAFT / NOT OWNER-APPROVED SCOPE / NOT IMPLEMENTED.  
 **Current candidate:** [Draft PR #85](https://github.com/PlayerEden/Ricochet-Rumble/pull/85); stable `main` v0.9.21 retained.  
