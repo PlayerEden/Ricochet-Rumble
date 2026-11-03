@@ -4,6 +4,8 @@
 
 > **Development source, not a public Play Store release.** Consolidated v0.9.75 game, [D3-B1 spectator #105](https://github.com/PlayerEden/Ricochet-Rumble/pull/105), [D3-B2 JOIN NEXT #108](https://github.com/PlayerEden/Ricochet-Rumble/pull/108), [D3-C1 native reconnect #110](https://github.com/PlayerEden/Ricochet-Rumble/pull/110) and [D3-C2A recovery #111](https://github.com/PlayerEden/Ricochet-Rumble/pull/111) are merged into `main` (latest gameplay/runtime merge `b055623fc69b8dc38cd65ab470267193d5e2d9ee`; docs-only commits may follow). All C1 **6/6** and C2A **7/7** source QA checks passed, including Android builds and true dual-browser LAN. **A higher-version same-signer internal APK has passed build QA, but on-phone install-over, physical two-phone Wi-Fi and production Play launch remain unapproved.**
 
+**2026-11-03 camera update:** [PR #115](https://github.com/PlayerEden/Ricochet-Rumble/pull/115) camera zoom-out and [PR #116](https://github.com/PlayerEden/Ricochet-Rumble/pull/116) signed **v0.9.77** owner APK are merged; build/asset/certificate QA passed. User's actual phone acceptance is still pending. The earlier v0.9.76 details below remain as rollback history.
+
 ## Start here
 
 1. [**Current PROJECT_STATUS**](docs/PROJECT_STATUS.md) — short factual handoff, precise QA/owner gates and next step.
@@ -20,7 +22,21 @@
 - **Bot combat:** true projectile trajectory and bounded wall-bank planning; deliberate physical turn/settle aim; rare well-positioned faster **direct vehicle shots** in the optional v0.9.75 tuning. The previous **v0.9.74** aiming behavior is preserved as the positive-feeling rollback.
 - **D3-B1/B2/C1/C2A LAN source merged:** late spectators watch host-versus-bots, queue/cancel **JOIN NEXT**, and receive control only at an eligible match boundary. Native Android supports repeated guest admission, correct room-full status and safe disconnect cleanup; guests have an explicit fresh-connection retry path and hosts can reopen after background Stop. Full Chromium/JVM/Android build QA passed, **but two physical Android phones remain untested**. No internet matchmaking, ranked, accounts or purchases.
 
-## Current test APK — v0.9.76 D3-C (not yet phone-accepted)
+## Latest owner test APK — v0.9.77 camera (source/CI verified; Android feel pending)
+
+**First camera pullback accepted as the next playtest, not yet accepted on device:** [M2 camera PR #115](https://github.com/PlayerEden/Ricochet-Rumble/pull/115) merged with all applicable CI passing; pilot **0.98** (was 1.07), tank **0.75** (was 0.82), mech **0.71** (was 0.77). AI, physics, controls and LAN behavior intentionally unchanged.
+
+| Verified item | Exact result |
+| --- | --- |
+| **APK** | `sector-rebound-camera-390001.apk`, `0.9.77-camera.1`, versionCode **390001** |
+| **Android package / signing** | `com.playereden.ricochetrumble.preview`, pinned public AOSP test signer **identical to code 380001** |
+| **Signed build** | [PASS #41706608997](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41706608997), [artifact #13266060199](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41706608997/artifacts/13266060199), expires 2026-11-17 |
+| **Reviewed source / signed workflow** | [PR #115](https://github.com/PlayerEden/Ricochet-Rumble/pull/115), [PR #116](https://github.com/PlayerEden/Ricochet-Rumble/pull/116), workflow source `e118a4303894551f03f610b46b800a8af18fb6b5` |
+| **APK SHA-256** | `5a72a788e0986017b48cede1d6f00c3b4c4a107c26b0e0cb78379480e6b546ee` |
+
+**Manual acceptance still open:** back up Dossier, install over previous same-signer preview **without uninstalling**, then play tanks/mechs/pilot on portrait and landscape, judge bullets/trace/UI and whether the wider view changes AI difficulty. Two-phone LAN and Play production remain separate gates. [Focused M2 camera test guide](docs/M2_CAMERA_WIDEN_2026-11-03.md).
+
+## Previous test APK — v0.9.76 D3-C (owner previously played; update/save continuity still unverified)
 
 | Item | Exact verified identity |
 | --- | --- |
