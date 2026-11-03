@@ -28,3 +28,5 @@ Sector Rebound's owner has temporarily accepted **v0.9.78 camera/AI feel** (pilo
 ## Open gates
 
 The Android share chooser's actual appearance and save-target persistence, install-over/retained progress, long session reliability and second Android Wi-Fi test are not asserted by CI. Google Play production signing, privacy disclosures, Android Data Safety and store listing are independent later steps. Source checkpoint and APK hash must be recorded before owner install.
+
+**Full Android/visual compile gate:** PR #125 explicitly requests `[full-qa]` because this scope adds an Android Java bridge method. Do not merge until the full native Gradle debug build and its existing visual/browser suite pass as well as the canonical source regressions.
