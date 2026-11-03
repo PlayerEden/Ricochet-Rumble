@@ -45,6 +45,7 @@ jobs:
           git diff --quiet "$BASE" HEAD -- web/ android/ game-data/ tests/
           test -n "$GITHUB_SHA"
           node --check web/game.js
+          node --check tests/m2-camera-widen-qa.mjs
           node tests/smoke.mjs
           node tests/dossier.mjs
           node tests/save-backup.mjs
@@ -80,7 +81,7 @@ jobs:
           echo "SR_TEST_STORE_PASSWORD=disposable-preview-only" >> "$GITHUB_ENV"
           echo "SR_TEST_KEY_ALIAS=aosp-public-testkey" >> "$GITHUB_ENV"
           echo "SR_TEST_KEY_PASSWORD=disposable-preview-only" >> "$GITHUB_ENV"
-      - name: Build preview v0.9.76 M2 camera with strictly higher versionCode
+      - name: Build preview v0.9.77 M2 camera with strictly higher versionCode
         working-directory: android
         run: |
           set -euo pipefail
