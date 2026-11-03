@@ -1317,7 +1317,21 @@ function botTraceAim(bot,owner,seen,skill,shotNumber,canSee){
  }
  return {aim:best,examined:candidates.length};
 }
-// All bots use acquire -> turn -> lock -> fire -> recover.
+// M2-AI1: a bot must actually settle its moving hull/pilot and turn its
+// muzzle toward a committed shot before its shot-acquisition timer advances.
+// These limits are lower than a normal chasing speed but allow slow walking
+// aim and small corrections. No change to human movement, projectile damage,
+// wall geometry, authoritative scoring or fixed team identities.
+function botAimPosture(bot,brain,skill){
+ const facing=Number.isFinite(brain.fireAngle)?
+  Math.atan2(Math.sin(brain.fireAngle-bot.a),Math.cos(brain.fireAngle-bot.a)):Math.PI;
+ const speed=Math.hypot(Number(bot.vx)||0,Number(bot.vy)||0);
+ const moveCap=bot.onFoot?(skill==='spicy'?110:skill==='casual'?75:94):
+  skill==='spicy'?90:skill==='casual'?54:72;
+ return {angleError:facing,speed,moveCap,
+  steady:Math.abs(facing)<.16&&speed<=moveCap};
+}
+// All bots use acquire -> physically turn/brake -> settle -> fire -> recover.
 // No frame-perfect tracking or course corrections AFTER the lock.
 function botFireCommit(brain,bot,target,skill,dt,visible,oldPilotGate,i,seen=null){
  brain.fireRecover=Math.max(0,(brain.fireRecover||0)-Math.max(0,dt));
@@ -1347,10 +1361,15 @@ function botFireCommit(brain,bot,target,skill,dt,visible,oldPilotGate,i,seen=nul
  const humanPilot=mode==='solo'&&state.tanks[0]===target&&target.onFoot;
  const delay=humanPilot?(skill==='casual'?.32:skill==='spicy'?.16:.24):
   (skill==='casual'?.44:skill==='spicy'?.24:.32);
- brain.fireTrack=Math.min(delay,(brain.fireTrack||0)+clamp(dt,0,.05));
- const error=Math.atan2(Math.sin(a-bot.a),Math.cos(a-bot.a));
- return {fire:brain.fireTrack+1e-8>=delay&&oldPilotGate&&Math.abs(error)<.095,
-  aimX,aimY};
+ const posture=botAimPosture(bot,brain,skill);
+ // Begin deliberate aim timing only after facing and movement have settled.
+ // An unaligned/fast-moving bot loses partial progress instead of carrying
+ // a fully charged instant shot from a sideways sprint into a new bearing.
+ brain.fireTrack=posture.steady?
+  Math.min(delay,(brain.fireTrack||0)+clamp(dt,0,.05)):
+  Math.max(0,(brain.fireTrack||0)-clamp(dt,0,.05)*1.5);
+ return {fire:posture.steady&&brain.fireTrack+1e-8>=delay&&
+   oldPilotGate&&Math.abs(posture.angleError)<.095,aimX,aimY};
 }
 function softPilotAimOffset(t,owner){
  if(owner!==0||mode!=='solo'||!t.onFoot||!comfort.pilotAssist||!pilotInLocalView(t.x,t.y))return 0;
@@ -1606,8 +1625,16 @@ function botInput(i,dt){
  const ctfHold=!!ctfDecision&&!ctfYield&&
   ((choice.kind==='defend'&&objectiveDistance<34)||
    (choice.kind==='escort'&&objectiveDistance<90));
- const chasePace=ctfHold||choice.kind==='hold'?0:
+ let chasePace=ctfHold||choice.kind==='hold'?0:
   choice.kind==='engage'&&hasLine&&enemyDist<115?pace*(role==='hunter'?.72:.34):pace;
+ const preparingShot=hasLine&&Number.isFinite(brain.fireAngle)&&
+  brain.fireRecover<=0&&brain.fireTarget===state.tanks.indexOf(target);
+ if(preparingShot){
+  // Brake and visibly rotate to fire; don't drive sideways at cruising
+  // speed while simultaneously executing a perfect bank-shot plan.
+  const posture=botAimPosture(bot,brain,skill);
+  chasePace*=Math.abs(posture.angleError)<.6?.08:.28;
+ }
  return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,
   aimX:committed.aimX,aimY:committed.aimY,fireAim:hasLine||remembered,fire:committed.fire,bot:true};
 }
