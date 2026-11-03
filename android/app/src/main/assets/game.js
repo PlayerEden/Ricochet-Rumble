@@ -1155,7 +1155,7 @@ function newMatch(which,dailyOptions=null){
  if(dailyLaunch&&(!dailyOptions||!window.SectorDaily||dailyOptions.dailySeed!==window.SectorDaily.seedFor(dailyOptions.dailyDate)))return false;
  if(which==='solo'&&!selectedPlaylistIds.length){notice('SELECT A QUICK PLAY MODE IN MATCH SETTINGS',2300);return false;}
  const playlistId=which==='solo'?firstQuickPlayMode():null;
- if(bridgeReady())window.AndroidBridge.stopNetwork();mode=scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch?'solo':which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;neutralizeGuestInput();lanSpectating=false;lanSpectatePending=null;
+ if(bridgeReady())window.AndroidBridge.stopNetwork();mode=scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch?'solo':which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;neutralizeGuestInput();lanSpectating=false;lanSpectatePending=null;lanRoomFull=false;
  lanHostJoinNext=null;lanHostJoinSeq=0;lanHostPromotedMatchId=0;
  lanGuestJoinNext='none';lanGuestQueueBoundary='match';lanGuestJoinSeq=0;lanGuestJoinPending=false;lanGuestPromotePending=null;document.getElementById('game-screen')?.classList.remove('spectating');
  const arena=selectArena(),options=ctfLaunch?{...selectedRules,matchModeId:'scored_tdm',
@@ -2859,7 +2859,7 @@ function bridgeReady(){return !!window.AndroidBridge}
 let lanLobby=null;
 // D3-B1 read-only spectator + D3-B2 host-owned next-round/match queue.
 let lanSpectating=false,lanSpectatePending=null;
-let lanRoomFull=false;
+let lanRoomFull=false,lanRetryEndpoint=null;
 let lanHostJoinNext=null,lanHostJoinSeq=0,lanHostPromotedMatchId=0;
 let lanGuestJoinNext='none',lanGuestQueueBoundary='match',lanGuestJoinSeq=0,
  lanGuestJoinPending=false,lanGuestPromotePending=null;
@@ -3106,10 +3106,39 @@ function launchLanMatch(){
  exitMenu();audioCue('deploy');notice('NEW FIELD · FIGHT!',1400);
 }
 
-function host(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('host');startLanLobby();window.AndroidBridge.hostGame()}
-function find(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('guest');setPanel('<div class="eyebrow">NEARBY PLAY</div><h2>FIND A MATCH</h2><p id="find-status">Looking for games on the same Wi-Fi...</p><div id="rooms"></div><button data-action="manual">JOIN BY LOCAL IP</button><button data-action="close">BACK</button>');window.AndroidBridge.findGames()}
-function manual(){if(!bridgeReady()){notice('Manual LAN join requires the Android APK');return}newMatch('guest');setPanel('<div class="eyebrow">FALLBACK</div><h2>JOIN BY ADDRESS</h2><p>Enter the IP:port shown on the host screen, such as 192.168.1.25:47321</p><input id="lan-address" placeholder="192.168.1.25:47321" inputmode="url" autocapitalize="off"><button data-action="ip-join">CONNECT</button><button data-action="find">FIND NEARBY</button>')}
-function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;lanLobby=null;lanSpectating=false;lanSpectatePending=null;lanRoomFull=false;
+// D3-C2A: one explicit, in-memory retry target; never resume stale game authority.
+function joinLanEndpoint(host,port){
+ if(!bridgeReady()||mode!=='guest'||typeof host!=='string'||host.length>64||
+    !Number.isInteger(port)||port<1||port>65535)return false;
+ lanRetryEndpoint={host,port};lanRoomFull=false;
+ document.getElementById('mode-label').textContent='CONNECTING';
+ window.AndroidBridge.joinGame(host,port);
+ return true;
+}
+function retryLanEndpoint(){
+ if(mode!=='guest'||connected||!lanRetryEndpoint)return false;
+ const target=lanRetryEndpoint;
+ // Native join starts a NEW socket generation. No old match/queue/input role survives.
+ newMatch('guest');
+ setPanel('<div class="eyebrow">LOCAL WI-FI / RETRY</div><h2>RECONNECTING</h2><p>Trying the last room address. The host may have a new address or port.</p><button data-action="close">CANCEL · MAIN MENU</button>');
+ return joinLanEndpoint(target.host,target.port);
+}
+function showLanGuestRecovery(kind){
+ if(mode!=='guest')return;
+ const full=kind==='full',failed=kind==='failed';
+ const title=full?'ROOM FULL':failed?'CONNECTION FAILED':'CONNECTION LOST';
+ const detail=full?'This host already has a guest or spectator. Try again after they leave.':
+  failed?'Could not reach the host. Check that both devices are on the same Wi-Fi.':
+  'The host or network connection ended. You can reconnect to the last address.';
+ setPanel('<div class="eyebrow">LOCAL WI-FI / RECOVERY</div><h2>'+title+'</h2><p>'+detail+'</p>'+
+  (lanRetryEndpoint?'<button class="primary" data-action="lan-retry">RETRY LAST ROOM</button>':'')+
+  '<button data-action="find">FIND NEARBY ROOMS</button><button data-action="manual">JOIN BY IP</button>'+
+  '<button data-action="close">MAIN MENU</button>');
+}
+function host(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}lanRetryEndpoint=null;newMatch('host');startLanLobby();window.AndroidBridge.hostGame()}
+function find(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}lanRetryEndpoint=null;newMatch('guest');setPanel('<div class="eyebrow">NEARBY PLAY</div><h2>FIND A MATCH</h2><p id="find-status">Looking for games on the same Wi-Fi...</p><div id="rooms"></div><button data-action="manual">JOIN BY LOCAL IP</button><button data-action="close">BACK</button>');window.AndroidBridge.findGames()}
+function manual(){if(!bridgeReady()){notice('Manual LAN join requires the Android APK');return}lanRetryEndpoint=null;newMatch('guest');setPanel('<div class="eyebrow">FALLBACK</div><h2>JOIN BY ADDRESS</h2><p>Enter the IP:port shown on the host screen, such as 192.168.1.25:47321</p><input id="lan-address" placeholder="192.168.1.25:47321" inputmode="url" autocapitalize="off"><button data-action="ip-join">CONNECT</button><button data-action="find">FIND NEARBY</button>')}
+function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;lanLobby=null;lanSpectating=false;lanSpectatePending=null;lanRoomFull=false;lanRetryEndpoint=null;
  lanHostJoinNext=null;lanHostJoinSeq=0;lanHostPromotedMatchId=0;
  lanGuestJoinNext='none';lanGuestQueueBoundary='match';lanGuestJoinSeq=0;lanGuestJoinPending=false;lanGuestPromotePending=null;
  document.getElementById('game-screen')?.classList.remove('spectating');neutralizeGuestInput();mode='idle';playlistBag=[];lastSoloModeId=null;releaseControls();document.getElementById('mode-label').textContent='NO GAME ACTIVE';panel.innerHTML=originalPanel;applyPrefsToUI();menu.classList.remove('hidden')}
@@ -3131,7 +3160,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
  if(a==='toggle-sound'||a==='toggle-music'){togglePauseAudio(a==='toggle-sound'?'sound':'music',b);return;}
  if(!['solo','settings-play','cqc','scored_ffa','scored_tdm','custom-play','duel','host','find','custom-preset-save','custom-preset-delete','custom-preset-load','ip-join'].includes(a))
   audioCue(['settings-back','help-back','dossier-back','backup-back','modes-back','custom-back','close','resume'].includes(a)?'ui-back':'ui-select');
- if(a==='lan-ready'){guestLanReady();return;}else if(a==='lan-start'){launchLanMatch();return;}else if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest?.('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
+ if(a==='lan-retry'){retryLanEndpoint();return;}else if(a==='lan-ready'){guestLanReady();return;}else if(a==='lan-start'){launchLanMatch();return;}else if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest?.('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
    const ok=equipPaint(b.dataset.paintId);
    refreshHangar();const status=document.getElementById('hangar-status');
    if(!ok&&status)status.textContent=paintProgress(b.dataset.paintId).eligible?'COULD NOT SAVE PAINT · CURRENT PAINT KEPT':'LOCKED · COMPLETE DOSSIER MILESTONE FIRST';
@@ -3157,7 +3186,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
  }
  else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">LOCAL WI-FI / BETA</div><h2>PLAY <span>TOGETHER</span></h2><p>Two Android phones on the same Wi-Fi. One hosts, the other joins.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
  const s=document.getElementById('lan-address').value.trim(),m=s.match(/^([\da-fA-F:.]+):(\d{1,5})$/);
- if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';window.AndroidBridge.joinGame(m[1],Number(m[2]));}});
+ if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';joinLanEndpoint(m[1],Number(m[2]));}});
 function showRestartConfirmation(){
  if(mode==='guest'||mode==='idle'||!paused)return;
  setPanel(state.config?.dailySector?'<div class="eyebrow">DAILY SECTOR / CONFIRM</div><h2>RESTART <span>ATTEMPT?</span></h2><p class="pause-hint">Your current attempt ends. The daily maze stays the same.</p><div class="pause-actions"><button class="primary" data-action="confirm-restart">RETRY SECTOR</button><button data-action="cancel-restart">KEEP CURRENT MATCH</button></div>':'<div class="eyebrow">FIELDGRID / CONFIRM</div><h2>START <span>NEW FIELD?</span></h2><p class="pause-hint">The current match will end. A fresh maze will replace it.</p><div class="pause-actions"><button class="primary" data-action="confirm-restart">START NEW FIELD</button><button data-action="cancel-restart">KEEP CURRENT MATCH</button></div>');
@@ -3228,7 +3257,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop();return;}if(menu.classList.contains('hidden'))showPauseMenu();else if(mode==='idle')stop();else if(mode==='solo'||mode==='duel'||mode==='host'){paused=false;exitMenu()}else exitMenu()},appPause(){releaseControls();if((mode==='solo'||mode==='duel'||mode==='host')&&menu.classList.contains('hidden')){showPauseMenu();if(mode==='host'&&connected)nativePacket({type:'state',state:serializeState()});}
   if(mode==='guest'&&connected&&!lanSpectating)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}})},nativeMessage(json){let msg;try{msg=JSON.parse(json)}catch(_){return}if(!msg||typeof msg.type!=='string')return;
  switch(msg.type){case 'hosting':{const p=document.getElementById('host-status');if(p)p.textContent='Waiting for another phone to join...';const a=document.getElementById('host-address');if(a)a.textContent=(msg.address||'LOCAL NETWORK')+':'+msg.port;refreshLanLobby();break}
- case 'found':{const r=document.getElementById('rooms');if(r&&!r.querySelector('[data-host="'+msg.host+'"]')){const b=document.createElement('button');b.textContent='JOIN '+(msg.name||'NEARBY GAME');b.dataset.host=msg.host;b.onclick=()=>{window.AndroidBridge.joinGame(msg.host,msg.port);document.getElementById('find-status').textContent='Connecting...'};r.appendChild(b)}break}
+ case 'found':{const r=document.getElementById('rooms');if(r&&!r.querySelector('[data-host="'+msg.host+'"]')){const b=document.createElement('button');b.textContent='JOIN '+(msg.name||'NEARBY GAME');b.dataset.host=msg.host;b.onclick=()=>{if(joinLanEndpoint(msg.host,msg.port))document.getElementById('find-status').textContent='Connecting...'};r.appendChild(b)}break}
  case 'connected':{
  if(mode!=='host'&&mode!=='guest')break;
  if(mode==='guest')lanRoomFull=false;
@@ -3366,7 +3395,7 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
   if(mode==='host'){
    connected=false;paused=true;neutralizeGuestInput();releaseControls();
    lanHostJoinNext=null;lanHostJoinSeq=0;
-   setPanel('<h2>ROOM OFFLINE</h2><p>Android paused LAN hosting while this app was in the background. Return to the menu and open a fresh room.</p><button data-action="close">MAIN MENU</button>');
+   setPanel('<h2>ROOM OFFLINE</h2><p>Android stopped LAN hosting in the background. The old room is closed; opening a new one resets the match.</p><button class="primary" data-action="host">OPEN NEW ROOM</button><button data-action="close">MAIN MENU</button>');
    notice('HOST OFFLINE · REOPEN THE ROOM',2500);
   }break;
  case 'disconnected':
@@ -3380,15 +3409,14 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
    if(lanLobby.active){lanLobby.guestReady=false;refreshLanLobby();}
    refreshHUD();notice('GUEST LEFT · ROOM STILL OPEN',2200);break;
   }
-  const roomWasFull=mode==='guest'&&lanRoomFull;
+  if(mode!=='guest')break; // Ignore stale callbacks after leaving nearby play.
+  const roomWasFull=lanRoomFull;
   connected=false;paused=true;lanLobby=null;lanSpectating=false;lanSpectatePending=null;
   lanRoomFull=false;lanGuestJoinNext='none';lanGuestJoinPending=false;lanGuestPromotePending=null;
   document.getElementById('game-screen')?.classList.remove('spectating');
   neutralizeGuestInput();clearStick();
   notice(roomWasFull?'ROOM FULL · TRY AGAIN LATER':'Other player disconnected');
-  setPanel(roomWasFull?
-   '<h2>ROOM FULL</h2><p>This host already has a guest or spectator. Try again after they leave.</p><button data-action="close">MAIN MENU</button>':
-   '<h2>CONNECTION LOST</h2><p>Return to the main menu and reconnect.</p><button data-action="close">MAIN MENU</button>');break;
- case 'error':notice(msg.message||'Network error');break;}}};
+  showLanGuestRecovery(roomWasFull?'full':'lost');break;
+ case 'error':notice(msg.message||'Network error');if(mode==='guest'&&!connected)showLanGuestRecovery('failed');break;}}};
 resizeArenaCanvas();refreshHUD();requestAnimationFrame(loop);
 })();
