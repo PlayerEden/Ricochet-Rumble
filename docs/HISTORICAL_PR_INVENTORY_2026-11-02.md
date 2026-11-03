@@ -1,14 +1,14 @@
 # Historical Pull Request Inventory — Sector Rebound Mainline Consolidation
 
-**Snapshot:** 2026-11-02 Kentucky local / 2026-11-03 UTC. PR metadata from the **61 open PRs** immediately after [integration PR #104](https://github.com/PlayerEden/Ricochet-Rumble/pull/104) was created: one active integration PR (#104), **60 older development/design PRs** inventoried below.
+**Snapshot:** 2026-11-02 Kentucky local / 2026-11-03 UTC. PR metadata from the **62 open PRs** immediately after [integration PR #104](https://github.com/PlayerEden/Ricochet-Rumble/pull/104) was created: one active integration PR (#104), **61 older development/design PRs** inventoried below.
 
 ## Verified and conservative interpretation
 
-GitHub's real commit comparison against consolidation candidate `a817e315bb12a9cd3446a7159fff2810a12a76d1` showed **13 older PR heads are actual ancestors** of the chosen modern source history (their exact commits and changes are included). **47 older PR heads diverge**; this DOES NOT mean their ideas are broken, or that their unique commits were integrated. It means `main` cannot be honestly described as containing their exact head commit. Some side-branch handoff docs have been copied into the integration candidate, but those PRs remain divergent in Git history.
+GitHub's real commit comparison against consolidation candidate `a817e315bb12a9cd3446a7159fff2810a12a76d1` showed **13 older PR heads are actual ancestors** of the chosen modern source history (their exact commits and changes are included). **48 older PR heads diverge**; this DOES NOT mean their ideas are broken, or that their unique commits were integrated. It means `main` cannot be honestly described as containing their exact head commit. Some side-branch handoff docs have been copied into the integration candidate, but those PRs remain divergent in Git history.
 
 The approved cleanup is **archival closure, not an unreviewed merge**. After the [audited mainline promotion](MAINLINE_PROMOTION_AUDIT_2026-11-02.md), each older PR may be **closed with a note specifying whether its head was included by ancestry or retained as an unmerged historical experiment**. Closure does **not** delete a branch, commits, issue thread, screenshots or original design review. The repository's historical branches and signed preview checkpoints are not to be force-pushed or deleted. A future change must be reviewed against current `main` as a new focused PR, not by blindly merging an old side branch.
 
-**This archival action does not approve Play Store release, two-phone native LAN, spectator/queue features, or old prototype features absent from v0.9.75.** This table is an inventory and disposition log, not a claim all 60 were merged into the game.
+**This archival action does not approve Play Store release, two-phone native LAN, spectator/queue features, or old prototype features absent from v0.9.75.** This table is an inventory and disposition log, not a claim all 61 were merged into the game.
 
 ## Historical PR registry (pre-closure)
 
@@ -84,4 +84,4 @@ The approved cleanup is **archival closure, not an unreviewed merge**. After the
 - **Full archived status** [PROJECT_STATUS_HISTORY_THROUGH_2026-11-02.md](PROJECT_STATUS_HISTORY_THROUGH_2026-11-02.md) (225 KB) · [historical master plan](MASTER_DEVELOPMENT_PLAN_2026-11-02.md) · [canonical plan](MASTER_DEVELOPMENT_PLAN.md).
 - The 13 ancestry-proven source PRs are **#103, #100, #99, #97, #96, #95, #94, #93, #92, #91, #90, #89, #87**. All others must remain labeled as **unmerged historical work** rather than falsely marked as code included.
 
-**Follow-up:** When the new `main` SHA and archive closures are verified, update the mainline audit with the actual PR merge result and remaining open PR count. Future tasks must branch from new `main`; do not inherit 60 obsolete dependencies.
+**Follow-up:** When the new `main` SHA and archive closures are verified, update the mainline audit with the actual PR merge result and remaining open PR count. Future tasks must branch from new `main`; do not inherit 61 obsolete dependencies.

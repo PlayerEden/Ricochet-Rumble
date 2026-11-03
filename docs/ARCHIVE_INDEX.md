@@ -26,7 +26,7 @@
 
 ## Pull request and prototype hygiene
 
-[**Full historical PR inventory and inclusion-vs-divergence audit**](HISTORICAL_PR_INVENTORY_2026-11-02.md): 60 old PRs categorized as 13 commit ancestors of current source versus 47 independent/divergent old experiments. Branches and PR discussions are preserved; closed historical PRs do **not** imply their divergent commits were merged.
+[**Full historical PR inventory and inclusion-vs-divergence audit**](HISTORICAL_PR_INVENTORY_2026-11-02.md): 61 old PRs categorized as 13 commit ancestors of current source versus 48 independent/divergent old experiments. Branches and PR discussions are preserved; closed historical PRs do **not** imply their divergent commits were merged.
 
 
 
