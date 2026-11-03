@@ -1150,8 +1150,11 @@ function refreshHUD(){const me=mode==='guest'&&!lanSpectating?1:0,other=me===0?1
  const resultExit=document.getElementById('results-menu');if(resultExit)resultExit.textContent=lanSpectating?'LEAVE ROOM':'MAIN MENU';
 }
 function newMatch(which,dailyOptions=null){
- savePrefs();
- const scoredLaunch=!!SCORED_MATCH_RULES[which],customLaunch=which==='custom',cqcLaunch=which==='cqc',dailyLaunch=which==='daily',bayLaunch=which==='forwardbay',ctfLaunch=which==='ctf',practiceLaunch=which==='practice';
+ const practiceLaunch=which==='practice';
+ // Practice is a disposable field, not a settings change. Do not rewrite a
+ // player's saved rotation or settings just for entering training.
+ if(!practiceLaunch)savePrefs();
+ const scoredLaunch=!!SCORED_MATCH_RULES[which],customLaunch=which==='custom',cqcLaunch=which==='cqc',dailyLaunch=which==='daily',bayLaunch=which==='forwardbay',ctfLaunch=which==='ctf';
  if(dailyLaunch&&(!dailyOptions||!window.SectorDaily||dailyOptions.dailySeed!==window.SectorDaily.seedFor(dailyOptions.dailyDate)))return false;
  if(which==='solo'&&!selectedPlaylistIds.length){notice('SELECT A QUICK PLAY MODE IN MATCH SETTINGS',2300);return false;}
  const playlistId=which==='solo'?firstQuickPlayMode():null;
