@@ -1,3 +1,9 @@
+# 2026-11-02 — M2-AI2 OCCASIONAL QUICK BOT OPENINGS (EXPERIMENT)
+
+Owner accepted v0.9.74 AI aiming as “pretty good for now” and requested **rare faster on-the-spot shots**, so a skilled player can still occasionally be surprised. Separate experimental [M2-AI2 design and QA](AI_RARE_QUICK_OPENINGS_M2_A2_2026-11-02.md) modifies only aim timing for occasional **earned, visible direct vehicle shots**, preserving physical braking/turning and pilot protection. This is not dynamic unfairness or added damage. Exact base v0.9.74 signed checkpoint safe, draft code/CI and owner side-by-side test pending. D3-B1 spectating remains next networking milestone.
+
+---
+
 # 2026-11-02 — M2 AI AIM FAIRNESS OWNER FEEDBACK / TARGETED EXPERIMENT
 
 Owner played v0.9.73 and found AI did not appear to need to **line up shots while moving**. Root cause verified: A3 aim acquisition accumulates while bots move full speed and even while physically misaligned; only final firing tick checks muzzle angle. A narrow experimental [AI shot posture M2-AI1](AI_SHOT_POSTURE_M2_A1_2026-11-02.md) branches from exact signed v0.9.73 SHA `08580417bb43877b472f5b378d449f77e74bd4de`. New mechanics: slow down during shot preparation, accumulate acquisition only when physically aligned and sufficiently slow, decay charge when charging while unsteady. Real-game browser QA and phone A/B evidence required; not owner accepted or public release. LAN D3-B1 spectator deferred until M2 targeted feedback pass completed.
