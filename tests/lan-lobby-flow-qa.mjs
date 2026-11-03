@@ -184,6 +184,75 @@ try{
  await receive(guest,await lastPacket(host,'lobby'));
  CHECK(await guest.locator('.lan-lobby').isVisible(),'scored guest returns to rules after results');
  CHECK((await guest.locator('#lan-guest-rules').textContent()).includes('FIRST TO 30 KOs'),'postmatch lobby preserves scored rules');
+
+ // D2: full three-round scored series, including alternate faction victory.
+ // We use the real pilot-KO score engine; only the transport is mocked.
+ await change(host,'rounds',3);
+ const seriesLobby=await lastPacket(host,'lobby');
+ await receive(guest,seriesLobby);
+ CHECK((await guest.locator('#lan-guest-rules').textContent()).includes('BEST OF 3'),'guest can review selected series format');
+ CHECK(await host.locator('button[data-action="lan-start"]').isDisabled(),'series selection revokes old Ready');
+ await guest.locator('button[data-action="lan-ready"]').click();
+ await receive(host,await lastPacket(guest,'ready'));
+ await host.locator('button[data-action="lan-start"]').click();
+ await receive(guest,await lastPacket(host,'start'));
+ await receive(guest,await lastPacket(host,'state'));
+ CHECK(await host.evaluate(()=>window.__lanQA.state.lanSeries?.round)===1,'host starts round 1/3');
+ CHECK(await guest.evaluate(()=>window.__lanQA.state.lanSeries?.round)===1,'guest starts round 1/3');
+ const initialTeams=await host.evaluate(()=>JSON.stringify(window.__lanQA.state.config.teamIds));
+ let previousSeed=await host.evaluate(()=>window.__lanQA.state.mazeSeed);
+ async function finishSeriesRound(attacker,victim){
+   await host.evaluate(({attacker,victim})=>{
+     const qa=window.__lanQA;
+     for(let i=0;i<30;i++){
+       qa.state.lives[victim]=1;qa.state.tanks[victim].onFoot=true;
+       if(!qa.credit(attacker,victim))throw Error('failed scored series KO '+i);
+     }
+   },{attacker,victim});
+   await receive(guest,{type:'state',state:await host.evaluate(()=>window.__lanQA.snapshot())});
+ }
+ await finishSeriesRound(0,1);
+ CHECK((await host.locator('#aa-note').textContent()).includes('CYAN 0 : 1 CORAL'),'round 1 awards Coral');
+ CHECK((await guest.locator('#aa-note').textContent()).includes('ROUND 1/3'),'guest receives round 1 finish');
+ CHECK((await host.locator('#quick-rematch').textContent()).includes('NEXT ROUND 2/3'),'host offered next round, not fresh series');
+ CHECK(await host.evaluate(()=>window.__lanQA.state.lanSeries?.concluded)===false,'one win does not clinch best-of-three');
+ await host.screenshot({path:path.join(dir,'915x412-series-r1-host.png'),animations:'disabled'});
+ await guest.screenshot({path:path.join(dir,'915x412-series-r1-guest.png'),animations:'disabled'});
+ results.screens.push('series round1 host','series round1 guest');
+ await host.locator('#quick-rematch').click();
+ await receive(guest,await lastPacket(host,'state'));
+ CHECK(await host.evaluate(()=>window.__lanQA.state.lanSeries?.round)===2,'host advances to round 2');
+ CHECK(await guest.evaluate(()=>window.__lanQA.state.lanSeries?.round)===2,'guest advances from host state without separate re-ready');
+ CHECK(await guest.locator('#after-action').isVisible()===false,'guest returns to live arena on next round');
+ const secondSeed=await host.evaluate(()=>window.__lanQA.state.mazeSeed);
+ CHECK(secondSeed!==previousSeed,'second round has new procedural arena');
+ CHECK(await host.evaluate(()=>JSON.stringify(window.__lanQA.state.config.teamIds))===initialTeams,'series keeps same physical team assignments');
+ CHECK(await guest.evaluate(()=>JSON.stringify(window.__lanQA.state.config.teamIds))===initialTeams,'guest keeps same physical team assignments');
+ CHECK((await guest.locator('#score-clock').textContent()).includes('R2/3'),'live guest HUD shows round number');
+ previousSeed=secondSeed;
+ await finishSeriesRound(1,0);
+ CHECK((await guest.locator('#aa-note').textContent()).includes('CYAN 1 : 1 CORAL'),'round 2 awards Cyan and ties series');
+ CHECK((await host.locator('#quick-rematch').textContent()).includes('NEXT ROUND 3/3'),'1-1 leads to round 3');
+ await host.locator('#quick-rematch').click();
+ await receive(guest,await lastPacket(host,'state'));
+ CHECK(await host.evaluate(()=>window.__lanQA.state.lanSeries?.round)===3,'host advances to decider');
+ CHECK(await guest.evaluate(()=>window.__lanQA.state.lanSeries?.round)===3,'guest shares decider');
+ CHECK(await host.evaluate(()=>window.__lanQA.state.mazeSeed)!==previousSeed,'third round has another fresh arena');
+ await finishSeriesRound(0,1);
+ const finalSeries=await host.evaluate(()=>window.__lanQA.state.lanSeries);
+ CHECK(finalSeries.concluded&&finalSeries.winner===1&&JSON.stringify(finalSeries.wins)===JSON.stringify([1,2]),'Coral wins series 2-1 in decider');
+ CHECK((await host.locator('#aa-title').textContent()).includes('SERIES WON'),'host displays series-level victory');
+ CHECK((await guest.locator('#aa-title').textContent()).includes('SERIES LOST'),'guest displays series-level defeat');
+ CHECK((await guest.locator('#aa-note').textContent()).includes('CORAL WINS SERIES'),'guest sees opponent won series');
+ CHECK((await host.locator('#quick-rematch').textContent()).includes('NEW SERIES'),'concluded best-of-three offers fresh series');
+ await host.screenshot({path:path.join(dir,'915x412-series-final-host.png'),animations:'disabled'});
+ await guest.screenshot({path:path.join(dir,'915x412-series-final-guest.png'),animations:'disabled'});
+ results.screens.push('series final host','series final guest');
+ await host.locator('#quick-rematch').click();
+ await receive(guest,await lastPacket(host,'state'));
+ CHECK(await host.evaluate(()=>window.__lanQA.state.lanSeries?.round)===1,'host restarts best-of-three at round 1');
+ CHECK(await guest.evaluate(()=>window.__lanQA.state.lanSeries?.wins.join(','))==='0,0','guest sees wins reset for fresh series');
+ CHECK(await guest.locator('#after-action').isVisible()===false,'new series starts in active arena');
  // End-to-end screenshots of both lobby roles and narrow-layout geometry.
  for(const [w,h] of [[568,320],[740,360],[915,412],[1280,720]]){
   await host.setViewportSize({width:w,height:h});
