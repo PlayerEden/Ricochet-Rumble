@@ -6,7 +6,9 @@
 
 - [D3-B1 live read-only spectator PR #105](https://github.com/PlayerEden/Ricochet-Rumble/pull/105) — source and CI accepted; no same-signer owner APK, physical two-phone LAN unverified.
 - [D3-B2 host-authoritative JOIN NEXT PR #108](https://github.com/PlayerEden/Ricochet-Rumble/pull/108) — merge commit `bd7162619daf16496e17fbb332d7a8aebdd7e75d`, source and full Android/dual-browser CI accepted; real phone acceptance still pending. Historical independent pure host contract [draft #107](https://github.com/PlayerEden/Ricochet-Rumble/pull/107) remains **unmerged**, not falsely marked as integrated.
-- Preserve older signed v0.9.74/v0.9.75 APK checkpoints and archive branches. D3-C reconnection and new owner APK are separate future work.
+- [D3-C1 native Android repeat accept/BUSY PR #110](https://github.com/PlayerEden/Ricochet-Rumble/pull/110) — merge `2d713ddc7374ada461af0afc27a3c2cc6f8e47aa`; six exact-PR CI suites PASS, including JVM admission and full Android/visual, **not physical device acceptance**.
+- [D3-C2A in-memory guest retry and host-offline recovery PR #111](https://github.com/PlayerEden/Ricochet-Rumble/pull/111) — merge `b055623fc69b8dc38cd65ab470267193d5e2d9ee`; seven exact-PR CI suites PASS, including real two-viewport browser recovery and inherited B1/B2/Android QA. No owner-compatible new APK yet.
+- Preserve older signed v0.9.74/v0.9.75 APK checkpoints and archive branches. **The next gate is an exact-source, higher-version same-signer preview followed by real two-phone Wi-Fi.** Neither C1 nor C2A is a public Play release.
 
 ## Protected code and owner preview checkpoints
 
