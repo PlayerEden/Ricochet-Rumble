@@ -1331,6 +1331,29 @@ function botAimPosture(bot,brain,skill){
  return {angleError:facing,speed,moveCap,
   steady:Math.abs(facing)<.16&&speed<=moveCap};
 }
+// M2-AI2: occasional earned opening. One short acquisition in every
+// 4/5/7 ACTUAL shots (Challenge/Standard/Relaxed), with per-bot/maze phase.
+// Never the first two shots. No luck re-roll each frame, rubber-banding or
+// bot-to-human skill detection. This changes aim time, not turn/speed rules.
+function botQuickOpening(brain,bot,seen,skill,index){
+ const shots=Number.isInteger(brain.fireShots)?brain.fireShots:0;
+ if(shots<2||!seen?.live||seen.onFoot||brain.fireBank||
+  !Number.isFinite(brain.fireAngle))return false;
+ const period=skill==='spicy'?4:skill==='casual'?7:5;
+ const phase=(((state.mazeSeed>>>0)+Math.imul(index+1,17))>>>0)%period;
+ const error=Math.atan2(Math.sin(brain.fireAngle-bot.a),
+  Math.cos(brain.fireAngle-bot.a));
+ // Only an already-aware, roughly facing bot gets a chance. Full physical
+ // alignment, real velocity cap and final muzzle cone are STILL compulsory.
+ return shots%period===phase&&Math.abs(error)<.60;
+}
+function botAimDelay(skill,humanPilot,quick=false){
+ const standard=humanPilot?(skill==='casual'?.32:skill==='spicy'?.16:.24):
+  (skill==='casual'?.44:skill==='spicy'?.24:.32);
+ // Even a well-positioned opponent needs several visible steady-aim frames.
+ return quick&&!humanPilot?standard*(skill==='casual'?.80:skill==='spicy'?.76:.75):
+  standard;
+}
 // All bots use acquire -> physically turn/brake -> settle -> fire -> recover.
 // No frame-perfect tracking or course corrections AFTER the lock.
 function botFireCommit(brain,bot,target,skill,dt,visible,oldPilotGate,i,seen=null){
@@ -1339,6 +1362,7 @@ function botFireCommit(brain,bot,target,skill,dt,visible,oldPilotGate,i,seen=nul
  const index=state.tanks.indexOf(target);
  if(!visible||index<0||!seen){
   brain.fireTarget=-1;brain.fireTrack=0;brain.fireAngle=NaN;
+  brain.fireQuick=false;
   return {fire:false,aimX:undefined,aimY:undefined};
  }
  const targetKind=seen.onFoot?'pilot':'vehicle';
@@ -1354,13 +1378,13 @@ function botFireCommit(brain,bot,target,skill,dt,visible,oldPilotGate,i,seen=nul
   brain.fireCandidateCount=candidate.examined;
   brain.fireBank=candidate.aim?.banked===true;
   brain.fireAngle=candidate.aim?candidate.aim.angle:NaN;
+  brain.fireQuick=!!candidate.aim&&botQuickOpening(brain,bot,seen,skill,i);
  }
  if(!Number.isFinite(brain.fireAngle))return {fire:false,aimX:undefined,aimY:undefined};
  const a=brain.fireAngle,aimX=Math.cos(a),aimY=Math.sin(a);
  if(brain.fireRecover>0)return {fire:false,aimX,aimY};
  const humanPilot=mode==='solo'&&state.tanks[0]===target&&target.onFoot;
- const delay=humanPilot?(skill==='casual'?.32:skill==='spicy'?.16:.24):
-  (skill==='casual'?.44:skill==='spicy'?.24:.32);
+ const delay=botAimDelay(skill,humanPilot,brain.fireQuick===true&&!seen.onFoot);
  const posture=botAimPosture(bot,brain,skill);
  // Begin deliberate aim timing only after facing and movement have settled.
  // An unaligned/fast-moving bot loses partial progress instead of carrying
@@ -2526,8 +2550,8 @@ function enemyBotCue(i,me=mode==='guest'?1:0){
     !(brain.fireTrack>0)||!Number.isFinite(brain.fireAngle))return null;
  const skill=state.config?.botSkill==='casual'?'casual':
    state.config?.botSkill==='spicy'?'spicy':'normal';
- const delay=local.onFoot?(skill==='casual'?.32:skill==='spicy'?.16:.24):
-   (skill==='casual'?.44:skill==='spicy'?.24:.32);
+ const delay=botAimDelay(skill,mode==='solo'&&local.onFoot,
+  brain.fireQuick===true&&!local.onFoot);
  const progress=clamp(brain.fireTrack/delay,0,1);
  if(progress<.23)return null;
  return {phase:'acquire',angle,progress};
