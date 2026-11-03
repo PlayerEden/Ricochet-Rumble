@@ -153,7 +153,7 @@ try{
  await receive(guest,await lastPacket(host,'start'));
  await receive(guest,await lastPacket(host,'state'));
  const teams=await host.evaluate(()=>({ids:[...window.__lanQA.state.config.teamIds],scored:window.__lanQA.state.scored,ff:window.__lanQA.state.config.friendlyFire}));
- CHECK(JSON.stringify(teams.ids)===JSON.stringify([1,0,1,0]),'Coral host and bot versus Cyan guest and bot');
+ CHECK(JSON.stringify(teams.ids)===JSON.stringify([1,0,1,0]),'Coral host and bot versus Cyan guest and bot (actual '+JSON.stringify(teams.ids)+')');
  CHECK(teams.scored.mode==='teams'&&teams.scored.scoreTarget===30&&teams.ff,'2v2 scored rules frozen in engine');
  CHECK(await guest.evaluate(()=>JSON.stringify(window.__lanQA.state.config.teamIds))===JSON.stringify(teams.ids),'host and guest share teams');
  CHECK((await guest.locator('#player0-label').textContent()).includes('CYAN KOs · YOU'),'guest scoreboard labels own Cyan side');
