@@ -4,6 +4,8 @@
 
 **New protected camera preview checkpoint:** `checkpoint/sector-rebound-m2-camera-v2-400001-signed-ci`, source `e548e3e27d53675fab372cccb8404b20ddff55e2`, APK code **400001**, SHA-256 `6ab003ae8690d114677b5de30e143726bb90913f82af22b5b3dfe9b4e995adad`. [Source/CI merge #118](https://github.com/PlayerEden/Ricochet-Rumble/pull/118) and [signed owner-preview build #41709421916](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41709421916) PASS; owner phone v2 test pending. Prior signed 380001 and 390001 checkpoints remain valid history. [Camera evidence](M2_CAMERA_WIDEN_2026-11-03.md).
 
+**Latest signed Solo practice checkpoint:** [v0.9.79 source](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-v0979-solo-practice-signed-ci-410001), commit `406080e0ba5a34af25faef2fee206faef6bea056`; [Build PASS #41715192220](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41715192220), artifact `13270206832`, code **410001**, SHA-256 `20c82083d92b80c49b2b4e0c0b3c4551bc6b6b430b47a2066492b759ce9f422a`. The owner confirmed the **earlier** camera/AI feels good; **physical v0.9.79 install/save acceptance is pending**, and two-phone LAN is postponed until device access. Preserve all earlier v0.9.78 and v0.9.77 checkpoints for rollback.
+
 ## Most recent merged development milestones
 
 - [D3-B1 live read-only spectator PR #105](https://github.com/PlayerEden/Ricochet-Rumble/pull/105) — source and CI accepted; no same-signer owner APK, physical two-phone LAN unverified.
