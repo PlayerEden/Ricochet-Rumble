@@ -468,7 +468,8 @@ function queuePilotRelease(){
  if(mode==='guest'){
   if(!connected||!Number.isInteger(state.matchId)){releaseShot=null;return false;}
   guestFireSeq=(guestFireSeq%2147483600)+1;
-  nativePacket({type:'fire-request',seq:guestFireSeq,matchId:shot.matchId,aimX:shot.x,aimY:shot.y});
+  nativePacket({type:'fire-request',seq:guestFireSeq,matchId:shot.matchId,
+   revision:lanLobby?.revision,aimX:shot.x,aimY:shot.y});
  }
  return true;
 }
@@ -1125,8 +1126,11 @@ function refreshHUD(){const me=mode==='guest'&&!lanSpectating?1:0,other=me===0?1
  const badge=document.getElementById('spectator-status');if(badge){
   const watching=mode==='guest'&&lanSpectating,observed=mode==='host'&&connected&&state.config?.lanHostSolo===true;
   badge.classList.toggle('hidden',!watching&&!observed);
-  if(watching)badge.textContent='SPECTATING · HOST · READ ONLY';
-  else if(observed)badge.textContent='GUEST WATCHING';
+  if(watching)badge.textContent=lanGuestJoinNext==='queued'?
+    'QUEUED · NEXT '+(lanGuestQueueBoundary==='round'?'ROUND':'MATCH')+' · READ ONLY':
+    'SPECTATING · HOST · READ ONLY';
+   else if(observed)badge.textContent=lanHostJoinNext?.queued?
+    'GUEST QUEUED · NEXT '+(lanHostJoinNext.boundary==='round'?'ROUND':'MATCH'):'GUEST WATCHING';
  }
  if(mode==='guest'&&lanSpectating){
   const teamScores=isScoredMatch()&&state.scored?.mode==='teams';
@@ -1138,6 +1142,11 @@ function refreshHUD(){const me=mode==='guest'&&!lanSpectating?1:0,other=me===0?1
    const note=document.getElementById('aa-note');if(note)note.textContent='SPECTATING · HOST CONTROLS THE NEXT MATCH';
   }
  }
+ const joinNext=document.getElementById('spectator-queue');
+ if(joinNext){const watching=mode==='guest'&&lanSpectating;
+  joinNext.classList.toggle('hidden',!watching);
+  if(watching)joinNext.textContent=lanGuestJoinNext==='queued'?'CANCEL JOIN NEXT':'JOIN NEXT';
+ }
  const resultExit=document.getElementById('results-menu');if(resultExit)resultExit.textContent=lanSpectating?'LEAVE ROOM':'MAIN MENU';
 }
 function newMatch(which,dailyOptions=null){
@@ -1146,7 +1155,9 @@ function newMatch(which,dailyOptions=null){
  if(dailyLaunch&&(!dailyOptions||!window.SectorDaily||dailyOptions.dailySeed!==window.SectorDaily.seedFor(dailyOptions.dailyDate)))return false;
  if(which==='solo'&&!selectedPlaylistIds.length){notice('SELECT A QUICK PLAY MODE IN MATCH SETTINGS',2300);return false;}
  const playlistId=which==='solo'?firstQuickPlayMode():null;
- if(bridgeReady())window.AndroidBridge.stopNetwork();mode=scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch?'solo':which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;neutralizeGuestInput();lanSpectating=false;lanSpectatePending=null;document.getElementById('game-screen')?.classList.remove('spectating');
+ if(bridgeReady())window.AndroidBridge.stopNetwork();mode=scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch?'solo':which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;neutralizeGuestInput();lanSpectating=false;lanSpectatePending=null;
+ lanHostJoinNext=null;lanHostPromotedMatchId=0;
+ lanGuestJoinNext='none';lanGuestQueueBoundary='match';lanGuestJoinSeq=0;lanGuestPromotePending=null;document.getElementById('game-screen')?.classList.remove('spectating');
  const arena=selectArena(),options=ctfLaunch?{...selectedRules,matchModeId:'scored_tdm',
  mapSize:'standard',teamMode:'teams',botCount:3,botSkill:'normal',pilotMode:true,
  forwardBayExercise:true,ctfExercise:true,quickPlayMatch:false}:bayLaunch?{...selectedRules,matchModeId:'scored_tdm',mapSize:'standard',teamMode:'teams',botCount:3,botSkill:'normal',pilotMode:true,forwardBayExercise:true,quickPlayMatch:false}:dailyLaunch?dailyOptions:customLaunch?customOptionsFor():scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:which==='scored_tdm'?'teams':'ffa',matchModeId:which,pilotMode:true}:playlistId?quickPlayOptionsFor(playlistId):{...selectedRules,pilotMode:true};
@@ -1155,7 +1166,11 @@ function resetAll(advancePlaylist=false){
  const previousSeed=state.mazeSeed;
  const carriedSeries=mode==='host'&&state.winner>=0&&state.lanSeries?
   window.SectorLanSeries.nextRound(state.lanSeries):null;
+ const promote=mode==='host'&&connected&&state.winner>=0&&
+  state.config?.lanHostSolo===true&&lanLobby&&!lanLobby.active&&lanHostJoinNext?.queued===true;
+ const previousMatchId=state.matchId;
  let options={...state.config};
+ if(promote)options.lanHostSolo=false;
  if(advancePlaylist&&mode==='solo'&&state.config?.quickPlayMatch&&!state.config?.customMatch){
   const id=nextPlaylistMode();if(!id){notice('SELECT A QUICK PLAY MODE IN MATCH SETTINGS',2300);return false;}
   // Derive the next preset from the SAVED user settings, not the prior
@@ -1170,7 +1185,14 @@ function resetAll(advancePlaylist=false){
  if(mode==='solo')document.getElementById('mode-label').textContent=options.botCount===0?'PRACTICE FIELD':options.dailySector?'DAILY SECTOR':options.ctfExercise?'CAPTURE THE FLAG · TEST':options.forwardBayExercise?'FORWARD BAY · TEAM EXERCISE':(options.customMatch?'CUSTOM · ':'')+soloModeLabel(options);
  camera.zoom=null;resultCuePlayed=false;roundUnlocks=[];quietContactSeconds=0;radarReminderShown=false;coachRemaining=0;document.getElementById('field-coach')?.classList.add('hidden');fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();clearFireAim();releaseShot=null;remoteReleaseShot=null;paused=mode==='guest'||(mode==='host'&&!connected&&!options.lanHostSolo);refreshHUD();
  if(mode==='host'&&connected&&lanLobby&&!lanLobby.active){
-  if(state.config?.lanHostSolo===true)nativePacket({type:'spectate',version:2,revision:lanLobby.revision,matchId:state.matchId,role:'spectator'});
+  lanHostPromotedMatchId=state.config?.lanHostSolo===false?state.matchId:0;
+  if(promote){
+   // B2: a new actor and fresh personal KO ledger; NEVER swap mid-fight.
+   lanHostJoinNext=null;lastGuestFireSeq=0;neutralizeGuestInput();
+   nativePacket({type:'join-next-promote',version:2,revision:lanLobby.revision,
+    previousMatchId,matchId:state.matchId,boundary:carriedSeries?'round':'match',role:'player'});
+  }else if(state.config?.lanHostSolo===true)
+   nativePacket({type:'spectate',version:2,revision:lanLobby.revision,matchId:state.matchId,role:'spectator'});
   nativePacket({type:'state',state:serializeState()});
  }
  if(mode!=='guest')notice(options.dailySector?'SAME DAILY SECTOR · RETRY':'NEW FIELD GENERATED — GO!');}
@@ -2827,15 +2849,31 @@ function loop(now){const dt=clamp((now-lastTime)/1000,0,.085);lastTime=now;
  if(mode==='solo'||mode==='duel'||mode==='host'){if(!paused&&state.winner<0){fixedAccumulator=Math.min(.12,fixedAccumulator+dt);let ticks=0;while(fixedAccumulator>=STEP&&ticks++<5){step(STEP);fixedAccumulator-=STEP}}else fixedAccumulator=0;}
  updateVisuals(dt);hudTimer+=dt;if(hudTimer>.15){hudTimer=0;refreshHUD();}
  if(mode==='host'&&connected&&!(lanLobby&&lanLobby.active)){snapshotTimer+=dt;if(snapshotTimer>.09){snapshotTimer=0;nativePacket({type:'state',state:serializeState()})}}
- if(mode==='guest'&&connected&&!lanSpectating&&!(lanLobby&&lanLobby.active)){sendTimer+=dt;if(sendTimer>.05){sendTimer=0;nativePacket({type:'input',input:menu.classList.contains('hidden')&&!document.hidden?makeControl(true):{moveX:0,moveY:0,fire:false}})}}
+ if(mode==='guest'&&connected&&!lanSpectating&&!(lanLobby&&lanLobby.active)){sendTimer+=dt;if(sendTimer>.05){sendTimer=0;nativePacket({type:'input',matchId:state.matchId,revision:lanLobby?.revision,
+   input:menu.classList.contains('hidden')&&!document.hidden?makeControl(true):{moveX:0,moveY:0,fire:false}})}}
  render(dt);drawLobbyPreview(dt);updateMusic();requestAnimationFrame(loop)}
 function bridgeReady(){return !!window.AndroidBridge}
 
 /* Nearby LAN lobby v1 — host owns all match rules; guest explicitly readies.
    No saved Solo/Quick Play options, match scoring or Wi-Fi host authority changes. */
 let lanLobby=null;
-// Live read-only spectator: seat 1 stays an AI until the later B2 join gate.
+// D3-B1 read-only spectator + D3-B2 host-owned next-round/match queue.
 let lanSpectating=false,lanSpectatePending=null;
+let lanHostJoinNext=null,lanHostPromotedMatchId=0;
+let lanGuestJoinNext='none',lanGuestQueueBoundary='match',lanGuestJoinSeq=0,lanGuestPromotePending=null;
+function joinNextBoundary(){
+ return state?.lanSeries&&!state.lanSeries.concluded&&state.lanSeries.round<3?'round':'match';
+}
+function guestJoinNextAction(action){
+ if(mode!=='guest'||!connected||!lanSpectating||!lanLobby||
+  !['join','cancel'].includes(action)||!Number.isSafeInteger(state?.matchId)||
+  (action==='join'&&lanGuestJoinNext!=='none')||
+  (action==='cancel'&&lanGuestJoinNext!=='queued'))return false;
+ lanGuestJoinSeq++;
+ nativePacket({type:'join-next',version:2,revision:lanLobby.revision,
+  matchId:state.matchId,seq:lanGuestJoinSeq,action});
+ return true;
+}
 const LAN_SIDES={ffa:'FREE FOR ALL',coop:'CO-OP VS BOTS',teams:'OPPOSING TEAMS',tdm:'TEAM DEATHMATCH'};
 const LAN_SIZE={small:'SMALL',standard:'STANDARD',large:'LARGE'};
 const LAN_SKILL={casual:'RELAXED',normal:'STANDARD',spicy:'CHALLENGE'};
@@ -3068,7 +3106,10 @@ function launchLanMatch(){
 function host(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('host');startLanLobby();window.AndroidBridge.hostGame()}
 function find(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('guest');setPanel('<div class="eyebrow">NEARBY PLAY</div><h2>FIND A MATCH</h2><p id="find-status">Looking for games on the same Wi-Fi...</p><div id="rooms"></div><button data-action="manual">JOIN BY LOCAL IP</button><button data-action="close">BACK</button>');window.AndroidBridge.findGames()}
 function manual(){if(!bridgeReady()){notice('Manual LAN join requires the Android APK');return}newMatch('guest');setPanel('<div class="eyebrow">FALLBACK</div><h2>JOIN BY ADDRESS</h2><p>Enter the IP:port shown on the host screen, such as 192.168.1.25:47321</p><input id="lan-address" placeholder="192.168.1.25:47321" inputmode="url" autocapitalize="off"><button data-action="ip-join">CONNECT</button><button data-action="find">FIND NEARBY</button>')}
-function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;lanLobby=null;lanSpectating=false;lanSpectatePending=null;document.getElementById('game-screen')?.classList.remove('spectating');neutralizeGuestInput();mode='idle';playlistBag=[];lastSoloModeId=null;releaseControls();document.getElementById('mode-label').textContent='NO GAME ACTIVE';panel.innerHTML=originalPanel;applyPrefsToUI();menu.classList.remove('hidden')}
+function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;lanLobby=null;lanSpectating=false;lanSpectatePending=null;
+ lanHostJoinNext=null;lanHostPromotedMatchId=0;
+ lanGuestJoinNext='none';lanGuestQueueBoundary='match';lanGuestJoinSeq=0;lanGuestPromotePending=null;
+ document.getElementById('game-screen')?.classList.remove('spectating');neutralizeGuestInput();mode='idle';playlistBag=[];lastSoloModeId=null;releaseControls();document.getElementById('mode-label').textContent='NO GAME ACTIVE';panel.innerHTML=originalPanel;applyPrefsToUI();menu.classList.remove('hidden')}
 const originalPanel=panel.innerHTML;
 panel.addEventListener('change',e=>{const el=e.target;if(el?.dataset?.lanSetting){changeLanRule(el);return;}if(el.id==='custom-preset-select'){pendingPresetDelete='';refreshCustomPresetUI();customPresetStatus('SELECT LOAD TO APPLY SAVED RULES');return;}if(el.id?.startsWith('custom-')){readCustomScreen();refreshCustomUI();return;}if(el.id?.startsWith('pref-')){const key=el.id.slice(5);if(key in comfort)comfort[key]=el.checked;applyPrefsToUI()}savePrefs()});
 loadPrefs();
@@ -3132,13 +3173,13 @@ document.getElementById('aa-rewards')?.addEventListener('click',()=>{
 });
  document.getElementById('custom-edit')?.addEventListener('click',()=>{if(state.winner>=0&&mode==='solo'&&state.config?.customMatch){stop();openCustomScreen();}});
 document.getElementById('lan-edit-rules')?.addEventListener('click',returnToLanRules);
-document.getElementById('interact-btn')?.addEventListener('pointerdown',e=>{e.preventDefault();if(mode==='guest'){if(connected&&!paused&&!lanSpectating&&menu.classList.contains('hidden')&&!state.hostPaused)nativePacket({type:'interact'});}else tryInteract(0)});
+document.getElementById('interact-btn')?.addEventListener('pointerdown',e=>{e.preventDefault();if(mode==='guest'){if(connected&&!paused&&!lanSpectating&&menu.classList.contains('hidden')&&!state.hostPaused)nativePacket({type:'interact',matchId:state.matchId,revision:lanLobby?.revision});}else tryInteract(0)});
 menu.addEventListener('click',e=>{const a=e.target?.dataset?.action;
  if(a==='resume'){if(mode==='solo'||mode==='duel'||mode==='host')paused=false;exitMenu()}
  else if(a==='restart'&&mode!=='guest'){showRestartConfirmation()}
  else if(a==='cancel-restart'){showPauseMenu()}
  else if(a==='confirm-restart'&&mode!=='guest'&&paused){resetAll();exitMenu()}});
-window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if([...Object.values(keys1),...Object.values(keys2)].includes(e.code))e.preventDefault();pressed.add(e.code);if(e.code==='KeyR'&&state.winner>=0&&mode!=='guest')resetAll(mode==='solo'&&!!state.config?.quickPlayMatch);if(e.code==='KeyE'&&!e.repeat&&menu.classList.contains('hidden')){if(mode==='guest'&&connected&&!lanSpectating&&!state.hostPaused)nativePacket({type:'interact'});else if(mode==='solo'||mode==='host'||mode==='duel')tryInteract(0)}});
+window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if([...Object.values(keys1),...Object.values(keys2)].includes(e.code))e.preventDefault();pressed.add(e.code);if(e.code==='KeyR'&&state.winner>=0&&mode!=='guest')resetAll(mode==='solo'&&!!state.config?.quickPlayMatch);if(e.code==='KeyE'&&!e.repeat&&menu.classList.contains('hidden')){if(mode==='guest'&&connected&&!lanSpectating&&!state.hostPaused)nativePacket({type:'interact',matchId:state.matchId,revision:lanLobby?.revision});else if(mode==='solo'||mode==='host'||mode==='duel')tryInteract(0)}});
 window.addEventListener('keyup',e=>pressed.delete(e.code));window.addEventListener('blur',releaseControls);
 for(const b of document.querySelectorAll('[data-key]')){const k=b.dataset.key;const release=e=>{
  if(k==='fire'&&fireAim.pointerId===e.pointerId&&e.type==='pointerup'){
@@ -3186,13 +3227,15 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
  if(mode!=='host'&&mode!=='guest')break;
  if(mode==='host'&&state.config?.lanHostSolo===true&&lanLobby&&!lanLobby.active){
   connected=true;neutralizeGuestInput();remoteReleaseShot=null;
+  lanHostJoinNext=null;lanHostPromotedMatchId=0;
   nativePacket({type:'lobby',version:1,revision:lanLobby.revision,rules:lanLobby.rules,
    postMatch:false,hostBusy:true});
   nativePacket({type:'spectate',version:2,revision:lanLobby.revision,matchId:state.matchId,role:'spectator'});
   nativePacket({type:'state',state:serializeState()});
   refreshHUD();notice('GUEST JOINED · SPECTATING LIVE MATCH',2300);break;
  }
- if(mode==='host'){neutralizeGuestInput();lastGuestFireSeq=0;remoteReleaseShot=null;}
+ if(mode==='host'){neutralizeGuestInput();lastGuestFireSeq=0;remoteReleaseShot=null;
+  lanHostJoinNext=null;lanHostPromotedMatchId=0;}
  connected=true;paused=true;
  document.getElementById('mode-label').textContent=mode==='guest'?'YOU: CORAL':'YOU: CYAN';
  if(mode==='host'){if(!lanLobby)startLanLobby();lanLobby.guestReady=false;refreshLanLobby();publishLanLobby();}
@@ -3246,10 +3289,14 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
  if(event.kind==='guard')audioCue('barrier',event.x,event.y);
  if(event.kind==='pickup')audioCue('pickup',event.x,event.y);lastRemoteFxId=event.id}}if(state?.matchId!==upcoming.matchId){resultCuePlayed=false;camera.zoom=null;lastRemoteFxId=0;}state=upcoming;setArena(0,state.mazeSeed,state.config?.mapSize);
  document.getElementById('mode-label').textContent=lanSpectating?'SPECTATING · HOST':state.config?.teamMode==='teams'?'YOU: '+(teamOf(1,state)===0?'CYAN':'CORAL'):'JOIN MATCH';refreshHUD()}break;
- case 'input':if(mode==='host'&&connected&&!paused&&state.winner<0&&state.config?.lanHostSolo!==true&&msg.input){guestInput=normalizeLanInput(msg.input);guestInputAge=0;}break;
+ case 'input':if(mode==='host'&&connected&&!paused&&state.winner<0&&state.config?.lanHostSolo!==true&&msg.input&&
+   (!lanHostPromotedMatchId||(msg.matchId===state.matchId&&msg.revision===lanLobby?.revision))){
+   guestInput=normalizeLanInput(msg.input);guestInputAge=0;
+  }break;
  case 'fire-request':{
   if(mode!=='host'||!connected||paused||state.config?.lanHostSolo===true||state.winner>=0||state.lives[1]<=0||
-    msg.matchId!==state.matchId||!Number.isInteger(msg.seq)||
+    msg.matchId!==state.matchId||
+    (lanHostPromotedMatchId&&msg.revision!==lanLobby?.revision)||!Number.isInteger(msg.seq)||
     msg.seq<=lastGuestFireSeq||msg.seq>2147483600)break;
   const x=Number(msg.aimX),y=Number(msg.aimY),len=Math.hypot(x,y);
   if(!Number.isFinite(len)||len<.6||len>1.1)break;
@@ -3257,7 +3304,8 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
   remoteReleaseShot={x:x/len,y:y/len,ttl:1.6,matchId:state.matchId};
   break;
  }
- case 'interact':if(mode==='host'&&connected&&!paused&&state.config?.lanHostSolo!==true)tryInteract(1);break;
+ case 'interact':if(mode==='host'&&connected&&!paused&&state.config?.lanHostSolo!==true&&
+   (!lanHostPromotedMatchId||(msg.matchId===state.matchId&&msg.revision===lanLobby?.revision)))tryInteract(1);break;
  case 'disconnected':
   if(mode==='host'&&(lanLobby?.active===true||state.config?.lanHostSolo===true)){
    connected=false;neutralizeGuestInput();
