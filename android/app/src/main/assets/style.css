@@ -1170,3 +1170,18 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 .game-screen.spectating .touch-zone{display:none!important;pointer-events:none!important}
 .game-screen.spectating .battlefield{grid-template-columns:minmax(0,1fr)}
 @media(max-width:850px){.spectator-status{max-width:25vw;font-size:9px;padding:4px 5px}}
+
+/* Solo onboarding: opt-in no-bot practice, not another default quick-play mode. */
+#menu #panel .practice-launch{
+ display:flex;align-items:center;justify-content:space-between;gap:9px;
+ width:100%;min-height:34px;margin:0;padding:6px 12px;text-align:left;
+ border:1px solid #537b86;border-radius:5px;background:#22343b;color:#e8f6f6;
+}
+#menu .practice-launch strong{font:900 clamp(12px,1.45vw,16px)/1 'sans-serif-condensed',Roboto,sans-serif}
+#menu .practice-launch span{font:700 clamp(8px,1vw,10px)/1.2 monospace;color:#a9c7ce;text-align:right}
+#menu #panel .help-practice{
+ align-self:flex-start;min-height:40px;margin:0;padding:8px 15px;
+ border:1px solid #739ca6;background:#27404a;color:#efffff;
+ font:850 clamp(11px,1.25vw,14px)/1.1 'sans-serif-condensed',Arial,sans-serif;
+}
+@media(max-height:390px){#menu #panel .practice-launch{min-height:30px;padding:4px 8px}}
