@@ -1,0 +1,26 @@
+name: Sector Rebound - D3-B2 JOIN NEXT host contract
+on:
+  pull_request:
+    paths:
+      - 'web/lan-join-next.js'
+      - 'android/app/src/main/assets/lan-join-next.js'
+      - 'tests/d3-b2-join-next-contract.mjs'
+      - '.github/workflows/d3-b2-join-next.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  host-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run queue and promotion authority contract
+        run: |
+          node --check web/lan-join-next.js
+          node --check tests/d3-b2-join-next-contract.mjs
+          node tests/lan-room-state-d3-a0.mjs
+          node tests/d3-b2-join-next-contract.mjs
