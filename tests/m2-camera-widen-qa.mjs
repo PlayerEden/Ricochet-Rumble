@@ -61,8 +61,8 @@ try{
     measurements[mapSize+':'+unit]=row;
     records.push({viewport:viewport.width+'x'+viewport.height,...row});
    }
-   assert.ok(measurements[mapSize+':pilot].zoom>measurements[mapSize+':tank].zoom,'pilot view closer than tank');
-   assert.ok(measurements[mapSize+':tank].zoom>measurements[mapSize+':mech].zoom,'tank view closer than mech');
+   assert.ok(measurements[mapSize+':pilot'].zoom>measurements[mapSize+':tank'].zoom,'pilot view closer than tank');
+   assert.ok(measurements[mapSize+':tank'].zoom>measurements[mapSize+':mech'].zoom,'tank view closer than mech');
   }
  }
  assert.deepEqual(errors,[],'no runtime errors');
