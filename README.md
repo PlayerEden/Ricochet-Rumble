@@ -2,7 +2,7 @@
 
 **Android-first, offline-capable top-down ricochet arena shooter.** Fight as an overhead pilot, tank or mech in procedural mazes with controlled bank shots, vehicle ejection/recovery and short scored or survival matches. Original FIELDGRID tactical presentation, human-paced AI and cosmetic-only offline progression.
 
-> **Development repository, not a public Play Store release.** `main` includes the integrated **v0.9.75 gameplay baseline** and [merged D3-B1 spectator source PR #105](https://github.com/PlayerEden/Ricochet-Rumble/pull/105) at merge SHA `20e8e9f0ab8f1b5ee57f7536df298b715a9198cb`, following [mainline consolidation](docs/MAINLINE_PROMOTION_AUDIT_2026-11-02.md). The separately signed v0.9.75 **experimental owner APK** passed CI, but real two-phone LAN, final Android acceptance and Google Play publication have **not** passed. An owner APK is not a signed production AAB.
+> **Development source, not a public Play Store release.** Consolidated v0.9.75 game, [merged D3-B1 spectator #105](https://github.com/PlayerEden/Ricochet-Rumble/pull/105), and [merged D3-B2 JOIN NEXT #108](https://github.com/PlayerEden/Ricochet-Rumble/pull/108) now live on `main` (B2 merge `bd7162619daf16496e17fbb332d7a8aebdd7e75d`). All exact-PR B2 CI gates passed, including full Android/visual and real two-browser LAN tests. **Physical two-phone Wi-Fi, a new same-signer owner APK, and production Play release remain unverified.**
 
 ## Start here
 
@@ -18,7 +18,7 @@
 - **Custom Match:** offline configurable maps, factions, bots and match rules with local saved presets; cosmetic Hangar, offline Dossier stats and explicit backup/export-import.
 - **Android local LAN beta:** host/discover/join Wi-Fi transport, rules/Ready and host-authoritative match basics; **one-phone host-versus-bots** playable in FFA, Team Survival, Co-op and scored TDM at 1v1/2v2/3v3 scales where applicable. Real second-phone physical acceptance has not occurred.
 - **Bot combat:** true projectile trajectory and bounded wall-bank planning; deliberate physical turn/settle aim; rare well-positioned faster **direct vehicle shots** in the optional v0.9.75 tuning. The previous **v0.9.74** aiming behavior is preserved as the positive-feeling rollback.
-- **D3-B1 live LAN spectator (development):** one late guest watches active host-versus-bots combat via real host-authoritative snapshots, host-following camera and disabled guest controls. Browser and Android compile QA passed; **real two-phone Wi-Fi has not**. **Still unbuilt:** D3-B2 Join Next and safe bot→human takeover, D3-C repeat native accepts/reconnect. No internet matchmaking, ranked, accounts, purchases or real ads.
+- **D3-B1 and D3-B2 LAN source merged:** late guests can spectate host-versus-bots, queue/cancel **JOIN NEXT**, and receive host-authorized human control only at the next eligible new round/match. Read-only spectator packets cannot control combat; existing bot continues until a safe boundary. Full Chromium and Android build QA passed; **two physical Android phones remain untested**. D3-C native repeated accept/reconnect remains unbuilt. No internet matchmaking, ranked, accounts or purchases.
 
 ## Latest owner preview — v0.9.75 (experimental)
 
@@ -41,6 +41,6 @@
 
 ## What is still not approved
 
-**Next: D3-B2 JOIN NEXT** — safely reserve and promote a spectator into the AI guest seat only at the next eligible round/match; then D3-C native reaccept/reconnect and real two-phone Wi-Fi testing. D3-B1 source merged, not physically accepted. Separately: on-phone save-preserving install/update, 20–30-minute heat/FPS and interruption review, original/licensed music/assets, public HTTPS privacy policy and Play Console submissions, **private production signing and signed AAB**, owner GO/NO-GO. A public game release is currently **NO-GO**.
+**Next: D3-C Android LAN lifecycle and device testing.** Repeated guest accept, real reconnect/background/lobby busy behavior and safe state handling need implementation, followed by physical two-phone Wi-Fi tests. B1/B2 source is merged but not owner-device accepted. Separately: same-signer owner update APK, save retention, heat/FPS/interruption review, original/licensed music/assets, privacy policy, Play Console, **private production signing and AAB**, explicit owner GO/NO-GO. Public release remains **NO-GO**.
 
 GitHub repo name `PlayerEden/Ricochet-Rumble` remains unchanged; the game display name is **Sector Rebound**. Repository rename, if desired, is a separate owner-controlled operation, not an Android ID or Java namespace migration.

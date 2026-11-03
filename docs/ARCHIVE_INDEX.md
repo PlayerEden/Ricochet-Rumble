@@ -2,6 +2,12 @@
 
 **Purpose:** Keep important earlier code, owner decisions, technical research and **complete GitHub history** while making the modern v0.9.75 source readable as a single development baseline. Archived does **not** mean discarded, published or approved for the first public release.
 
+## Most recent merged development milestones
+
+- [D3-B1 live read-only spectator PR #105](https://github.com/PlayerEden/Ricochet-Rumble/pull/105) — source and CI accepted; no same-signer owner APK, physical two-phone LAN unverified.
+- [D3-B2 host-authoritative JOIN NEXT PR #108](https://github.com/PlayerEden/Ricochet-Rumble/pull/108) — merge commit `bd7162619daf16496e17fbb332d7a8aebdd7e75d`, source and full Android/dual-browser CI accepted; real phone acceptance still pending. Historical independent pure host contract [draft #107](https://github.com/PlayerEden/Ricochet-Rumble/pull/107) remains **unmerged**, not falsely marked as integrated.
+- Preserve older signed v0.9.74/v0.9.75 APK checkpoints and archive branches. D3-C reconnection and new owner APK are separate future work.
+
 ## Protected code and owner preview checkpoints
 
 | What / when | Immutable source / evidence | Meaning |
