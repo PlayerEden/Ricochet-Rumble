@@ -1,5 +1,8 @@
 # Sector Rebound — Development & Handoff Protocol
 
+> **POST-CONSOLIDATION OVERRIDE (2026-11-02):** After the audited v0.9.75 integration, **`main` (not an old v0.9.21 experimental fallback)** is the primary development source. Before each new D3/M2 task, read [current PROJECT_STATUS](PROJECT_STATUS.md) + [canonical master](MASTER_DEVELOPMENT_PLAN.md) + [archive](ARCHIVE_INDEX.md). Always branch from verified `main` after promotion, use focused PRs and tests. Historical v0.9.21 instructions below remain for source provenance, but no longer define the active baseline; no public release authority is implied. Never close unrelated divergent PRs merely to reduce counts.
+
+
 **Maintained with:** [Project Status & Handoff](PROJECT_STATUS.md)  
 **Purpose:** Keep the repo readable, reproducible, and resilient when a ChatGPT conversation ends or an assistant changes.
 
