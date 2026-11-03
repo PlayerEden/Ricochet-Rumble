@@ -22,7 +22,21 @@
 - **Bot combat:** true projectile trajectory and bounded wall-bank planning; deliberate physical turn/settle aim; rare well-positioned faster **direct vehicle shots** in the optional v0.9.75 tuning. The previous **v0.9.74** aiming behavior is preserved as the positive-feeling rollback.
 - **D3-B1/B2/C1/C2A LAN source merged:** late spectators watch host-versus-bots, queue/cancel **JOIN NEXT**, and receive control only at an eligible match boundary. Native Android supports repeated guest admission, correct room-full status and safe disconnect cleanup; guests have an explicit fresh-connection retry path and hosts can reopen after background Stop. Full Chromium/JVM/Android build QA passed, **but two physical Android phones remain untested**. No internet matchmaking, ranked, accounts or purchases.
 
-## Latest owner test APK — v0.9.78 Camera Fine-Tune v2
+## Latest internal one-phone APK — v0.9.79 Solo Practice
+
+**One-phone work continues while physical two-device LAN testing is deferred by the owner.** v0.9.78 camera and AI remain the accepted feel baseline; this update does not retune combat. [Solo PR #122](https://github.com/PlayerEden/Ricochet-Rumble/pull/122) provides **PRACTICE** in Choose Mode/Help and correct default FIRE controls; existing zero-bot mode is safe from Dossier scoring or saved Quick Play changes. Focused real-Chromium and inherited source QA **PASS**.
+
+| Item | Verified evidence |
+| --- | --- |
+| **APK** | `sector-rebound-solo-practice-410001.apk` · `0.9.79-practice.1` · code **410001** |
+| **Compatible preview app/signing** | `com.playereden.ricochetrumble.preview` · identical pinned AOSP disposable **test** signer as v0.9.78 code 400001 |
+| **Build verification** | [PASS #41715192220](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41715192220) · [artifact #13270206832](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41715192220/artifacts/13270206832), expires 2026-11-17 |
+| **APK SHA-256** | `20c82083d92b80c49b2b4e0c0b3c4551bc6b6b430b47a2066492b759ce9f422a` |
+| **Protected source** | [signed source checkpoint](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-v0979-solo-practice-signed-ci-410001), source merge `406080e0ba5a34af25faef2fee206faef6bea056` |
+
+**Next owner phone test:** back up Dossier, update the existing preview **without uninstalling**, try Help→Practice (no bots), pause→Main Menu→Quick Play (saved bots return), check Dossier/Hangar/Custom presets remain saved and report any controls or short-screen issues. Actual phone data continuity and two-device LAN are not confirmed by CI. This is **not** signed for Google Play production.
+
+## Previously owner-tested APK — v0.9.78 Camera Fine-Tune v2
 
 Owner-playtested v0.9.77 felt good and made AI difficulty **almost ideally balanced**. This v2 release keeps gameplay and AI untouched and adjusts only three camera scales: **pilot 0.98→0.94**, **tank 0.75→0.73**, **mech 0.71→0.69**. [Camera PR #118](https://github.com/PlayerEden/Ricochet-Rumble/pull/118) merged with all applicable AI/visual/LAN Chromium/JVM QA PASS; [owner-preview PR #119](https://github.com/PlayerEden/Ricochet-Rumble/pull/119) shipped same-signature internal APK under [build #41709421916](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41709421916), which passed cert/package/version/embedded-asset verification.
 
