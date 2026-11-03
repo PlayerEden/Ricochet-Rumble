@@ -1218,3 +1218,26 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  padding:2px 3px;background:#d8bb78;color:#112b30;
  font:900 8px/1 monospace;letter-spacing:0;
 }
+
+
+/* M9: keep the actual result visible on narrow phone landscape screens.
+   Truncate optional mode context first, never VICTORY / DEFEAT / DRAW. */
+.after-action .aa-rail{min-width:0}
+.after-action .aa-rail #aa-mode-label{
+ min-width:0;flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.after-action .aa-rail #aa-outcome{
+ display:inline-block;flex:0 0 auto;white-space:nowrap;
+}
+/* Three active actions are common in Custom Match and LAN host results.
+   Give Main Menu the whole second row, not an orphaned half-width cell. */
+.after-action .aa-actions:has(#custom-edit:not(.hidden),#lan-edit-rules:not(.hidden)) #results-menu{
+ grid-column:1 / -1;
+}
+/* Thumb-sized real actions; on short screens the existing report scroll area
+   remains available instead of shrinking buttons below a usable target. */
+.after-action .aa-actions button{min-height:44px}
+.after-action .aa-event{overflow-wrap:anywhere}
+@media(max-width:760px){
+ .after-action .aa-stats span{font-size:clamp(9px,1.42vw,11px);line-height:1.2}
+}
