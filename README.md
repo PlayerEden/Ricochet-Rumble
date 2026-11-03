@@ -22,7 +22,21 @@
 - **Bot combat:** true projectile trajectory and bounded wall-bank planning; deliberate physical turn/settle aim; rare well-positioned faster **direct vehicle shots** in the optional v0.9.75 tuning. The previous **v0.9.74** aiming behavior is preserved as the positive-feeling rollback.
 - **D3-B1/B2/C1/C2A LAN source merged:** late spectators watch host-versus-bots, queue/cancel **JOIN NEXT**, and receive control only at an eligible match boundary. Native Android supports repeated guest admission, correct room-full status and safe disconnect cleanup; guests have an explicit fresh-connection retry path and hosts can reopen after background Stop. Full Chromium/JVM/Android build QA passed, **but two physical Android phones remain untested**. No internet matchmaking, ranked, accounts or purchases.
 
-## Latest owner test APK — v0.9.77 camera (source/CI verified; Android feel pending)
+## Latest owner test APK — v0.9.78 Camera Fine-Tune v2
+
+Owner-playtested v0.9.77 felt good and made AI difficulty **almost ideally balanced**. This v2 release keeps gameplay and AI untouched and adjusts only three camera scales: **pilot 0.98→0.94**, **tank 0.75→0.73**, **mech 0.71→0.69**. [Camera PR #118](https://github.com/PlayerEden/Ricochet-Rumble/pull/118) merged with all applicable AI/visual/LAN Chromium/JVM QA PASS; [owner-preview PR #119](https://github.com/PlayerEden/Ricochet-Rumble/pull/119) shipped same-signature internal APK under [build #41709421916](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41709421916), which passed cert/package/version/embedded-asset verification.
+
+| Item | Verified identity |
+| --- | --- |
+| **Installable preview** | `sector-rebound-camera-v2-400001.apk` · `0.9.78-camera2.1` · versionCode **400001** |
+| **Package and signer** | `com.playereden.ricochetrumble.preview` · same pinned public AOSP test signer as owner-tested v0.9.77 code 390001 |
+| **GitHub download** | [Artifact #13265922502](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41709421916/artifacts/13265922502), ZIP containing APK and `verification.txt`, expires 2026-11-17 |
+| **SHA-256** | `6ab003ae8690d114677b5de30e143726bb90913f82af22b5b3dfe9b4e995adad` |
+| **Protected source** | [`checkpoint/sector-rebound-m2-camera-v2-400001-signed-ci`](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-m2-camera-v2-400001-signed-ci), SHA `e548e3e27d53675fab372cccb8404b20ddff55e2` |
+
+**Owner gate pending:** Back up Dossier, install over the current compatible preview **without uninstalling**, check profiles/presets/Hangar, evaluate pilot/tank/mech views in portrait and landscape, and tell us whether AI balance remains good. The build has not been verified on the owner's v0.9.78-installed device. Two-phone LAN and Google Play publication still need separate approval.
+
+## Previous owner test APK — v0.9.77 camera (source/CI verified; Android feel pending)
 
 **First camera pullback accepted as the next playtest, not yet accepted on device:** [M2 camera PR #115](https://github.com/PlayerEden/Ricochet-Rumble/pull/115) merged with all applicable CI passing; pilot **0.98** (was 1.07), tank **0.75** (was 0.82), mech **0.71** (was 0.77). AI, physics, controls and LAN behavior intentionally unchanged.
 
