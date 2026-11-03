@@ -50,6 +50,7 @@ public final class MainActivity extends Activity {
     private volatile BufferedWriter out;
     private volatile boolean isHosting = false;
     private volatile boolean stopped = false;
+    private volatile boolean hostEndedInBackground = false;
     private final AtomicInteger generation = new AtomicInteger(0);
     private final Object outputLock = new Object();
     private final Object peerLock = new Object();
@@ -196,6 +197,7 @@ public final class MainActivity extends Activity {
         closeNetwork();
         stopped = false;
         isHosting = true;
+        hostEndedInBackground = false;
         final int myGen = generation.get();
         new Thread(() -> {
             try {
@@ -363,11 +365,23 @@ public final class MainActivity extends Activity {
         super.onPause();
         if (web != null) web.onPause();
     }
-    @Override protected void onResume() { super.onResume(); enterImmersiveMode(); if (web != null) web.onResume(); }
+    @Override protected void onResume() {
+        super.onResume();
+        enterImmersiveMode();
+        if (web != null) web.onResume();
+        if (hostEndedInBackground) {
+            hostEndedInBackground = false;
+            signalType("host-offline");
+        }
+    }
     @Override protected void onStop() {
+        boolean wasHosting = isHosting;
         boolean wasConnected = connection != null;
+        hostEndedInBackground = wasHosting;
         closeNetwork();
-        if (wasConnected) signalType("disconnected");
+        // A host cannot claim its server remains discoverable after Android Stop.
+        // Defer the honest host-offline message until WebView resumes.
+        if (wasConnected && !wasHosting) signalType("disconnected");
         super.onStop();
     }
     @Override protected void onDestroy() { closeNetwork(); if (web != null) { web.removeJavascriptInterface("AndroidBridge"); web.destroy(); web = null; } super.onDestroy(); }

@@ -3362,6 +3362,13 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
   if(mode==='guest'&&connected&&msg.reason==='room-full'){
    lanRoomFull=true;notice('ROOM FULL · ONE REMOTE GUEST AT A TIME',2600);
   }break;
+ case 'host-offline':
+  if(mode==='host'){
+   connected=false;paused=true;neutralizeGuestInput();releaseControls();
+   lanHostJoinNext=null;lanHostJoinSeq=0;
+   setPanel('<h2>ROOM OFFLINE</h2><p>Android paused LAN hosting while this app was in the background. Return to the menu and open a fresh room.</p><button data-action="close">MAIN MENU</button>');
+   notice('HOST OFFLINE · REOPEN THE ROOM',2500);
+  }break;
  case 'disconnected':
   // Host keeps its advertised room available, even after a human guest leaves.
   if(mode==='host'&&lanLobby){
