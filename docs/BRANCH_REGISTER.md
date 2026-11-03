@@ -1,5 +1,9 @@
 # Branch register — Sector Rebound
 
+**M2-AI2 v0.9.75 signed owner A/B (Nov 2 local):** [PR #103](https://github.com/PlayerEden/Ricochet-Rumble/pull/103); [game CI PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41577565867), [signed APK CI PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41578089841), [APK ZIP artifact](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41578089841/artifacts/13204632545), SHA `45e06297cf440a4d5f5606c8f282957dba602d4f`, code `370001`, checkpoint `checkpoint/sector-rebound-v0975-rare-ai-openings-signed-ci-370001`. Owner phone acceptance pending; v0.9.74 baseline still preserved.
+
+
+
 **M2 AI fairness v0.9.74 owner preview:** [draft PR #102](https://github.com/PlayerEden/Ricochet-Rumble/pull/102), signed source `0797cc8f18b6da35a1bdcaf62e4d49c2dd52c1aa`, [game test SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41575543007), [Android signer/asset SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41576134341), [APK artifact ZIP](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41576134341/artifacts/13202544914), code 360001, same public AOSP preview signer. Exact source rollback `checkpoint/sector-rebound-v0974-ai-shot-posture-signed-ci-360001`, **do not delete/force push**, phone acceptance pending. v0.9.73 and main preserved.
 
 
