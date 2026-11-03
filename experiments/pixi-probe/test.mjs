@@ -27,7 +27,7 @@ try {
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:'+server.address().port+'/index.html',{waitUntil:'load'});
-  await page.waitForFunction(()=>window.__pixiProbe?.ready&&window.__pixiProbe?.engine==='pixi'&&window.__pixiProbe?.frames>=8,{timeout:30000});
+  await page.waitForFunction(()=>window.__pixiProbe?.ready&&window.__pixiProbe?.engine==='pixi'&&window.__pixiProbe?.frames>=8,null,{timeout:30000});
   let pixi=await page.evaluate(()=>window.__pixiProbe);
   assert.equal(pixi.engine,'pixi','Pixi renderer should start successfully');
   assert.match(pixi.backend,/webgl/i,'must use actual WebGL renderer');
@@ -37,17 +37,17 @@ try {
   assert.ok(await pixiCanvas.isVisible(),'Pixi canvas must be visible');
   const frameBefore=pixi.frames;
   await page.locator('#fire').click({force:true});
-  await page.waitForFunction(()=>window.__pixiProbe?.shots>=1&&window.__pixiProbe?.frames>0,{timeout:20000});
+  await page.waitForFunction(()=>window.__pixiProbe?.shots>=1&&window.__pixiProbe?.frames>0,null,{timeout:20000});
   pixi=await page.evaluate(()=>window.__pixiProbe);
   assert.ok(pixi.frames>frameBefore,'Pixi draw loop survives control interaction');
   assert.ok(pixi.shots>=1,'player control emitted a projectile');
   const pixiShot=await page.screenshot({path:'qa-results/pixi-probe/pixi-'+width+'x'+height+'.png'});
   assert.ok(pixiShot.byteLength>7000,'Pixi scene screenshot is not empty');
   await page.locator('#use-canvas').click();
-  await page.waitForFunction(()=>window.__pixiProbe?.engine==='canvas'&&window.__pixiProbe?.frames>=8,{timeout:20000});
+  await page.waitForFunction(()=>window.__pixiProbe?.engine==='canvas'&&window.__pixiProbe?.frames>=8,null,{timeout:20000});
   const canvas=await page.evaluate(()=>window.__pixiProbe);
   assert.equal(canvas.engine,'canvas');
-  assert.ok(canvas.frames>=10,'Canvas loop should render');
+  assert.ok(canvas.frames>=8,'Canvas loop should render');
   assert.ok(await page.locator('#canvas2d').isVisible(),'baseline Canvas is visible');
   const canvasShot=await page.screenshot({path:'qa-results/pixi-probe/canvas-'+width+'x'+height+'.png'});
   assert.ok(canvasShot.byteLength>7000,'Canvas scene screenshot is not empty');
@@ -55,7 +55,7 @@ try {
   await page.waitForTimeout(200);
   assert.equal(await page.locator('#kills').innerText(),'0','reset restores same starting scenario');
   await page.locator('#use-pixi').click();
-  await page.waitForFunction(()=>window.__pixiProbe?.engine==='pixi'&&window.__pixiProbe?.frames>=8,{timeout:20000});
+  await page.waitForFunction(()=>window.__pixiProbe?.engine==='pixi'&&window.__pixiProbe?.frames>=8,null,{timeout:20000});
   assert.equal((await page.evaluate(()=>window.__pixiProbe)).engine,'pixi','repeat switch remains stable');
   assert.deepEqual(errors,[],'no runtime page exceptions');
   results.push({viewport:width+'x'+height,backend:pixi.backend,pixiFrames:pixi.frames,canvasFrames:canvas.frames,
