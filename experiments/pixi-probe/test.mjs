@@ -27,8 +27,7 @@ try {
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:'+server.address().port+'/index.html',{waitUntil:'load'});
-  await page.waitForFunction(()=>window.__pixiProbe?.ready,{timeout:25000});
-  await page.waitForTimeout(350);
+  await page.waitForFunction(()=>window.__pixiProbe?.ready&&window.__pixiProbe?.engine==='pixi'&&window.__pixiProbe?.frames>=8,{timeout:30000});
   let pixi=await page.evaluate(()=>window.__pixiProbe);
   assert.equal(pixi.engine,'pixi','Pixi renderer should start successfully');
   assert.match(pixi.backend,/webgl/i,'must use actual WebGL renderer');
