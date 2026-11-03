@@ -19,7 +19,11 @@ const server=http.createServer((req,res)=>{
  if(name==='favicon.ico'){res.writeHead(204);res.end();return}
  if(!allowed.has(name)){missing.push(name);res.writeHead(404);res.end();return}
  res.writeHead(200,{'Content-Type':name.endsWith('.js')?'text/javascript':name.endsWith('.css')?'text/css':'text/html'});
- res.end(fs.readFileSync(path.join(root,name)));
+ // Layout fixtures intentionally use the shipping DOM and shipping stylesheet
+ // without starting the live match loop, which otherwise re-hides synthetic
+ // After Action states. Gameplay/result behavior has separate full-engine QA.
+ const data=fs.readFileSync(path.join(root,name),'utf8');
+ res.end(name==='index.html'?data.replace(/<script\b[^>]*\bsrc="[^"]+"[^>]*><\/script>/gi,''):data);
 });
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_BIN,args:['--no-sandbox','--disable-dev-shm-usage']});
@@ -36,11 +40,8 @@ try{
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:'+server.address().port+'/',{waitUntil:'load'});
   await page.waitForFunction(()=>!!document.getElementById('after-action'));
-  // The live idle game loop owns the 'hidden' flag and can overwrite our
-  // synthetic result fixture between geometry capture and scroll assertions.
-  // Keep only this diagnostic overlay visible with a test-scoped style rule;
-  // production game/stylesheet behavior remains unchanged.
-  await page.addStyleTag({content:'#after-action.hidden{display:grid!important}'});
+  // No runtime scripts run in this CSS fixture. All scenario states remain
+  // stable; actual game-result transitions are covered in separate tests.
   for(const config of variants){
    await page.evaluate(c=>{
     const $=id=>document.getElementById(id);
