@@ -1185,3 +1185,15 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  font:850 clamp(11px,1.25vw,14px)/1.1 'sans-serif-condensed',Arial,sans-serif;
 }
 @media(max-height:390px){#menu #panel .practice-launch{min-height:30px;padding:4px 8px}}
+
+/* Compact secondary solo activities share the former single-row footprint.
+   On short landscape screens this avoids hiding the Daily button behind Back. */
+#menu .mode-secondary-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;min-width:0}
+#menu #panel .mode-secondary-actions>button{
+ display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+ gap:3px;width:100%;min-width:0;min-height:38px;margin:0;padding:5px 9px;
+}
+#menu .mode-secondary-actions :is(.practice-launch,.daily-launch) span{
+ max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;
+}
+@media(max-height:390px){#menu #panel .mode-secondary-actions>button{min-height:32px;padding:4px 8px;gap:2px}}
