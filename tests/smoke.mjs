@@ -2592,6 +2592,9 @@ console.log('PASS v0.9.46 presentation: interactive pause SFX/music, persistence
  const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
  assert.ok(html.includes('data-action="practice"'),'Practice must be reachable in game UI');
  assert.ok(html.includes('Drag FIRE to aim; release to shoot.'),'Help must describe approved default release-fire controls');
+ // Earlier QA deliberately changes in-memory playlist without persisting it.
+ // Establish a consistent saved baseline before testing practice's isolation.
+ win.__test.savePrefs();
  const prefBefore=savedStorage.get('rr-options-v06');
  const dossierBefore=JSON.stringify(win.__test.dossierStore?.snapshot?.()??null);
  click('practice');
