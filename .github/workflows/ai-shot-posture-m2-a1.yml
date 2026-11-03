@@ -1,0 +1,65 @@
+name: Sector Rebound - M2 AI fair aiming and moving-shot discipline
+on:
+  push:
+    branches: [experiment/ai-shot-posture-m2-a1]
+    paths:
+      - 'web/**'
+      - 'android/app/src/main/assets/**'
+      - 'tests/**'
+      - '.github/workflows/ai-shot-posture-m2-a1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ai-fair-aiming:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source mirrors and game/test syntax
+        run: |
+          set -euo pipefail
+          for f in game.js index.html lan-series.js lan-room.js scored-match.js style.css; do cmp "web/$f" "android/app/src/main/assets/$f"; done
+          node --check web/game.js
+          node --check tests/ai-aim-posture-m2-a1.mjs
+      - name: Protect pure room physics score and Dossier
+        run: |
+          node tests/lan-room-state-d3-a0.mjs
+          node tests/lan-series-kernel.mjs
+          node tests/smoke.mjs
+          node tests/scored-match-kernel.mjs
+          node tests/ballistic-trace-a2.mjs
+          node tests/save-backup.mjs
+      - name: Install real Chromium integration runtime
+        run: npm install --no-save --ignore-scripts playwright-core@1.56.1
+      - name: Real-game bot turning and movement fairness / inherited combat and LAN suites
+        run: |
+          set -euo pipefail
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          node tests/ai-aim-posture-m2-a1.mjs
+          node tests/bot-shot-parity-qa.mjs
+          node tests/pilot-combat-fairness-qa.mjs
+          node tests/bot-combat-cues-qa.mjs
+          node tests/bot-shot-parity-qa.mjs
+          node tests/lan-modes-d3-a2.mjs
+          node tests/lan-host-bots-d3-a1.mjs
+          node tests/lan-lobby-flow-qa.mjs
+          node tests/ui-layout-geometry-v0948.mjs
+          node tests/visual-qa.mjs
+      - name: Preserve owner-reviewable test metrics and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sector-rebound-m2-ai-fair-shot-qa
+          path: |
+            qa-results/ai-aim-posture-m2-a1.json
+            qa-results/bot-shot-parity.json
+            qa-results/pilot-combat-fairness.json
+            qa-screens/
+            qa-layout/
+          if-no-files-found: warn
+          retention-days: 14

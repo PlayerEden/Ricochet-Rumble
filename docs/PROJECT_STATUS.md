@@ -1,3 +1,9 @@
+# 2026-11-02 — M2 AI AIM FAIRNESS OWNER FEEDBACK / TARGETED EXPERIMENT
+
+Owner played v0.9.73 and found AI did not appear to need to **line up shots while moving**. Root cause verified: A3 aim acquisition accumulates while bots move full speed and even while physically misaligned; only final firing tick checks muzzle angle. A narrow experimental [AI shot posture M2-AI1](AI_SHOT_POSTURE_M2_A1_2026-11-02.md) branches from exact signed v0.9.73 SHA `08580417bb43877b472f5b378d449f77e74bd4de`. New mechanics: slow down during shot preparation, accumulate acquisition only when physically aligned and sufficiently slow, decay charge when charging while unsteady. Real-game browser QA and phone A/B evidence required; not owner accepted or public release. LAN D3-B1 spectator deferred until M2 targeted feedback pass completed.
+
+---
+
 # 2026-11-02 — D3-A2 FFA / TEAM SURVIVAL / CO-OP BOT-FILLED LAN ROOMS (EXPERIMENT)
 
 Implemented on `experiment/lan-mode-compatibility-d3-a2`: host alone can launch FFA (1–5 bots), balanced Team Survival 1v1–3v3, and Co-op host+AI ally against 1–4 enemy bots; corrected no-guest room/HUD truth and legacy human-guest gate. [A2 technical acceptance](LAN_MODES_D3_A2_2026-11-02.md). **Status: code awaiting exact-source CI**, NOT phone accepted, no new Android preview yet; previous v0.9.72 signed checkpoint and stable main untouched.
