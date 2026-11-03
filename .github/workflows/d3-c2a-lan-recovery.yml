@@ -1,0 +1,36 @@
+name: Sector Rebound - D3-C2A LAN recovery UX
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'web/game.js'
+      - 'android/app/src/main/assets/game.js'
+      - 'tests/d3-c2a-recovery-browser.mjs'
+      - '.github/workflows/d3-c2a-lan-recovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recovery-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Strict source parity and syntax
+        run: |
+          set -euo pipefail
+          cmp web/game.js android/app/src/main/assets/game.js
+          node --check web/game.js
+          node --check tests/d3-c2a-recovery-browser.mjs
+      - name: True browser recovery and role-reset tests
+        run: |
+          set -euo pipefail
+          npm install --no-save --ignore-scripts playwright-core@1.56.1
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          node tests/d3-c2a-recovery-browser.mjs
