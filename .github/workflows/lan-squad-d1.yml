@@ -1,0 +1,32 @@
+name: Sector Rebound - D1 LAN scored squads fast contract
+on:
+  push:
+    branches: [experiment/lan-squad-tdm-d1]
+    paths:
+      - '.github/workflows/lan-squad-d1.yml'
+      - 'web/game.js'
+      - 'android/app/src/main/assets/game.js'
+      - 'tests/smoke.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lan-squad:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate mirrored game and syntax
+        run: |
+          cmp web/game.js android/app/src/main/assets/game.js
+          node --check web/game.js
+          node --check tests/smoke.mjs
+      - name: Run real game LAN squads, score, combat and backups
+        run: |
+          node tests/smoke.mjs
+          node tests/scored-match-kernel.mjs
+          node tests/ballistic-trace-a2.mjs
+          node tests/save-backup.mjs
