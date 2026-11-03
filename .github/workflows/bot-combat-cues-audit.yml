@@ -1,0 +1,82 @@
+name: Sector Rebound - visible enemy aim readability QA
+on:
+  push:
+    branches: [experiment/visible-bot-aim-telegraph-v1, experiment/combat-hud-shot-state-v1, experiment/combat-feedback-parity-v1, experiment/solo-bot-last-seen-pursuit-v1, experiment/landscape-combat-hud-safe-zones-v1, experiment/match-flow-truth-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pilot-fairness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Android/browser parity, syntax and gameplay contracts
+        run: |
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/index.html android/app/src/main/assets/index.html
+          cmp web/style.css android/app/src/main/assets/style.css
+          cmp web/forward-bays.js android/app/src/main/assets/forward-bays.js
+          node --check web/game.js
+          node --check tests/pilot-combat-fairness-qa.mjs
+          node --check tests/bot-shot-parity-qa.mjs
+          node --check tests/bot-combat-cues-qa.mjs
+          node --check tests/combat-hud-truth-qa.mjs
+          node --check tests/combat-feedback-parity-qa.mjs
+          node --check tests/solo-bot-last-seen-qa.mjs
+          node --check tests/landscape-hud-safe-zones-qa.mjs
+          node --check tests/match-flow-truth-qa.mjs
+          node --check tests/pilot-release-aim-qa.mjs
+          node tests/smoke.mjs
+          node tests/save-backup.mjs
+          node tests/ctf-rules.mjs
+          node tests/ctf-objective-ai.mjs
+      - name: Targeted pilot fairness and full browser regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          npm install --no-save --ignore-scripts playwright-core@1.56.1
+          node tests/pilot-combat-fairness-qa.mjs
+          node tests/bot-shot-parity-qa.mjs
+          node tests/bot-combat-cues-qa.mjs
+          node tests/combat-hud-truth-qa.mjs
+          node tests/combat-feedback-parity-qa.mjs
+          node tests/solo-bot-last-seen-qa.mjs
+          node tests/landscape-hud-safe-zones-qa.mjs
+          node tests/match-flow-truth-qa.mjs
+          node tests/pilot-release-aim-qa.mjs
+          VEHICLE_BALANCE_ENFORCE=1 node tests/team-vehicle-route-qa.mjs
+          node tests/team-forward-bays-seed-matrix.mjs
+          node tests/forward-bays-live-qa.mjs
+          node tests/ctf-objective-bots-live-qa.mjs
+          node tests/ctf-natural-match-qa.mjs
+          node tests/ctf-contested-human-attack.mjs
+          node tests/quick-play-live-flow-qa.mjs
+          node tests/backup-stale-export-browser-qa.mjs
+          node tests/first-match-entry-browser-qa.mjs
+          node tests/ctf-live-qa.mjs
+          node tests/visual-qa.mjs
+      - name: Archive pilot fairness and full game QA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sector-rebound-combat-cues-evidence
+          path: |
+            qa-results/pilot-combat-fairness.json
+            qa-results/bot-shot-parity.json
+            qa-results/bot-combat-cues.json
+            qa-results/combat-hud-truth.json
+            qa-results/combat-feedback-parity.json
+            qa-results/solo-bot-last-seen.json
+            qa-results/landscape-hud-safe-zones.json
+            qa-results/match-flow-truth.json
+            qa-results/pilot-release-aim-qa.json
+            qa-results/team-vehicle-route-audit.json
+            qa-screens/
+          if-no-files-found: ignore
+          retention-days: 14

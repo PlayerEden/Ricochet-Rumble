@@ -1,0 +1,33 @@
+name: Sector Rebound - B1 friendly-fire safety and score contract
+on:
+  push:
+    branches: [experiment/friendly-fire-policy-b1]
+    paths:
+      - 'web/**'
+      - 'android/app/src/main/assets/**'
+      - 'tests/smoke.mjs'
+      - '.github/workflows/friendly-fire-b1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  friendly-fire-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Source parity and syntax
+        run: |
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/index.html android/app/src/main/assets/index.html
+          node --check web/game.js
+          node --check tests/smoke.mjs
+      - name: Real-engine FF and legacy regression
+        run: |
+          node tests/ctf-rules.mjs
+          node tests/smoke.mjs
+          node tests/ballistic-trace-a2.mjs
+          node tests/save-backup.mjs

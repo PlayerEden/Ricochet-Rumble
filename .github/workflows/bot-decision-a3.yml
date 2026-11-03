@@ -1,0 +1,37 @@
+name: Sector Rebound - A3 bot shot decision & parity (fast)
+on:
+  push:
+    branches: [experiment/bot-trace-aim-a3-v1]
+    paths:
+      - '.github/workflows/bot-decision-a3.yml'
+      - 'web/**'
+      - 'android/app/src/main/assets/game.js'
+      - 'tests/bot-shot-parity-qa.mjs'
+      - 'tests/bot-combat-cues-qa.mjs'
+      - 'tests/ballistic-trace-a2.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  trace-aim:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify mirrored game and actual ballistic core
+        run: |
+          cmp web/game.js android/app/src/main/assets/game.js
+          node --check web/game.js
+          node tests/ballistic-trace-a2.mjs
+      - name: Real-browser AI shot acquisition, lock and combat cues
+        run: |
+          set -euo pipefail
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          npm install --no-save --ignore-scripts playwright-core@1.56.1
+          node tests/bot-shot-parity-qa.mjs
+          node tests/bot-combat-cues-qa.mjs
+          node tests/pilot-combat-fairness-qa.mjs

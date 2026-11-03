@@ -1,0 +1,61 @@
+// Pure contract tests: no Android, no browser, no user progress modified.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+
+const source=fs.readFileSync(new URL('../web/daily-sector.js',import.meta.url),'utf8');
+const win={},context={window:win,Date,Math,Number,JSON,Object,Array,Set};
+vm.runInNewContext(source,context,{filename:'daily-sector.js'});
+const d=win.SectorDaily,store=new Map();
+const storage={getItem:k=>store.has(k)?store.get(k):null,setItem:(k,v)=>store.set(k,String(v))};
+const snap=()=>JSON.parse(storage.getItem(d.KEY));
+assert.equal(d.utcDay(new Date('2026-11-01T23:59:59Z')),'2026-11-01');
+assert.equal(d.utcDay(new Date('2026-11-02T00:00:00Z')),'2026-11-02');
+assert.equal(d.utcDay('invalid'),null);
+for(const invalid of ['2026-02-29','2026-11-31','2026-1-01','2026-00-02','9999-12-31'])assert.equal(d.seedFor(invalid),null);
+assert.ok(d.validDay('2028-02-29'));
+assert.equal(d.seedFor('2026-11-01'),d.seedFor('2026-11-01'));
+assert.notEqual(d.seedFor('2026-11-01'),d.seedFor('2026-11-02'));
+for(const day of ['2026-11-01','2028-02-29','2100-12-31']){
+ const cfg=d.rulesFor(day);
+ assert.equal(cfg.dailySeed,d.seedFor(day));
+ assert.ok(cfg.dailySeed>0&&cfg.dailySeed<2147483648);
+ assert.deepEqual([cfg.matchModeId,cfg.mapSize,cfg.botCount,cfg.teamMode],
+  ['scored_ffa','standard',3,'ffa']);
+}
+const day='2026-11-01',base={outcome:'draw',operatorKOs:4,deaths:1,durationSeconds:240};
+assert.equal(d.read(storage).version,1);
+let result=d.record(storage,day,base,'session-a:1');
+assert.deepEqual([result.ok,result.recorded,result.improved,result.entry.attempts],[true,true,true,1]);
+assert.equal(snap().days[day].best.kos,4);
+result=d.record(storage,day,base,'session-a:1');
+assert.equal(result.recorded,false,'same key cannot count twice on repeated HUD calls');
+assert.equal(snap().days[day].attempts,1);
+result=d.record(storage,day,{...base,operatorKOs:2},'session-a:2');
+assert.equal(result.improved,false,'lower KOs never overwrite best');
+assert.equal(snap().days[day].attempts,2);
+result=d.record(storage,day,{...base,operatorKOs:5,deaths:3},'session-a:3');
+assert.equal(result.improved,true,'more KOs beats deaths when outcome equal');
+result=d.record(storage,day,{...base,outcome:'victory',operatorKOs:1},'session-a:4');
+assert.equal(result.improved,true,'victory always beats draw even with fewer KOs');
+result=d.record(storage,day,{...base,outcome:'defeat',operatorKOs:99},'session-a:5');
+assert.equal(result.improved,false,'defeat cannot displace victory');
+assert.equal(snap().days[day].best.outcome,'victory');
+assert.equal(d.record(storage,day,{outcome:'victory',operatorKOs:-1,deaths:0,durationSeconds:3},'bad').ok,false);
+assert.equal(d.record(storage,day,base,'').ok,false);
+const before=storage.getItem(d.KEY);
+store.set(d.KEY,'{"version":2,"days":{},"recentKeys":[]}');
+assert.equal(d.read(storage),null,'future schemas must fail closed');
+assert.equal(d.record(storage,day,base,'a').ok,false,'do not clobber future schema');
+assert.equal(storage.getItem(d.KEY),'{"version":2,"days":{},"recentKeys":[]}');
+store.set(d.KEY,before);
+assert.ok(d.normalize(snap()));
+const corrupted={...snap(),days:{...snap().days,'2026-02-30':{attempts:1,best:snap().days[day].best}}};
+assert.equal(d.normalize(corrupted),null);
+for(let i=0;i<35;i++)d.record(storage,d.utcDay(new Date(Date.UTC(2026,8,i+1))),base,'day-'+i);
+assert.equal(Object.keys(snap().days).length,31,'bounded day history');
+assert.equal(snap().recentKeys.length,32,'bounded duplicate protection');
+assert.equal(storage.getItem(d.KEY).length<14000,true);
+const blocked={getItem:storage.getItem,setItem(){throw Error('quota')}};
+assert.equal(d.record(blocked,day,base,'quota-test').ok,false,'quota failures fail closed');
+console.log('DAILY_SECTOR_CONTRACT_PASS: UTC rollover/leap dates, seeded maps, 1v3 rules, ranked best, idempotent writes, bounded history, future-schema and quota fail-closed');

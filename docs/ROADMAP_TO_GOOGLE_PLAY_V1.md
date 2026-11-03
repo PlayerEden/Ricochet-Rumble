@@ -1,5 +1,8 @@
 # Sector Rebound — Roadmap to Google Play v1.0
 
+> **HISTORICAL RESEARCH / DECISIONS only.** This plan was written for v0.9.21/v0.9.22 and contains obsolete “not implemented” statements. The current integrated source, truthful feature state, and next tasks are in [MASTER_DEVELOPMENT_PLAN.md](MASTER_DEVELOPMENT_PLAN.md) and [PROJECT_STATUS.md](PROJECT_STATUS.md). Keep this text for provenance; do not start new implementation from its old checklist.
+
+
 **Planning checkpoint:** 2026-10-27  
 **Status:** Ordered development plan for review, **not a record of implemented features**.
 **Completeness / missing gates:** [Prioritized roadmap audit and launch decisions (2026-10-27)](ROADMAP_COMPLETENESS_AUDIT_2026-10-27.md) — tracks first-run onboarding, testable fairness/bot targets, durable saves, Play/signing/license and exact v1 scope, without inflating the active feature list.  

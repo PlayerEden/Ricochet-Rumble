@@ -1,0 +1,17 @@
+{
+  "locale": "en-US",
+  "title": "Sector Rebound",
+  "shortDescription": "Ricochet shots through shifting mazes in tanks and pilot battles.",
+  "fullDescription": "Every sector is different. Every shot is a decision.\n\nSector Rebound is a top-down arena game built around ricocheting projectiles, careful positioning and fast decisions.\n\nTake control of an armored tank or mech and fight through procedurally generated mazes. Line up your shots, bank them off walls and use the arena to your advantage. If your vehicle is destroyed, stay in the fight as an on-foot pilot.\n\nCHOOSE YOUR MATCH\n• Survival: use each life wisely against computer opponents.\n• Close Quarters: pilot-only battles in tight arenas.\n• Free-for-All and Team Deathmatch: scored match formats.\n• Custom Match: adjust the map, opponents and rules.\n• Quick Play: rotate through chosen modes with a fresh maze each round.\n\nYOUR OPERATOR\nEarn cosmetic paint finishes and pilot insignia through Solo play. Review match statistics in your on-device Dossier and change your look in the Hangar.\n\nSector Rebound offers Solo play without requiring an account.",
+  "approval": "DRAFT_NOT_FOR_PLAY",
+  "sourceScope": "draft PR #85; Solo gameplay accepted in previous phone testing",
+  "excludedUntilVerified": [
+    "remote multiplayer",
+    "ranked",
+    "online accounts",
+    "microtransactions",
+    "LAN public availability",
+    "advertising"
+  ],
+  "notes": "Public description markets only verified Solo features. Nearby Wi-Fi is excluded from release copy pending physical two-device signoff or an explicit launch-scope decision."
+}

@@ -1,0 +1,23 @@
+// Assert the release gate does not mistake a working preview for Play readiness.
+import assert from 'node:assert/strict';
+import {spawnSync} from 'node:child_process';
+const cli=['tools/play-release-preflight.mjs','--json'];
+const run=args=>spawnSync(process.execPath,args,{encoding:'utf8',timeout:25000});
+const review=run(cli);
+assert.equal(review.status,0,'audit command must be safe in development CI: '+review.stderr);
+const line=review.stdout.split('\n').find(x=>x.startsWith('{"project":"Sector Rebound"'));
+assert.ok(line,'readable JSON report exists');
+const report=JSON.parse(line);
+assert.equal(report.releaseVerdict,'RELEASE_NO_GO','never declare preview ready for Play');
+const pick=id=>report.checks.find(x=>x.id===id);
+assert.ok(pick('target_api_36').status==='PASS');
+assert.ok(pick('prod_id_isolated_preview').status==='PASS');
+assert.ok(pick('source_asset_parity').status==='PASS');
+assert.ok(pick('store_icon_512').status==='PENDING','non-Play launcher art cannot substitute for 512px store icon');
+assert.ok(pick('signed_production_aab').status==='PENDING','unsigned AAB workflow is not a production signature');
+assert.ok(pick('physical_save_upgrade').status==='PENDING','browser rehearsal is not a phone install');
+assert.ok(pick('two_phone_lan_or_scope').status==='PENDING','browser LAN asserts are not real Wi-Fi phones');
+assert.ok(pick('data_safety_review').status==='PENDING','privacy statements require explicit review');
+const enforce=run([...cli,'--require-ready']);
+assert.equal(enforce.status,2,'a publish attempt must fail closed with unresolved gates');
+console.log('PLAY_RELEASE_PREFLIGHT_CONTRACT_PASS: read-only preview audit, source passes, manual/Play blockers fail closed');

@@ -1,0 +1,26 @@
+# Sector Rebound M2-AI1 — v0.9.74 deliberate bot aiming owner preview
+**Date:** Nov 2, 2026 Kentucky local / Nov 3, 2026 UTC. **Status:** exact signed APK CI verified, physical Android evaluation pending.
+
+## Source of truth and installable artifact
+- [Draft PR #102 — AI physical aim posture](https://github.com/PlayerEden/Ricochet-Rumble/pull/102), experiment `experiment/ai-shot-posture-m2-a1`.
+- **Exact signed APK source** `0797cc8f18b6da35a1bdcaf62e4d49c2dd52c1aa`, protected [`checkpoint/sector-rebound-v0974-ai-shot-posture-signed-ci-360001`](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-v0974-ai-shot-posture-signed-ci-360001). Previous known-good signed v0.9.73 checkpoint `checkpoint/sector-rebound-v0973-lan-modes-signed-ci-350001` remains untouched.
+- **Gameplay/source CI SUCCESS:** [run 41575543007](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41575543007), game SHA `086bdf8a5685f18f4ed879aef0c6883e611f15bd`: 12 new real Chromium AI alignment/velocity scenarios, 18 original bot-shot-parity, 9 pilot fairness, 27 visible aim tells, 47 A2 LAN modes, 32 A1 host-bot, 101 D2 dual-client LAN, 102 layout and 44 visual screenshots, core scoring/ballistic/saves. The later game source differs only by the added signed owner-preview workflow.
+- **Signed Android APK CI SUCCESS:** [run 41576134341](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41576134341), exact APK source `0797cc8f18b6da35a1bdcaf62e4d49c2dd52c1aa`. Includes AI and LAN browser regression replay, Gradle build, source/Android assets comparison, embedded APK file verification, package/signature/code checks.
+- **Download owner ZIP:** [Artifact #13202544914](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41576134341/artifacts/13202544914), name `sector-rebound-ai-fair-1`, contains `sector-rebound-ai-fair-360001.apk` and `verification.txt`. Artifact links expire according to GitHub retention; this source checkpoint is durable.
+- **Android ID:** `com.playereden.ricochetrumble.preview`. **versionCode:** `360001` (> v0.9.73 `350001`). **versionName:** `0.9.74-aifair.1`. Verified public AOSP *disposable preview test* signer SHA256 `a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc`, unchanged from prior previews. Not production Play signing.
+
+## Focused physical one-phone acceptance
+1. **Before updating**, export Dossier backup externally and record current Hangar, preset/custom settings. Optionally record a short clip of v0.9.73 bots at Standard difficulty for comparison. Update over installed preview with the v0.9.74 APK; **do not uninstall**, and do not try to downgrade code 360001 back to 350001 to compare in place because Android's version downgrade protections may block it. If install fails, retain the existing installation/data and record the exact message.
+2. **One phone, PLAY TOGETHER → HOST → TDM 1v1, 15 KOs, Standard AI**, preferably same maze size as earlier. Move laterally near an opponent, then stop. Watch whether the bot **physically rotates toward its intended shot**, reduces speed while lining up, shows normal muzzle telegraph, then fires; compare to previous feeling of sliding full speed and instantly landing a shot.
+3. Repeat with **Relaxed** and **Challenge** skills. Challenge may settle and shoot faster; it must not skip physical turning. Relaxed should allow the human to react but should not be stationary/helpless.
+4. Play **TDM 2v2 or 3v3** for several exchanges: friend AI should still navigate, recover vehicles, protect allies, aim around corners and fire. Note camping, infinite turning, failure to fight, excessive "standing there," or aim locking while blocked.
+5. Play **FFA** vs 3–5 AI and **Co-op** (you+AI ally vs enemies). Check that AI still actively combats other bots, respects line of sight and different factions, and doesn't become a passive shooting gallery.
+6. If available through the existing solo mode, try **pilot-only CQC** to confirm bots still acquire and shoot, not only vehicle duels. Human firing/joystick and approved camera should feel unchanged.
+7. Test **round end → next round / change rules**; verify game scores/KO feedback and no new Dossier unlocks for hosted bot matches. Reopen Hangar/Dossier and confirm data retained after update.
+8. Record: mode, bot skill, map size, portrait/landscape, **aiming realism 1–5**, AI pressure 1–5, any bot that remains idle, sudden perfect shots while fast-moving, shots fired without turning, and unexpected crashes/screenshots. `PASS`, `FAIL`, `NOT TESTED` each. Owner feel is the final gate.
+
+## Nonfeatures / safety
+- **Nothing about native LAN accept loop, spectator, queue or remote 2-phone sessions changed**; D3-B1/B2/C still ahead. Existing two-Chromium LAN tests do not prove physical Wi-Fi success.
+- This AI tuning does not lower projectile damage, bend bullets or grant the host special protection. It changes **whether and when a bot acquires a shot while moving or misaligned**.
+- Too much slowdown could cause defensive/passive play; refine through targeted A/B observation if owner reports that, not with blind damage buffs or instant aiming.
+- `main` unchanged, v0.9.71–73 signed source rollbacks preserved. No Play-ready production key, release or public LAN claim.

@@ -1,0 +1,20 @@
+# M2-AI2 — Rare earned quick shot opportunities (owner-requested)
+**Owner feedback from physical signed v0.9.74:** Existing brake/turn/steady firing system now feels “pretty good for now,” but occasional legitimately faster responses would prevent high-skill players from learning a perfectly uniform bot cadence. The adjustment should make bots **occasionally surprise**, not hit through walls or fire at driving speed.
+
+## Narrow design
+- Experiment branch `experiment/ai-rare-opportunity-m2-a2` starts at exact verified signed v0.9.74 checkpoint `0797cc8f18b6da35a1bdcaf62e4d49c2dd52c1aa`. `main` and existing v0.9.74 APK unchanged. No player controls, bot movement/turn speed constants, projectile speed/damage, networking, score, teams, Dossier or UI redesign.
+- A *rare earned opening* shortens **only the aim-acquisition portion** when an individual bot already knows a visible target, is roughly facing it (within 0.60 rad), and chooses a true direct trajectory. Requires **at least two completed previous shots**. It does not activate for a pilot target, behind cover, unknown last-sight aiming, or banked/ricochet trick shot.
+- Frequency is reproducible per map seed and bot seat, with a staggered phase against the bot's **completed shot count**, never re-rolled on every frame: **Relaxed once per 7, Standard once per 5, Challenge once per 4** eligible confirmed shots. The phase is staggered across bots and maps. Existing AI difficulty labels remain.
+- An earned window changes the vehicle-target aim delay by a *modest* factor: Relaxed 80% of normal, Standard 75%, Challenge 76%. This is NOT a 20–25% increase in hit chance or damage; it saves only a fraction of a second on those isolated shots.
+- Prior M2-AI1 still fully applies: heading must be physically settled within 0.16 radians, real movement speed below the existing physical cap, final muzzle angle below 0.095 radians, current target sight and friendly fire safety, real trace/projectile physics, cooldown/recovery and source-authoritative host. The bot cannot charge a shot while strafing at high speed and can't bypass visible turn/settle.
+- Compact muzzle readiness cue uses the **same actual shortened/standard aim delay**; no hidden instant flash. CQC on-foot targets retain full acquisition; release/damage, spawn shield and aim assist unchanged.
+- This is intentionally **not a rubber-band win-rate multiplier** or invisible opponent skill boost based on the user's success. The harder mode gets slightly more of these opportunities, but human expertise is never directly tracked.
+
+## QA and owner acceptance
+- New browser tests `tests/bot-rare-opportunities-m2-a2.mjs` cover 42 shot counters × three skills × two phone viewports, actual in-game target and maze geometry, on-foot protection, LOS/bank restrictions, speed/heading gates, rare frequency and cue timing. Existing M2-AI1 physical posture, A3 bank shot, pilot fairness, bot cues, LAN A2 47/A1 32/D2 101 and responsive visual tests must all stay green before any Android package.
+- After full source CI, build a new same-test-cert Android preview with monotonically higher versionCode, exact source/embedded asset parity, reproducible rollback and owner one-phone A/B. User's v0.9.74 impression “pretty good” makes **v0.9.74 baseline approved for feel**, but the extra opportunistic mechanic is **not yet physically tested**.
+- Owner comparison: Standard AI 1v1/2v2 long enough for repeated shots, then Challenge in FFA/Co-op. Look for an occasional rapid but visibly aligned direct opening, not constant rapid fire. If too many lucky shots, decrease frequency, not physical fair aim. Physical phone and two-phone acceptance remain separate.
+
+
+## Verified owner Android APK checkpoint
+[Signed v0.9.75 APK and physical A/B instructions](AI_RARE_QUICK_OPENINGS_M2_A2_ANDROID_OWNER_v0975.md); exact-source [CI PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41578089841), SHA `45e06297cf440a4d5f5606c8f282957dba602d4f`. Physical phone acceptance still pending.

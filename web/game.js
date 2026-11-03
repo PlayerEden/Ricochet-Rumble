@@ -1,8 +1,392 @@
 (()=>{'use strict';
 let W=960,H=600;const START_LIVES=5,STEP=1/60;
 const PREF_KEY='rr-options-v06'; // Preserve existing options across this patch.
-let comfort={sound:true,music:true,shake:false,autoFire:false,leftHanded:false},fixedAccumulator=0;
+const CUSTOM_PREF_KEY='rr-custom-v1';
+const DOSSIER_SESSION=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
+let dossierStore=null,dossierAttemptedKey='',roundUnlocks=[];
+function currentDossier(){return dossierStore?.snapshot()||window.SectorDossier?.empty()||null;}
+function dossierLines(){
+ const info=currentDossier(),modes=window.SectorDossier?.MODE_LABELS||{};
+ if(!info)return;
+ for(const key of ['matches','wins','losses','draws','kos','deaths']){const el=document.getElementById('dossier-'+key);if(el)el.textContent=String(info[key]||0)}
+ const time=document.getElementById('dossier-time');if(time)time.textContent=Math.floor((info.seconds||0)/60)+' MIN';
+ const availability=document.getElementById('dossier-save-status');if(availability)availability.textContent=dossierStore?.status||'STORAGE NOT AVAILABLE';
+ const list=document.getElementById('dossier-modes');if(list){list.replaceChildren();for(const [id,label] of Object.entries(modes)){
+  const row=document.createElement('div');row.className='dossier-mode';const name=document.createElement('span');name.textContent=label;
+  const score=document.createElement('strong'),stats=info.byMode[id]||{};score.textContent=(stats.matches||0)+' MATCHES · '+(stats.wins||0)+' WINS';
+  row.append(name,score);list.appendChild(row);
+ }}
+
+}
+function openDossier(){setPanel(document.getElementById('dossier-template').innerHTML);dossierLines();
+ const mark=document.getElementById('dossier-emblem-mark'),name=document.getElementById('dossier-emblem-name');
+ if(mark)mark.textContent=OPERATOR_EMBLEMS[equippedEmblem].glyph;
+ if(name)name.textContent=OPERATOR_EMBLEMS[equippedEmblem].label;
+}
+function refreshHangar(){
+ const status=document.getElementById('hangar-status');
+ if(status)status.textContent='EQUIPPED · '+HANGAR_PAINTS[equippedPaint].label+' · SOLO ONLY';
+ for(const el of document.querySelectorAll('[data-action="equip-paint"]')){
+  const id=el.dataset.paintId,selected=id===equippedPaint,unlock=paintProgress(id);
+  el.classList.toggle('selected',selected);
+  el.classList.toggle('locked',!unlock.eligible);
+  el.disabled=!unlock.eligible;
+  if(typeof el.setAttribute==='function'){
+   el.setAttribute('aria-pressed',String(selected));
+   el.setAttribute('aria-label',HANGAR_PAINTS[id]?.label+' · '+(unlock.eligible?'AVAILABLE':'LOCKED · '+unlock.current+' OF '+unlock.target+' '+unlock.metric.toUpperCase()));
+  }
+  const label=el.querySelector?.('small');
+  if(label&&unlock.target)label.textContent=unlock.eligible?'UNLOCKED':unlock.current+' / '+unlock.target+' '+unlock.metric.toUpperCase();
+ }
+ const emblemStatus=document.getElementById('emblem-status');
+ if(emblemStatus)emblemStatus.textContent='OPERATOR INSIGNIA · '+OPERATOR_EMBLEMS[equippedEmblem].glyph+' '+OPERATOR_EMBLEMS[equippedEmblem].label;
+ for(const el of document.querySelectorAll('[data-action="equip-emblem"]')){
+  const id=el.dataset.emblemId,def=OPERATOR_EMBLEMS[id],progress=emblemProgress(id),selected=id===equippedEmblem;
+  el.classList.toggle('selected',selected);
+  el.classList.toggle('locked',!progress.eligible);
+  el.disabled=!progress.eligible;
+  el.setAttribute?.('aria-pressed',String(selected));
+  el.setAttribute?.('aria-label',def.label+' · '+(progress.eligible?'AVAILABLE':'LOCKED · '+progress.current+' OF '+progress.target+' '+progress.metric.toUpperCase()));
+  const small=el.querySelector?.('small');
+  if(small)small.textContent=progress.target?(progress.eligible?'UNLOCKED':progress.current+' / '+progress.target+' '+progress.metric.toUpperCase()):'STANDARD ISSUE';
+ }
+}
+let hangarReturnToDossier=false;
+function showHangarTab(which){
+ const selected=which==='insignia'?'insignia':'paint';
+ for(const tab of document.querySelectorAll('.hangar-tabs [data-hangar-tab]')){
+  const active=tab.dataset.hangarTab===selected;
+  tab.classList.toggle('active',active);tab.setAttribute('aria-selected',String(active));tab.tabIndex=active?0:-1;
+ }
+ for(const [name,id] of [['paint','hangar-paints'],['insignia','hangar-insignia']]){
+  const el=document.getElementById(id);if(el)el.hidden=name!==selected;
+ }
+ const p=document.getElementById('panel');if(p)p.scrollTop=0;
+}
+function openHangar(fromDossier=false){
+ hangarReturnToDossier=!!fromDossier;
+ setPanel(document.getElementById('hangar-template').innerHTML);refreshHangar();showHangarTab('paint');
+ const back=document.querySelector('.hangar-screen button[data-action="hangar-back"]');
+ back?.setAttribute?.('aria-label',hangarReturnToDossier?'Back to Dossier':'Back to main menu');
+}
+function openModes(){setPanel(document.getElementById('modes-template').innerHTML);}
+let loadingForwardBay=false;
+let loadingCtf=false;
+function launchCtfExercise(){
+ if(window.SectorFlags&&window.SectorForwardBays&&window.SectorCtfAI)return newMatch('ctf');
+ if(loadingCtf)return false;
+ loadingCtf=true;
+ const load=(src,done)=>{
+  const tag=document.createElement('script');tag.src=src;
+  tag.onload=done;tag.onerror=()=>{loadingCtf=false;notice('CTF EXERCISE FILE UNAVAILABLE');};
+  document.head.appendChild(tag);
+ };
+ const done=()=>{loadingCtf=false;
+  if(panel.querySelector('.mode-screen')&&!menu.classList.contains('hidden'))launchCtfExercise();
+ };
+ const rulesReady=()=>window.SectorCtfAI?done():load('ctf-ai.js',done);
+ const baysReady=()=>window.SectorFlags?rulesReady():load('ctf-rules.js',rulesReady);
+ if(window.SectorForwardBays)baysReady();
+ else load('forward-bays.js',baysReady);
+ return false;
+}
+function launchForwardBayExercise(){
+ if(window.SectorForwardBays)return newMatch('forwardbay');
+ if(loadingForwardBay)return false;
+ loadingForwardBay=true;
+ const tag=document.createElement('script');tag.src='forward-bays.js';
+ tag.onload=()=>{loadingForwardBay=false;if(panel.querySelector('.mode-screen')&&!menu.classList.contains('hidden'))launchForwardBayExercise();};
+ tag.onerror=()=>{loadingForwardBay=false;notice('FORWARD BAY MODULE UNAVAILABLE');};
+ document.head.appendChild(tag);return false;
+}
+// Lazy-load Daily Sector only when explicitly chosen. Ordinary Quick Play,
+// native LAN, and pre-existing browser QA boot without a sixth script.
+let dailyScriptLoading=false;
+function launchDailySector(){
+ if(window.SectorDaily){const day=window.SectorDaily.utcDay(),options=window.SectorDaily.rulesFor(day);
+  if(!options){notice('DAILY SECTOR UTC DATE IS UNAVAILABLE');return false;}
+  return newMatch('daily',options);
+ }
+ if(dailyScriptLoading)return false;
+ dailyScriptLoading=true;
+ const script=document.createElement('script');script.src='daily-sector.js';
+ script.onload=()=>{dailyScriptLoading=false;if(menu.classList.contains('hidden')||!panel.querySelector('.mode-screen'))return;launchDailySector();};
+ script.onerror=()=>{dailyScriptLoading=false;notice('DAILY SECTOR MODULE UNAVAILABLE');};
+ document.head.appendChild(script);return false;
+}
+let pendingRestoreText='';
+function openBackupScreen(){pendingRestoreText='';setPanel(document.getElementById('backup-template').innerHTML);}
+function backupNotice(message){const el=document.getElementById('backup-message');if(el)el.textContent=message;}
+function localBackupStorage(){try{return window.localStorage}catch(_){return null}}
+function doBackupAction(action){
+ const backups=window.SectorBackup;
+ if(!backups){backupNotice('BACKUP MODULE NOT AVAILABLE');return}
+ if(action==='backup-export'){
+  const result=backups.makeBackup(localBackupStorage());
+  const el=document.getElementById('backup-output');
+  if(!result.ok){if(el)el.value='';backupNotice(result.error);return}
+  if(el)el.value=result.text;
+  backupNotice('READY: '+result.count+' SAVED RECORDS · COPY AND STORE THIS TEXT BEFORE UNINSTALL');
+ }
+ if(action==='backup-copy'){
+  const el=document.getElementById('backup-output');if(!el||!el.value){backupNotice('GENERATE BACKUP TEXT FIRST');return}
+  el.focus();el.select();
+  let copied=false;try{copied=!!document.execCommand('copy')}catch(_){}
+  backupNotice(copied?'COPIED · SAVE THE TEXT OUTSIDE THE GAME':'TEXT SELECTED · USE YOUR DEVICE COPY MENU');
+ }
+ if(action==='backup-preview'){
+  pendingRestoreText='';
+  const btn=document.getElementById('backup-restore');if(btn)btn.disabled=true;
+  const code=document.getElementById('backup-import')?.value||'';
+  const result=backups.previewImport(localBackupStorage(),code);
+  if(!result.ok){backupNotice(result.error);return}
+  pendingRestoreText=code;if(btn)btn.disabled=false;
+  backupNotice('VALID BACKUP: '+result.names.length+' RECORDS · '+result.willReplace.length+' EXISTING WILL BE REPLACED. SAVE CURRENT DATA FIRST, THEN CONFIRM.');
+ }
+ if(action==='backup-restore'){
+  const current=document.getElementById('backup-import')?.value||'';
+  if(!pendingRestoreText||current!==pendingRestoreText){backupNotice('BACKUP TEXT CHANGED · PREVIEW IT AGAIN');pendingRestoreText='';const btn=document.getElementById('backup-restore');if(btn)btn.disabled=true;return}
+  pendingRestoreText='';
+  const btn=document.getElementById('backup-restore');if(btn)btn.disabled=true;
+  const result=backups.restore(localBackupStorage(),current);
+  backupNotice(result.ok?'RESTORE COMPLETE · RELOADING LOCAL DATA':result.error);
+  if(result.ok)window.location.reload();
+ }
+}
+
+
+const CUSTOM_PRESETS_KEY='rr-custom-presets-v1';
+let comfort={sound:true,music:true,shake:false,autoFire:false,leftHanded:false,pilotAssist:false,pilotRelease:false,releaseFire:true,alliedTraces:true},fixedAccumulator=0;
 let selectedRules={botCount:2,bulletCap:4,startLives:2,teamMode:'ffa',botSkill:'normal',mapSize:'small'};
+// v0.9.22 / Slice A: stable solo presets backed by CURRENT survival combat, not proposed score modes.
+const MATCH_MODE_PRESETS=Object.freeze({
+ survival_ffa:Object.freeze({id:'survival_ffa',label:'SOLO SURVIVAL',teamMode:'ffa',objective:'last_side_standing',vehiclePolicy:'existing',allowedSizes:Object.freeze(['small','standard','large'])}),
+ survival_teams:Object.freeze({id:'survival_teams',label:'TEAM SURVIVAL',teamMode:'teams',objective:'last_side_standing',vehiclePolicy:'existing',allowedSizes:Object.freeze(['small','standard','large'])})
+});
+const RELEASED_MATCH_MODES=Object.freeze(Object.keys(MATCH_MODE_PRESETS)); // Defaults remain existing Survival modes.
+// CQC is an EXPLICIT test button, NOT silently added to approved survival playlists.
+const CQC_RULES=Object.freeze({mode:'ffa',scoreTarget:10,clockSeconds:180,vehiclePolicy:'none'});
+const VEHICLE_FFA_RULES=Object.freeze({mode:'ffa',scoreTarget:10,clockSeconds:240,vehiclePolicy:'standard'});
+const VEHICLE_TDM_RULES=Object.freeze({mode:'teams',scoreTarget:15,clockSeconds:300,vehiclePolicy:'standard'});
+const SCORED_MATCH_RULES=Object.freeze({cqc:CQC_RULES,scored_ffa:VEHICLE_FFA_RULES,scored_tdm:VEHICLE_TDM_RULES});
+// V1 Survival selections remain valid. Scored modes are deliberate opt-in, never default.
+const QUICK_PLAY_OPT_IN_MODES=Object.freeze(['cqc','scored_ffa','scored_tdm']);
+const QUICK_PLAY_MODE_IDS=Object.freeze([...RELEASED_MATCH_MODES,...QUICK_PLAY_OPT_IN_MODES]);
+let selectedPlaylistIds=RELEASED_MATCH_MODES.slice(),playlistBag=[],lastSoloModeId=null,matchSerial=0;
+
+const CUSTOM_MODE_IDS=Object.freeze(['survival_ffa','survival_teams','cqc','scored_ffa','scored_tdm']);
+const CUSTOM_DEFAULT=Object.freeze({modeId:'survival_ffa',mapSize:'standard',botCount:2,botSkill:'normal',startLives:2,bulletCap:4,friendlyFire:false,sidePreference:'random'});
+let customDraft={...CUSTOM_DEFAULT};
+
+const CUSTOM_PRESET_LIMIT=5,CUSTOM_PRESET_NAME_LIMIT=24;
+let customPresets=[],pendingPresetDelete='';
+function cleanPresetName(raw){
+ if(typeof raw!=='string')return '';
+ const name=raw.replace(/[\u0000-\u001f\u007f-\u009f]/g,'').replace(/\s+/g,' ').trim();
+ return [...name].length<=CUSTOM_PRESET_NAME_LIMIT?name:'';
+}
+function normalizeCustomPresets(raw){
+ if(!Array.isArray(raw))return [];
+ const safe=[],seen=new Set();
+ for(const entry of raw){
+  if(!entry||typeof entry!=='object'||Array.isArray(entry))continue;
+  const name=cleanPresetName(entry.name),key=name.toLocaleLowerCase();
+  if(!name||seen.has(key)||!entry.rules||typeof entry.rules!=='object'||Array.isArray(entry.rules))continue;
+  // Explicitly require a supported mode ID; other stale/invalid fields fall back
+  // to the existing bounded custom rule validator on load.
+  if(!CUSTOM_MODE_IDS.includes(entry.rules.modeId))continue;
+  safe.push({name,rules:normalizeCustomDraft(entry.rules)});seen.add(key);
+  if(safe.length===CUSTOM_PRESET_LIMIT)break;
+ }
+ return safe;
+}
+function loadCustomPresets(){
+ try{const saved=JSON.parse(window.localStorage?.getItem(CUSTOM_PRESETS_KEY)||'null');
+  customPresets=saved?.version===1?normalizeCustomPresets(saved.entries):[];
+ }catch(_){customPresets=[]}
+ pendingPresetDelete='';return customPresets.map(p=>({name:p.name,rules:{...p.rules}}));
+}
+function persistCustomPresets(entries){
+ try{if(!window.localStorage?.setItem)return false;window.localStorage.setItem(CUSTOM_PRESETS_KEY,JSON.stringify({version:1,entries}));return true}catch(_){return false}
+}
+function saveNamedCustomPreset(rawName){
+ const name=cleanPresetName(rawName);
+ if(!name)return {ok:false,message:'ENTER A NAME (1–24 CHARACTERS)'};
+ const key=name.toLocaleLowerCase();
+ if(customPresets.some(p=>p.name.toLocaleLowerCase()===key))return {ok:false,message:'NAME ALREADY SAVED · CHOOSE ANOTHER'};
+ if(customPresets.length>=CUSTOM_PRESET_LIMIT)return {ok:false,message:'FIVE PRESETS MAX · DELETE ONE FIRST'};
+ const next=[...customPresets,{name,rules:normalizeCustomDraft(customDraft)}];
+ if(!persistCustomPresets(next))return {ok:false,message:'SAVE FAILED · DEVICE STORAGE UNAVAILABLE'};
+ customPresets=next;pendingPresetDelete='';return {ok:true,message:'SAVED · '+name};
+}
+function loadNamedCustomPreset(name){
+ const item=customPresets.find(p=>p.name===name);
+ if(!item)return {ok:false,message:'CHOOSE A SAVED PRESET'};
+ setCustomDraft(item.rules);pendingPresetDelete='';
+ return {ok:true,message:'LOADED · '+item.name};
+}
+function deleteNamedCustomPreset(name){
+ const item=customPresets.find(p=>p.name===name);
+ if(!item)return {ok:false,message:'CHOOSE A SAVED PRESET'};
+ if(pendingPresetDelete!==name){pendingPresetDelete=name;return {ok:false,message:'TAP DELETE AGAIN TO REMOVE · '+name};}
+ const next=customPresets.filter(p=>p.name!==name);
+ if(!persistCustomPresets(next))return {ok:false,message:'DELETE FAILED · DEVICE STORAGE UNAVAILABLE'};
+ customPresets=next;pendingPresetDelete='';return {ok:true,message:'DELETED · '+name};
+}
+function resetCustomDraft(){pendingPresetDelete='';return setCustomDraft({...CUSTOM_DEFAULT})}
+function customPresetStatus(message){const el=document.getElementById('custom-preset-status');if(el)el.textContent=message;}
+function refreshCustomPresetUI(preferredName){
+ const select=document.getElementById('custom-preset-select');if(!select)return;
+ const current=preferredName??select.value;
+ select.replaceChildren();
+ const empty=document.createElement('option');empty.value='';empty.textContent=customPresets.length?'CHOOSE SAVED PRESET':'NO PRESETS SAVED';select.appendChild(empty);
+ for(const p of customPresets){const opt=document.createElement('option');opt.value=p.name;opt.textContent=p.name;select.appendChild(opt)}
+ select.value=customPresets.some(p=>p.name===current)?current:'';
+ const chosen=!!select.value;
+ for(const id of ['custom-preset-load','custom-preset-delete']){const button=document.getElementById(id);if(button)button.disabled=!chosen}
+ const count=document.getElementById('custom-preset-count');if(count)count.textContent=customPresets.length+'/'+CUSTOM_PRESET_LIMIT+' SAVED ON THIS DEVICE';
+}
+
+function normalizeCustomDraft(raw){
+ const p=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{};
+ const choose=(key,values)=>values.includes(p[key])?p[key]:CUSTOM_DEFAULT[key];
+ return {modeId:choose('modeId',CUSTOM_MODE_IDS),mapSize:choose('mapSize',['small','standard','large']),
+ botCount:choose('botCount',[0,1,2,3,4]),botSkill:choose('botSkill',['casual','normal','spicy','varied']),
+ startLives:choose('startLives',[2,3,5]),bulletCap:choose('bulletCap',[1,2,3,4,5,8]),
+  friendlyFire:p.friendlyFire===true,sidePreference:choose('sidePreference',['random','cyan','coral'])};
+}
+function saveCustomDraft(){try{window.localStorage?.setItem(CUSTOM_PREF_KEY,JSON.stringify({version:1,rules:customDraft}))}catch(_){}return {...customDraft}}
+function loadCustomDraft(){try{const p=JSON.parse(window.localStorage?.getItem(CUSTOM_PREF_KEY)||'null');if(p?.version===1)customDraft=normalizeCustomDraft(p.rules)}catch(_){}return {...customDraft}}
+function setCustomDraft(patch){customDraft=normalizeCustomDraft({...customDraft,...patch});pendingPresetDelete='';return saveCustomDraft()}
+function customOptionsFor(raw=customDraft){
+ const d=normalizeCustomDraft(raw),scored=SCORED_MATCH_RULES[d.modeId];
+ if(scored)return {...selectedRules,matchModeId:d.modeId,customMatch:true,pilotMode:true,
+  mapSize:d.modeId==='cqc'?'small':'standard',botCount:3,botSkill:d.botSkill,
+  bulletCap:4,startLives:2,teamMode:scored.mode==='teams'?'teams':'ffa',
+   friendlyFire:scored.mode==='teams'&&d.friendlyFire,sidePreference:d.sidePreference};
+ const base={...selectedRules,mapSize:d.mapSize,botCount:d.botCount,botSkill:d.botSkill,
+  bulletCap:d.bulletCap,startLives:d.startLives,teamMode:d.modeId==='survival_teams'?'teams':'ffa',
+   friendlyFire:d.modeId==='survival_teams'&&d.friendlyFire,sidePreference:d.sidePreference};
+ return {...soloOptionsFor(d.modeId,base),customMatch:true};
+}
+function refreshCustomUI(){
+ const root=document.getElementById('custom-match');if(!root)return;
+ const ids={modeId:'custom-mode',mapSize:'custom-size',botCount:'custom-bots',botSkill:'custom-skill',startLives:'custom-lives',bulletCap:'custom-shells',friendlyFire:'custom-friendly',sidePreference:'custom-side'};
+ const scored=!!SCORED_MATCH_RULES[customDraft.modeId],options=customOptionsFor();
+ for(const [key,id] of Object.entries(ids)){
+  const el=document.getElementById(id);
+  if(el)el.value=key==='friendlyFire'?(customDraft.friendlyFire?'on':'off'):String(scored&&['mapSize','botCount','startLives','bulletCap'].includes(key)?options[key]:customDraft[key]);
+ }
+ for(const id of ['custom-size','custom-bots','custom-lives','custom-shells']){const el=document.getElementById(id);if(el)el.disabled=scored}
+ const ff=document.getElementById('custom-friendly'),team=options.teamMode!=='ffa';
+ const sideEl=document.getElementById('custom-side');if(sideEl)sideEl.disabled=!team;
+ if(ff){ff.disabled=!team;ff.value=team&&customDraft.friendlyFire?'on':'off';}
+ const ffNote=document.getElementById('custom-friendly-note');
+ if(ffNote)ffNote.textContent=team?(options.friendlyFire?'ON · ALLIES SOLID · TEAM DAMAGE ENABLED · NO TEAM-KILL POINTS':'OFF · ALLIES PASS THROUGH · NO TEAM DAMAGE'):'FFA · NO ALLIED UNITS';
+ const count=options.botCount,p=document.getElementById('custom-preview');
+ if(p)p.textContent=soloModeLabel(options)+' · '+options.mapSize.toUpperCase()+' · '+(count?count+1+' COMBATANTS':'PRACTICE · NO OPPONENTS')+' · '+(scored?'SCORE '+SCORED_MATCH_RULES[customDraft.modeId].scoreTarget+' KOs / '+SCORED_MATCH_RULES[customDraft.modeId].clockSeconds/60+' MIN':'LAST SIDE STANDING');
+ const note=document.getElementById('custom-rule-note');
+ if(note)note.textContent=scored?'SCORED TEST PRESET: MAP, BOTS, LIVES AND SHELLS LOCKED; BOT AI ADJUSTABLE.':customDraft.modeId==='survival_teams'&&customDraft.botCount===1?'TEAM SURVIVAL: 1 BOT SETTING DEPLOYS 2 (ALLY + ENEMY).':customDraft.botSkill==='varied'?'EXPERIMENT · HUNTER / SENTINEL / SCAVENGER · SAME AIM & DAMAGE':'CASUAL · SAVED SEPARATELY FROM QUICK PLAY';
+}
+function readCustomScreen(){
+ if(!document.getElementById('custom-match'))return {...customDraft};
+ const ids={modeId:'custom-mode',mapSize:'custom-size',botCount:'custom-bots',botSkill:'custom-skill',startLives:'custom-lives',bulletCap:'custom-shells',friendlyFire:'custom-friendly',sidePreference:'custom-side'},patch={};
+ for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(!el||el.disabled)continue;patch[key]=key==='friendlyFire'?el.value==='on':['botCount','startLives','bulletCap'].includes(key)?Number(el.value):el.value}
+ return setCustomDraft(patch);
+}
+function openCustomScreen(){setPanel(document.getElementById('custom-template').innerHTML);refreshCustomUI();refreshCustomPresetUI();}
+
+function normalizePlaylistModes(ids){
+ if(!Array.isArray(ids))return RELEASED_MATCH_MODES.slice();
+ return QUICK_PLAY_MODE_IDS.filter(id=>ids.includes(id));
+}
+function setPlaylistModes(ids){
+ const next=normalizePlaylistModes(ids);
+ if(next.join('|')!==selectedPlaylistIds.join('|')){selectedPlaylistIds=next;playlistBag=[];}
+ return selectedPlaylistIds.slice();
+}
+function nextPlaylistMode(random=Math.random){
+ if(!selectedPlaylistIds.length)return null;
+ playlistBag=playlistBag.filter(id=>selectedPlaylistIds.includes(id));
+ if(!playlistBag.length){
+  playlistBag=selectedPlaylistIds.slice();
+  for(let i=playlistBag.length-1;i>0;i--){
+   const raw=Number(random());const j=Math.min(i,Math.max(0,Math.floor((Number.isFinite(raw)?raw:0)* (i+1))));
+   [playlistBag[i],playlistBag[j]]=[playlistBag[j],playlistBag[i]];
+  }
+  if(playlistBag.length>1&&playlistBag[0]===lastSoloModeId){
+   const index=playlistBag.findIndex(id=>id!==lastSoloModeId);
+   [playlistBag[0],playlistBag[index]]=[playlistBag[index],playlistBag[0]];
+  }
+ }
+ const id=playlistBag.shift();
+ lastSoloModeId=id;
+ return id;
+}
+// Make the very first default Quick Play approachable: one human versus bots,
+// before alternating in allied Team Survival. Keep the saved playlist and the
+// original shuffle bag intact (the displaced mode remains queued), and never
+// override a player's deliberate Team-only or scored-only selection.
+function firstQuickPlayMode(){
+ let freshSolo=false;
+ try{freshSolo=window.localStorage?.getItem('rr-coach-v0917')===null}
+ catch(_){} // If storage is blocked, retain normal randomized selection.
+ const preferBasic=freshSolo&&lastSoloModeId===null&&
+  selectedPlaylistIds.includes('survival_ffa')&&!(currentDossier()?.matches>0);
+ const rolled=nextPlaylistMode();
+ if(!preferBasic||rolled==='survival_ffa')return rolled;
+ const position=playlistBag.indexOf('survival_ffa');
+ if(position<0)return rolled;
+ // We already consumed the first shuffled slot. Swap the basic mode into it,
+ // placing the originally rolled option back into its old, unplayed slot.
+ playlistBag[position]=rolled;
+ lastSoloModeId='survival_ffa';
+ return 'survival_ffa';
+}
+function soloOptionsFor(id,base=selectedRules){
+ const preset=MATCH_MODE_PRESETS[id];if(!preset)return null;
+ // Team Survival needs an ally AND a foe. Preserve intentionally empty
+ // zero-bot practice instead of silently creating opposition.
+ const teamBotMinimum=preset.teamMode==='teams'&&base.botCount>0?Math.max(2,base.botCount):base.botCount;
+ return {...base,botCount:teamBotMinimum,teamMode:preset.teamMode,matchModeId:id,pilotMode:true};
+}
+function quickPlayOptionsFor(id,base=selectedRules){
+ const scored=SCORED_MATCH_RULES[id];
+ if(scored)return {...base,matchModeId:id,pilotMode:true,quickPlayMatch:true,
+  mapSize:id==='cqc'?'small':'standard',botCount:3,bulletCap:4,startLives:2,
+  teamMode:scored.mode==='teams'?'teams':'ffa'};
+ const survival=soloOptionsFor(id,base);
+ return survival?{...survival,quickPlayMatch:true}:null;
+}
+function freshSectorSeed(previous=0){
+ let s=Math.floor(Math.random()*0x7fffffff)||1;
+ if(s===previous)s=s===0x7ffffffe?1:s+1;
+ return s;
+}
+function soloModeLabel(config){return config?.matchModeId==='cqc'?'CLOSE QUARTERS':config?.matchModeId==='scored_ffa'?'SCORED FREE-FOR-ALL':config?.matchModeId==='scored_tdm'?'TEAM DEATHMATCH':MATCH_MODE_PRESETS[config?.matchModeId]?.label||'SURVIVAL';}
+function isScoredMatch(){return !!state?.scored&&!!SCORED_MATCH_RULES[state?.config?.matchModeId];}
+function isCqcMatch(){return state?.config?.matchModeId==='cqc'&&isScoredMatch();}
+function isCtfMatch(){return !!state?.ctf&&state.config?.ctfExercise===true;}
+function ctfActors(){return state.tanks.map((t,i)=>({x:t.x,y:t.y,team:teamOf(i),
+ onFoot:!!t.onFoot,alive:state.lives[i]>0,canCarry:true}));}
+function applyCtf(next){
+ if(!isCtfMatch()||!next)return;
+ const previous=state.ctf;state.ctf=next;
+ if(next.seq===previous.seq)return;
+ const e=next.event,team=e.team===0?'CYAN':'CORAL';
+ state.event=e.kind==='picked'?team+' FLAG TAKEN':e.kind==='dropped'?team+' FLAG DROPPED':
+  e.kind==='returned'?team+' FLAG RETURNED':team+' FLAG CAPTURED · '+next.scores[e.team]+'/'+next.target;
+ state.eventTimer=2.1;
+}
+function finishCtf(){
+ if(!isCtfMatch()||!state.ctf.finished||state.winner>=0)return;
+ state.winnerTeam=state.ctf.winner??-1;
+ state.winner=state.ctf.winner??2; // Draw sentinel, not an actual winner.
+ state.event=state.ctf.reason==='capture_target'?'FLAG TARGET REACHED':'CTF TIME LIMIT';
+ state.eventTimer=0;finalizeRound();refreshHUD();
+}
+function isScoredVehicleMatch(){return isScoredMatch()&&(state.config.matchModeId==='scored_ffa'||state.config.matchModeId==='scored_tdm');}
+
 // W/H are the camera canvas resolution. Mazes have much larger world coordinates.
 let worldW=W,worldH=H,mazeGrid=null,currentArena=-1,currentSeed=0,currentMapSize='';const camera={x:0,y:0,zoom:null};
 // Spatial buckets keep projectile and bot collision checks local, even in Maze XL.
@@ -10,6 +394,35 @@ const WALL_BUCKET=128;let wallLookup=new Map();
 function rebuildWallLookup(){wallLookup=new Map();for(const w of wallSet){const x0=Math.floor(w.x/WALL_BUCKET),x1=Math.floor((w.x+w.w)/WALL_BUCKET),y0=Math.floor(w.y/WALL_BUCKET),y1=Math.floor((w.y+w.h)/WALL_BUCKET);for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const key=x+','+y;if(!wallLookup.has(key))wallLookup.set(key,[]);wallLookup.get(key).push(w)}}}
 function nearWall(x,y,r){const x0=Math.floor((x-r)/WALL_BUCKET),x1=Math.floor((x+r)/WALL_BUCKET),y0=Math.floor((y-r)/WALL_BUCKET),y1=Math.floor((y+r)/WALL_BUCKET);for(let yb=y0;yb<=y1;yb++)for(let xb=x0;xb<=x1;xb++){const nearby=wallLookup.get(xb+','+yb);if(nearby)for(const w of nearby){const nx=Math.max(w.x,Math.min(x,w.x+w.w)),ny=Math.max(w.y,Math.min(y,w.y+w.h));if((x-nx)**2+(y-ny)**2<r*r)return true}}return false}
 const PALETTE=['#46d2f5','#fc856e','#ffdc77','#b69aff','#82e6a1','#fc8bde'];
+const COLOR_NAMES=['CYAN','CORAL','AMBER','VIOLET','MINT','PINK'];
+// Seeded per-match identity; never use actor number as a color or team rule.
+function shuffledMatchColors(seed,count){
+ const order=Array.from({length:PALETTE.length},(_,i)=>i),rnd=mazeRandom((seed^0x4c7db9e3)>>>0);
+ for(let i=order.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
+ return order.slice(0,count).map(i=>PALETTE[i]);
+}
+function matchColorName(hex){const i=PALETTE.indexOf(hex);return COLOR_NAMES[i]||'UNASSIGNED';}
+let lastQuickPlayTeamSide=null;
+function assignMatchTeams(config,humans,total,seed){
+ if(config.teamMode==='ffa')return Array.from({length:total},(_,i)=>i);
+ if(config.teamMode==='coop')return Array.from({length:total},(_,i)=>i<humans?0:1);
+ // D1: two human seats followed by pairs of AI (host side, guest side).
+ if(config.lanSquads===true&&config.teamMode==='teams'&&humans===2){
+  const hostSide=config.lanHostSide==='coral'?1:0;
+  return Array.from({length:total},(_,i)=>(i%2)^hostSide);
+ }
+ let side=0;
+ // Explicit Custom preference; only Quick Play/opt-in random sides rotate.
+ if(config.sidePreference==='coral')side=1;
+ else if(config.sidePreference==='random'||config.quickPlayMatch===true){
+  const initial=(Math.imul(seed^(seed>>>16),0x45d9f3b)>>>0)&1;
+  side=config.quickPlayMatch===true&&lastQuickPlayTeamSide!==null?
+   1-lastQuickPlayTeamSide:initial;
+  if(config.quickPlayMatch===true)lastQuickPlayTeamSide=side;
+ }
+ // LAN remains host Cyan, guest Coral until Stage D's explicit team roster.
+ return Array.from({length:total},(_,i)=>(i%2)^side);
+}
 const gameNames=['CYAN','CORAL','GOLD','VIOLET','MINT','PINK'];
 // No map picker: every match is a newly generated connected battlefield.
 const MAP_SIZES={small:{cols:9,rows:6,cell:132},standard:{cols:13,rows:9,cell:132},large:{cols:18,rows:12,cell:132}};
@@ -36,9 +449,67 @@ const menu=document.getElementById('menu'),panel=document.getElementById('panel'
 let wallSet=[],bumpers=[];
 const colors=PALETTE,pressed=new Set(),touch=new Set();
 const stick={x:0,y:0,pointerId:null};
+// CQC mobile: right FIRE thumb can drag to aim while left thumb steers.
+const fireAim={pointerId:null,source:null,startX:0,startY:0,x:0,y:0,active:false};
+let releaseShot=null,remoteReleaseShot=null,guestFireSeq=0,lastGuestFireSeq=0;
+function releaseMode(){
+ const seat=mode==='guest'?1:0;
+ return comfort.releaseFire&&['solo','host','guest'].includes(mode)&&!!state?.tanks?.[seat]&&
+  state.lives[seat]>0&&state.winner<0&&!paused&&menu.classList.contains('hidden')&&
+  !(mode==='guest'&&state.hostPaused);
+}
+function queuePilotRelease(){
+ if(!releaseMode()||fireAim.pointerId===null)return false;
+ const seat=mode==='guest'?1:0,t=state.tanks[seat];
+ const x=fireAim.active?fireAim.x:Math.cos(t.a),y=fireAim.active?fireAim.y:Math.sin(t.a);
+ const mag=Math.hypot(x,y);if(mag<.6)return false;
+ const shot={x:x/mag,y:y/mag,ttl:1.6,matchId:state.matchId,seat};
+ releaseShot=shot;
+ if(mode==='guest'){
+  if(!connected||!Number.isInteger(state.matchId)){releaseShot=null;return false;}
+  guestFireSeq=(guestFireSeq%2147483600)+1;
+  nativePacket({type:'fire-request',seq:guestFireSeq,matchId:shot.matchId,aimX:shot.x,aimY:shot.y});
+ }
+ return true;
+}
+// Tactical scored-FFA test: let bounced shells work ahead of the tank.
+// Other modes and all shell speeds, bounce rules and caps remain untouched.
+// Thumb-comfort experiment: modestly slower hull, much calmer maximum slew.
+// Keep CQC pilot, shells, normal Survival and LAN on their accepted rules.
+// This pass deliberately slows FFA hulls a little, but aims more than it moves:
+// No separate AIM pad now the movement joystick's center-pivot steering is approved.
+// Preserve the slower scored vehicle pace, turn cap and existing shell mechanics.
+const SCORED_FFA_VEHICLE_PACE=Object.freeze({human:166,bot:136,turnRate:2.6});
+const SOLO_PILOT_TURN_RATE=6.5; // owner-approved CQC speed; experimental parity for offline Solo Survival
+const CQC_PILOT_HIT_RADIUS=17.5; // modestly forgiving for ALL CQC pilots, not homing
+// Separate local-player visibility and input assist from bot accuracy/damage.
+// 5-degree acquisition, at most 2 degrees per correction, short on-screen range.
+const PILOT_ASSIST_RANGE=200,PILOT_ASSIST_CONE=5*Math.PI/180,PILOT_ASSIST_MAX=2*Math.PI/180;
 let mode='idle',connected=false,paused=true,lastTime=performance.now(),sendTimer=0,snapshotTimer=0,toastTimer=0,botTimer=0,hudTimer=0;
 const botBrains=new Map();
-let state=null;let guestInput={moveX:0,moveY:0,fire:false};
+let state=null,dailyAttemptedKey='',dailyLastRecord=null;let guestInput={moveX:0,moveY:0,fire:false};
+// LAN input arrives ~20 times/sec. If packets stop without a TCP disconnect,
+// the host must not keep applying the last guest's movement/FIRE indefinitely.
+// 0.4s tolerates several delayed messages without granting ghost controls.
+const LAN_GUEST_INPUT_TIMEOUT=.4;
+let guestInputAge=Infinity;
+function neutralizeGuestInput(){
+ guestInput={moveX:0,moveY:0,fire:false};
+ guestInputAge=Infinity;remoteReleaseShot=null;
+}
+// Host-authoritative LAN pilot input. Explicit axes are accepted only as a
+// finite unit vector; malformed/partial aim can NEVER cause NaN rotation.
+function normalizeLanInput(raw){
+ const axis=k=>Number.isFinite(raw?.[k])?clamp(raw[k],-1,1):0;
+ let moveX=axis('moveX'),moveY=axis('moveY');
+ const mag=Math.hypot(moveX,moveY);if(mag>1){moveX/=mag;moveY/=mag;}
+ const input={moveX,moveY,fire:raw?.fire===true};
+ if(Number.isFinite(raw?.aimX)&&Number.isFinite(raw?.aimY)){
+  const x=clamp(raw.aimX,-1,1),y=clamp(raw.aimY,-1,1),size=Math.hypot(x,y);
+  if(size>.6){input.aimX=x/size;input.aimY=y/size;}
+ }
+ return input;
+}
 let particles=[],screenKick=0,damagePulse=0,fxSeq=0,lastRemoteFxId=0,visualClock=0;
 const keys1={up:'KeyW',down:'KeyS',left:'KeyA',right:'KeyD',fire:'Space'},keys2={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight',fire:'Enter'};
 const fireCooldown=Array(6).fill(0);
@@ -47,10 +518,23 @@ let coachEnabled=false,coachRemaining=0,coachPilotShown=false,coachSupplyShown=f
 let quietContactSeconds=0,radarReminderShown=false;
 function value(id,fallback,min,max){const raw=document.getElementById(id)?.value;const n=Number(raw);return raw!==''&&raw!=null&&Number.isInteger(n)&&n>=min&&n<=max?n:fallback;}
 function readSettings(){const prev=selectedRules;return {mapSize:MAP_SIZES[document.getElementById('map-size')?.value]?document.getElementById('map-size').value:prev.mapSize,botCount:value('bot-count',prev.botCount,0,4),bulletCap:value('bullet-cap',prev.bulletCap,1,8),startLives:value('lives-choice',prev.startLives,1,10),teamMode:['ffa','coop','teams'].includes(document.getElementById('team-choice')?.value)?document.getElementById('team-choice').value:prev.teamMode,botSkill:['casual','normal','spicy'].includes(document.getElementById('bot-skill')?.value)?document.getElementById('bot-skill').value:prev.botSkill};}
-function savePrefs(){selectedRules=readSettings();try{window.localStorage?.setItem(PREF_KEY,JSON.stringify({settings:selectedRules,comfort}));}catch(_){}}
-function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){const st=p.settings||{};selectedRules={mapSize:MAP_SIZES[st.mapSize]?st.mapSize:'small',botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:2,bulletCap:[1,2,3,4,5,8].includes(st.bulletCap)?st.bulletCap:4,startLives:[2,3,5].includes(st.startLives)?st.startLives:2,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key]}}catch(_){}applyPrefsToUI()}
-function applyPrefsToUI(){const picks={mapSize:selectedRules.mapSize,botCount:selectedRules.botCount,bulletCap:selectedRules.bulletCap,startLives:selectedRules.startLives,teamMode:selectedRules.teamMode,botSkill:selectedRules.botSkill};const ids={mapSize:'map-size',botCount:'bot-count',bulletCap:'bullet-cap',startLives:'lives-choice',teamMode:'team-choice',botSkill:'bot-skill'};for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(el&&el.options&&[...el.options].some(o=>o.value===String(picks[key])))el.value=String(picks[key])}for(const key of Object.keys(comfort)){const el=document.getElementById('pref-'+key);if(el)el.checked=comfort[key]}const el=document.getElementById('fire-mode');if(el)el.textContent=comfort.autoFire?'AUTO ON':'HOLD TO FIRE';document.querySelector('.battlefield')?.classList.toggle('swap-controls',comfort.leftHanded);}
-function releaseControls(){touch.clear();pressed.clear();clearStick();for(const el of document.querySelectorAll('[data-key]'))el.classList.remove('active')}
+function savePrefs(){selectedRules=readSettings();
+ const inputs=[...document.querySelectorAll('input[data-playlist-mode]')];
+ if(inputs.length)setPlaylistModes(inputs.filter(el=>el.checked).map(el=>el.dataset.playlistMode));
+ try{window.localStorage?.setItem(PREF_KEY,JSON.stringify({settings:selectedRules,comfort,playlist:{version:1,enabled:selectedPlaylistIds}}));}catch(_){}
+ applyPlaylistUI();
+}
+function applyPlaylistUI(){
+ for(const el of document.querySelectorAll('input[data-playlist-mode]'))el.checked=selectedPlaylistIds.includes(el.dataset.playlistMode);
+ for(const button of document.querySelectorAll('[data-action="solo"],[data-action="settings-play"]'))button.disabled=!selectedPlaylistIds.length;
+ const status=document.getElementById('playlist-status');
+ if(status){const count=selectedPlaylistIds.length,scored=selectedPlaylistIds.filter(id=>QUICK_PLAY_OPT_IN_MODES.includes(id)).length;
+   status.textContent=!count?'SELECT AT LEAST ONE MODE':count+' SELECTED · '+(scored?scored+' SCORING TRIAL'+(scored===1?'':'S')+' ENABLED':'SURVIVAL MODES ONLY');
+ }
+}
+function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){const st=p.settings||{};selectedRules={mapSize:MAP_SIZES[st.mapSize]?st.mapSize:'small',botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:2,bulletCap:[1,2,3,4,5,8].includes(st.bulletCap)?st.bulletCap:4,startLives:[2,3,5].includes(st.startLives)?st.startLives:2,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key];if(p.playlist?.version===1&&Array.isArray(p.playlist.enabled))setPlaylistModes(p.playlist.enabled)}}catch(_){}loadCustomDraft();loadCustomPresets();applyPrefsToUI()}
+function applyPrefsToUI(){const picks={mapSize:selectedRules.mapSize,botCount:selectedRules.botCount,bulletCap:selectedRules.bulletCap,startLives:selectedRules.startLives,teamMode:selectedRules.teamMode,botSkill:selectedRules.botSkill};const ids={mapSize:'map-size',botCount:'bot-count',bulletCap:'bullet-cap',startLives:'lives-choice',teamMode:'team-choice',botSkill:'bot-skill'};for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(el&&el.options&&[...el.options].some(o=>o.value===String(picks[key])))el.value=String(picks[key])}for(const key of Object.keys(comfort)){const el=document.getElementById('pref-'+key);if(el)el.checked=comfort[key]}const el=document.getElementById('fire-mode');if(el)el.textContent=comfort.autoFire?'AUTO ON':comfort.releaseFire?'AIM · RELEASE':'HOLD TO FIRE';document.querySelector('.battlefield')?.classList.toggle('swap-controls',comfort.leftHanded);applyPlaylistUI();}
+function releaseControls(){touch.clear();pressed.clear();releaseShot=null;remoteReleaseShot=null;clearStick();clearFireAim();for(const el of document.querySelectorAll('[data-key]'))el.classList.remove('active')}
 
 function mazeRandom(seed){let x=(seed>>>0)||1;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296};}
 function createMaze(def,seed){const {cols,rows,cell}=def,rng=mazeRandom(seed),open=Array.from({length:cols*rows},()=>[]),visited=new Set([0]),stack=[0];
@@ -86,11 +570,48 @@ function currentVehicle(t){return t&&!t.onFoot?state?.vehicles?.[t.vehicleId]:nu
 function activeBulletCap(t){if(!t)return 2;const base=t.onFoot?2:currentVehicle(t)?.type==='mech'?Math.max(1,Math.ceil((state.config?.bulletCap||4)*.75)):(state.config?.bulletCap||4);return base+(t.powerTimer>0&&t.powerType==='rapid'?1:0)+(t.powerTimer>0&&t.powerType==='overcharge'?2:0);}
 function fireInterval(t){const base=t.onFoot?.43:vehicleDef(currentVehicle(t)).fireCooldown;return t.powerTimer>0&&t.powerType==='rapid'?base*.66:base;}
 function deploymentSeed(seed,index){return ((seed>>>0)^(Math.imul(index+1,0x9e3779b1)>>>0))>>>0;}
-function deployVehicle(forceType=null){if(!isPilotMatch()||state.winner>=0)return false;
+// A neutral supply vehicle is a *route-balanced* objective, not a random
+// Euclidean midpoint. Reuse the real connected maze; no walls or instant moves.
+function teamNeutralVehicleSite(vehicles,actors,bays,seed,ordinal=0,actorClearance=150,vehicleClearance=150){
+ if(!mazeGrid||!Array.isArray(bays)||bays.length!==2)return null;
+ const {cols,cell,open}=mazeGrid,span=open.length;
+ const routes=bays.map(b=>window.SectorForwardBays.routeDistances(open,b.cellIndex));
+ const travel=routes[0][bays[1].cellIndex];
+ const rand=mazeRandom(deploymentSeed(seed,810+ordinal));
+ let best=null;
+ for(let i=0;i<span;i++){
+  const d0=routes[0][i],d1=routes[1][i];
+  if(d0<3||d1<3)continue; // leave bay mouths clear
+  const x=((i%cols)+.5)*cell,y=(Math.floor(i/cols)+.5)*cell;
+  if(blocked(x,y,28)||actors.some(t=>Math.hypot(t.x-x,t.y-y)<actorClearance)||
+   vehicles.some(v=>v.armor>0&&Math.hypot(v.x-x,v.y-y)<vehicleClearance))continue;
+  const gap=Math.abs(d0-d1),detour=Math.max(0,d0+d1-travel);
+  // First minimize unfair route access; then prefer the actual connected
+  // cross-map corridor over a remote cul-de-sac. Stable seeded tie-breaking.
+  const rank=gap*100000+detour*50+Math.max(d0,d1)*2+rand()*.5;
+  if(!best||rank<best.rank)best={x,y,cellIndex:i,d0,d1,gap,rank};
+ }
+ return best;
+}
+function deployVehicle(forceType=null){if(!isPilotMatch()||isCqcMatch()||state.winner>=0)return false;
  const available=state.vehicles.filter(v=>v.armor>0).length;
  if(available>=MAX_VEHICLES||state.vehicles.length>=MAX_VEHICLES)return false;
  const rng=mazeRandom(deploymentSeed(state.mazeSeed,state.dropIndex++));
  const type=forceType|| (rng()<.32?'mech':'tank');
+ if(state.forwardBays){
+  // Supply drops are neutral, never materialize in a base, on a pilot, or
+  // clustered around the team garage. If no safe fair cell exists, defer.
+  const site=teamNeutralVehicleSite(
+   state.vehicles,state.tanks.filter((_,i)=>state.lives[i]>0),
+   state.forwardBays.bays,state.mazeSeed,state.dropIndex,180,150);
+  if(!site||site.gap>2)return false;
+  const {x,y}=site,v={id:state.vehicles.length,x,y,
+   a:Math.floor(rng()*4)*Math.PI/2,type,armor:VEHICLE_TYPES[type].armor,
+   occupant:-1,respawn:0};
+  state.vehicles.push(v);state.vehicleBeacon={x,y,type,ttl:7};
+  state.event=type==='mech'?'MECH DEPLOYED':'TANK DEPLOYED';state.eventTimer=2.25;
+  emitFx('pickup',x,y,type==='mech'?'#e5a8ff':'#7df1c8');return true;
+ }
  const cells=Array.from({length:mazeGrid.cols*mazeGrid.rows},(_,i)=>i);
  for(let i=cells.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[cells[i],cells[j]]=[cells[j],cells[i]];}
  for(const i of cells){const x=((i%mazeGrid.cols)+.5)*mazeGrid.cell,y=(Math.floor(i/mazeGrid.cols)+.5)*mazeGrid.cell;
@@ -115,7 +636,54 @@ function vehicleSite(x,y,vehicles=[],pilots=[]){
  if(near)return near;
  return candidates.slice(offsets.length).filter(valid).sort((a,b)=>Math.hypot(a[0]-x,a[1]-y)-Math.hypot(b[0]-x,b[1]-y))[0]||null;
 }
-function spawnVehicles(tanks,humans,seed=1){const vehicles=[];
+// v0.9.51 preview-only policy: real corridor distance (not minimap straight line).
+// Deterministic and bounded to <=2 spare relocations. Legacy remains selectable.
+function corridorSteps(start){
+ const open=mazeGrid.open,cols=mazeGrid.cols,cell=mazeGrid.cell;
+ const index=Math.floor(start.y/cell)*cols+Math.floor(start.x/cell);
+ const distance=new Int16Array(open.length).fill(-1),queue=[index];distance[index]=0;
+ for(let i=0;i<queue.length;i++)for(const adjacent of open[queue[i]])
+  if(distance[adjacent]===-1){distance[adjacent]=distance[queue[i]]+1;queue.push(adjacent);}
+ return distance;
+}
+function balanceSpareRecovery(vehicles,tanks,config,shuffledCells){
+ const free=vehicles.filter(v=>v.occupant===-1&&v.armor>0);
+ if(!mazeGrid||free.length<2||!tanks.length)return;
+ const {cell,cols,rows}=mazeGrid,seatRoutes=tanks.map(t=>corridorSteps(t));
+ const at=p=>Math.floor(p.y/cell)*cols+Math.floor(p.x/cell);
+ const nearest=sites=>seatRoutes.map(routes=>Math.min(...sites.map(v=>routes[at(v)])));
+ const worst=values=>Math.max(...values),sum=values=>values.reduce((a,b)=>a+b,0);
+ const competitive=!!SCORED_MATCH_RULES[config.matchModeId]||mode==='host'||mode==='duel';
+ const maxPasses=competitive?2:1;
+ const original=nearest(free);
+ // Solo already has a reachable spare within a reasonable corridor walk.
+ // Don't turn a dangerous on-foot recovery into an instant two-cell bailout.
+ if(!competitive&&original[0]<=8)return;
+ const candidates=shuffledCells.map(index=>({x:((index%cols)+.5)*cell,y:(Math.floor(index/cols)+.5)*cell}))
+  .filter(p=>!blocked(p.x,p.y,28)&&tanks.every(t=>Math.hypot(t.x-p.x,t.y-p.y)>=150)
+    &&seatRoutes.every(routes=>routes[at(p)]>=4));
+ const eligible=(candidate,k)=>free.every((v,j)=>j===k||Math.hypot(v.x-candidate.x,v.y-candidate.y)>=150);
+ let current=nearest(free);
+ const evaluation=values=>competitive?worst(values)*100+sum(values):Math.abs(values[0]-6)*100+worst(values)*2+sum(values);
+ for(let pass=0;pass<maxPasses;pass++){
+  let best=evaluation(current),bestMove=null;
+  for(let k=0;k<free.length;k++)for(const p of candidates){
+   if(!eligible(p,k))continue;
+   const draft=free.slice();draft[k]=p;
+   const distances=nearest(draft);
+   if(!competitive){
+    if(distances[0]<4||distances[0]>8||distances[0]>=current[0])continue;
+    if(worst(distances)>worst(original)+2)continue;
+   }
+   const score=evaluation(distances);
+   if(score<best){best=score;bestMove={k,p,distances};}
+  }
+  if(!bestMove)break;
+  const vehicle=free[bestMove.k];vehicle.x=bestMove.p.x;vehicle.y=bestMove.p.y;
+  current=bestMove.distances;
+ }
+}
+function spawnVehicles(tanks,humans,seed=1,config=null){const vehicles=[];
  for(let i=0;i<tanks.length;i++){const t=tanks[i];t.onFoot=false;t.vehicleId=vehicles.length;
   vehicles.push({id:vehicles.length,x:t.x,y:t.y,a:t.a,type:'tank',armor:VEHICLE_TYPES.tank.armor,occupant:i,respawn:0});}
  const rng=mazeRandom(deploymentSeed(seed,42)),cells=Array.from({length:mazeGrid.cols*mazeGrid.rows},(_,i)=>i);
@@ -134,6 +702,7 @@ function spawnVehicles(tanks,humans,seed=1){const vehicles=[];
  for(const index of cells){if(vehicles.filter(v=>v.occupant===-1).length>=3)break;place(index);}
  // Guarantee a mech appears among the spare vehicles when feasible, without forcing the player to select it.
  const free=vehicles.filter(v=>v.occupant===-1);if(free.length&&!free.some(v=>v.type==='mech')){const v=free.at(-1);v.type='mech';v.armor=VEHICLE_TYPES.mech.armor;}
+ if(config?.recoveryPolicy==='corridor-v1')balanceSpareRecovery(vehicles,tanks,config,cells);
  return vehicles;
 }
 function isPilotMatch(){return state?.config?.pilotMode===true;}
@@ -149,7 +718,7 @@ function closestAvailableVehicle(i){
 }
 // Empty vehicles are pass-through, but must have a clear deployment footprint
 // before a new driver materializes. Otherwise two live actors can overlap.
-function vehicleEntryClear(i,v){return !state.tanks.some((other,j)=>j!==i&&state.lives[j]>0&&Math.hypot(other.x-v.x,other.y-v.y)<(other.onFoot?37:47));}
+function vehicleEntryClear(i,v){return !state.tanks.some((other,j)=>solidOpponent(i,j)&&state.lives[j]>0&&Math.hypot(other.x-v.x,other.y-v.y)<(other.onFoot?37:47));}
 function nearestEmptyVehicle(i){if(!isPilotMatch()||state.lives[i]<=0)return null;const t=state.tanks[i];let best=null,bestD=58;
  for(const v of state.vehicles||[]){if(v.occupant!==-1||v.armor<=0||!vehicleEntryClear(i,v))continue;const d=Math.hypot(v.x-t.x,v.y-t.y);if(d<bestD&&hasLineOfSight(t.x,t.y,v.x,v.y)){best=v;bestD=d}}
  return best;}
@@ -159,40 +728,194 @@ function pilotExitSite(i,vehicleId){const t=state.tanks[i];
  for(const radius of [46,57,70])for(let n=0;n<16;n++){
    const a=n*Math.PI/8,px=t.x+Math.cos(a)*radius,py=t.y+Math.sin(a)*radius;
    if(blocked(px,py,11)||!hasLineOfSight(t.x,t.y,px,py))continue;
-   if(state.tanks.some((other,j)=>j!==i&&state.lives[j]>0&&Math.hypot(other.x-px,other.y-py)<(other.onFoot?27:39)))continue;
+   if(state.tanks.some((other,j)=>solidOpponent(i,j)&&state.lives[j]>0&&Math.hypot(other.x-px,other.y-py)<(other.onFoot?27:39)))continue;
    return [px,py];
  }
  return null;
 }
-function tryInteract(i=0){if(!isPilotMatch()||paused||state.winner>=0||state.lives[i]<=0)return false;const t=state.tanks[i];
+function tryInteract(i=0){if(!isPilotMatch()||isCqcMatch()||paused||state.winner>=0||state.lives[i]<=0)return false;const t=state.tanks[i];
  if(t.onFoot){const v=nearestEmptyVehicle(i);if(!v){if(i===0){const bay=(state.vehicles||[]).some(q=>q.occupant===-1&&q.armor>0&&Math.hypot(q.x-t.x,q.y-t.y)<58&&hasLineOfSight(t.x,t.y,q.x,q.y)&&!vehicleEntryClear(i,q));notice(bay?'Vehicle bay occupied · clear the area':'Find a parked tank and move closer');}return false}
-  v.occupant=i;t.vehicleId=v.id;t.onFoot=false;Object.assign(t,{x:v.x,y:v.y,a:v.a,vx:0,vy:0,recoil:0,trackLeft:0,trackRight:0});state.event=vehicleDef(v).name+' ONLINE · '+v.armor+' ARMOR';state.eventTimer=.9;emitFx('pickup',v.x,v.y,colors[i],i);}
+  if(isCtfMatch())applyCtf(window.SectorFlags.drop(state.ctf,i,t.x,t.y));
+  v.occupant=i;t.vehicleId=v.id;t.onFoot=false;Object.assign(t,{x:v.x,y:v.y,a:v.a,vx:0,vy:0,recoil:0,trackLeft:0,trackRight:0});state.event=vehicleDef(v).name+' ONLINE · '+v.armor+' ARMOR';state.eventTimer=.9;emitFx('pickup',v.x,v.y,combatColor(i),i);}
  else{const v=state.vehicles?.[t.vehicleId];if(!v)return false;
   const spot=pilotExitSite(i,v.id);
   if(!spot){if(i===0)notice('Need space beside the tank to exit');return false}
   v.x=t.x;v.y=t.y;v.a=t.a;v.occupant=-1;t.onFoot=true;t.vehicleId=null;Object.assign(t,{x:spot[0],y:spot[1],vx:0,vy:0,shield:Math.max(t.shield,.35)});if(i===0&&coachEnabled&&!coachPilotShown){coachPilotShown=true;coachTip('ON FOOT · APPROACH AN EMPTY VEHICLE · ENTER TO BOARD',4.4);}state.event='VEHICLE AVAILABLE';state.eventTimer=.8;}
+ if(i===0&&mode==='solo')clearFireAim(); // cancel the previous control family's active gesture
  refreshHUD();return true;}
 function ejectPilot(i){const t=state.tanks[i],v=state.vehicles?.[t.vehicleId];if(!v)return;
  v.x=t.x;v.y=t.y;v.a=t.a;v.occupant=-1;v.armor=0;v.respawn=9;
  const exit=pilotExitSite(i,v.id)||[t.x,t.y];
  t.onFoot=true;t.vehicleId=null;Object.assign(t,{x:exit[0],y:exit[1],vx:0,vy:0,shield:EJECTION_SHIELD,powerType:null,powerTimer:0});
- t.ejectAnim=.62;if(i===0&&coachEnabled&&!coachPilotShown){coachPilotShown=true;coachTip('ON FOOT · FOLLOW THE VEHICLE ARROW · ENTER TO BOARD',4.4);}audioCue('eject',v.x,v.y);state.event=label(i)+' EJECTED · FIND COVER!';state.eventTimer=1.15;emitFx('eject',v.x,v.y,colors[i],-1,i);
+ if(i===0&&mode==='solo')clearFireAim(); // no vehicle AIM leaking into pilot FIRE drag
+ t.ejectAnim=.62;if(i===0&&coachEnabled&&!coachPilotShown){coachPilotShown=true;coachTip('ON FOOT · FOLLOW THE VEHICLE ARROW · ENTER TO BOARD',4.4);}audioCue('eject',v.x,v.y);state.event=label(i)+' EJECTED · FIND COVER!';state.eventTimer=1.15;emitFx('eject',v.x,v.y,combatColor(i),-1,i);
 }
-function initialState(arena=0,options=null,seed=null){const config={...readSettings(),pilotMode:true,...(options||{})};let count=mode==='solo'?1:2;
+// Forward Bay staging and scored respawns share a single team assignment.
+function teamForDeployment(i,config,humans){
+ return Array.isArray(config.teamIds)&&config.teamIds.length>=i+1?config.teamIds[i]:
+  config.teamMode==='coop'?(i<humans?0:1):i%2;
+}
+function deploySquadsAtBays(tanks,config,humans,bays){
+ const {open,cols,cell}=mazeGrid;
+ for(let team=0;team<2;team++){
+  const members=tanks.map((_,i)=>i).filter(i=>teamForDeployment(i,config,humans)===team);
+  const bay=bays[team],queue=[bay.cellIndex],seen=new Set(queue);
+  for(let k=0;k<queue.length;k++)for(const next of open[queue[k]])
+   if(!seen.has(next)){seen.add(next);queue.push(next);}
+  const locate=n=>({x:((n%cols)+.5)*cell,y:(Math.floor(n/cols)+.5)*cell});
+  const candidates=[...bay.spawnSlots,...queue.filter(n=>n!==bay.parking.cellIndex).map(locate)];
+  const taken=[];
+  for(const i of members){
+   const p=candidates.find(q=>!blocked(q.x,q.y,21)&&taken.every(o=>Math.hypot(o.x-q.x,o.y-q.y)>=67));
+   if(!p)throw Error('Forward Bay squad lacks distinct spawn slots');
+   tanks[i].x=p.x;tanks[i].y=p.y;taken.push(p);
+  }
+ }
+}
+function initialState(arena=0,options=null,seed=null){const config={...readSettings(),pilotMode:true,recoveryPolicy:'corridor-v1',...(options||{})};let count=mode==='solo'?1:2;
+ // Freeze the match policy at deployment. Legacy saves/packets default OFF;
+ // FFA never has allies, regardless of stale Custom/LAN selections.
+ config.friendlyFire=config.teamMode!=='ffa'&&config.friendlyFire===true;
+ // Normal Team Survival/TDM, LAN teams and CTF share actual Forward Bay territory.
+ // Preserve distributed FFA, independent solo survival, and pilot-only CQC.
+ const usesTeamBays=(config.teamMode==='teams'||config.teamMode==='coop')&&config.matchModeId!=='cqc';
+ // Team deployment is normal gameplay; never mark TDM/Team Survival as a
+ // reward-exempt experimental Forward Bay exercise merely for having a base.
+ config.teamBasesEnabled=usesTeamBays;
+ if(!usesTeamBays)config.forwardBayExercise=false;
  // Zero bots is a legitimate free-roam practice setting; don't silently add an enemy.
  const mazeSeed=seed||Math.floor(Math.random()*0x7fffffff)||1,id=setArena(0,mazeSeed,config.mapSize);
- const numBots=config.botCount,humans=count,total=humans+numBots,tanks=Array.from({length:total},(_,i)=>freshTank(i));
- const vehicles=config.pilotMode?spawnVehicles(tanks,humans,mazeSeed):[];
- camera.x=0;camera.y=0;botBrains.clear();return {tanks,vehicles,vehicleDropTimer:28,dropIndex:0,vehicleBeacon:null,bullets:[],pickups:[],pickupTimer:5.5,arenaId:id,mazeSeed,config,humanCount:humans,fxEvents:[],lives:Array(total).fill(config.startLives),kos:Array(total).fill(0),winner:-1,winnerTeam:-1,event:'',eventTimer:0,matchId:0};}
+ const numBots=config.botCount,humans=count,total=humans+numBots;
+ config.teamIds=assignMatchTeams(config,humans,total,mazeSeed);
+ config.teamIdsMode=config.teamMode;
+ config.ffaColors=config.teamMode==='ffa'?shuffledMatchColors(mazeSeed,total):[];
+ const tanks=Array.from({length:total},(_,i)=>freshTank(i));
+ // In this opt-in team exercise each side starts at its own open, connected
+ // Forward Bay; ordinary Survival / TDM / LAN use the original spawn points.
+ const forwardBays=config.teamBasesEnabled&&window.SectorForwardBays?
+  window.SectorForwardBays.plan(mazeGrid,mazeSeed):null;
+ if(config.teamBasesEnabled&&!forwardBays)throw Error('Forward Bay layout unavailable');
+ if(forwardBays){
+  deploySquadsAtBays(tanks,config,humans,forwardBays.bays);
+  // The opposite FOB must face toward the sector center even when the
+  // local Solo player deploys on Coral rather than assuming seat 0 = Cyan.
+  for(let i=0;i<tanks.length;i++)tanks[i].a=config.teamIds[i]===1?Math.PI:0;
+ }
+ const cqc=config.matchModeId==='cqc',scoredRules=SCORED_MATCH_RULES[config.matchModeId]||null;
+ const vehicles=cqc?[]:config.pilotMode?spawnVehicles(tanks,humans,mazeSeed,config):[];
+ if(forwardBays){
+  const spares=vehicles.filter(v=>v.occupant===-1&&v.armor>0);
+  if(spares.length<2)throw Error('Forward Bay requires two parked vehicles');
+  for(let team=0;team<2;team++){
+   const v=spares[team],bay=forwardBays.bays[team];
+   const spot=vehicleSite(bay.parking.x,bay.parking.y,vehicles.filter(q=>q!==v),tanks);
+   if(!spot||Math.hypot(spot[0]-bay.x,spot[1]-bay.y)>220)
+    throw Error('No nearby vehicle berth in Forward Bay');
+   v.x=spot[0];v.y=spot[1];v.type='tank';v.armor=VEHICLE_TYPES.tank.armor;
+   bay.parking={x:v.x,y:v.y};bay.vehicleId=v.id;
+  }
+  // Both team garages stock tanks; preserve the original guaranteed
+  // neutral spare mech rather than silently converting the only mech away.
+  const neutral=vehicles.filter(v=>v.occupant===-1&&!forwardBays.bays.some(b=>b.vehicleId===v.id));
+  if(neutral.length){
+   // Keep one spare mech in fair contested territory (not on either flag).
+   const v=neutral.at(-1);
+   if(!neutral.some(q=>q.type==='mech')){v.type='mech';v.armor=VEHICLE_TYPES.mech.armor;}
+   const site=teamNeutralVehicleSite(vehicles.filter(q=>q!==v),tanks,
+    forwardBays.bays,mazeSeed,0,150,150);
+   if(site&&site.gap<=2){v.x=site.x;v.y=site.y;}
+  }
+ }
+ if(cqc)for(const t of tanks){t.onFoot=true;t.vehicleId=null;t.shield=1.5;t.respawnWait=0;}
+ const matchId=++matchSerial;
+ // Shared real scoring system for both on-foot CQC and tank/mech Free-for-All.
+ const scored=scoredRules?window.SectorScored.createScoredMatch({mode:scoredRules.mode,playerCount:total,teamIds:scoredRules.mode==='teams'?config.teamIds:null,
+ scoreTarget:config.ctfExercise?100:config.lanScoredTdm===true&&[15,30].includes(config.lanScoreTarget)?config.lanScoreTarget:scoredRules.scoreTarget,clockSeconds:config.ctfExercise?1800:scoredRules.clockSeconds,matchId}):null;
+ const ctf=config.ctfExercise&&forwardBays&&window.SectorFlags?window.SectorFlags.create(forwardBays.bays):null;
+ if(config.ctfExercise&&!ctf)throw Error('CTF flags or Forward Bays unavailable');
+ camera.x=0;camera.y=0;botBrains.clear();return {tanks,vehicles,forwardBays,ctf,lanSeries:config.lanScoredTdm===true&&config.lanSeriesRounds===3?window.SectorLanSeries.createSeries(3):null,vehicleDropTimer:28,dropIndex:0,vehicleBeacon:null,bullets:[],pickups:[],pickupTimer:5.5,arenaId:id,mazeSeed,config,humanCount:humans,fxEvents:[],lives:Array(total).fill(scoredRules?1:config.startLives),kos:Array(total).fill(0),winner:-1,winnerTeam:-1,event:'',eventTimer:0,matchId,elapsedSeconds:0,deaths:Array(total).fill(0),respawns:Array(total).fill(0),scored,scoreSerial:0,finalResult:null};}
 state=initialState();
-function teamOf(i,st=state){const mode=st.config?.teamMode||'ffa';if(mode==='ffa')return i;if(mode==='coop')return i<st.humanCount?0:1;
- // Alternating teams; solo play always puts bots on the opposing team.
- return st.humanCount===1?(i===0?0:1):i%2;}
+function teamOf(i,st=state){
+ const ids=st?.config?.teamIds;
+ if(st.config?.teamIdsMode===st.config?.teamMode&&
+    Array.isArray(ids)&&ids.length===st.tanks?.length&&
+    Number.isInteger(ids[i]))return ids[i];
+ const rules=st?.config?.teamMode||'ffa';
+ if(rules==='ffa')return i;
+ if(rules==='coop')return i<st.humanCount?0:1;
+ return i%2; // Compatible with pre-C1 LAN snapshots.
+}
 function friendly(a,b){return teamOf(a)===teamOf(b)}
-function label(i){return i===0?'CYAN':i===1&&state.humanCount===2?'CORAL':`BOT ${i-state.humanCount+1}`;}
-function emitFx(kind,x,y,color,owner=-1,target=-1){const id=++fxSeq;state.fxEvents.push({id,kind,x,y,color,owner,target,ttl:kind==='shot'?1.8:kind==='hit'?.75:kind==='eject'?.8:kind==='guard'?.5:.4});if(state.fxEvents.length>12)state.fxEvents.shift();spawnParticles(kind,x,y,color);lastRemoteFxId=id}
-function spawnParticles(kind,x,y,color){const count=kind==='hit'?24:kind==='eject'?20:kind==='pickup'?17:kind==='bounce'?5:kind==='shot'?7:12;const speed=kind==='hit'?205:kind==='bounce'?95:kind==='shot'?115:135;
- for(let i=0;i<count;i++){const a=(i/count)*Math.PI*2+Math.random()*.4,velocity=speed*(.28+Math.random()*.72),life=(kind==='shot'?.17:kind==='bounce'?.14:.42)+Math.random()*.26;particles.push({x,y,vx:Math.cos(a)*velocity,vy:Math.sin(a)*velocity,life,maxLife:life,color,size:kind==='hit'?2.5+Math.random()*3:1.5+Math.random()*2.2})}if(particles.length>260)particles.splice(0,particles.length-260);}
+function friendlyFireEnabled(st=state){return st?.config?.teamMode!=='ffa'&&st?.config?.friendlyFire===true}
+// OFF: friends can cross and can't deal friendly damage. ON: friends are solid,
+// their projectiles cause damage, but teammate kills never award KO points.
+function solidOpponent(a,b){return a!==b&&(friendlyFireEnabled()||!friendly(a,b))}
+function projectileCanHit(owner,victim,bullet){
+ if(owner===victim)return bullet.age>.38&&bullet.bounces>0;
+ return friendlyFireEnabled()||!friendly(owner,victim);
+}
+function combatColor(i,st=state){
+ return st.config?.teamMode==='ffa'?
+  (PALETTE.includes(st.config?.ffaColors?.[i])?st.config.ffaColors[i]:colors[i]):
+  (teamOf(i,st)===0?'#46d2f5':'#fc856e');
+}
+function opposingCount(i,st=state){
+ return st.lives.reduce((sum,lives,j)=>sum+(lives>0&&!friendlyForState(i,j,st)?1:0),0);
+}
+function friendlyForState(a,b,st){return teamOf(a,st)===teamOf(b,st);}
+// D3-A1: reserved LAN seat 1 is an actual bot when no guest was Ready.
+function lanBotSeat(i,st=state){return i>=st.humanCount||(i===1&&st.config?.lanHostSolo===true);}
+function botOrdinal(i,st=state){return i===1&&st.config?.lanHostSolo===true?1:
+ i-st.humanCount+1+(st.config?.lanHostSolo===true?1:0);}
+function label(i){return !lanBotSeat(i)?
+ (state.config?.teamMode==='ffa'?matchColorName(combatColor(i)):(teamOf(i)===0?'CYAN':'CORAL')):
+ `BOT ${botOrdinal(i)}`;}
+// A completed result is a frozen per-match record. HUD refreshes must never re-score it.
+function finalizeRound(){
+ if(isCtfMatch()&&state.winner>=0){
+  if(state.finalResult)return state.finalResult;
+  const c=state.ctf,local=mode==='guest'?1:0,winner=c.winner;
+  const summary={version:1,matchId:state.matchId,mazeSeed:state.mazeSeed,
+   matchModeId:'ctf',teamMode:'teams',mapSize:state.config.mapSize,objective:'flag_captures',
+   outcome:winner===null?'draw':winner===teamOf(local)?'victory':'defeat',
+   winner,winnerTeam:winner??-1,operatorKOs:state.kos[local]||0,
+   deaths:state.deaths[local]||0,respawns:state.respawns[local]||0,livesRemaining:0,
+   scoreTarget:c.target,scoreboard:c.scores.slice(),reason:c.reason,durationSeconds:c.elapsed,
+   event:c.reason==='capture_target'?(winner===0?'CYAN':'CORAL')+' CAPTURED '+c.target+' FLAGS':
+    winner===null?'CTF DRAW · TIME LIMIT':(winner===0?'CYAN':'CORAL')+' LEADS · TIME LIMIT'};
+  state.finalResult=Object.freeze(summary);return state.finalResult;
+ }
+ if(!state||state.winner<0||state.finalResult)return state?.finalResult||null;
+ if(isScoredMatch()){
+  const scored=state.scored,local=mode==='guest'?1:0;
+  const outcome=window.SectorScored.scoredOutcomeFor(scored,local);
+  const teams=scored.mode==='teams',winnerLabel=teams?(scored.result.winningSide===0?'BLUE':'RED'):label(scored.result.winningSide);
+   const summary={version:1,matchId:state.matchId,mazeSeed:state.mazeSeed,matchModeId:state.config.matchModeId,teamMode:teams?'teams':'ffa',mapSize:state.config.mapSize,objective:teams?'team_operator_ko_target':'operator_ko_target',outcome,winner:scored.result.winningSide,winnerTeam:teams?(scored.result.winningSide??-1):-1,operatorKOs:scored.operatorKOs[local],deaths:scored.deaths[local],respawns:scored.respawns[local],livesRemaining:0,scoreTarget:scored.scoreTarget,scoreboard:scored.result.scores,reason:scored.result.reason,durationSeconds:scored.elapsedSeconds,event:scored.result.isDraw?'DRAW · TIME LIMIT':scored.result.reason==='time_limit'?'TIME LIMIT · '+winnerLabel+' LEADS':winnerLabel+(teams?' TEAM':'')+' REACHED '+scored.scoreTarget+' KOs'};
+  state.finalResult=Object.freeze(summary);return state.finalResult;
+ }
+ const local=mode==='guest'?1:0,winningTeam=state.winnerTeam,playerAlive=(state.lives[local]||0)>0;
+ // Team Survival is a SIDE victory. A living teammate can win the match
+ // after the player has been eliminated; do not report that as DEFEAT.
+ const won=teamOf(local,state)===winningTeam&&(state.config?.teamMode==='teams'||playerAlive);
+ const summary={
+  version:1,matchId:state.matchId,mazeSeed:state.mazeSeed,
+  matchModeId:state.config.matchModeId||null,teamMode:state.config.teamMode,mapSize:state.config.mapSize,
+  objective:'last_side_standing',outcome:won?'victory':'defeat',winner:state.winner,winnerTeam:winningTeam,
+  operatorKOs:state.kos[local]||0,deaths:state.deaths?.[local]??null,
+  respawns:state.respawns?.[local]??null,livesRemaining:state.lives[local]||0,
+  durationSeconds:state.elapsedSeconds??null,event:String(state.event||'MATCH COMPLETE')
+ };
+ state.finalResult=Object.freeze(summary);
+ return state.finalResult;
+}
+function durationLabel(seconds){
+ if(!Number.isFinite(seconds))return '—';
+ const n=Math.max(0,Math.floor(seconds));
+ return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');
+}
+function emitFx(kind,x,y,color,owner=-1,target=-1){const id=++fxSeq;state.fxEvents.push({id,kind,x,y,color,owner,target,ttl:kind==='shot'?1.8:kind==='hit'?.75:kind==='armor'?.55:kind==='eject'?.8:kind==='guard'?.5:.4});if(state.fxEvents.length>12)state.fxEvents.shift();spawnParticles(kind,x,y,color);lastRemoteFxId=id}
+function spawnParticles(kind,x,y,color){const count=kind==='hit'?24:kind==='armor'?12:kind==='eject'?20:kind==='pickup'?17:kind==='bounce'?5:kind==='shot'?7:12;const speed=kind==='hit'?205:kind==='armor'?145:kind==='bounce'?95:kind==='shot'?115:135;
+ for(let i=0;i<count;i++){const a=(i/count)*Math.PI*2+Math.random()*.4,velocity=speed*(.28+Math.random()*.72),life=(kind==='shot'?.17:kind==='bounce'?.14:.42)+Math.random()*.26;particles.push({x,y,vx:Math.cos(a)*velocity,vy:Math.sin(a)*velocity,life,maxLife:life,color,size:kind==='hit'?2.5+Math.random()*3:kind==='armor'?2+Math.random()*1.7:1.5+Math.random()*2.2})}if(particles.length>260)particles.splice(0,particles.length-260);}
 function spawnPickup(){if(state.pickups.length||state.winner>=0)return;
  const spots=mazeGrid?Array.from({length:mazeGrid.cols*mazeGrid.rows},(_,i)=>[((i%mazeGrid.cols)+.5)*mazeGrid.cell,(Math.floor(i/mazeGrid.cols)+.5)*mazeGrid.cell]):pickupSpots;
  const candidates=spots.filter(([x,y])=>!blocked(x,y,32)&&state.tanks.every((t,i)=>state.lives[i]===0||Math.hypot(t.x-x,t.y-y)>83));if(!candidates.length)return;
@@ -214,34 +937,62 @@ function coachTip(message,seconds=3.8){
  coachRemaining=seconds;
  return true;
 }
+// Once-per-control-scheme briefing, shown only when an actual Solo match begins.
+// Do not replay a modal tutorial or show misleading Survival controls in scored modes.
 function firstMatchHint(){
+ const cqc=isCqcMatch(),scoredVehicle=isScoredVehicleMatch();
+ const scheme=comfort.autoFire?'auto':comfort.releaseFire?'release':'hold';
+ const key='rr-coach-fire-v0965-'+(cqc?'cqc':scoredVehicle?'scored-vehicle':'survival')+'-'+scheme;
+ const hint=scheme==='auto'?'AUTO FIRE ON · MOVE TO STEER':
+   scheme==='hold'?'MOVE TO STEER · HOLD FIRE TO SHOOT':
+   cqc?'CQC · DRAG FIRE TO AIM · RELEASE TO SHOOT':
+   scoredVehicle?'DRAG FIRE TO AIM · RELEASE FOR ONE SHOT':
+   'DRAG FIRE TO AIM · RELEASE TO SHOOT';
  try{
-  if(window.localStorage?.getItem('rr-coach-v0917'))return;
-  window.localStorage?.setItem('rr-coach-v0917','1');
+  // Legacy flag is also the first-Quick-Play milestone: preserve it so
+  // returning players don't get forced into Solo Survival every launch.
+  // New hints still have their own per-control-scheme flags.
+  if(!cqc&&!scoredVehicle&&!window.localStorage?.getItem('rr-coach-v0917'))
+   window.localStorage?.setItem('rr-coach-v0917','1');
+  if(window.localStorage?.getItem(key))return false;
+  window.localStorage?.setItem(key,'1');
  }catch(_){}
  coachEnabled=true;
- coachTip('MOVE TO AIM · HOLD FIRE TO SHOOT',4);
+ return coachTip(hint,cqc||scoredVehicle?4.6:4);
 }
 function setPanel(html){releaseControls();panel.innerHTML=html;menu.classList.remove('hidden')}
 function exitMenu(){menu.classList.add('hidden');refreshHUD()}
 function inputFrom(keys,isLocal){const down=k=>menu.classList.contains('hidden')&&(pressed.has(keys[k])||(isLocal&&touch.has(k)));let moveX=Number(down('right'))-Number(down('left')),moveY=Number(down('down'))-Number(down('up'));
  if(isLocal&&stick.pointerId!==null){moveX=stick.x;moveY=stick.y}
  const length=Math.hypot(moveX,moveY);if(length>1){moveX/=length;moveY/=length}
- return {moveX,moveY,fire:down('fire')||(isLocal&&comfort.autoFire&&mode!=='idle'&&menu.classList.contains('hidden')&&!paused)};}
+ // Keep Solo's accepted FIRE-drag for the local on-foot pilot in nearby LAN
+ // as well; the guest sends its aim vector to the authoritative host.
+ const localSeat=mode==='guest'?1:0;
+ const localFoot=isLocal&&['solo','host','guest'].includes(mode)&&!!state?.tanks?.[localSeat]?.onFoot;
+ const queuedAim=isLocal&&releaseMode()&&releaseShot?.matchId===state?.matchId?releaseShot:null;
+ const fineAim=isLocal&&fireAim.active&&fireAim.source==='fire'&&touch.has('fire')&&
+  ['solo','host','guest'].includes(mode);
+ return {moveX,moveY,aimX:queuedAim?.x??(fineAim?fireAim.x:undefined),
+  aimY:queuedAim?.y??(fineAim?fireAim.y:undefined),
+  fire:(down('fire')&&!(isLocal&&releaseMode()&&touch.has('fire')&&!pressed.has(keys.fire)))||
+   (isLocal&&comfort.autoFire&&mode!=='idle'&&menu.classList.contains('hidden')&&!paused)};
+}
 function makeControl(isPlayer1){return isPlayer1?inputFrom(keys1,true):inputFrom(keys2,false)}
-function serializeState(){return {tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,vehicleDropTimer:state.vehicleDropTimer,dropIndex:state.dropIndex,vehicleBeacon:state.vehicleBeacon?{...state.vehicleBeacon}:null,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,hostPaused:mode==='host'&&paused};}
+function serializeState(){return {allyAim:alliedAimIntentIndices(1),tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,vehicleDropTimer:state.vehicleDropTimer,dropIndex:state.dropIndex,vehicleBeacon:state.vehicleBeacon?{...state.vehicleBeacon}:null,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,scored:state.scored,lanSeries:state.lanSeries,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,elapsedSeconds:state.elapsedSeconds,deaths:state.deaths.slice(),hostPaused:mode==='host'&&paused};}
 function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  document.getElementById('score0').textContent=state.lives[me]??0;document.getElementById('score1').textContent=state.lives[other]??0;
- const botLives=state.lives.slice(state.humanCount||2).filter(v=>v>0).length,active=state.bullets.filter(b=>b.owner===me).length;
+ const botLives=mode==='solo'||(mode==='host'&&state.config?.lanHostSolo===true)?
+  opposingCount(me):state.lives.slice(state.humanCount||2).filter(v=>v>0).length,
+ active=state.bullets.filter(b=>b.owner===me&&b.life>0).length; // Same live-projectile rule as shoot().
  const phase=document.getElementById('round'),localPilot=state.tanks[me],localVehicle=currentVehicle(localPilot),foot=!!localPilot?.onFoot,hostPaused=mode==='guest'&&state.hostPaused;
  const armor=localVehicle?.armor??0,maxArmor=vehicleDef(localVehicle).armor;
- phase.textContent=hostPaused?'HOST PAUSED':state.winner>=0?'MATCH OVER':foot?'PILOT · ON FOOT':`${vehicleDef(localVehicle).name} · ${armor}/${maxArmor}`;
- phase.classList.toggle('on-foot',foot&&state.winner<0&&!hostPaused);
+ phase.textContent=hostPaused?'HOST PAUSED':state.winner>=0?'MATCH OVER':isScoredMatch()&&state.lives[me]===0?(state.tanks[me].respawnWait>0?'RESPAWNING · '+Math.max(0,state.tanks[me].respawnWait).toFixed(1)+'s':'WAITING FOR SAFE SPAWN'):foot?(isCqcMatch()?'PILOT · CQC':'PILOT · ON FOOT'):`${vehicleDef(localVehicle).name} · ${armor}/${maxArmor}`;
+ phase.classList.toggle('on-foot',foot&&state.lives[me]>0&&state.winner<0&&!hostPaused);
  phase.classList.toggle('damaged',!foot&&armor<=1&&state.winner<0&&!hostPaused);
  phase.classList.toggle('match-ended',state.winner>=0);
  phase.classList.toggle('host-paused',hostPaused);
- if(typeof phase.setAttribute==='function')phase.setAttribute('aria-label',hostPaused?'Host paused the match':state.winner>=0?'Match over':foot?'Pilot on foot':`${vehicleDef(localVehicle).name} armor ${armor} of ${maxArmor}`);
- const interact=document.getElementById('interact-btn');if(interact){const canUse=isPilotMatch()&&state.lives[me]>0&&state.winner<0;
+ if(typeof phase.setAttribute==='function')phase.setAttribute('aria-label',hostPaused?'Host paused the match':state.winner>=0?'Match over':isScoredMatch()&&state.lives[me]===0?phase.textContent:foot?'Pilot on foot':`${vehicleDef(localVehicle).name} armor ${armor} of ${maxArmor}`);
+ const interact=document.getElementById('interact-btn');if(interact){const canUse=isPilotMatch()&&!isCqcMatch()&&state.lives[me]>0&&state.winner<0;
   const near=canUse&&foot?nearestEmptyVehicle(me):null;
   // A temporary occupied bay is still visible and provides useful feedback,
   // rather than making the mobile ENTER button mysteriously disappear.
@@ -252,42 +1003,206 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
   if(typeof interact.setAttribute==='function')interact.setAttribute('aria-label',bayBusy?'Vehicle bay occupied. Move clear to enter a vehicle':foot?'Enter nearby '+vehicleDef(near).name:'Exit '+vehicleDef(localVehicle).name);
  }
  document.getElementById('game-screen')?.classList.toggle('pilot-match',isPilotMatch());
- const shellMeter=document.getElementById('shell-meter');if(shellMeter){const cap=activeBulletCap(state.tanks[me]);shellMeter.textContent=active>=cap?`0/${cap} IN FLIGHT`:`${Math.max(0,cap-active)}/${cap} READY`;shellMeter.classList.toggle('empty',active>=cap);shellMeter.title=active>=cap?'All projectiles are in flight; capacity returns when a shot expires':'Available simultaneous projectile slots'}
+ const releasePilot=['solo','host','guest'].includes(mode)&&comfort.releaseFire;
+ const fireCaption=document.getElementById('fire-mode');
+ if(fireCaption)fireCaption.textContent=comfort.autoFire?'AUTO ON':releasePilot?'AIM · RELEASE':'HOLD TO FIRE';
+ const fireButton=document.querySelector('.fire-btn');
+ if(fireButton&&typeof fireButton.setAttribute==='function')fireButton.setAttribute('aria-label',releasePilot?
+  'Drag to preview trajectory; release to fire once aligned':'Hold to fire');
+ const shellMeter=document.getElementById('shell-meter');if(shellMeter){const cap=activeBulletCap(state.tanks[me]),available=Math.max(0,cap-active);
+ const cycling=(fireCooldown[me]??0)>.02;
+ const shotState=active>=cap?'IN FLIGHT':cycling?'CYCLING':'READY';
+ shellMeter.textContent=`${available}/${cap} ${shotState}`;
+ shellMeter.classList.toggle('empty',active>=cap);
+ shellMeter.classList.toggle('cycling',active<cap&&cycling);
+ shellMeter.title=active>=cap?'All projectiles are in flight; capacity returns when a shot expires':
+  cycling?'Weapon cycling; next shot waits for firing cooldown':'Projectile slot available; weapon ready to fire';
+ if(typeof shellMeter.setAttribute==='function')shellMeter.setAttribute('aria-label',`${available} of ${cap} projectile slots available; ${shotState.toLowerCase()}`);
+ const slots=document.getElementById('shell-slots');
+ if(slots&&cap<=12){const markup=Array.from({length:cap},(_,i)=>'<i class="shell-slot'+(i<available?' ready':'')+'"></i>').join('');if(slots.innerHTML!==markup)slots.innerHTML=markup;}
+}
  const power=document.getElementById('power-status');if(power){const def=PICKUPS[localPilot?.powerType];const activePower=(state.lives[me]??0)>0&&!!def&&localPilot.powerTimer>0;power.classList.toggle('hidden',!activePower);power.textContent=activePower?def.name+' · '+Math.ceil(localPilot.powerTimer)+'s':'';if(activePower)power.style.borderColor=def.color;}
  const ended=state.winner>=0&&mode!=='idle';if(ended||state.eventTimer>0)toast.classList.remove('visible');
  document.getElementById('game-screen')?.classList.toggle('match-finished',ended);
  const report=document.getElementById('after-action');
- const localWon=ended&&state.lives[me]>0&&teamOf(me)===state.winnerTeam;
- if(!ended)resultCuePlayed=false;
- else if(!resultCuePlayed){resultCuePlayed=true;audioCue(localWon?'victory':'defeat');}
- if(report){
-   report.classList.toggle('hidden',!ended);
-   report.classList.toggle('lost',ended&&!localWon);
-   if(ended){
-     document.getElementById('aa-title').textContent=localWon?'SECTOR CLEARED':'SECTOR LOST';
-     document.getElementById('aa-event').textContent=String(state.event||'EXERCISE COMPLETE');
-     document.getElementById('aa-kos').textContent=String(state.kos[me]||0);
-     document.getElementById('aa-lives').textContent=String(state.lives[me]||0);
-     document.getElementById('aa-outcome').textContent=localWon?'SUCCESS':'DEFEAT';
-     document.getElementById('aa-note').textContent=mode==='guest'?'AWAIT HOST REDEPLOYMENT':'NEW PROCEDURAL SECTOR READY';
+ // Solo results are captured once from combat state. LAN guest uses the existing
+ // replicated winner/KO fields until a host-authoritative result packet exists.
+ const soloResult=ended&&mode==='solo'?finalizeRound():null;
+ // Count only actual offline Solo-vs-bots final results, once per match.
+ if(soloResult&&state.config?.dailySector&&window.SectorDaily){
+   const key=DOSSIER_SESSION+':daily:'+soloResult.matchId+':'+soloResult.mazeSeed;
+   if(dailyAttemptedKey!==key){
+     dailyAttemptedKey=key;
+     try{dailyLastRecord=window.SectorDaily.record(window.localStorage,state.config.dailyDate,soloResult,key);}
+     catch(_){dailyLastRecord={ok:false,reason:'STORAGE_UNAVAILABLE'};}
    }
  }
- const replay=document.getElementById('quick-rematch');if(replay)replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));
- const label0=document.getElementById('player0-label');if(label0)label0.textContent='YOU';const label1=document.getElementById('player1-label');if(label1)label1.textContent=mode==='solo'?'ENEMIES':mode==='guest'?'HOST':'OPPONENT';if(mode==='solo')document.getElementById('score1').textContent=botLives;}
-function newMatch(which){if(bridgeReady())window.AndroidBridge.stopNetwork();mode=which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;savePrefs();
- const arena=selectArena();state=initialState(arena,{...selectedRules,pilotMode:true});camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();refreshHUD();document.getElementById('mode-label').textContent=which==='solo'?(state.config.botCount===0?'PRACTICE FIELD':'QUICK MATCH'):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'){exitMenu();if(which==='solo')firstMatchHint();}}
-function resetAll(){state=initialState(0,state.config);camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachRemaining=0;document.getElementById('field-coach')?.classList.add('hidden');fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();if(mode!=='guest')notice('NEW FIELD GENERATED — GO!');}
+ // Daily attempts are *not* normal Dossier matches and cannot farm unlocks.
+ if(soloResult&&!state.config?.dailySector&&!state.config?.forwardBayExercise&&state.config?.botCount>0&&state.humanCount===1&&dossierStore){
+  const key=DOSSIER_SESSION+':'+soloResult.matchId+':'+soloResult.mazeSeed;
+  if(dossierAttemptedKey!==key){
+    dossierAttemptedKey=key;
+    const before=dossierStore.snapshot(),saved=dossierStore.record(soloResult,key);
+    roundUnlocks=saved.ok?unlocksFromResult(before,dossierStore.snapshot()):[];
+   }
+ }
+ const scoredDraw=ended&&(soloResult?.outcome==='draw'||(!soloResult&&state.scored?.result?.isDraw===true));
+ const localWon=ended&&(soloResult?soloResult.outcome==='victory':teamOf(me)===state.winnerTeam);
+ if(!ended)resultCuePlayed=false;
+ else if(!resultCuePlayed){resultCuePlayed=true;audioCue(scoredDraw?'ui-select':localWon?'victory':'defeat');}
+ if(report){
+   report.classList.toggle('hidden',!ended);
+   report.classList.toggle('lost',ended&&!localWon&&!scoredDraw);
+   const rewardEl=document.getElementById('aa-rewards'),newRewards=ended&&mode==='solo'&&roundUnlocks.length>0;
+   if(rewardEl){rewardEl.classList.toggle('hidden',!newRewards);rewardEl.textContent=newRewards?'NEW IN HANGAR · '+roundUnlocks.join(' · ')+' · VIEW HANGAR':'';}
+   if(ended){
+     const modeTitle=document.getElementById('aa-mode-label');if(modeTitle){if(mode==='solo')modeTitle.textContent=(state.config?.ctfExercise?'CAPTURE THE FLAG · TEST':state.config?.forwardBayExercise?'FORWARD BAY EXERCISE':state.config?.dailySector?'DAILY SECTOR · '+state.config.dailyDate+' UTC':(state.config?.customMatch?'CUSTOM · ':'')+soloModeLabel(state.config));else if(mode==='host'||mode==='guest')modeTitle.textContent='LOCAL MATCH · '+(state.config?.teamMode==='coop'?'CO-OP':state.config?.teamMode==='teams'?'TEAMS':'FREE FOR ALL');}
+     const series=state.lanSeries;
+     const seriesWinner=series?.concluded?series.winner:null;
+     document.getElementById('aa-title').textContent=series?
+      (series.concluded?(seriesWinner===null?'SERIES DRAW':seriesWinner===teamOf(me)?'SERIES WON':'SERIES LOST'):
+       scoredDraw?'ROUND DRAW':localWon?'ROUND CLEARED':'ROUND LOST'):
+      scoredDraw?'MATCH DRAW':localWon?'SECTOR CLEARED':'SECTOR LOST';
+     document.getElementById('aa-event').textContent=soloResult?.event??String(state.event||'EXERCISE COMPLETE');
+     document.getElementById('aa-kos').textContent=String(soloResult?.operatorKOs??state.kos[me]??0);
+     document.getElementById('aa-deaths').textContent=soloResult?String(soloResult.deaths):Number.isInteger(state.deaths?.[me])?String(state.deaths[me]):'—';
+     document.getElementById('aa-duration').textContent=soloResult?durationLabel(soloResult.durationSeconds):Number.isFinite(state.elapsedSeconds)?durationLabel(Math.floor(state.elapsedSeconds)):'—';
+     document.getElementById('aa-lives').textContent=String(isCtfMatch()?state.ctf.target:isScoredMatch()?state.scored.scoreTarget:soloResult?.livesRemaining??state.lives[me]??0);
+     const metric=document.getElementById('aa-lives-label');if(metric)metric.textContent=isCtfMatch()?'FLAG TARGET':isScoredMatch()?(state.scored.mode==='teams'?'TEAM KO TARGET':'KO TARGET'):'LIVES LEFT';
+     document.getElementById('aa-outcome').textContent=scoredDraw?'DRAW':localWon?'VICTORY':'DEFEAT';
+     const seriesText=series?'ROUND '+series.round+'/'+series.rounds+
+      ' · CYAN '+series.wins[0]+' : '+series.wins[1]+' CORAL · '+
+      (series.concluded?(series.winner===null?'SERIES DRAW':(series.winner===0?'CYAN':'CORAL')+' WINS SERIES'):'NEXT ROUND AVAILABLE'):null;
+     document.getElementById('aa-note').textContent=seriesText??(state.config?.ctfExercise?'CTF EXERCISE · NO DOSSIER PROGRESS':state.config?.forwardBayExercise?'TEAM DEPOT TEST · NO DOSSIER PROGRESS':state.config?.dailySector?(dailyLastRecord?.ok&&dailyLastRecord?.entry?('DAILY · BEST '+dailyLastRecord.entry.best.outcome.toUpperCase()+' '+dailyLastRecord.entry.best.kos+' KOs · '+dailyLastRecord.entry.attempts+' ATTEMPT'+(dailyLastRecord.entry.attempts===1?'':'S')+' · UTC'):'DAILY RESULT NOT SAVED · CHECK STORAGE'):mode==='guest'?'WAITING FOR HOST · REMATCH OR NEW RULES':mode==='host'?'HOST CHOOSES REMATCH OR NEW RULES':state.config?.customMatch?'SAME RULES · FRESH MAZE':mode==='solo'&&state.config?.botCount===0?'PRACTICE · NO DOSSIER RECORD':state.config?.quickPlayMatch?(selectedPlaylistIds.length>1?'NEXT MATCH · ROTATING MODES':'NEXT MATCH · SAME MODE, NEW MAZE'):'NEW MAZE · SAME MODE');
+   }
+ }
+ const replay=document.getElementById('quick-rematch');if(replay){replay.textContent=state.lanSeries?(state.lanSeries.concluded?'↻ NEW SERIES':'↻ NEXT ROUND '+(state.lanSeries.round+1)+'/3'):state.config?.dailySector?'↻ RETRY SAME SECTOR':state.config?.customMatch?'↻ SAME RULES · NEW SECTOR':mode==='solo'?'↻ NEXT MATCH':'↻ NEW SECTOR';replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));}
+ const tdm=isScoredMatch()&&state.scored.mode==='teams',ctf=isCtfMatch();
+ const editRules=document.getElementById('custom-edit');if(editRules)editRules.classList.toggle('hidden',!(ended&&mode==='solo'&&!!state.config?.customMatch));
+ const lanEdit=document.getElementById('lan-edit-rules');if(lanEdit)lanEdit.classList.toggle('hidden',!(ended&&mode==='host'&&(connected||state.config?.lanHostSolo===true)));
+ const mySide=teamOf(me),isTeams=state.config?.teamMode==='teams';
+ const label0=document.getElementById('player0-label');if(label0)label0.textContent=
+  ctf?(mySide===0?'CYAN FLAGS · YOU':'CYAN FLAGS'):
+  tdm?(mySide===0?'CYAN KOs · YOU':'CYAN KOs'):
+  isScoredMatch()?'YOU KOs':'YOU · LIVES';
+ const label1=document.getElementById('player1-label');if(label1)label1.textContent=
+  ctf?(mySide===1?'CORAL FLAGS · YOU':'CORAL FLAGS'):
+  tdm?(mySide===1?'CORAL KOs · YOU':'CORAL KOs'):
+  isScoredMatch()?'LEADER':
+  mode==='host'&&state.config?.lanHostSolo===true?
+   state.config.teamMode==='coop'?'ENEMY BOTS':
+   isTeams?(mySide===1?'CYAN · ENEMIES':'CORAL · ENEMIES'):'ENEMIES LEFT':
+  mode==='solo'&&isTeams?(mySide===1?'CYAN · ENEMIES':'CORAL · ENEMIES'):
+  mode==='solo'?'ENEMIES':state.config?.teamMode==='coop'?'BOTS':mode==='guest'?'HOST':'RIVAL';
+ if(mode==='solo'||(mode==='host'&&state.config?.lanHostSolo===true&&!tdm)||
+  ((mode==='host'||mode==='guest')&&state.config?.teamMode==='coop'))document.getElementById('score1').textContent=botLives;
+ const objective=document.getElementById('ctf-status');
+ if(objective){objective.classList.toggle('hidden',!ctf);
+  if(ctf){
+   const homeSide=teamOf(me),enemySide=homeSide===0?1:0;
+   const homeName=homeSide===0?'CYAN':'CORAL',enemyName=enemySide===0?'CYAN':'CORAL';
+   const mine=state.ctf.flags[homeSide],enemy=state.ctf.flags[enemySide],
+    carrying=enemy.carrier===me,ourHome=window.SectorFlags.flagHome(mine);
+   const clockLabel=durationLabel(Math.ceil(Math.max(0,state.ctf.clock-state.ctf.elapsed)))+' · ';
+   objective.textContent=clockLabel+(carrying?('CARRY '+enemyName+' FLAG · '+(ourHome?'RETURN TO '+homeName+' FOB':homeName+' FLAG MUST RETURN')):
+    !foot?'EXIT VEHICLE TO GRAB FLAG':
+    'ON FOOT · GRAB '+enemyName+' FLAG · '+homeName+' '+(ourHome?'HOME':'MISSING')+
+    ' · '+enemyName+' '+(window.SectorFlags.flagHome(enemy)?'HOME':enemy.carrier!==null?'CARRIED':'DROPPED'));
+  }
+ }
+ const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=comfort.autoFire?'AUTO ON':comfort.releaseFire&&['solo','host','guest'].includes(mode)?'AIM · RELEASE':'HOLD TO FIRE';
+ const clock=document.getElementById('score-clock'),life=document.querySelector('.scorestrip .hud-life');
+ if(clock){clock.classList.toggle('hidden',!isScoredMatch()||ctf);if(isScoredMatch()&&!ctf)clock.textContent=durationLabel(Math.ceil(Math.max(0,state.scored.clockSeconds-state.scored.elapsedSeconds)))+(state.lanSeries?' · R'+state.lanSeries.round+'/3':'');}
+ if(life)life.classList.toggle('hidden',isScoredMatch());
+ if(ctf){
+  document.getElementById('score0').textContent=state.ctf.scores[0];
+  document.getElementById('score1').textContent=state.ctf.scores[1];
+ }else if(isScoredMatch()){
+   const scores=state.scored.operatorKOs;document.getElementById('score0').textContent=tdm?scores.reduce((sum,k,i)=>sum+(state.scored.teamIds[i]===0?k:0),0):scores[me];
+   document.getElementById('score1').textContent=tdm?scores.reduce((sum,k,i)=>sum+(state.scored.teamIds[i]===1?k:0),0):Math.max(0,...scores);
+ }
+}
+function newMatch(which,dailyOptions=null){
+ savePrefs();
+ const scoredLaunch=!!SCORED_MATCH_RULES[which],customLaunch=which==='custom',cqcLaunch=which==='cqc',dailyLaunch=which==='daily',bayLaunch=which==='forwardbay',ctfLaunch=which==='ctf';
+ if(dailyLaunch&&(!dailyOptions||!window.SectorDaily||dailyOptions.dailySeed!==window.SectorDaily.seedFor(dailyOptions.dailyDate)))return false;
+ if(which==='solo'&&!selectedPlaylistIds.length){notice('SELECT A QUICK PLAY MODE IN MATCH SETTINGS',2300);return false;}
+ const playlistId=which==='solo'?firstQuickPlayMode():null;
+ if(bridgeReady())window.AndroidBridge.stopNetwork();mode=scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch?'solo':which;paused=(which==='host'||which==='guest');connected=false;fixedAccumulator=0;neutralizeGuestInput();
+ const arena=selectArena(),options=ctfLaunch?{...selectedRules,matchModeId:'scored_tdm',
+ mapSize:'standard',teamMode:'teams',botCount:3,botSkill:'normal',pilotMode:true,
+ forwardBayExercise:true,ctfExercise:true,quickPlayMatch:false}:bayLaunch?{...selectedRules,matchModeId:'scored_tdm',mapSize:'standard',teamMode:'teams',botCount:3,botSkill:'normal',pilotMode:true,forwardBayExercise:true,quickPlayMatch:false}:dailyLaunch?dailyOptions:customLaunch?customOptionsFor():scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:which==='scored_tdm'?'teams':'ffa',matchModeId:which,pilotMode:true}:playlistId?quickPlayOptionsFor(playlistId):{...selectedRules,pilotMode:true};
+ state=initialState(arena,options,dailyLaunch?options.dailySeed:freshSectorSeed(state?.mazeSeed));dailyAttemptedKey='';dailyLastRecord=null;roundUnlocks=[];camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();releaseShot=null;remoteReleaseShot=null;refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(ctfLaunch?'CAPTURE THE FLAG · TEST':bayLaunch?'FORWARD BAY · TEAM EXERCISE':dailyLaunch?'DAILY SECTOR':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config))):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch){exitMenu();audioCue('deploy');if(mode==='solo')firstMatchHint();}}
+function resetAll(advancePlaylist=false){
+ const previousSeed=state.mazeSeed;
+ const carriedSeries=mode==='host'&&state.winner>=0&&state.lanSeries?
+  window.SectorLanSeries.nextRound(state.lanSeries):null;
+ let options={...state.config};
+ if(advancePlaylist&&mode==='solo'&&state.config?.quickPlayMatch&&!state.config?.customMatch){
+  const id=nextPlaylistMode();if(!id){notice('SELECT A QUICK PLAY MODE IN MATCH SETTINGS',2300);return false;}
+  // Derive the next preset from the SAVED user settings, not the prior
+  // mode's effective bot count (Team Survival may need an extra ally).
+  // Prevent a 1-bot FFA silently becoming 2 bots after Team Survival.
+  options=quickPlayOptionsFor(id,selectedRules);
+ }
+ state=initialState(0,options,options.dailySector?options.dailySeed:freshSectorSeed(previousSeed));
+ if(carriedSeries)state.lanSeries=carriedSeries;
+ dailyAttemptedKey='';dailyLastRecord=null;
+ if(mode==='host')neutralizeGuestInput();
+ if(mode==='solo')document.getElementById('mode-label').textContent=options.botCount===0?'PRACTICE FIELD':options.dailySector?'DAILY SECTOR':options.ctfExercise?'CAPTURE THE FLAG · TEST':options.forwardBayExercise?'FORWARD BAY · TEAM EXERCISE':(options.customMatch?'CUSTOM · ':'')+soloModeLabel(options);
+ camera.zoom=null;resultCuePlayed=false;roundUnlocks=[];quietContactSeconds=0;radarReminderShown=false;coachRemaining=0;document.getElementById('field-coach')?.classList.add('hidden');fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();clearFireAim();releaseShot=null;remoteReleaseShot=null;paused=mode==='guest'||(mode==='host'&&!connected&&!options.lanHostSolo);refreshHUD();
+ if(mode==='host'&&connected&&lanLobby&&!lanLobby.active)nativePacket({type:'state',state:serializeState()});
+ if(mode!=='guest')notice(options.dailySector?'SAME DAILY SECTOR · RETRY':'NEW FIELD GENERATED — GO!');}
 function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
 function circlesRect(x,y,r,w){const nx=clamp(x,w.x,w.x+w.w),ny=clamp(y,w.y,w.y+w.h);return (x-nx)**2+(y-ny)**2<r*r}
 function blocked(x,y,r=21){return x<r+13||x>worldW-r-13||y<r+13||y>worldH-r-13||nearWall(x,y,r)}
 function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=clamp(Number(inp.moveX)||0,-1,1),my=clamp(Number(inp.moveY)||0,-1,1);let mag=Math.hypot(mx,my);
  if(mag>1){mx/=mag;my/=mag;mag=1}if(mag<.09){mx=0;my=0;mag=0}
- const speed=(t.onFoot?(inp.bot?194:268):(inp.bot?178:222)*vehicleDef(currentVehicle(t)).speed)*(t.powerType==='turbo'&&t.powerTimer>0?1.48:1),blend=Math.min(1,dt*(mag?9:13));t.vx+=(mx*speed-t.vx)*blend;t.vy+=(my*speed-t.vy)*blend;
- if(mag){const target=Math.atan2(my,mx),diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a));t.a+=clamp(diff,-dt*12,dt*12)}
+ const tacticalVehicle=isScoredVehicleMatch()&&!t.onFoot;
+ const baseVehicleSpeed=tacticalVehicle?(inp.bot?SCORED_FFA_VEHICLE_PACE.bot:SCORED_FFA_VEHICLE_PACE.human):(inp.bot?178:222);
+ const speed=(t.onFoot?(inp.bot?194:268):baseVehicleSpeed*vehicleDef(currentVehicle(t)).speed)*(t.powerType==='turbo'&&t.powerTimer>0?1.48:1);
+ // Pilot heading is a physical capability, not a player-only movement
+ // assist: both human and AI pilots obey the SAME 6.5 rad/s turn ceiling.
+ // Keep approved vehicle aim/drive rates and local Solo tank center-pivot
+ // steering intact; don't change pilot damage, accuracy or movement speed.
+ const humanSeat=!inp.bot&&((mode==='solo'&&i===0)||(mode==='host'&&(i===0||i===1)));
+ const botAiming=inp.bot===true&&inp.fireAim===true;
+ const precisionFoot=t.onFoot&&humanSeat,independentAim=humanSeat||botAiming;
+ const aimed=independentAim&&Number.isFinite(inp.aimX)&&Number.isFinite(inp.aimY)&&Math.hypot(inp.aimX,inp.aimY)>.6;
+ if(mag||aimed){const target=aimed?Math.atan2(inp.aimY,inp.aimX):Math.atan2(my,mx),
+  diff=Math.atan2(Math.sin(target-t.a),Math.cos(target-t.a)),
+  // Input source (human/bot) must never bypass a pilot's turn limit.
+  // Vehicle rates deliberately preserve the existing accepted feel.
+  turnRate=t.onFoot?SOLO_PILOT_TURN_RATE:
+   aimed?(tacticalVehicle?SCORED_FFA_VEHICLE_PACE.turnRate:4.2):
+   tacticalVehicle?SCORED_FFA_VEHICLE_PACE.turnRate:12,
+  maxTurn=dt*turnRate;
+  t.a+=clamp(diff,-maxTurn,maxTurn)}
+ // Local Solo pilot only: tiny optional heading nudge when already shooting
+ // almost directly at an on-screen enemy pilot. No auto-fire or homing shell.
+ if(inp.fire&&precisionFoot&&mode==='solo'&&(fireCooldown[i]||0)<=dt)t.a+=softPilotAimOffset(t,i);
+ // Solo human tanks used to slide toward the thumb before the hull faced that
+ // direction. During a deliberate, slow turn that appears like an off-center
+ // orbit. Throttle forward drive until the tracks align with the requested path.
+ // Do not change angular rates, pilot FIRE-drag, mech, bots, or LAN.
+ const soloTankDrive=mode==='solo'&&i===0&&!inp.bot&&!t.onFoot&&currentVehicle(t)?.type==='tank'&&!aimed;
+ let driveX=mx,driveY=my,turningToFace=false;
+ if(soloTankDrive&&mag){
+  const intended=Math.atan2(my,mx);
+  const diff=Math.atan2(Math.sin(intended-t.a),Math.cos(intended-t.a));
+  const alignment=clamp((Math.cos(diff)-.3)/.7,0,1);
+  driveX=Math.cos(t.a)*mag*alignment;
+  driveY=Math.sin(t.a)*mag*alignment;
+  turningToFace=alignment<.5;
+ }
+ const blend=Math.min(1,dt*(turningToFace?17:mag?9:13));
+ t.vx+=(driveX*speed-t.vx)*blend;t.vy+=(driveY*speed-t.vy)*blend;
  const nx=t.x+t.vx*dt,ny=t.y+t.vy*dt;
  const radius=t.onFoot?10:21;
  const collides=(x,y)=>blocked(x,y,radius)||state.tanks.some((other,j)=>{
-  if(i===j||state.lives[j]<=0)return false;
+  // Friendly units are non-solid: both player and bots use the same
+  // rule, so no invisible collision or special CTF escort workaround.
+  if(!solidOpponent(i,j)||state.lives[j]<=0)return false;
   const limit=(radius+(other.onFoot?12:21))**2;
   const nextDist=(other.x-x)**2+(other.y-y)**2;
   if(nextDist>=limit)return false;
@@ -308,10 +1223,204 @@ function tankMove(t,inp,dt,i){const beforeX=t.x,beforeY=t.y,beforeA=t.a;let mx=c
  }
 }
 function hasLineOfSight(x,y,tx,ty){const length=Math.hypot(tx-x,ty-y),steps=Math.ceil(length/15);for(let n=1;n<steps;n++){const p=n/steps;if(nearWall(x+(tx-x)*p,y+(ty-y)*p,4))return false}return true;}
+// Camera boundaries reflect the actual rendered Solo viewport, not an AI
+// distance limit. Only local Solo uses this; LAN state stays host-authoritative.
+function pilotInLocalView(x,y,inset=24){
+ const zoom=Number.isFinite(camera.zoom)&&camera.zoom>0?camera.zoom:cameraZoom(state?.tanks?.[0]);
+ if(!Number.isFinite(zoom)||zoom<=0||!Number.isFinite(camera.x)||!Number.isFinite(camera.y))return false;
+ const sx=(x-camera.x)*zoom,sy=(y-camera.y)*zoom;
+ return sx>=inset&&sx<=W-inset&&sy>=inset&&sy<=H-inset;
+}
+function pilotBotFireFair(bot,target){
+ // Offscreen bots cannot fire at the local Solo player, whether in a
+ // vehicle or on foot. Their pathfinding and bot-versus-bot rules stay intact.
+ return mode!=='solo'||target!==state?.tanks?.[0]||
+  (pilotInLocalView(bot.x,bot.y)&&pilotInLocalView(target.x,target.y));
+}
+// Acquiring an on-foot human requires continuous real screen visibility and LOS.
+// Bots still navigate normally; this changes only the FIRST eligible shot.
+function pilotBotReactionReady(brain,target,skill,dt,visible){
+ const humanPilot=mode==='solo'&&state?.tanks?.[0]?.onFoot&&target===state.tanks[0];
+ if(!humanPilot){brain.pilotAcquire=0;return true;}
+ if(!visible){brain.pilotAcquire=0;return false;}
+ const delay=skill==='casual'?.32:skill==='spicy'?.16:.24;
+ brain.pilotAcquire=Math.min(delay,Math.max(0,Number(brain.pilotAcquire)||0)+clamp(dt,0,.05));
+ return brain.pilotAcquire+1e-8>=delay;
+}
+// A3: a bot may examine only a SMALL fixed set of real shot paths when
+// acquiring a target. The same side-effect-free physics drives the user dots.
+// Target coordinates must come from actual line-of-sight or stored LAST sight,
+// not an omniscient view of an actor currently behind a maze wall.
+function botTraceAim(bot,owner,seen,skill,shotNumber,canSee){
+ const base=Math.atan2(seen.y-bot.y,seen.x-bot.x);
+ const wobble=skill==='casual'?.085:skill==='spicy'?.025:.05;
+ const offset=Math.sin((owner+1)*13.79+shotNumber*7.17)*wobble;
+ const candidates=[{angle:base+offset,bank:false}];
+ // Up to six geometry-derived ONE-bounce attempts. Never brute-force 360
+ // degrees or use future target positions. Only walls close enough to reach
+ // in a normal shell lifetime are eligible; on-foot sidearms cannot bank.
+ if(!bot.onFoot){
+  const walls=[];
+  for(const w of wallSet){
+   const rx=clamp(bot.x,w.x,w.x+w.w),ry=clamp(bot.y,w.y,w.y+w.h);
+   const ds=Math.hypot(bot.x-rx,bot.y-ry);
+   if(ds>385)continue;
+   const px=clamp(seen.x,w.x,w.x+w.w),py=clamp(seen.y,w.y,w.y+w.h);
+   const score=ds+Math.hypot(seen.x-px,seen.y-py);
+   if(score>720)continue;
+   walls.push({w,score});
+  }
+  walls.sort((a,b)=>a.score-b.score);
+  for(const {w} of walls.slice(0,12)){
+   const vertical=w.h>w.w;
+   const surface=vertical?(bot.x<=w.x?w.x:w.x+w.w):
+    (bot.y<=w.y?w.y:w.y+w.h);
+   const mirrored=vertical?{x:2*surface-seen.x,y:seen.y}:
+    {x:seen.x,y:2*surface-seen.y};
+   const angle=Math.atan2(mirrored.y-bot.y,mirrored.x-bot.x)+offset*.45;
+   if(candidates.some(c=>Math.abs(Math.atan2(Math.sin(c.angle-angle),Math.cos(c.angle-angle)))<.025))continue;
+   candidates.push({angle,bank:true});
+   if(candidates.length>=7)break;
+  }
+ }
+ let best=null;
+ const targetRadius=seen.onFoot?(isScoredMatch()?CQC_PILOT_HIT_RADIUS:14):26;
+ for(const c of candidates){
+  // No actual-target checks when using stale sight: only the *remembered*
+  // point and its last-observed hitbox determine the decision.
+  const result=traceProjectile(bot,c.angle,{
+   maxDistance:bot.onFoot?370:730,maxBounces:bot.onFoot?0:1,
+   checkActors:canSee||friendlyFireEnabled()});
+  let closest=Infinity,firstInterceptSegment=-1;
+  for(let n=0;n<result.segments.length;n++)for(const p of result.segments[n]){
+   const distance=(p.x-seen.x)**2+(p.y-seen.y)**2;
+   if(distance<closest)closest=distance;
+   if(firstInterceptSegment<0&&distance<targetRadius*targetRadius)
+    firstInterceptSegment=n;
+  }
+  // A bullet that passes a target and ricochets later was a DIRECT shot at
+  // that target. Only count a bank when its first target crossing is after a
+  // reflection. In particular, targets with a temporary shield still count
+  // as lined up even if the actual trace continues harmlessly past them.
+  const intersects=firstInterceptSegment>=0;
+  if((canSee||friendlyFireEnabled())&&result.hit!==null&&result.hit!==seen.index&&
+     !(canSee&&state.tanks[seen.index]?.shield>0&&intersects))continue;
+  const hit=canSee?(result.hit===seen.index||
+   (state.tanks[seen.index]?.shield>0&&intersects)):intersects;
+  if(!hit)continue;
+  const banked=firstInterceptSegment>0;
+  // Direct shots are economical; choose a bank only when it actually works
+  // and the direct path doesn't. More skill means better planning, not speed.
+  const score=banked?100+Math.sqrt(closest)*.05:Math.sqrt(closest)*.05;
+  if(!best||score<best.score)best={angle:c.angle,banked,score};
+  if(!banked)break;
+ }
+ return {aim:best,examined:candidates.length};
+}
+// M2-AI1: a bot must actually settle its moving hull/pilot and turn its
+// muzzle toward a committed shot before its shot-acquisition timer advances.
+// These limits are lower than a normal chasing speed but allow slow walking
+// aim and small corrections. No change to human movement, projectile damage,
+// wall geometry, authoritative scoring or fixed team identities.
+function botAimPosture(bot,brain,skill){
+ const facing=Number.isFinite(brain.fireAngle)?
+  Math.atan2(Math.sin(brain.fireAngle-bot.a),Math.cos(brain.fireAngle-bot.a)):Math.PI;
+ const speed=Math.hypot(Number(bot.vx)||0,Number(bot.vy)||0);
+ const moveCap=bot.onFoot?(skill==='spicy'?110:skill==='casual'?75:94):
+  skill==='spicy'?90:skill==='casual'?54:72;
+ return {angleError:facing,speed,moveCap,
+  steady:Math.abs(facing)<.16&&speed<=moveCap};
+}
+// M2-AI2: occasional earned opening. One short acquisition in every
+// 4/5/7 ACTUAL shots (Challenge/Standard/Relaxed), with per-bot/maze phase.
+// Never the first two shots. No luck re-roll each frame, rubber-banding or
+// bot-to-human skill detection. This changes aim time, not turn/speed rules.
+function botQuickOpening(brain,bot,seen,skill,index){
+ const shots=Number.isInteger(brain.fireShots)?brain.fireShots:0;
+ if(shots<2||!seen?.live||seen.onFoot||brain.fireBank||
+  !Number.isFinite(brain.fireAngle))return false;
+ const period=skill==='spicy'?4:skill==='casual'?7:5;
+ const phase=(((state.mazeSeed>>>0)+Math.imul(index+1,17))>>>0)%period;
+ const error=Math.atan2(Math.sin(brain.fireAngle-bot.a),
+  Math.cos(brain.fireAngle-bot.a));
+ // Only an already-aware, roughly facing bot gets a chance. Full physical
+ // alignment, real velocity cap and final muzzle cone are STILL compulsory.
+ return shots%period===phase&&Math.abs(error)<.60;
+}
+function botAimDelay(skill,humanPilot,quick=false){
+ const standard=humanPilot?(skill==='casual'?.32:skill==='spicy'?.16:.24):
+  (skill==='casual'?.44:skill==='spicy'?.24:.32);
+ // Even a well-positioned opponent needs several visible steady-aim frames.
+ return quick&&!humanPilot?standard*(skill==='casual'?.80:skill==='spicy'?.76:.75):
+  standard;
+}
+// All bots use acquire -> physically turn/brake -> settle -> fire -> recover.
+// No frame-perfect tracking or course corrections AFTER the lock.
+function botFireCommit(brain,bot,target,skill,dt,visible,oldPilotGate,i,seen=null){
+ brain.fireRecover=Math.max(0,(brain.fireRecover||0)-Math.max(0,dt));
+ brain.firePlanRetry=Math.max(0,(brain.firePlanRetry||0)-Math.max(0,dt));
+ const index=state.tanks.indexOf(target);
+ if(!visible||index<0||!seen){
+  brain.fireTarget=-1;brain.fireTrack=0;brain.fireAngle=NaN;
+  brain.fireQuick=false;
+  return {fire:false,aimX:undefined,aimY:undefined};
+ }
+ const targetKind=seen.onFoot?'pilot':'vehicle';
+ const targetChanged=brain.fireTarget!==index||brain.fireTargetKind!==targetKind;
+ if((targetChanged||!Number.isFinite(brain.fireAngle))&&
+    (targetChanged||brain.firePlanRetry<=0)){
+  brain.fireTarget=index;brain.fireTargetKind=targetKind;brain.fireTrack=0;
+  // No valid trajectory? Try again at a bounded interval, never a costly
+  // full wall search every game frame.
+  brain.firePlanRetry=skill==='casual'?.75:skill==='spicy'?.38:.52;
+  const candidate=botTraceAim(bot,i,{...seen,index},skill,brain.fireShots||0,
+   seen.live===true);
+  brain.fireCandidateCount=candidate.examined;
+  brain.fireBank=candidate.aim?.banked===true;
+  brain.fireAngle=candidate.aim?candidate.aim.angle:NaN;
+  brain.fireQuick=!!candidate.aim&&botQuickOpening(brain,bot,seen,skill,i);
+ }
+ if(!Number.isFinite(brain.fireAngle))return {fire:false,aimX:undefined,aimY:undefined};
+ const a=brain.fireAngle,aimX=Math.cos(a),aimY=Math.sin(a);
+ if(brain.fireRecover>0)return {fire:false,aimX,aimY};
+ const humanPilot=mode==='solo'&&state.tanks[0]===target&&target.onFoot;
+ const delay=botAimDelay(skill,humanPilot,brain.fireQuick===true&&!seen.onFoot);
+ const posture=botAimPosture(bot,brain,skill);
+ // Begin deliberate aim timing only after facing and movement have settled.
+ // An unaligned/fast-moving bot loses partial progress instead of carrying
+ // a fully charged instant shot from a sideways sprint into a new bearing.
+ brain.fireTrack=posture.steady?
+  Math.min(delay,(brain.fireTrack||0)+clamp(dt,0,.05)):
+  Math.max(0,(brain.fireTrack||0)-clamp(dt,0,.05)*1.5);
+ return {fire:posture.steady&&brain.fireTrack+1e-8>=delay&&
+   oldPilotGate&&Math.abs(posture.angleError)<.095,aimX,aimY};
+}
+function softPilotAimOffset(t,owner){
+ if(owner!==0||mode!=='solo'||!t.onFoot||!comfort.pilotAssist||!pilotInLocalView(t.x,t.y))return 0;
+ let candidate=null;
+ for(let i=0;i<state.tanks.length;i++){
+  const target=state.tanks[i];
+  if(i===owner||state.lives[i]<=0||friendly(owner,i)||!target.onFoot||target.shield>0)continue;
+  const dist=Math.hypot(target.x-t.x,target.y-t.y);
+  if(dist<35||dist>PILOT_ASSIST_RANGE||!pilotInLocalView(target.x,target.y)||
+   !hasLineOfSight(t.x,t.y,target.x,target.y))continue;
+  const actual=Math.atan2(target.y-t.y,target.x-t.x);
+  const delta=Math.atan2(Math.sin(actual-t.a),Math.cos(actual-t.a));
+  if(Math.abs(delta)>PILOT_ASSIST_CONE)continue;
+  if(candidate===null||Math.abs(delta)<Math.abs(candidate))candidate=delta;
+ }
+ return candidate===null?0:clamp(candidate*.55,-PILOT_ASSIST_MAX,PILOT_ASSIST_MAX);
+}
+// Experimental Custom Match bot identities: predictable per bot and only
+// when explicitly selected. Original Quick Play/Daily/LAN AI stays classic.
+function botRoleFor(i,st=state){
+ if(!st?.config?.customMatch||st.config.botSkill!=='varied'||i<st.humanCount)return 'classic';
+ return ['hunter','sentinel','scavenger'][(i-st.humanCount)%3];
+}
 // AI priorities are readable: recover a vehicle, choose an available supply,
 // evade a close enemy when nearly destroyed, then return to a fair duel.
 // All decisions use existing visible game state: no enhanced accuracy or damage.
-function chooseBotObjective(i,target,skill='normal'){
+function chooseBotObjective(i,target,skill='normal',role='classic'){
  const bot=state.tanks[i];
  if(isPilotMatch()&&bot.onFoot){
   const recovery=(state.vehicles||[]).filter(v=>v.occupant===-1&&v.armor>0&&vehicleEntryClear(i,v))
@@ -323,7 +1432,7 @@ function chooseBotObjective(i,target,skill='normal'){
   const v=currentVehicle(bot),armor=v?.armor??0,maxArmor=vehicleDef(v).armor;
   const repairUseful=pickup.type==='repair'&&!bot.onFoot&&armor<maxArmor;
   const buffUseful=pickup.type!=='repair'&&!(bot.powerTimer>1.3&&bot.powerType);
-  const maxRange=skill==='casual'?205:skill==='spicy'?425:325;
+  const maxRange=role==='scavenger'?470:skill==='casual'?205:skill==='spicy'?425:325;
   const distance=Math.hypot(bot.x-pickup.x,bot.y-pickup.y);
   const enemyDist=Math.hypot(bot.x-target.x,bot.y-target.y);
   // A nearby useful repair can outweigh a duel; never chase across the whole
@@ -340,19 +1449,108 @@ function chooseBotObjective(i,target,skill='normal'){
   const px=clamp(nx,42,worldW-42),py=clamp(ny,42,worldH-42);
   if(!blocked(px,py,bot.onFoot?12:22))return {kind:'evade',point:{x:px,y:py}};
  }
+ if(role==='sentinel'&&!bot.onFoot&&hasLineOfSight(bot.x,bot.y,target.x,target.y)){
+  if(threatened>=145&&threatened<=310)return {kind:'hold',point:{x:bot.x,y:bot.y}};
+  if(threatened<145){
+   const dx=(bot.x-target.x)/(threatened||1),dy=(bot.y-target.y)/(threatened||1);
+   const px=clamp(bot.x+dx*115,42,worldW-42),py=clamp(bot.y+dy*115,42,worldH-42);
+   if(!blocked(px,py,22))return {kind:'reposition',point:{x:px,y:py}};
+  }
+ }
  return {kind:'engage',point:target};
+}
+// Solo bot perception: chase the last genuinely observed human position,
+// never continuously update pursuit to hidden coordinates behind solid cover.
+// CTF objective navigation and LAN host targeting retain their prior behavior.
+function soloBotPursuitPoint(i,target,brain,dt){
+ if(mode!=='solo'||isCtfMatch()||target!==state?.tanks?.[0])return target;
+ const bot=state.tanks[i];
+ const visible=Math.hypot(bot.x-target.x,bot.y-target.y)<385&&
+  hasLineOfSight(bot.x,bot.y,target.x,target.y)&&pilotBotFireFair(bot,target);
+ if(visible){
+  brain.lastSeenTarget=0;brain.lastSeenX=target.x;brain.lastSeenY=target.y;
+  brain.lastSeenTimer=1.8;brain.searchPoint=null;brain.searchHold=0;
+  return target;
+ }
+ brain.lastSeenTimer=Math.max(0,(brain.lastSeenTimer||0)-Math.max(0,dt));
+ if(brain.lastSeenTarget===0&&brain.lastSeenTimer>0&&
+    Number.isFinite(brain.lastSeenX)&&Number.isFinite(brain.lastSeenY))
+  return {x:brain.lastSeenX,y:brain.lastSeenY};
+ brain.searchHold=(brain.searchHold||0)-Math.max(0,dt);
+ if(!brain.searchPoint||brain.searchHold<=0||
+    Math.hypot(bot.x-brain.searchPoint.x,bot.y-brain.searchPoint.y)<24){
+  brain.searchLeg=(brain.searchLeg||0)+1;
+  if(mazeGrid){
+   const total=mazeGrid.cols*mazeGrid.rows;
+   const index=((state.mazeSeed>>>0)+Math.imul(i+3,37)+
+     Math.imul(brain.searchLeg,29))%total;
+   brain.searchPoint={x:((index%mazeGrid.cols)+.5)*mazeGrid.cell,
+    y:(Math.floor(index/mazeGrid.cols)+.5)*mazeGrid.cell};
+  }else{
+   const angle=((i*.619+brain.searchLeg*.381)%1)*Math.PI*2;
+   brain.searchPoint={
+    x:clamp(worldW/2+Math.cos(angle)*worldW*.31,42,worldW-42),
+    y:clamp(worldH/2+Math.sin(angle)*worldH*.31,42,worldH-42)};
+  }
+  brain.searchHold=4.5;
+ }
+ return brain.searchPoint;
 }
 function botInput(i,dt){
  const bot=state.tanks[i],enemies=state.tanks.map((t,j)=>({t,j})).filter(({j})=>j!==i&&state.lives[j]>0&&!friendly(i,j));
- if(!enemies.length)return {moveX:0,moveY:0,fire:false,bot:true};
+ if(!enemies.length&&!isCtfMatch()){
+  const brain=botBrains.get(i);if(brain){brain.fireTarget=-1;brain.fireTrack=0;}
+  return {moveX:0,moveY:0,fire:false,bot:true};
+ }
  enemies.sort((a,b)=>Math.hypot(bot.x-a.t.x,bot.y-a.t.y)-Math.hypot(bot.x-b.t.x,bot.y-b.t.y));
- const target=enemies[0].t,skill=state.config?.botSkill||'normal';
+ const ctfDecision=isCtfMatch()&&window.SectorCtfAI?
+  window.SectorCtfAI.choose({index:i,humanCount:state.humanCount,
+   actors:ctfActors(),flags:state.ctf.flags,bays:state.forwardBays.bays}):null;
+ // Combat aim stays honest; a visible enemy flag carrier is a priority target.
+ const carrier=isCtfMatch()?state.ctf.flags[teamOf(i)]?.carrier:null;
+ const priorityTarget=enemies.find(({j})=>j===carrier);
+ const target=priorityTarget?.t||enemies[0]?.t||state.forwardBays?.bays[1-teamOf(i)]||bot,
+  rawSkill=state.config?.botSkill||'normal',skill=rawSkill==='varied'?'normal':rawSkill,role=botRoleFor(i);
  let brain=botBrains.get(i)||{timer:0,path:[],goal:-1,intent:'engage'};
- const choice=chooseBotObjective(i,target,skill);
+ const pursuitTarget=soloBotPursuitPoint(i,target,brain,dt);
+ // CTF flag objectives replace the classic vehicle-recovery-first priority;
+ // drivers may cross a maze in armor, but must exit to collect/return flags.
+ const choice=ctfDecision||chooseBotObjective(i,pursuitTarget,skill,role);
+ if(ctfDecision?.requiresPilot&&!bot.onFoot&&
+  Math.hypot(bot.x-choice.point.x,bot.y-choice.point.y)<105&&
+  hasLineOfSight(bot.x,bot.y,choice.point.x,choice.point.y))tryInteract(i);
  let objective=choice.point;
+ // CTF-only congestion recovery: an actual long-stalled friendly runner has
+ // priority through the flag-return lane. The nearby defender physically
+ // steps into a clear side pocket using ordinary maze movement and collisions.
+ // This only operates after >2 seconds of runner stall, inside its own bay.
+ if(ctfDecision?.kind==='defend'){
+  const teammates=ctfActors();
+  const jamIndex=state.tanks.findIndex((other,j)=>j>=state.humanCount&&j!==i&&
+   state.lives[j]>0&&friendly(i,j)&&
+   window.SectorCtfAI.roleFor(j,state.humanCount,teammates)==='runner'&&
+   (botBrains.get(j)?.stuckFor||0)>2&&Math.hypot(other.x-bot.x,other.y-bot.y)<90);
+  if(jamIndex>=0){
+   const other=state.tanks[jamIndex],angle=Math.atan2(bot.y-other.y,bot.x-other.x);
+   const home=state.forwardBays.bays[teamOf(i)],radius=bot.onFoot?10:21;
+   let cleared=false;
+   for(const turn of [0,Math.PI/3,-Math.PI/3,Math.PI/2,-Math.PI/2,Math.PI]){
+    if(cleared)break;
+    for(const distance of [85,65,45]){
+     const candidate={x:bot.x+Math.cos(angle+turn)*distance,
+      y:bot.y+Math.sin(angle+turn)*distance};
+     if(Math.hypot(candidate.x-home.x,candidate.y-home.y)>165||
+      blocked(candidate.x,candidate.y,radius)||
+      !hasLineOfSight(bot.x,bot.y,candidate.x,candidate.y)||
+      Math.hypot(candidate.x-other.x,candidate.y-other.y)<68)continue;
+     objective=candidate;cleared=true;break;
+    }
+   }
+  }
+ }
  if(choice.kind==='recovery'&&Math.hypot(objective.x-bot.x,objective.y-bot.y)<58&&hasLineOfSight(bot.x,bot.y,objective.x,objective.y)){
   tryInteract(i);
-  if(!bot.onFoot){objective=target;}
+  if(!bot.onFoot){objective=pursuitTarget;}
  }
  let direction=Math.atan2(objective.y-bot.y,objective.x-bot.x);
  // Short local recovery when another actor or a narrow corner pins the bot.
@@ -391,47 +1589,259 @@ function botInput(i,dt){
   direction+=side*1.18;
   if(brain.stuckFor<1.04){brain.timer=0;brain.path=[];brain.goal=-1;}
  }
+ // CTF teammates can deadlock in a corridor when runner and defender
+ // travel head-on. Give each the right-hand lane using ordinary steering,
+ // actor collisions and wall tests: no phasing or movement-speed bonuses.
+ let ctfYield=false;
+ if(ctfDecision){
+  const forwardX=Math.cos(direction),forwardY=Math.sin(direction);
+  const teammate=state.tanks.find((other,j)=>{
+   if(j===i||j<state.humanCount||state.lives[j]<=0||!friendly(i,j))return false;
+   const dx=other.x-bot.x,dy=other.y-bot.y,distance=Math.hypot(dx,dy);
+   return distance<110&&dx*forwardX+dy*forwardY>0&&
+    Math.abs(dx*forwardY-dy*forwardX)<46;
+  });
+  if(teammate){
+   const rightX=forwardY,rightY=-forwardX,radius=bot.onFoot?10:21;
+   // Pick a passing side once, and keep it until the corridor clears.
+   // Switching sides near a wall makes two tanks oscillate forever.
+   if(brain.ctfLaneSide!==1&&brain.ctfLaneSide!==-1){
+    brain.ctfLaneSide=!blocked(bot.x+rightX*27,bot.y+rightY*27,radius)?1:
+     !blocked(bot.x-rightX*27,bot.y-rightY*27,radius)?-1:1;
+   }
+   const side=brain.ctfLaneSide,sideX=rightX*side,sideY=rightY*side;
+   if(!blocked(bot.x+sideX*3,bot.y+sideY*3,radius))
+    direction=Math.atan2(forwardY*.2+sideY,forwardX*.2+sideX);
+   // At the lateral wall limit, continue FORWARD to pass rather than
+   // reversing lanes and walking back into the teammate.
+   ctfYield=true;
+  }else brain.ctfLaneSide=0;
+ }
  botBrains.set(i,brain);
  const delta=Math.atan2(Math.sin(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a),Math.cos(Math.atan2(target.y-bot.y,target.x-bot.x)-bot.a));
- const pace=skill==='casual'?.61:skill==='spicy'?.98:.81;
+ const basePace=skill==='casual'?.61:skill==='spicy'?.98:.81;
+ const pace=role==='hunter'?.94:role==='sentinel'?.70:role==='scavenger'?.74:basePace;
  const aim=skill==='casual'?.27:skill==='spicy'?.39:.33;
  const enemyDist=Math.hypot(bot.x-target.x,bot.y-target.y);
- const hasLine=enemyDist<(mazeGrid?385:750)&&hasLineOfSight(bot.x,bot.y,target.x,target.y);
- const chasePace=choice.kind==='engage'&&hasLine&&enemyDist<115?pace*.34:pace;
- return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,fire:Math.abs(delta)<aim&&hasLine,bot:true};
+ const hasLine=enemyDist<(mazeGrid?385:750)&&hasLineOfSight(bot.x,bot.y,target.x,target.y)&&
+   pilotBotFireFair(bot,target);
+ const acquired=pilotBotReactionReady(brain,target,skill,dt,hasLine);
+ // Only real, current line-of-sight refreshes combat memory. A hidden bot
+ // target cannot disclose its new coordinates to the shot evaluator.
+ if(hasLine){
+  brain.shotLastSeen={x:target.x,y:target.y,onFoot:!!target.onFoot,
+   index:state.tanks.indexOf(target),live:true};
+  brain.shotSightRemaining=.85;
+  if(acquired)brain.shotSightAcquired=true;
+ }else brain.shotSightRemaining=Math.max(0,(brain.shotSightRemaining||0)-dt);
+ const stored=brain.shotLastSeen;
+ const remembered=!hasLine&&brain.shotSightAcquired&&
+  brain.shotSightRemaining>0&&stored?.index===state.tanks.indexOf(target)&&
+  // The existing Solo fairness rule forbids shooting a human off-camera,
+  // even if that target was seen briefly before leaving the viewport.
+  pilotBotFireFair(bot,target);
+ const seen=hasLine?brain.shotLastSeen:remembered?{...stored,live:false}:null;
+ // Lock chosen angle once; do not chase a dodging target's updated position
+ // throughout the aim animation or magically cancel a shot mid-flight.
+ const committed=botFireCommit(brain,bot,target,skill,dt,
+  hasLine||remembered,hasLine?acquired:remembered,i,seen);
+ // Base defense and teammate escort hold a sensible standoff distance.
+ const ctfHold=!!ctfDecision&&!ctfYield&&
+  ((choice.kind==='defend'&&objectiveDistance<34)||
+   (choice.kind==='escort'&&objectiveDistance<90));
+ let chasePace=ctfHold||choice.kind==='hold'?0:
+  choice.kind==='engage'&&hasLine&&enemyDist<115?pace*(role==='hunter'?.72:.34):pace;
+ const preparingShot=hasLine&&Number.isFinite(brain.fireAngle)&&
+  brain.fireRecover<=0&&brain.fireTarget===state.tanks.indexOf(target);
+ if(preparingShot){
+  // Brake and visibly rotate to fire; don't drive sideways at cruising
+  // speed while simultaneously executing a perfect bank-shot plan.
+  const posture=botAimPosture(bot,brain,skill);
+  chasePace*=Math.abs(posture.angleError)<.6?.08:.28;
+ }
+ return {moveX:Math.cos(direction)*chasePace,moveY:Math.sin(direction)*chasePace,
+  aimX:committed.aimX,aimY:committed.aimY,fireAim:hasLine||remembered,fire:committed.fire,bot:true};
+}
+// One shared local-space pistol muzzle anchor, used by BOTH art and physics.
+// +X is actor facing; +Y is the tiny visual hand offset in top-down view.
+const PILOT_MUZZLE_X=28,PILOT_MUZZLE_Y=2;
+function pilotMuzzlePoint(t){
+ const forward=Math.cos(t.a),side=Math.sin(t.a);
+ return {x:t.x+forward*PILOT_MUZZLE_X-side*PILOT_MUZZLE_Y,
+         y:t.y+side*PILOT_MUZZLE_X+forward*PILOT_MUZZLE_Y};
+}
+function projectileHitRadius(target,bullet){
+ // Only CQC sidearms get the slightly larger impact tolerance. Wall/collision
+ // geometry, cover checks, shields and the other modes are unchanged.
+ return (target.onFoot?(isScoredMatch()&&bullet.kind==='sidearm'?CQC_PILOT_HIT_RADIUS:14):26)+(bullet.kind==='mech'?5:0);
+}
+// A2: the authoritative shot and the preview use ONE muzzle definition.
+// No projectile is created or sent until shoot() has passed normal ammo gates.
+function projectileOrigin(t,angle,foot){
+ const dx=Math.cos(angle),dy=Math.sin(angle),radius=foot?3:5;
+ let x=t.x+dx*(foot?7:12),y=t.y+dy*(foot?7:12);
+ if(foot){
+  const muzzleX=t.x+dx*PILOT_MUZZLE_X-dy*PILOT_MUZZLE_Y,
+   muzzleY=t.y+dy*PILOT_MUZZLE_X+dx*PILOT_MUZZLE_Y;
+  for(let k=1;k<=12;k++){
+   const bx=t.x+(muzzleX-t.x)*k/12,by=t.y+(muzzleY-t.y)*k/12;
+   if(blocked(bx,by,radius))break;
+   x=bx;y=by;
+  }
+ }else{
+  for(let d=14;d<=34;d+=2){const bx=t.x+dx*d,by=t.y+dy*d;
+   if(blocked(bx,by,radius))break;x=bx;y=by;}
+ }
+ return {x,y};
+}
+function makeProjectile(t,owner,angle){
+ const foot=!!t.onFoot&&isPilotMatch(),v=currentVehicle(t),def=vehicleDef(v);
+ const start=projectileOrigin(t,angle,foot),dx=Math.cos(angle),dy=Math.sin(angle);
+ const speed=foot?475:def.projectileSpeed,baseLife=foot?.82:v?.type==='mech'?2.05:2.55;
+ const rapid=t.powerTimer>0&&t.powerType==='rapid';
+ return {x:start.x,y:start.y,vx:dx*speed,vy:dy*speed,owner,
+  life:rapid&&!foot?baseLife*.68:baseLife,bounces:0,age:0,
+  kind:foot?'sidearm':v?.type==='mech'?'mech':'shell'};
+}
+// The SAME microstep runs live projectiles and simulated dotted trajectories.
+// Optional effects are emitted ONLY by the live host stepping actual bullets.
+function advanceProjectileMicrostep(b,dt,onBounce=null){
+ const radius=b.kind==='sidearm'?3:5,nx=b.x+b.vx*dt,ny=b.y+b.vy*dt;
+ if(blocked(nx,b.y,radius)){
+  if(b.kind==='sidearm'){b.life=0;return;}
+  b.vx=-b.vx;b.bounces++;
+  if(onBounce)onBounce('wall',b.x,b.y,b);
+ }else b.x=nx;
+ if(blocked(b.x,ny,radius)){
+  if(b.kind==='sidearm'){b.life=0;return;}
+  b.vy=-b.vy;b.bounces++;
+  if(onBounce)onBounce('wall',b.x,b.y,b);
+ }else b.y=ny;
+ for(const bump of bumpers){const dx=b.x-bump.x,dy=b.y-bump.y,dist=Math.hypot(dx,dy);
+  if(dist>0&&dist<bump.r+6&&(b.bumpDelay||0)<=0){
+   const ux=dx/dist,uy=dy/dist,dot=b.vx*ux+b.vy*uy;
+   if(dot<0){b.vx-=2*dot*ux;b.vy-=2*dot*uy;
+    b.x=bump.x+ux*(bump.r+7);b.y=bump.y+uy*(bump.r+7);
+    b.bounces++;b.bumpDelay=.09;
+    if(onBounce)onBounce('bumper',b.x,b.y,b);
+   }
+  }
+ }
+ b.bumpDelay=Math.max(0,(b.bumpDelay||0)-dt);
+ if(b.bounces>(b.kind==='mech'?2:5))b.life=0;
+}
+function liveProjectileBounce(kind,x,y,b){
+ emitFx('bounce',x,y,kind==='bumper'?'#ffdf7b':combatColor(b.owner));
+ audioCue(kind==='bumper'?'bumper':'ricochet',x,y);
 }
 function shoot(owner){if(state.lives[owner]<=0)return false;
- const isFoot=isPilotMatch()&&state.tanks[owner].onFoot;
- const v=currentVehicle(state.tanks[owner]),def=vehicleDef(v);const cap=activeBulletCap(state.tanks[owner]);if(state.bullets.filter(b=>b.owner===owner&&b.life>0).length>=cap)return false;
- const t=state.tanks[owner],dx=Math.cos(t.a),dy=Math.sin(t.a);
- // Trace the barrel from the tank toward the muzzle. A tank beside a wall
- // must not launch its shell on the opposite side of that wall.
- let x=t.x+dx*(isFoot?7:12),y=t.y+dy*(isFoot?7:12);
- for(let distance=isFoot?9:14;distance<=(isFoot?17:34);distance+=2){const bx=t.x+dx*distance,by=t.y+dy*distance;if(blocked(bx,by,isFoot?3:5))break;x=bx;y=by;}
+ const t=state.tanks[owner],foot=t.onFoot&&isPilotMatch();
+ const v=currentVehicle(t),cap=activeBulletCap(t);
+ if(state.bullets.filter(b=>b.owner===owner&&b.life>0).length>=cap)return false;
+ const b=makeProjectile(t,owner,t.a);
  t.shield=0; // Shooting cancels spawn/ejection immunity.
- const speed=isFoot?475:def.projectileSpeed;const baselineLife=isFoot?.82:v?.type==='mech'?2.05:2.55;
- const rapid=t.powerTimer>0&&t.powerType==='rapid';const shellLife=rapid&&!isFoot?baselineLife*.68:baselineLife;
- state.bullets.push({x,y,vx:dx*speed,vy:dy*speed,owner,life:shellLife,bounces:0,age:0,kind:isFoot?'sidearm':v?.type==='mech'?'mech':'shell'});t.flash=.11;t.recoil=isFoot?.28:v?.type==='mech'?.56:.72;emitFx('shot',x,y,colors[owner],owner);audioCue(isFoot?'pilot-shot':v?.type==='mech'?'mech-shot':'tank-shot',x,y);refreshHUD();return true;}
+ state.bullets.push(b);t.flash=.11;t.recoil=foot?.28:v?.type==='mech'?.56:.72;
+ emitFx('shot',b.x,b.y,combatColor(owner),owner);
+ audioCue(foot?'pilot-shot':v?.type==='mech'?'mech-shot':'tank-shot',b.x,b.y);
+ refreshHUD();return true;
+}
 function respawn(victim){const enemies=state.tanks.filter((_,i)=>i!==victim&&state.lives[i]>0&&!friendly(victim,i));const spots=[];
  if(mazeGrid){for(let r=0;r<mazeGrid.rows;r++)for(let c=0;c<mazeGrid.cols;c++)spots.push([(c+.5)*mazeGrid.cell,(r+.5)*mazeGrid.cell]);}
  else spots.push(...[[130,300],[830,300],[130,100],[830,500],[480,96],[480,500],[130,480],[830,120],[340,70],[620,525]]);
  const pool=spots.filter(([x,y])=>!blocked(x,y,isPilotMatch()?11:25)&&(isPilotMatch()||!parkedVehicleAt(x,y,25))&&state.tanks.every((other,j)=>j===victim||state.lives[j]===0||Math.hypot(x-other.x,y-other.y)>65));
  pool.sort((a,b)=>Math.min(...enemies.map(t=>Math.hypot(b[0]-t.x,b[1]-t.y)),10000)-Math.min(...enemies.map(t=>Math.hypot(a[0]-t.x,a[1]-t.y)),10000));
- const [x,y]=pool[0]||startingPosition(victim),t=state.tanks[victim];Object.assign(t,{x,y,a:0,vx:0,vy:0,shield:1.8,powerType:null,powerTimer:0,flash:0,recoil:0,trackLeft:0,trackRight:0,ejectAnim:0,onFoot:isPilotMatch()?true:false,vehicleId:null});
+ let selected=pool[0];
+ if(state.forwardBays&&mazeGrid){
+  const home=state.forwardBays.bays[teamOf(victim)];
+  const distance=window.SectorForwardBays.routeDistances(mazeGrid.open,home.cellIndex);
+  const at=p=>Math.floor(p[1]/mazeGrid.cell)*mazeGrid.cols+Math.floor(p[0]/mazeGrid.cell);
+  for(const depth of [2,4,7]){
+   const inTerritory=pool.filter(p=>distance[at(p)]>=0&&distance[at(p)]<=depth);
+   if(inTerritory.length){selected=inTerritory[0];break;}
+  }
+ }
+ const [x,y]=selected||startingPosition(victim),t=state.tanks[victim];Object.assign(t,{x,y,a:0,vx:0,vy:0,shield:1.8,powerType:null,powerTimer:0,flash:0,recoil:0,trackLeft:0,trackRight:0,ejectAnim:0,onFoot:isPilotMatch()?true:false,vehicleId:null});
  state.bullets=state.bullets.filter(b=>Math.hypot(b.x-x,b.y-y)>50);}
-function registerHit(attacker,victim){if(state.winner>=0||state.lives[victim]<=0||state.tanks[victim].shield>0||(attacker!==victim&&friendly(attacker,victim)))return false;
+function registerHit(attacker,victim){if(state.winner>=0||state.lives[victim]<=0||state.tanks[victim].shield>0||(attacker!==victim&&friendly(attacker,victim)&&!friendlyFireEnabled()))return false;
  quietContactSeconds=0;const target=state.tanks[victim];if(target.powerType==='guard'&&target.powerTimer>0){target.powerType=null;target.powerTimer=0;emitFx('guard',target.x,target.y,'#b59aff');audioCue('barrier',target.x,target.y);state.event='BARRIER BLOCKED THE HIT!';state.eventTimer=.8;return false;}
+ if(isScoredMatch()&&target.onFoot)return creditScoredPilotKO(attacker,victim);
  if(isPilotMatch()&&!target.onFoot){const vehicle=state.vehicles?.[target.vehicleId];if(vehicle&&vehicle.armor>0){
-   vehicle.armor--;emitFx('hit',target.x,target.y,colors[victim],attacker,victim);
+   vehicle.armor--;emitFx('armor',target.x,target.y,combatColor(victim),attacker,victim);
    if(victim===0){screenKick=comfort.shake?2.3:0;damagePulse=.28;}
    if(vehicle.armor===0)ejectPilot(victim);else{state.event=label(victim)+' '+vehicleDef(vehicle).name+' ARMOR '+vehicle.armor+'/'+vehicleDef(vehicle).armor;state.eventTimer=.75;}
    audioCue('armor-hit',target.x,target.y);refreshHUD();return true;
  }}
- emitFx('hit',target.x,target.y,colors[victim],attacker,victim);if(victim===(mode==='guest'?1:0)){screenKick=comfort.shake?3.2:0;damagePulse=.58;}state.lives[victim]--;if(attacker!==victim)state.kos[attacker]++;state.event=label(victim)+' LOSES A LIFE!';state.eventTimer=.85;audioCue('pilot-hit',target.x,target.y);
- if(state.lives[victim]>0)respawn(victim);else{target.vx=target.vy=0;target.powerType=null;target.powerTimer=0;state.bullets=state.bullets.filter(b=>b.owner!==victim);
+ // A scored vehicle life can ONLY end when its pilot is genuinely on foot.
+ if(isScoredMatch())return false;
+ emitFx('hit',target.x,target.y,combatColor(victim),attacker,victim);if(victim===(mode==='guest'?1:0)){screenKick=comfort.shake?3.2:0;damagePulse=.58;}state.lives[victim]--;if(state.deaths)state.deaths[victim]++;if(attacker!==victim&&!friendly(attacker,victim))state.kos[attacker]++;state.event=attacker!==victim&&friendly(attacker,victim)?'FRIENDLY HIT · NO KO':label(victim)+' LOSES A LIFE!';state.eventTimer=.85;audioCue('pilot-hit',target.x,target.y);
+ if(state.lives[victim]>0){respawn(victim);if(state.respawns)state.respawns[victim]++;}else{target.vx=target.vy=0;target.powerType=null;target.powerTimer=0;state.bullets=state.bullets.filter(b=>b.owner!==victim);
  const active=state.tanks.map((_,i)=>i).filter(i=>state.lives[i]>0),teams=[...new Set(active.map(i=>teamOf(i)))];
  if(teams.length<=1){state.winnerTeam=teams[0]??teamOf(attacker);state.winner=active[0]??attacker;state.event=state.config.teamMode==='coop'?(state.winnerTeam===0?'HUMANS WIN!':'BOTS WIN!'):state.config.teamMode==='teams'?(`TEAM ${state.winnerTeam===0?'BLUE':'RED'} WINS!`):(label(state.winner)+' WINS!');state.eventTimer=0;}}
+ if(state.winner>=0)finalizeRound();
  refreshHUD();return true;}
+
+// Scored CQC is deliberately a separate branch from finite-life Survival.
+function finishScoredMatch(){
+ if(!isScoredMatch()||!state.scored.finished||state.winner>=0)return;
+ state.winner=state.scored.result.winningSide??state.tanks.length; // draw sentinel
+ state.winnerTeam=state.scored.mode==='teams'?(state.scored.result.winningSide??-1):-1;
+ state.event=state.scored.result.isDraw?soloModeLabel(state.config)+' · DRAW':state.scored.result.reason==='time_limit'?'TIME LIMIT':'KO TARGET REACHED';
+ state.eventTimer=0;
+ if(state.lanSeries)state.lanSeries=window.SectorLanSeries.awardRound(state.lanSeries,
+  {matchId:state.matchId,winningSide:state.scored.result.winningSide});
+ finalizeRound();
+ refreshHUD();
+}
+function creditScoredPilotKO(attacker,victim){
+ const t=state.tanks[victim];if(!t.onFoot)return false;const api=window.SectorScored;
+ if(isCtfMatch())applyCtf(window.SectorFlags.drop(state.ctf,victim,t.x,t.y));
+ const teamKill=attacker!==victim&&friendly(attacker,victim)&&friendlyFireEnabled();
+ // The scored kernel already supports attacker:null: it records a genuine
+ // death but awards no score. Keep that invariant for accidental team kills.
+ let next=api.recordPilotKO(state.scored,{matchId:state.matchId,incidentId:state.config.matchModeId+':'+state.matchId+':'+(++state.scoreSerial),attacker:teamKill?null:attacker,victim,kind:'pilot_ko'});
+ if(next===state.scored)return false;
+ // The scored kernel still tracks true pilot deaths but cannot decide CTF.
+ if(isCtfMatch()&&next.finished)next=Object.freeze({...next,finished:false,result:null});
+ state.scored=next;state.kos=[...next.operatorKOs];state.deaths=[...next.deaths];
+ state.lives[victim]=0;t.respawnWait=1.6;t.shield=0;t.vx=0;t.vy=0;t.powerType=null;t.powerTimer=0;
+ state.bullets=state.bullets.filter(b=>b.owner!==victim);
+ emitFx('hit',t.x,t.y,combatColor(victim),attacker,victim);
+ if(victim===0){screenKick=comfort.shake?3.2:0;damagePulse=.58;}
+ audioCue('pilot-hit',t.x,t.y);const teamScore=next.mode==='teams'?next.operatorKOs.reduce((sum,k,i)=>sum+(next.teamIds[i]===next.teamIds[attacker]?k:0),0):null;
+  state.event=teamKill?'FRIENDLY FIRE · NO KO':attacker===victim?'SELF RICOCHET · NO KO':next.mode==='teams'?(next.teamIds[attacker]===0?'BLUE':'RED')+' TEAM KO · '+teamScore+'/'+next.scoreTarget:label(attacker)+' KO · '+state.kos[attacker]+'/'+next.scoreTarget;state.eventTimer=.9;
+ finishScoredMatch();refreshHUD();return true;
+}
+// Shared scored delayed spawn: pilots recover on foot; surviving empty vehicles
+// stay in the procedural sector for later boarding. Keep legacy test alias.
+function tryCqcRespawn(victim){
+ if(!isScoredMatch()||state.winner>=0)return false;
+ const alive=state.tanks.map((t,i)=>({t,i})).filter(o=>o.i!==victim&&state.lives[o.i]>0);
+ const candidates=[];
+ if(mazeGrid)for(let r=0;r<mazeGrid.rows;r++)for(let c=0;c<mazeGrid.cols;c++)
+  candidates.push({x:(c+.5)*mazeGrid.cell,y:(r+.5)*mazeGrid.cell});
+ const options={blocked:(x,y)=>blocked(x,y,12),
+  enemies:alive.filter(o=>!friendly(victim,o.i)).map(o=>o.t),
+  actors:alive.map(o=>o.t),bullets:state.bullets,
+  lineOfSight:hasLineOfSight,recentDeaths:state.recentDeaths||[]};
+ let site=null;
+ if(state.forwardBays&&mazeGrid){
+  const home=state.forwardBays.bays[teamOf(victim)];
+  const distance=window.SectorForwardBays.routeDistances(mazeGrid.open,home.cellIndex);
+  const at=p=>Math.floor(p.y/mazeGrid.cell)*mazeGrid.cols+Math.floor(p.x/mazeGrid.cell);
+  // Expand only outward through safe cells near YOUR team's base.
+  // An occupied or contested bay defers respawn rather than bypassing collision.
+  for(const depth of [2,4,7]){
+   site=window.SectorScored.chooseSafeScoreSpawn(candidates.filter(p=>distance[at(p)]>=0&&distance[at(p)]<=depth),options);
+   if(site)break;
+  }
+ }else site=window.SectorScored.chooseSafeScoreSpawn(candidates,options);
+ if(!site)return false; // retry next simulation tick, NEVER unsafe spawn
+ const t=state.tanks[victim];
+ Object.assign(t,{x:site.x,y:site.y,a:0,vx:0,vy:0,shield:1.65,respawnWait:0,powerType:null,powerTimer:0,flash:0,recoil:0,trackLeft:0,trackRight:0,onFoot:true,vehicleId:null});
+ state.lives[victim]=1;
+ state.scored=window.SectorScored.recordScoredRespawn(state.scored,{playerIndex:victim});
+ state.respawns=[...state.scored.respawns];return true;
+}
 // Reassurance only: the minimap already shows contacts, and the reminder
 // cannot reveal enemies, change AI, or fire in multiplayer.
 function updateQuietMatchPrompt(dt){
@@ -441,8 +1851,27 @@ function updateQuietMatchPrompt(dt){
  }
 }
 function step(dt){if(paused||state.winner>=0)return;
+ if(releaseShot){releaseShot.ttl-=dt;
+  if(!releaseMode()||releaseShot.matchId!==state.matchId||releaseShot.ttl<=0)releaseShot=null;
+ }
+ if(mode==='host'){
+  if(!connected)neutralizeGuestInput();
+  else{
+   guestInputAge+=dt;
+   if(guestInputAge>LAN_GUEST_INPUT_TIMEOUT)neutralizeGuestInput();
+  }
+ }
+ if(Number.isFinite(dt)&&dt>0)state.elapsedSeconds=(state.elapsedSeconds||0)+dt;
+ if(isScoredMatch()){
+  if(!isCtfMatch())state.scored=window.SectorScored.advanceScoreClock(state.scored,dt);
+  if(state.scored.finished){finishScoredMatch();return;}
+  for(let i=0;i<state.tanks.length;i++)if(state.lives[i]===0){
+   state.tanks[i].respawnWait=Math.max(0,(state.tanks[i].respawnWait||0)-dt);
+   if(state.tanks[i].respawnWait<=0)tryCqcRespawn(i);
+  }
+ }
  updateQuietMatchPrompt(dt);
- if(isPilotMatch())for(const vehicle of state.vehicles){
+ if(isPilotMatch()&&!isCqcMatch())for(const vehicle of state.vehicles){
    if(vehicle.occupant>=0){const t=state.tanks[vehicle.occupant];vehicle.x=t.x;vehicle.y=t.y;vehicle.a=t.a;}
    else if(vehicle.armor<=0){vehicle.respawn-=dt;if(vehicle.respawn<=0){const others=state.vehicles.filter(v=>v.id!==vehicle.id&&v.armor>0);
      const actors=state.tanks.filter((t,i)=>state.lives[i]>0);
@@ -454,25 +1883,67 @@ function step(dt){if(paused||state.winner>=0)return;
  state.eventTimer=Math.max(0,state.eventTimer-dt);state.pickupTimer-=dt;
  if(state.vehicleBeacon){state.vehicleBeacon.ttl-=dt;if(state.vehicleBeacon.ttl<=0)state.vehicleBeacon=null;}
  state.vehicleDropTimer=(state.vehicleDropTimer??28)-dt;
- if(state.vehicleDropTimer<=0){deployVehicle();state.vehicleDropTimer=30+mazeRandom(deploymentSeed(state.mazeSeed,state.dropIndex+9))()*12;}
- if(state.pickupTimer<=0){if(state.pickups.length)state.pickups=[];spawnPickup();state.pickupTimer=state.pickups.length?13:3;}
- const inputs=state.tanks.map((t,i)=>i===0?makeControl(true):i===1&&mode==='duel'?makeControl(false):i===1&&mode==='host'?guestInput:botInput(i,dt));
+ if(!isCqcMatch()&&state.vehicleDropTimer<=0){deployVehicle();state.vehicleDropTimer=30+mazeRandom(deploymentSeed(state.mazeSeed,state.dropIndex+9))()*12;}
+ if(!isCqcMatch()&&state.pickupTimer<=0){if(state.pickups.length)state.pickups=[];spawnPickup();state.pickupTimer=state.pickups.length?13:3;}
+ const inputs=state.tanks.map((t,i)=>i===0?makeControl(true):i===1&&mode==='duel'?makeControl(false):
+ i===1&&mode==='host'&&state.config?.lanHostSolo!==true?{...guestInput}:botInput(i,dt));
+ if(mode==='host'&&state.config?.lanHostSolo!==true&&remoteReleaseShot&&state.matchId===remoteReleaseShot.matchId){
+  inputs[1].aimX=remoteReleaseShot.x;inputs[1].aimY=remoteReleaseShot.y;
+ }
+ if(remoteReleaseShot&&(!connected||mode!=='host'||state.config?.lanHostSolo===true||remoteReleaseShot.matchId!==state.matchId||
+  state.lives[1]<=0||paused||(remoteReleaseShot.ttl-=dt)<=0))remoteReleaseShot=null;
  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]<=0)continue;
  t.powerTimer=Math.max(0,(t.powerTimer||0)-dt);if(t.powerTimer<=0)t.powerType=null;t.flash=Math.max(0,(t.flash||0)-dt);t.recoil=Math.max(0,(t.recoil||0)-dt*6);t.ejectAnim=Math.max(0,(t.ejectAnim||0)-dt);
  t.shield=Math.max(0,t.shield-dt);tankMove(t,inputs[i],dt,i);
  for(const p of state.pickups){if(Math.hypot(t.x-p.x,t.y-p.y)<(t.onFoot?23:35)&&collectPickup(t,i,p))break}
- fireCooldown[i]=Math.max(0,(fireCooldown[i]||0)-dt);if(inputs[i]?.fire&&fireCooldown[i]<=0&&shoot(i))fireCooldown[i]=fireInterval(t);}
- for(const b of state.bullets){b.age+=dt;b.life-=dt;const substeps=Math.max(1,Math.ceil(Math.max(Math.abs(b.vx),Math.abs(b.vy))*dt/5)),subDt=dt/substeps;
- for(let j=0;j<substeps&&b.life>0&&state.winner<0;j++){const nx=b.x+b.vx*subDt,ny=b.y+b.vy*subDt;
- if(blocked(nx,b.y,b.kind==='sidearm'?3:5)){if(b.kind==='sidearm'){b.life=0;break}b.vx=-b.vx;b.bounces++;emitFx('bounce',b.x,b.y,colors[b.owner]);audioCue('ricochet',b.x,b.y)}else b.x=nx;
- if(blocked(b.x,ny,b.kind==='sidearm'?3:5)){if(b.kind==='sidearm'){b.life=0;break}b.vy=-b.vy;b.bounces++;emitFx('bounce',b.x,b.y,colors[b.owner]);audioCue('ricochet',b.x,b.y)}else b.y=ny;
- for(const bump of bumpers){const dx=b.x-bump.x,dy=b.y-bump.y,dist=Math.hypot(dx,dy);if(dist>0&&dist<bump.r+6&&(b.bumpDelay||0)<=0){const ux=dx/dist,uy=dy/dist,dot=b.vx*ux+b.vy*uy;if(dot<0){b.vx-=2*dot*ux;b.vy-=2*dot*uy;b.x=bump.x+ux*(bump.r+7);b.y=bump.y+uy*(bump.r+7);b.bounces++;b.bumpDelay=.09;emitFx('bounce',b.x,b.y,'#ffdf7b');audioCue('bumper',b.x,b.y)}}}
- b.bumpDelay=Math.max(0,(b.bumpDelay||0)-subDt);if(b.bounces>(b.kind==='mech'?2:5)){b.life=0;break}
- // Unoccupied vehicle bays are non-solid training projections. Projectiles
- // pass through as well; only a piloted vehicle has physical armor.
- if(b.life<=0)break;
- for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]>0&&(i===b.owner?(b.age>.38&&b.bounces>0):!friendly(i,b.owner))&&t.shield<=0&&(t.x-b.x)**2+(t.y-b.y)**2<((t.onFoot?14:26)+(b.kind==='mech'?5:0))**2){b.life=0;registerHit(b.owner,i);break}}}}
- state.bullets=state.bullets.filter(b=>b.life>0);}
+ fireCooldown[i]=Math.max(0,(fireCooldown[i]||0)-dt);
+ // Host-authoritative fire from one physical release, after facing alignment.
+ const queued=i===0&&mode!=='guest'?releaseShot:i===1&&mode==='host'&&state.config?.lanHostSolo!==true?remoteReleaseShot:null;
+ let releaseReady=false;
+ if(queued&&queued.matchId===state.matchId&&state.lives[i]>0){
+  const angle=Math.atan2(queued.y,queued.x),
+    diff=Math.atan2(Math.sin(angle-t.a),Math.cos(angle-t.a));
+  releaseReady=Math.abs(diff)<.095&&fireCooldown[i]<=0;
+ }
+ // Host-only AI safety checks the entire *current* physical trajectory.
+ // It cannot predict where a human teammate will run after shell launch.
+ const botShotClear=!inputs[i]?.bot||!friendlyFireEnabled()||
+  !(inputs[i]?.fire&&fireCooldown[i]<=0)||botFriendlyLaneClear(i);
+ if((inputs[i]?.fire||releaseReady)&&fireCooldown[i]<=0&&botShotClear&&shoot(i)){
+  fireCooldown[i]=fireInterval(t);
+  if(inputs[i]?.bot){
+   const brain=botBrains.get(i);
+   if(brain){
+    const skill=state.config?.botSkill==='casual'?'casual':state.config?.botSkill==='spicy'?'spicy':'normal';
+    brain.fireRecover=skill==='casual'?.58:skill==='spicy'?.35:.43;
+    brain.lastShotTarget=brain.fireTarget;
+    brain.fireTrack=0;brain.fireTarget=-1;brain.fireShots=(brain.fireShots||0)+1;
+   }
+  }
+  if(releaseReady){if(i===0)releaseShot=null;else remoteReleaseShot=null;}
+ }
+}
+ for(const b of state.bullets){b.age+=dt;b.life-=dt;
+ const steps=Math.max(1,Math.ceil(Math.max(Math.abs(b.vx),Math.abs(b.vy))*dt/5)),subDt=dt/steps;
+ for(let j=0;j<steps&&b.life>0&&state.winner<0;j++){
+  advanceProjectileMicrostep(b,subDt,liveProjectileBounce);
+  // Empty parked vehicles remain non-cover. Actual projectile hit rules are
+  // authoritative; the trace may only inspect a static snapshot of them.
+  if(b.life<=0)break;
+  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];
+   if(state.lives[i]>0&&projectileCanHit(b.owner,i,b)&&
+    t.shield<=0&&(t.x-b.x)**2+(t.y-b.y)**2<projectileHitRadius(t,b)**2){
+    b.life=0;registerHit(b.owner,i);break;
+   }
+  }
+ }
+}
+ state.bullets=state.bullets.filter(b=>b.life>0);
+ if(isCtfMatch()&&state.winner<0){
+  applyCtf(window.SectorFlags.tick(state.ctf,ctfActors(),dt));
+  finishCtf();
+ }
+}
 // Offline synthesized FIELDGRID audio. No downloaded samples or backing music.
 // One shared AudioContext, short tails and a ricochet throttle protect phone CPU.
 const AUDIO_CUES={
@@ -487,7 +1958,11 @@ const AUDIO_CUES={
  'barrier':{wave:'triangle',start:640,end:1070,duration:.14,gain:.020},
  'pickup':{wave:'sine',start:420,end:920,duration:.15,gain:.020},
  'victory':{wave:'triangle',start:390,end:550,duration:.18,gain:.021},
- 'defeat':{wave:'triangle',start:240,end:85,duration:.25,gain:.022}
+ 'defeat':{wave:'triangle',start:240,end:85,duration:.25,gain:.022},
+ // Deliberately quiet, short UI tones; existing SOUND FX preference governs them.
+ 'ui-select':{wave:'sine',start:540,end:660,duration:.055,gain:.008,minGap:55},
+ 'ui-back':{wave:'sine',start:480,end:360,duration:.065,gain:.007,minGap:55},
+ 'deploy':{wave:'triangle',start:330,end:495,duration:.14,gain:.015,minGap:150}
 };
 // v0.9.21 original offline procedural music: same Web Audio context as SFX.
 // This is a tiny, consciously composed four-bar tonal pattern, not a copy
@@ -570,9 +2045,135 @@ function audioCue(kind,x=null,y=null){
   return true;
  }catch(_){return false;}
 }
+// In-match audio controls share existing persisted preferences.
+function pauseAudioControls(){
+ return '<div class="pause-audio" role="group" aria-label="In-match audio controls"><span class="pause-audio-label">AUDIO</span>'+
+  '<button type="button" data-action="toggle-sound" aria-pressed="'+comfort.sound+'">SFX · '+(comfort.sound?'ON':'OFF')+'</button>'+
+  '<button type="button" data-action="toggle-music" aria-pressed="'+comfort.music+'">MUSIC · '+(comfort.music?'ON':'OFF')+'</button></div>';
+}
+function togglePauseAudio(setting,button){
+ if(setting!=='sound'&&setting!=='music')return false;
+ comfort[setting]=!comfort[setting];
+ savePrefs();
+ if(button){button.textContent=(setting==='sound'?'SFX':'MUSIC')+' · '+(comfort[setting]?'ON':'OFF');button.setAttribute?.('aria-pressed',String(comfort[setting]));}
+ if(setting==='music'){musicScene='';if(comfort.music)armMusic();}
+ else if(comfort.sound)audioCue('ui-select');
+ return comfort[setting];
+}
 function updateVisuals(dt){visualClock+=dt;if(coachRemaining>0){coachRemaining=Math.max(0,coachRemaining-dt);if(coachRemaining===0)document.getElementById('field-coach')?.classList.add('hidden');}screenKick=Math.max(0,screenKick-dt*22);damagePulse=Math.max(0,damagePulse-dt*1.65);for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.max(0,1-dt*3);p.vy*=Math.max(0,1-dt*3)}particles=particles.filter(p=>p.life>0)}
 
-function drawTopTank(c,paint,parked=false,trackLeft=0,trackRight=0,recoil=0,suspension=0){
+
+ // LAB E. Gameplay-only materials, separate from pilot dossier portraits or shop.
+ // A skin ID changes three flat paint planes, never gameplay or team ownership.
+ // Null armor/trim means: preserve existing per-player painted vehicle color.
+// Four free OFFLINE starter materials. No commerce or network entitlement.
+const HANGAR_KEY='rr-hangar-paint-v1';
+const OPERATOR_EMBLEMS=Object.freeze({
+ 'mark.field':{label:'FIELD',glyph:'◇'},
+ 'mark.vector':{label:'VECTOR',glyph:'△',metric:'matches',target:3},
+ 'mark.ace':{label:'ACE',glyph:'✦',metric:'kos',target:10},
+ 'mark.command':{label:'COMMAND',glyph:'◆',metric:'wins',target:12}
+});
+let equippedEmblem='mark.field';
+function emblemProgress(id,info=currentDossier()){
+ const def=Object.prototype.hasOwnProperty.call(OPERATOR_EMBLEMS,id)?OPERATOR_EMBLEMS[id]:null;
+ if(!def)return {eligible:false,current:0,target:0,metric:'unknown'};
+ if(!def.metric)return {eligible:true,current:0,target:0,metric:'free'};
+ const current=Number.isSafeInteger(info?.[def.metric])&&info[def.metric]>=0?info[def.metric]:0;
+ return {eligible:current>=def.target,current,target:def.target,metric:def.metric};
+}
+const HANGAR_PAINTS=Object.freeze({
+ 'fieldgrid.standard':{label:'STANDARD'},
+ 'fieldgrid.moss':{label:'MOSS'},
+ 'fieldgrid.dune':{label:'DUNE'},
+ 'fieldgrid.oxide':{label:'OXIDE'},
+ 'fieldgrid.vanguard':{label:'VANGUARD',metric:'matches',target:5},
+ 'fieldgrid.veteran':{label:'VETERAN',metric:'wins',target:12}
+});
+let equippedPaint='fieldgrid.standard';
+function paintProgress(id,info=currentDossier()){
+ const def=Object.prototype.hasOwnProperty.call(HANGAR_PAINTS,id)?HANGAR_PAINTS[id]:null;
+ if(!def)return {eligible:false,current:0,target:0,metric:'unknown'};
+ if(!def.metric)return {eligible:true,current:0,target:0,metric:'free'};
+ const current=Number.isSafeInteger(info?.[def.metric])&&info[def.metric]>=0?info[def.metric]:0;
+ return {eligible:current>=def.target,current,target:def.target,metric:def.metric};
+}
+// Reward notices only reflect thresholds crossed by one successfully saved Solo match.
+function unlocksFromResult(before,after){
+ if(!before||!after)return [];
+ const unlocked=[];
+ for(const [id,def] of Object.entries(HANGAR_PAINTS))
+  if(def.metric&&!paintProgress(id,before).eligible&&paintProgress(id,after).eligible)unlocked.push(def.label+' PAINT');
+ for(const [id,def] of Object.entries(OPERATOR_EMBLEMS))
+  if(def.metric&&!emblemProgress(id,before).eligible&&emblemProgress(id,after).eligible)unlocked.push(def.glyph+' '+def.label+' INSIGNIA');
+ return unlocked;
+}
+function normalizePaint(id){return paintProgress(id).eligible?id:'fieldgrid.standard';}
+function normalizeEmblem(id){return emblemProgress(id).eligible?id:'mark.field';}
+// Keep v1 backward compatible: legacy paint-only files remain valid and
+// retain their exact old JSON shape until an operator chooses an emblem.
+function hangarRecord(paint,emblem){
+ const data={version:1,equipped:paint};
+ if(emblem!=='mark.field')data.emblem=emblem;
+ return JSON.stringify(data);
+}
+function saveHangar(paint,emblem){
+ const data=hangarRecord(paint,emblem);
+ try{window.localStorage?.setItem(HANGAR_KEY,data);
+  if(window.localStorage?.getItem(HANGAR_KEY)!==data)return false;
+ }catch(_){return false;}
+ equippedPaint=paint;equippedEmblem=emblem;return true;
+}
+function loadPaint(){
+ equippedPaint='fieldgrid.standard';equippedEmblem='mark.field';
+ try{const raw=JSON.parse(window.localStorage?.getItem(HANGAR_KEY)||'null');
+  if(raw?.version===1){equippedPaint=normalizePaint(raw.equipped);equippedEmblem=normalizeEmblem(raw.emblem||'mark.field');}
+ }catch(_){}
+ return equippedPaint;
+}
+function equipPaint(id){
+ if(!paintProgress(id).eligible)return false;
+ return saveHangar(id,equippedEmblem);
+}
+function equipEmblem(id){
+ if(!emblemProgress(id).eligible)return false;
+ return saveHangar(equippedPaint,id);
+}
+const FIELDGRID_UNIT_SKINS=Object.freeze({
+ 'fieldgrid.standard':{
+  pilot:{armor:'#607a85',shadow:'#294650',light:'#9fb7bc',trim:'#78949b'},
+  tank:{armor:null,shadow:'#193845',light:'#bfe3e6',trim:null},
+  mech:{armor:null,shadow:'#243d55',light:'#e5e5ff',trim:null}},
+ 'fieldgrid.moss':{
+  pilot:{armor:'#71866f',shadow:'#354b3f',light:'#b5c6a0',trim:'#98ad7c'},
+  tank:{armor:'#759376',shadow:'#354e42',light:'#c6d9ad',trim:'#93b58f'},
+  mech:{armor:'#779480',shadow:'#3a5145',light:'#c2d3ae',trim:'#93ae96'}},
+ 'fieldgrid.dune':{
+  pilot:{armor:'#b49c74',shadow:'#5e5142',light:'#ead8aa',trim:'#d2b788'},
+  tank:{armor:'#c0a675',shadow:'#5c4f40',light:'#f0dfb0',trim:'#d5be89'},
+  mech:{armor:'#b6a27f',shadow:'#615548',light:'#f0e0bd',trim:'#d3c398'}},
+ 'fieldgrid.oxide':{
+  pilot:{armor:'#9e6858',shadow:'#512f31',light:'#d9a18c',trim:'#bf795f'},
+  tank:{armor:'#a66d5b',shadow:'#573637',light:'#e5b5a2',trim:'#c4836f'},
+  mech:{armor:'#a46c64',shadow:'#573940',light:'#dfaaa1',trim:'#be8479'}},
+ 'fieldgrid.vanguard':{
+  pilot:{armor:'#648f9d',shadow:'#253f4d',light:'#a5cbd1',trim:'#80b5bd'},
+  tank:{armor:'#5d8899',shadow:'#254454',light:'#afd5db',trim:'#78aebe'},
+  mech:{armor:'#688c9d',shadow:'#2b4359',light:'#b9d4e1',trim:'#80acbb'}},
+ 'fieldgrid.veteran':{
+  pilot:{armor:'#9e9070',shadow:'#514a3b',light:'#dbcaa0',trim:'#d1b873'},
+  tank:{armor:'#9a8b67',shadow:'#4b4639',light:'#e0d5ac',trim:'#c0a468'},
+  mech:{armor:'#a09470',shadow:'#534a3d',light:'#dfd1a6',trim:'#c4af77'}}
+});
+function resolveUnitMaterials(unit,teamPaint,skinId='fieldgrid.standard'){
+ const preset=FIELDGRID_UNIT_SKINS[skinId]||FIELDGRID_UNIT_SKINS['fieldgrid.standard'];
+ const role=preset[unit]||preset.pilot;
+ return {armor:role.armor||teamPaint,shadow:role.shadow,light:role.light,
+         trim:role.trim||teamPaint,team:teamPaint};
+}
+
+function drawTopTank(c,paint,parked=false,trackLeft=0,trackRight=0,recoil=0,suspension=0,skinId='fieldgrid.standard'){
+ const skin=resolveUnitMaterials('tank',paint,skinId);
  // Art contract v0.9.6: vehicle local +X is FORWARD (toward the barrel).
  // Tracks run parallel to +X at BOTH sides of the hull. Mirror them from
  // one geometry definition, never draw the right tread with separate offsets.
@@ -594,20 +2195,21 @@ function drawTopTank(c,paint,parked=false,trackLeft=0,trackRight=0,recoil=0,susp
  }
  // Center chassis is bilaterally symmetric; armor plate has a visible forward nose.
  c.fillStyle='#0a1d27';c.fillRect(-23,-16,46,32);
- c.fillStyle=paint;c.fillRect(-22,-15,43,30);c.strokeStyle='#071a22';c.strokeRect(-22,-15,43,30);
- c.fillStyle='#193845';c.fillRect(-17,-11,34,22);
+ c.fillStyle=skin.armor;c.fillRect(-22,-15,43,30);c.strokeStyle='#071a22';c.strokeRect(-22,-15,43,30);
+ c.fillStyle=skin.shadow;c.fillRect(-17,-11,34,22);
  c.fillStyle='#3d6673';c.fillRect(-17,-11,7,22);
- c.fillStyle=paint;c.fillRect(-12,-10,24,20);c.strokeRect(-12,-10,24,20);
- c.fillStyle='#bfe3e6';c.fillRect(-7,-5,8,10);
+ c.fillStyle=skin.armor;c.fillRect(-12,-10,24,20);c.strokeRect(-12,-10,24,20);
+ c.fillStyle=skin.light;c.fillRect(-7,-5,8,10);
  // A single centerline weapon (not an extra sideways track or misaligned gun).
  c.fillStyle='#081924';c.fillRect(10,-6,25,12);c.strokeRect(10,-6,25,12);
  c.fillStyle='#477e8b';c.fillRect(13,-3,22,6);
- c.fillStyle=paint;c.fillRect(33,-5,6,10);
+ c.fillStyle=skin.armor;c.fillRect(33,-5,6,10);
  c.fillStyle='#eaf9f5';c.fillRect(38,-3,3,6);
  if(parked){c.strokeStyle='#83bba9';c.lineWidth=1.7;c.strokeRect(-29,-30,58,60)}
  c.restore();
 }
-function drawTopMech(c,paint,parked=false,stride=0,recoil=0,bob=0){
+function drawTopMech(c,paint,parked=false,stride=0,recoil=0,bob=0,skinId='fieldgrid.standard'){
+ const skin=resolveUnitMaterials('mech',paint,skinId);
  // True top-down walker: two separate articulated legs, shoulders and central cockpit.
  // Readable at phone scale; the dark gaps distinguish the mech from tracked tanks.
  // Weight is subtle and only affects this unit's own art, not physics.
@@ -617,19 +2219,19 @@ function drawTopMech(c,paint,parked=false,stride=0,recoil=0,bob=0){
    // Alternating walking gait; mirrored limbs retain their geometry at rest.
    c.translate(side*stride,0);
    c.fillStyle='#111f2c';c.fillRect(-25,12,17,12);c.fillRect(-22,19,15,17);
-   c.fillStyle=paint;c.fillRect(-23,15,12,9);c.strokeRect(-23,15,12,9);
+   c.fillStyle=skin.armor;c.fillRect(-23,15,12,9);c.strokeRect(-23,15,12,9);
    c.fillStyle='#6c84a0';c.fillRect(-20,28,16,7);c.strokeRect(-20,28,16,7);
    // Forward shoulder/arm, separated visibly from the torso.
-   c.fillStyle=paint;c.fillRect(2,17,17,12);c.strokeRect(2,17,17,12);
+   c.fillStyle=skin.armor;c.fillRect(2,17,17,12);c.strokeRect(2,17,17,12);
    c.fillStyle='#192a3e';c.fillRect(13,19,12,7);c.strokeRect(13,19,12,7);
    c.restore();
  }
  c.fillStyle='#17283a';c.fillRect(-14,-17,32,34);
- c.fillStyle=paint;c.fillRect(-13,-15,27,30);c.strokeRect(-13,-15,27,30);
- c.fillStyle='#243d55';c.fillRect(-8,-10,16,20);
- c.fillStyle='#e5e5ff';c.fillRect(-3,-8,9,16);
+ c.fillStyle=skin.armor;c.fillRect(-13,-15,27,30);c.strokeRect(-13,-15,27,30);
+ c.fillStyle=skin.shadow;c.fillRect(-8,-10,16,20);
+ c.fillStyle=skin.light;c.fillRect(-3,-8,9,16);
  c.fillStyle='#162639';c.fillRect(12,-6,20,12);c.strokeRect(12,-6,20,12);
- c.fillStyle=paint;c.fillRect(27,-5,8,10);c.fillStyle='#e6f8ff';c.fillRect(33,-3,5,6);
+ c.fillStyle=skin.armor;c.fillRect(27,-5,8,10);c.fillStyle='#e6f8ff';c.fillRect(33,-3,5,6);
  if(parked){c.strokeStyle='#cfb4fd';c.lineWidth=2;c.strokeRect(-29,-38,67,76)}
  c.restore();
 }
@@ -669,58 +2271,313 @@ function drawLobbyPreview(dt){
  c.rotate(-.25+(reduced?0:Math.sin(phase)*.14));
  c.scale(2.55,2.55);
  const amount=!reduced?lobbyPreviewClock:0;
- if(showMech)drawTopMech(c,'#d5bb77',false,Math.sin(amount*2.3)*1.7,0,Math.sin(amount*3)*.5);
- else drawTopTank(c,'#6bcde0',false,amount*10,amount*10,0,.38);
+ if(showMech)drawTopMech(c,'#d5bb77',false,Math.sin(amount*2.3)*1.7,0,Math.sin(amount*3)*.5,equippedPaint);
+ else drawTopTank(c,'#6bcde0',false,amount*10,amount*10,0,.38,equippedPaint);
  c.restore();
  c.fillStyle='#73c7d6';c.globalAlpha=.4;
  c.fillRect(w*.12,h*.26,55,2);c.fillRect(w*.77,h*.66,47,2);
  c.globalAlpha=1;
 }
-function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0){
- // v0.9.21: single clear operator silhouette. Not a robot or mini-tank.
- // Camera looks straight down. The visor and small pistol face +X.
- const step=clamp(stride,-3,3);
- c.save();c.translate(-recoil*.2,bob);
- // Legs are two visible counter-stepping boots; preserve exact actor hitbox.
- c.fillStyle='#081923';
- c.fillRect(-23+step,-9,10,7);c.fillRect(-23-step,3,10,7);
- c.fillStyle='#465f68';
- c.fillRect(-21+step,-8,7,5);c.fillRect(-21-step,4,7,5);
- // Longish jacket body with one color band; head is physically ahead of it.
- c.fillStyle='#0b202b';c.fillRect(-17,-9,19,18);
- c.fillStyle='#45636d';c.fillRect(-15,-7,17,14);
- c.fillStyle=paint;c.fillRect(-15,-6,3,12);
- // Rounded, low profile arms separate from the torso, no tank-tread slabs.
- c.fillStyle='#304852';
- c.beginPath();c.arc(-8,-11,4.5,0,Math.PI*2);c.arc(-8,11,4.5,0,Math.PI*2);c.fill();
- c.fillStyle='#93adb3';c.fillRect(-6,-13,3,3);c.fillRect(-6,10,3,3);
- // Forward helmet has a distinct forehead and tiny glass surface.
- c.fillStyle='#091b26';c.beginPath();c.arc(5,0,8,0,Math.PI*2);c.fill();
- c.fillStyle='#79939a';c.beginPath();c.arc(5,0,6.4,0,Math.PI*2);c.fill();
- c.fillStyle='#2d5662';c.fillRect(8,-4,3,8);
- c.fillStyle='#9fdee3';c.fillRect(10,-3,2,6);
- // Tiny pistol is secondary to the head, not a second turret.
- c.fillStyle='#162c36';c.fillRect(13,-1.3,4,3);
- if(shooting){c.fillStyle='#ffe5ad';c.beginPath();c.arc(19,0,2.4,0,Math.PI*2);c.fill()}
+function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0,skinId='fieldgrid.standard',squadPaint=false){
+ // v0.9.45 FIELDGRID P-03: compact overhead operator; no exposed legs.
+ // +X is forward for the pilot, tank, mech AND the real projectile muzzle.
+ // Only shoulders and short arms mirror across Y; two hands hold ONE pistol.
+ // No foreshortened face/profile, segmented circles, fake depth or glow rings.
+ const skin=resolveUnitMaterials('pilot',paint,skinId);
+ const armorPaint=squadPaint&&skinId==='fieldgrid.standard'?paint:skin.armor;
+ // Movement rhythm is driven by real velocity in render(), not fake foot steps.
+ // Only the unified vest and shoulder plates move. Helmet, hands, pistol,
+ // muzzle and projectile origin stay on the exact same forward axis.
+ const gait=clamp(stride,-3.5,3.5);
+ c.save();c.translate(-recoil*.15,bob*.25);
+ c.lineJoin='miter';c.lineWidth=1.6;c.strokeStyle='#071923';
+ // Tiny grounded upper-body sway while moving, zero movement at rest.
+ // The rear vest sways as ONE solid block; no boots/knees are drawn.
+ c.save();c.translate(-Math.abs(gait)*.18,gait*.32);
+ c.fillStyle='#071923';c.fillRect(-20,-10,28,20);
+ c.fillStyle=armorPaint;c.fillRect(-18,-8,24,16);
+ c.fillStyle=skin.shadow;c.fillRect(-16,-7,8,14);
+ c.fillStyle=skin.light;c.fillRect(-14,-8,3,15);
+ c.fillStyle='#132c38';c.fillRect(-19,-5,4,10);
+ c.fillStyle=skin.trim;c.fillRect(-17,-8,2,3);
+ c.restore();
+ // Mirrored shoulder plates gently counter-shift along the pilot's forward
+ // axis; the actual two-hand gun hold remains fixed and fully aligned.
+ // There is deliberately no counterstepping lower-body animation.
+ for(const side of [-1,1]){
+  c.save();c.scale(1,side);
+  // Both shoulders subtly travel in opposing phases. No leg geometry.
+  c.save();c.translate(side*gait*.5,0);
+  c.fillStyle='#071923';c.fillRect(-9,11,17,11);
+  c.fillStyle=armorPaint;c.fillRect(-7,13,14,7);
+  c.fillStyle=skin.light;c.fillRect(-6,13,10,2);
+  c.fillStyle=skin.team;c.fillRect(-7,19,6,2);
+  c.restore();
+  // Weapon-gripping forearms do not move with the animated shoulder plates,
+  // so drawn muzzle position stays in sync with actual sidearm projectiles.
+  // Each arm is one angular armored bent limb — not a second barrel.
+  c.fillStyle='#071923';c.beginPath();
+  c.moveTo(6,16);c.lineTo(11,15);c.lineTo(20,6);
+  c.lineTo(20,3);c.lineTo(16,3);c.lineTo(8,12);c.closePath();c.fill();
+  c.fillStyle=armorPaint;c.beginPath();
+  c.moveTo(9,14);c.lineTo(12,14);c.lineTo(19,6);
+  c.lineTo(19,5);c.lineTo(17,5);c.lineTo(9,12);c.closePath();c.fill();
+  c.fillStyle=skin.light;c.fillRect(16,6,3,2);
+  // One glove per hand on a shared centerline sidearm.
+  c.fillStyle='#071923';c.fillRect(16,2,8,6);
+  c.fillStyle='#bdcac8';c.fillRect(18,3,5,3);
+  c.restore();
+ }
+ // Compact chamfered helmet, viewed entirely from above — no face in profile.
+ c.fillStyle='#071923';c.beginPath();
+ c.moveTo(-11,-7);c.lineTo(-7,-12);c.lineTo(6,-12);
+ c.lineTo(12,-7);c.lineTo(12,7);c.lineTo(6,12);
+ c.lineTo(-7,12);c.lineTo(-11,7);c.closePath();c.fill();
+ c.fillStyle=armorPaint;c.fillRect(-8,-9,17,18);
+ c.fillStyle=skin.shadow;c.fillRect(-7,4,15,4);
+ c.fillStyle=skin.light;c.fillRect(-6,-9,11,3);
+ // Narrow forward visor band makes facing direction visible at zoomed-out scale.
+ c.fillStyle='#112a36';c.fillRect(6,-6,5,12);
+ c.fillStyle=skin.trim;c.fillRect(9,-5,2,10);
+ c.fillStyle='#d5eeea';c.fillRect(10,-3,1,6);
+ // Shared real weapon muzzle remains exactly local-space (28,2).
+ c.fillStyle='#071923';c.fillRect(17,0,11,4);
+ c.fillStyle='#849fa8';c.fillRect(19,0,7,1);
+ c.fillStyle='#3f5963';c.fillRect(18,4,5,2);
+ c.fillStyle='#e1f3d8';c.fillRect(PILOT_MUZZLE_X-1,PILOT_MUZZLE_Y-1,2,2);
+ if(shooting){c.fillStyle='#ffda91';c.beginPath();
+  c.moveTo(PILOT_MUZZLE_X+1,2);c.lineTo(PILOT_MUZZLE_X+5,-2);
+  c.lineTo(PILOT_MUZZLE_X+4,2);c.lineTo(PILOT_MUZZLE_X+5,6);
+  c.closePath();c.fill();}
  c.restore();
 }
-// Unit-specific camera language: agile pilot sees a closer view, heavier units
-// pull back for situational awareness. The apron keeps wide displays covered.
-const CAMERA_APRON=112;
+// Four fixed WORLD-SPACE corner brackets, not a rotating ring/turret silhouette.
+// Team color replaces player color for team matches; never stack both locators.
+function drawPilotLocator(c,x,y,color){
+ c.save();c.strokeStyle=color;c.globalAlpha=.54;c.lineWidth=1.4;
+ c.beginPath();
+ for(const sx of [-1,1])for(const sy of [-1,1]){
+  const bx=x+sx*26,by=y+sy*25;
+  c.moveTo(bx-sx*6,by);c.lineTo(bx,by);c.lineTo(bx,by-sy*6);
+ }
+ c.stroke();c.restore();
+}
+// v0.9.22-dev5: final small vehicle-only pullback after owner phone feedback.
+// Keep pilot at approved scale for future pilot-only Close Quarters.
+const CAMERA_APRON=420;
 function unitTargetZoom(t){
- // v0.9.14: a measured four-hundredths zoom-out in each unit state.
- // Keep the unit hierarchy, smoothing and screen-size minimum unchanged.
- // Approximately 7% wider view, retaining distinct vehicle handling.
- if(!t)return 1.15;
- if(t.onFoot)return 1.22;
+ if(!t)return 1.00;
+ if(t.onFoot)return 1.07; // Explicitly unchanged from dev3 / dev4.
  const v=currentVehicle(t);
- return v?.type==='mech'?1.08:v?.type==='tank'?1.13:1.15;
+ return v?.type==='mech'?.77:v?.type==='tank'?.82:1.00;
 }
 function cameraZoom(t=state?.tanks?.[mode==='guest'?1:0]){
  return mazeGrid?Math.max(unitTargetZoom(t),W/(worldW+CAMERA_APRON*2),H/(worldH+CAMERA_APRON*2)):1;
 }
-function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick>0)c.translate(Math.sin(visualClock*130)*screenKick,Math.cos(visualClock*98)*screenKick*.5);// A 6.25% camera pullback. The perimeter includes a small rendered exterior
- // apron so wide Android screens never reveal blank letterbox gutters.
+// B1: one bounded static trajectory at the actual fire decision. The engine
+// never cancels an in-flight projectile when a teammate enters its path.
+// Evaluate full shell life, not merely the shorter visible dotted preview.
+function botFriendlyLaneClear(i){
+ if(!friendlyFireEnabled())return true;
+ const t=state.tanks[i];
+ if(!t||state.lives[i]<=0)return false;
+ const path=traceProjectile(t,t.a,{maxDistance:1300,
+  maxBounces:t.onFoot?0:5,checkActors:true});
+ return path.hit===null||path.hit===i||!friendly(i,path.hit);
+}
+// A2: deterministic static-world shot prediction through the identical
+// muzzle/microstep used by live bullets. No effects, damage or state mutation.
+// Bounded by projectile lifetime and optional UI range; target checks are
+// opt-in and use current (not future) actor positions. AI integration is A3.
+function traceProjectile(t,angle,options={}){
+ const owner=state.tanks.indexOf(t),b=makeProjectile(t,owner,angle),foot=b.kind==='sidearm';
+ const maxDistance=Number.isFinite(options.maxDistance)?clamp(options.maxDistance,0,1300):1300;
+ const afterBounce=Number.isFinite(options.afterBounce)?clamp(options.afterBounce,0,1300):1300;
+ const maxBounces=Number.isInteger(options.maxBounces)?clamp(options.maxBounces,0,6):6;
+ const checkActors=options.checkActors===true;
+ const segments=[[{x:b.x,y:b.y}]];let distance=0,postBounce=0,bounce=null,hit=null;
+ let firstBounceCount=-1,termination='lifetime';
+ const maxFrames=Math.ceil(b.life/STEP)+1;
+ for(let frame=0;frame<maxFrames&&b.life>0;frame++){
+  b.age+=STEP;b.life-=STEP;
+  const substeps=Math.max(1,Math.ceil(Math.max(Math.abs(b.vx),Math.abs(b.vy))*STEP/5)),subDt=STEP/substeps;
+  for(let j=0;j<substeps&&b.life>0;j++){
+   const px=b.x,py=b.y,before=b.bounces;
+   advanceProjectileMicrostep(b,subDt);
+   if(b.life<=0){termination=foot?'wall':'bounce_limit';break;}
+   const stepDistance=Math.hypot(b.x-px,b.y-py);
+   distance+=stepDistance;
+   if(b.bounces>before){
+    if(!bounce)bounce={x:b.x,y:b.y};
+    if(firstBounceCount<0)firstBounceCount=b.bounces;
+    if(b.bounces>maxBounces){termination='bounce_window';b.life=0;break;}
+    segments[segments.length-1].push({x:b.x,y:b.y});
+    segments.push([{x:b.x,y:b.y}]);
+   }else segments[segments.length-1].push({x:b.x,y:b.y});
+   if(firstBounceCount>=0)postBounce+=stepDistance;
+   if(checkActors)for(let i=0;i<state.tanks.length;i++){
+    const target=state.tanks[i];
+    if(state.lives[i]<=0||(i!==owner&&target.shield>0))continue;
+    if(owner>=0&&!projectileCanHit(owner,i,b))continue;
+    if((target.x-b.x)**2+(target.y-b.y)**2<projectileHitRadius(target,b)**2){
+     hit=i;termination='actor';b.life=0;break;
+    }
+   }
+   if(b.life<=0)break;
+   if(distance>=maxDistance||postBounce>=afterBounce&&firstBounceCount>=0){
+    termination='hint_range';b.life=0;break;
+   }
+  }
+ }
+ return {segments,bounce,foot,hit,bounces:b.bounces,termination,
+  distance,projectileKind:b.kind};
+}
+// Preserve the intentionally modest local dotted-line visual: first ricochet
+// and a short continuation, even though the shared evaluator can trace more.
+function previewTrajectory(t,angle){
+ return traceProjectile(t,angle,{maxDistance:t.onFoot?245:520,
+  maxBounces:1,afterBounce:235,checkActors:false});
+}
+// B2: ally intent is display-only. It never changes shot physics/AI. A
+// network guest receives ONLY filtered bot indexes, not target ids, headings,
+// angles or any hidden aim solution. Bot headings already exist in snapshots.
+function alliedAimActive(i,me,source=state){
+ if(source?.config?.teamMode==='ffa'||source?.winner>=0||source?.lives?.[me]<=0||
+    i<source.humanCount||i===me||source.lives?.[i]<=0||
+    !friendlyForState(i,me,source))return false;
+ const bot=source.tanks[i],observer=source.tanks[me];
+ if(!bot||!observer||bot.flash>0||Math.hypot(bot.x-observer.x,bot.y-observer.y)>330||
+    !hasLineOfSight(bot.x,bot.y,observer.x,observer.y))return false;
+ if(mode==='guest'){
+  return Array.isArray(source.allyAim)&&source.allyAim.includes(i);
+ }
+ const brain=botBrains.get(i);
+ return !!brain&&brain.fireTrack>0&&brain.fireRecover<=0&&
+  Number.isFinite(brain.fireAngle)&&Number.isInteger(brain.fireTarget)&&
+  brain.fireTarget>=0&&source.lives[brain.fireTarget]>0&&
+  !friendlyForState(i,brain.fireTarget,source);
+}
+// Host sends only those ally bots eligible for guest seat 1; never targets.
+function alliedAimIntentIndices(me){
+ if(mode!=='host'||!state||paused||state.winner>=0)return [];
+ return state.tanks.map((t,i)=>i).filter(i=>alliedAimActive(i,me))
+  .sort((a,b)=>Math.hypot(state.tanks[a].x-state.tanks[me].x,state.tanks[a].y-state.tanks[me].y)-
+   Math.hypot(state.tanks[b].x-state.tanks[me].x,state.tanks[b].y-state.tanks[me].y))
+  .slice(0,2);
+}
+function visibleAlliedAimIndices(me){
+ if(!comfort.alliedTraces||paused||state?.hostPaused||state?.winner>=0||
+   (mode!=='solo'&&mode!=='host'&&mode!=='guest'))return [];
+ const zoom=camera.zoom;
+ if(!Number.isFinite(zoom)||zoom<=0)return [];
+ const eligible=state.tanks.map((t,i)=>i).filter(i=>{
+  if(!alliedAimActive(i,me))return false;
+  const t=state.tanks[i],sx=(t.x-camera.x)*zoom,sy=(t.y-camera.y)*zoom;
+  return sx>=28&&sx<=W-28&&sy>=28&&sy<=H-28;
+ });
+ return eligible.sort((a,b)=>Math.hypot(state.tanks[a].x-state.tanks[me].x,state.tanks[a].y-state.tanks[me].y)-
+  Math.hypot(state.tanks[b].x-state.tanks[me].x,state.tanks[b].y-state.tanks[me].y)).slice(0,2);
+}
+function drawAlliedAimTrace(c,i){
+ const t=state.tanks[i];
+ // The true CURRENT muzzle heading, not the bot's still-unreached plan.
+ const path=traceProjectile(t,t.a,{maxDistance:t.onFoot?150:225,
+  maxBounces:1,afterBounce:85,checkActors:false});
+ const color=combatColor(i);
+ c.save();c.fillStyle=color;
+ for(let n=0;n<path.segments.length;n++){
+  c.globalAlpha=n===0?.38:.20;
+  let lengthSoFar=0,nextDot=14;
+  const segment=path.segments[n];
+  for(let k=1;k<segment.length;k++){
+   const a=segment[k-1],b=segment[k],d=Math.hypot(b.x-a.x,b.y-a.y);
+   if(d<.001)continue;
+   while(lengthSoFar+d>=nextDot){
+    const factor=(nextDot-lengthSoFar)/d;
+    c.beginPath();c.arc(a.x+(b.x-a.x)*factor,a.y+(b.y-a.y)*factor,1.45,0,Math.PI*2);c.fill();
+    nextDot+=18;
+   }
+   lengthSoFar+=d;
+  }
+ }
+ c.restore();
+}
+function drawTrajectoryPreview(c,t,angle){
+ const path=previewTrajectory(t,angle),color=path.foot?'#b4ffe0':'#b5e6ff';
+ c.save();
+ for(let n=0;n<path.segments.length;n++){
+  const line=path.segments[n];c.globalAlpha=n===0?.76:.34;c.fillStyle=color;
+  let lengthSoFar=0,nextDot=11;
+  for(let i=1;i<line.length;i++){
+   const p=line[i-1],q=line[i],length=Math.hypot(q.x-p.x,q.y-p.y);
+   if(length<.001)continue;
+   while(lengthSoFar+length>=nextDot){
+    const f=(nextDot-lengthSoFar)/length;
+    c.beginPath();c.arc(p.x+(q.x-p.x)*f,p.y+(q.y-p.y)*f,1.8,0,Math.PI*2);c.fill();
+    nextDot+=13;
+   }
+   lengthSoFar+=length;
+  }
+ }
+ if(path.bounce){
+  c.globalAlpha=.92;c.strokeStyle='#ffe0a4';c.lineWidth=1.4;c.beginPath();
+  c.arc(path.bounce.x,path.bounce.y,5,0,Math.PI*2);c.stroke();
+ }
+ const finalPoint=path.segments.at(-1)?.at(-1);
+ if(finalPoint){c.globalAlpha=.5;c.strokeStyle=color;c.lineWidth=1.2;c.beginPath();
+  c.arc(finalPoint.x,finalPoint.y,3,0,Math.PI*2);c.stroke();}
+ c.restore();
+}
+// Compact combat cues use the actual bot acquisition state. Never reveal a
+// concealed shooter, and never infer unsynced AI state on a LAN guest.
+function enemyBotCue(i,me=mode==='guest'?1:0){
+ if(mode!=='solo'&&mode!=='host')return null;
+ if(!state||paused||state.winner>=0||i===me||!lanBotSeat(i)||
+    state.lives[i]<=0||state.lives[me]<=0||friendly(i,me))return null;
+ const enemy=state.tanks[i],local=state.tanks[me],brain=botBrains.get(i);
+ if(!enemy||!local||!brain)return null;
+ const zoom=camera.zoom;
+ if(!Number.isFinite(zoom)||zoom<=0)return null;
+ const x=(enemy.x-camera.x)*zoom,y=(enemy.y-camera.y)*zoom;
+ const tx=(local.x-camera.x)*zoom,ty=(local.y-camera.y)*zoom;
+ if(x<40||x>W-40||y<40||y>H-40||tx<0||tx>W||ty<0||ty>H)return null;
+ const distance=Math.hypot(enemy.x-local.x,enemy.y-local.y);
+ if(distance>385||!hasLineOfSight(enemy.x,enemy.y,local.x,local.y))return null;
+ const angle=Number.isFinite(enemy.a)?enemy.a:0;
+ // The existing true muzzle flash takes priority over reacquisition.
+ if(enemy.flash>0)return brain.lastShotTarget===me?{phase:'shot',angle,progress:1}:null;
+ if(brain.fireTarget!==me||brain.fireRecover>0||
+    !(brain.fireTrack>0)||!Number.isFinite(brain.fireAngle))return null;
+ const skill=state.config?.botSkill==='casual'?'casual':
+   state.config?.botSkill==='spicy'?'spicy':'normal';
+ const delay=botAimDelay(skill,mode==='solo'&&local.onFoot,
+  brain.fireQuick===true&&!local.onFoot);
+ const progress=clamp(brain.fireTrack/delay,0,1);
+ if(progress<.23)return null;
+ return {phase:'acquire',angle,progress};
+}
+function drawEnemyBotCue(c,t,cue){
+ const radius=t.onFoot?27:44;
+ c.save();c.translate(t.x,t.y);c.rotate(cue.angle);
+ if(cue.phase==='shot'){
+  c.globalAlpha=.75;c.fillStyle='#ffe5a6';
+  c.beginPath();c.moveTo(radius+4,0);c.lineTo(radius+14,-5);
+  c.lineTo(radius+20,0);c.lineTo(radius+14,5);c.closePath();c.fill();
+ }else{
+  // Three restrained readiness ticks by the muzzle; no full predictive laser.
+  c.lineWidth=2.25;c.lineCap='round';
+  for(let n=0;n<3;n++){
+   const fraction=clamp(cue.progress*3-n,0,1);if(fraction<=0)continue;
+   c.globalAlpha=(.26+.52*fraction)*Math.min(1,(cue.progress-.20)*4);
+   c.strokeStyle=cue.progress>.87?'#ffe1a2':'#ffcc86';
+   const start=-.42+n*.29;
+   c.beginPath();c.arc(0,0,radius,start,start+.22*fraction);c.stroke();
+  }
+ }
+ c.restore();
+}
+function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick>0)c.translate(Math.sin(visualClock*130)*screenKick,Math.cos(visualClock*98)*screenKick*.5);// Widened tactical camera. The perimeter includes enough rendered exterior
+ // floor tiles so wide Android screens do not reveal blank side gutters.
  const me=mode==='guest'?1:0,localTank=state.lives[me]>0?state.tanks[me]:(state.tanks.find((t,i)=>state.lives[i]>0)||state.tanks[me]||state.tanks[0]);
  const zoomTarget=cameraZoom(localTank);
  if(!Number.isFinite(camera.zoom))camera.zoom=zoomTarget;
@@ -737,7 +2594,8 @@ function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick
  // Modular FIELDGRID surface, deterministic from cell coordinates with no per-frame randomness.
  // Culling ensures large mazes don't draw decorative details outside the camera.
  const left=camera.x-56,right=camera.x+viewW+56,top=camera.y-56,bottom=camera.y+viewH+56;
- const tile=132,xmin=Math.max(-1,Math.floor(left/tile)),xmax=Math.min(Math.ceil(worldW/tile)+1,Math.ceil(right/tile)),ymin=Math.max(-1,Math.floor(top/tile)),ymax=Math.min(Math.ceil(worldH/tile)+1,Math.ceil(bottom/tile));
+ const tile=132,apronCells=Math.ceil(CAMERA_APRON/tile)+1;
+ const xmin=Math.max(-apronCells,Math.floor(left/tile)),xmax=Math.min(Math.ceil(worldW/tile)+apronCells,Math.ceil(right/tile)),ymin=Math.max(-apronCells,Math.floor(top/tile)),ymax=Math.min(Math.ceil(worldH/tile)+apronCells,Math.ceil(bottom/tile));
  for(let gy=ymin;gy<ymax;gy++)for(let gx=xmin;gx<xmax;gx++){
    const x=gx*tile,y=gy*tile,hash=(gx*19+gy*37+currentSeed%23)%11;
    if(x<0||y<0||x>=worldW||y>=worldH){c.fillStyle='#10242e';c.fillRect(x+1,y+1,tile-2,tile-2);c.strokeStyle='#25414b';c.lineWidth=1;c.strokeRect(x+2,y+2,tile-4,tile-4);continue;}
@@ -749,6 +2607,25 @@ function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick
    if(hash===8){c.fillStyle='#314c54';c.font='800 13px system-ui';c.textAlign='left';c.fillText('FG',x+17,y+tile-18)}
    if(hash===2){c.fillStyle='#564f3b';for(let stripe=0;stripe<4;stripe++)c.fillRect(x+65+stripe*12,y+tile-22,7,3)}
    if(hash===10){c.strokeStyle='#345261';c.lineWidth=2;c.strokeRect(x+tile-40,y+tile-40,24,24)}
+ }
+ // Forward Bay markings sit UNDER solid walls, leaving collision and
+ // ricochet gameplay untouched. These are not capture flags or safe zones.
+ for(const bay of state.forwardBays?.bays||[]){
+  const clr=bay.team===0?'#64d5e9':'#ff9b85';
+  c.fillStyle=bay.team===0?'#183b48':'#45302d';
+  c.fillRect(bay.x-47,bay.y-47,94,94);
+  c.strokeStyle=clr;c.lineWidth=3;c.strokeRect(bay.x-47,bay.y-47,94,94);
+  c.setLineDash([7,5]);c.lineWidth=1.5;c.strokeRect(bay.x-35,bay.y-35,70,70);c.setLineDash([]);
+  c.fillStyle=clr;c.font='bold 12px monospace';c.textAlign='center';
+  c.fillText(bay.team===0?'CYAN FOB':'CORAL FOB',bay.x,bay.y-10);
+  c.fillStyle='#d9e8e4';c.font='10px monospace';c.fillText('DEPLOY',bay.x,bay.y+12);
+  for(const gate of bay.entrances){
+   const dx=gate.x-bay.x,dy=gate.y-bay.y,len=Math.hypot(dx,dy)||1;
+   c.beginPath();c.moveTo(bay.x+dx/len*48,bay.y+dy/len*48);
+   c.lineTo(bay.x+dx/len*62,bay.y+dy/len*62);c.stroke();
+  }
+  c.strokeStyle=clr;c.strokeRect(bay.parking.x-23,bay.parking.y-23,46,46);
+  c.fillStyle=clr;c.fillText('P',bay.parking.x,bay.parking.y+5);
  }
  // Facility perimeter is solid in play and visually signals a different layer than floor tiles.
  c.fillStyle='#253f4e';c.fillRect(0,0,worldW,15);c.fillRect(0,worldH-15,worldW,15);c.fillRect(0,0,15,worldH);c.fillRect(worldW-15,0,15,worldH);
@@ -764,6 +2641,19 @@ function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick
    c.fillStyle='#162a36';if(w.w>w.h){for(let x=w.x+25;x<w.x+w.w-10;x+=65)c.fillRect(x,w.y+7,3,4)}else for(let y=w.y+25;y<w.y+w.h-10;y+=65)c.fillRect(w.x+7,y,4,3);
  }
  
+// CTF flag markers: visible game objects, not solid cover or pickups.
+ for(const flag of state.ctf?.flags||[]){
+  const clr=flag.team===0?'#64d5e9':'#ff9b85',x=flag.x,y=flag.y;
+  c.save();c.strokeStyle=clr;c.lineWidth=3;
+  c.beginPath();c.moveTo(x,y-21);c.lineTo(x+18,y);c.lineTo(x,y+21);c.lineTo(x-18,y);c.closePath();
+  c.fillStyle=flag.carrier!==null?'#fff2da':flag.droppedFor>0?'#73543e':'#142931';
+  c.fill();c.stroke();
+  c.fillStyle=clr;c.font='900 11px monospace';c.textAlign='center';
+  c.fillText(flag.team===0?'C':'R',x,y+4);
+  if(flag.carrier!==null){c.font='900 10px monospace';c.fillText('CARRIED',x,y-28);}
+  if(flag.droppedFor>0){c.font='900 10px monospace';c.fillText('RETURN '+Math.max(0,Math.ceil(window.SectorFlags.AUTO_RETURN_SECONDS-flag.droppedFor)),x,y-29);}
+  c.restore();
+ }
 for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();c.arc(bump.x,bump.y,bump.r+glow,0,Math.PI*2);c.fillStyle='#34464b';c.fill();c.strokeStyle='#ffd67d';c.lineWidth=4;c.stroke();c.beginPath();c.arc(bump.x,bump.y,11,0,Math.PI*2);c.fillStyle='#ffc76a';c.fill()}
  for(const p of state.pickups||[]){const def=PICKUPS[p.type];if(!def)continue;
    const pulse=Math.sin(visualClock*4.8+p.x*.013),radius=24+pulse*2.5;
@@ -789,51 +2679,66 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
       }}
  }
  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]<=0)continue;
- if(state.config?.teamMode!=='ffa'){c.beginPath();c.arc(t.x,t.y,29,0,Math.PI*2);c.strokeStyle=teamOf(i)===0?'#60dfff':'#ffb06e';c.lineWidth=4;c.stroke()}
+ if(state.config?.teamMode!=='ffa'&&!t.onFoot){c.beginPath();c.arc(t.x,t.y,29,0,Math.PI*2);c.strokeStyle=teamOf(i)===0?'#60dfff':'#ffb06e';c.lineWidth=4;c.stroke()}
+ if(t.onFoot)drawPilotLocator(c,t.x,t.y,state.config?.teamMode!=='ffa'?(teamOf(i)===0?'#60dfff':'#ffb06e'):combatColor(i));
+ const paint=combatColor(i);
  c.save();c.translate(t.x,t.y);c.rotate(t.a);
  if(t.onFoot){
    const stride=Math.sin(visualClock*15+i*1.7)*Math.min(3.5,Math.hypot(t.vx,t.vy)/65);
-   // Readable ground-operator selection: draw a soft, wider locator BEHIND
-   // the helmet, arms and boots. The old solid ring overprinted the human shape.
-   c.strokeStyle=colors[i];c.globalAlpha=.5;c.lineWidth=1.5;c.beginPath();c.arc(0,0,21,0,Math.PI*2);c.stroke();c.globalAlpha=1;
-   drawTopPilot(c,colors[i],t.flash>0,stride,t.recoil||0,Math.sin(visualClock*15+i*1.7)*Math.min(.45,Math.hypot(t.vx,t.vy)/400));
+   // No permanent ring. Fixed world-space FIELDGRID brackets render behind the operator.
+   drawTopPilot(c,paint,t.flash>0,stride,t.recoil||0,Math.sin(visualClock*15+i*1.7)*Math.min(.45,Math.hypot(t.vx,t.vy)/400),mode==='solo'&&i===0?equippedPaint:'fieldgrid.standard',state.config?.teamMode!=='ffa');
    c.restore();
    if(t.ejectAnim>0){c.save();c.globalAlpha=Math.min(.7,t.ejectAnim/.62);c.strokeStyle='#e5faff';c.lineWidth=2;c.beginPath();c.arc(t.x,t.y,18+(1-t.ejectAnim/.62)*22,0,Math.PI*2);c.stroke();c.restore();}
  }else{
  if(t.shield>0){c.globalAlpha=.65+.25*Math.sin(t.shield*15)}
- (currentVehicle(t)?.type==='mech'?drawTopMech(c,colors[i],false,Math.sin(visualClock*10+i*1.9)*Math.min(3.2,Math.hypot(t.vx,t.vy)/55),t.recoil||0,Math.sin(visualClock*20+i*3.8)*Math.min(.65,Math.hypot(t.vx,t.vy)/320)):drawTopTank(c,colors[i],false,t.trackLeft||0,t.trackRight||0,t.recoil||0,Math.min(1,Math.hypot(t.vx,t.vy)/240)));if(t.flash>0){c.fillStyle='#fff3a0';c.beginPath();c.arc(39,0,8+t.flash*70,0,Math.PI*2);c.fill()}c.restore();
+ (currentVehicle(t)?.type==='mech'?drawTopMech(c,paint,false,Math.sin(visualClock*10+i*1.9)*Math.min(3.2,Math.hypot(t.vx,t.vy)/55),t.recoil||0,Math.sin(visualClock*20+i*3.8)*Math.min(.65,Math.hypot(t.vx,t.vy)/320),mode==='solo'&&i===0?equippedPaint:'fieldgrid.standard'):drawTopTank(c,paint,false,t.trackLeft||0,t.trackRight||0,t.recoil||0,Math.min(1,Math.hypot(t.vx,t.vy)/240),mode==='solo'&&i===0?equippedPaint:'fieldgrid.standard'));if(t.flash>0){c.fillStyle='#fff3a0';c.beginPath();c.arc(39,0,8+t.flash*70,0,Math.PI*2);c.fill()}c.restore();
  if(isPilotMatch()){const v=state.vehicles?.[t.vehicleId];if(v){c.fillStyle='#16313b';c.fillRect(t.x-19,t.y+29,38,5);c.fillStyle='#79eab2';c.fillRect(t.x-19,t.y+29,38*v.armor/vehicleDef(v).armor,5);}}}
  if(t.powerType&&t.powerTimer>0&&PICKUPS[t.powerType]){c.fillStyle=PICKUPS[t.powerType].color;c.font='800 10px monospace';c.textAlign='center';c.fillText(PICKUPS[t.powerType].name+' '+Math.ceil(t.powerTimer)+'s',t.x,t.y+49)}
- if(t.shield>0){c.beginPath();c.arc(t.x,t.y,32+Math.sin(t.shield*10)*2,0,Math.PI*2);c.strokeStyle=colors[i];c.globalAlpha=clamp(t.shield/1.8*.8,0,.8);c.lineWidth=3;c.stroke();c.globalAlpha=1}
- c.fillStyle=colors[i];c.font='bold 13px system-ui';c.textAlign='center';
+ if(t.shield>0){c.beginPath();c.arc(t.x,t.y,32+Math.sin(t.shield*10)*2,0,Math.PI*2);c.strokeStyle=paint;c.globalAlpha=clamp(t.shield/1.8*(t.onFoot?.42:.8),0,t.onFoot?.42:.8);c.lineWidth=t.onFoot?1.8:3;c.stroke();c.globalAlpha=1}
+ c.fillStyle=paint;c.font='bold 13px system-ui';c.textAlign='center';
  // Ground personnel stand close to parked vehicles. Move their label
  // to the side, rather than painting it across the abandoned tank.
- c.fillText(i<state.humanCount?'P'+(i+1):'AI'+(i-state.humanCount+1),t.x+(t.onFoot?27:0),t.y+(t.onFoot?5:-38));
+ c.fillText(!lanBotSeat(i)?'P'+(i+1):state.config?.teamMode==='teams'&&friendly(i,mode==='guest'?1:0)?'ALLY '+botOrdinal(i):'AI'+botOrdinal(i),t.x+(t.onFoot?42:0),t.y+(t.onFoot?-18:-38));
  if(i===(mode==='guest'?1:0)){
   c.beginPath();
-  if(t.onFoot){c.moveTo(t.x-21,t.y);c.lineTo(t.x-33,t.y-7);c.lineTo(t.x-33,t.y+7);}
+  if(t.onFoot){c.moveTo(t.x-30,t.y);c.lineTo(t.x-40,t.y-6);c.lineTo(t.x-40,t.y+6);}
   else{c.moveTo(t.x,t.y-59);c.lineTo(t.x-8,t.y-71);c.lineTo(t.x+8,t.y-71);}
   c.closePath();c.fillStyle='#ffffff';c.fill();
  }}
+ // Friendly dotted paths are quiet secondary information; show at most two.
+ for(const i of visibleAlliedAimIndices(me))drawAlliedAimTrace(c,i);
+ if(releaseMode()&&(fireAim.pointerId!==null||releaseShot)){
+  const t=state.tanks[mode==='guest'?1:0],aim=releaseShot??(fireAim.active?fireAim:null);
+  drawTrajectoryPreview(c,t,aim?Math.atan2(aim.y,aim.x):t.a);
+ }
+ // Small warning only when an enemy actually sees the local player.
+ for(let i=0;i<state.tanks.length;i++){
+  if(!lanBotSeat(i))continue;
+  const cue=enemyBotCue(i,mode==='guest'?1:0);
+  if(cue)drawEnemyBotCue(c,state.tanks[i],cue);
+ }
  for(const b of state.bullets){
    const foot=b.kind==='sidearm',heavy=b.kind==='mech';
    const length=Math.min(foot?10:heavy?24:19,Math.hypot(b.vx,b.vy)*.037);
    c.beginPath();c.moveTo(b.x-b.vx/405*length,b.y-b.vy/405*length);c.lineTo(b.x,b.y);
-   c.strokeStyle=foot?'#d9f3e8':colors[b.owner];c.lineWidth=foot?2.5:heavy?6:4;c.stroke();
+   c.strokeStyle=foot?'#d9f3e8':combatColor(b.owner);c.lineWidth=foot?2.5:heavy?6:4;c.stroke();
    c.beginPath();c.arc(b.x,b.y,foot?3.2:heavy?8:6,0,Math.PI*2);
-   c.fillStyle=foot?'#dbffd8':'#f8ffff';c.shadowColor=colors[b.owner];c.shadowBlur=foot?3:heavy?17:12;c.fill();c.shadowBlur=0;
+   c.fillStyle=foot?'#dbffd8':'#f8ffff';c.shadowColor=combatColor(b.owner);c.shadowBlur=foot?3:heavy?17:12;c.fill();c.shadowBlur=0;
    if(heavy){c.beginPath();c.arc(b.x,b.y,11,0,Math.PI*2);c.strokeStyle='#c5a6ff';c.lineWidth=2;c.stroke();}
  }
  // Short, readable impact rings; effects are serialized for nearby-play guests.
  for(const fx of state.fxEvents||[]){
-   if(fx.kind!=='hit'&&fx.kind!=='eject'&&fx.kind!=='bounce'&&fx.kind!=='guard')continue;
-   const span=fx.kind==='eject'?.8:fx.kind==='hit'?.75:fx.kind==='guard'?.5:.4;const progress=1-clamp((fx.ttl||0)/span,0,1);
-   const radius=fx.kind==='eject'?20+progress*48:fx.kind==='hit'?8+progress*33:fx.kind==='guard'?18+progress*29:4+progress*12;
-   c.save();c.globalAlpha=(fx.kind==='bounce'?.5:.75)*(1-progress);c.strokeStyle=fx.kind==='eject'?'#f6e4bd':fx.kind==='hit'?'#fff0bf':fx.kind==='guard'?'#bfa6ff':'#9fd9f3';
-   c.lineWidth=fx.kind==='eject'?4:2.5;c.beginPath();c.arc(fx.x,fx.y,radius,0,Math.PI*2);c.stroke();
-   // Directional impact ticks read as armor strikes rather than soft bubbles.
-   if((fx.kind==='hit'||fx.kind==='eject')&&progress<.76){
-    const rays=fx.kind==='eject'?9:7;
+   if(fx.kind!=='hit'&&fx.kind!=='armor'&&fx.kind!=='eject'&&fx.kind!=='bounce'&&fx.kind!=='guard')continue;
+   const span=fx.kind==='eject'?.8:fx.kind==='hit'?.75:fx.kind==='armor'?.55:fx.kind==='guard'?.5:.4;const progress=1-clamp((fx.ttl||0)/span,0,1);
+   const radius=fx.kind==='eject'?20+progress*48:fx.kind==='hit'?8+progress*33:fx.kind==='armor'?15+progress*19:fx.kind==='guard'?18+progress*29:4+progress*12;
+   c.save();c.globalAlpha=(fx.kind==='bounce'?.5:.75)*(1-progress);c.strokeStyle=fx.kind==='eject'?'#f6e4bd':fx.kind==='hit'?'#fff0bf':fx.kind==='armor'?'#a8ecfa':fx.kind==='guard'?'#bfa6ff':'#9fd9f3';
+   c.lineWidth=fx.kind==='eject'?4:2.5;c.beginPath();
+   // Angular armor plate strike versus the rounded operator-hit pulse.
+   if(fx.kind==='armor'){c.moveTo(fx.x,fx.y-radius);c.lineTo(fx.x+radius,fx.y);c.lineTo(fx.x,fx.y+radius);c.lineTo(fx.x-radius,fx.y);c.closePath();}
+   else c.arc(fx.x,fx.y,radius,0,Math.PI*2);
+   c.stroke();
+   if((fx.kind==='armor'||fx.kind==='hit'||fx.kind==='eject')&&progress<.76){
+    const rays=fx.kind==='eject'?9:fx.kind==='armor'?4:7;
     c.lineWidth=fx.kind==='eject'?3:2;
     for(let n=0;n<rays;n++){
      const a=n*Math.PI*2/rays,inner=radius+5,outer=inner+(1-progress)*12;
@@ -872,7 +2777,7 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  c.scale(mw/worldW,mh/worldH);c.fillStyle='#19313e';c.fillRect(0,0,worldW,worldH);
  c.fillStyle='#789ba7';for(const w of wallSet)c.fillRect(w.x,w.y,w.w,w.h);if(isPilotMatch()){for(const v of state.vehicles)if(v.occupant===-1&&v.armor>0){c.fillStyle=v.type==='mech'?'#d7a8ff':'#74e0a6';c.fillRect(v.x-28,v.y-28,56,56);}}
  if(state.vehicleBeacon?.ttl>0){c.strokeStyle='#fff6bf';c.lineWidth=19;c.beginPath();c.arc(state.vehicleBeacon.x,state.vehicleBeacon.y,55+Math.sin(visualClock*6)*15,0,Math.PI*2);c.stroke();}
- for(let i=0;i<state.tanks.length;i++){if(state.lives[i]<=0)continue;const t=state.tanks[i],me=mode==='guest'?1:0;if(i!==me&&Math.hypot(t.x-state.tanks[me].x,t.y-state.tanks[me].y)>400)continue;c.beginPath();c.arc(t.x,t.y,37,0,Math.PI*2);c.fillStyle=colors[i];c.fill()}
+ for(let i=0;i<state.tanks.length;i++){if(state.lives[i]<=0)continue;const t=state.tanks[i],me=mode==='guest'?1:0;if(i!==me&&Math.hypot(t.x-state.tanks[me].x,t.y-state.tanks[me].y)>400)continue;c.beginPath();c.arc(t.x,t.y,37,0,Math.PI*2);c.fillStyle=combatColor(i);c.fill()}
  // Nearby hostile gunfire briefly appears as a *rough* sound ring, not a permanent wallhack.
  const local=state.tanks[me];if(local)for(const fx of (state.fxEvents||[])){if(fx.kind!=='shot'||!(fx.ttl>0)||!Number.isInteger(fx.owner)||fx.owner<0||fx.owner>=state.tanks.length||friendly(fx.owner,me))continue;
    if(Math.hypot(fx.x-local.x,fx.y-local.y)>1000)continue;
@@ -895,41 +2800,353 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  }
 function nativePacket(packet){if(!window.AndroidBridge)return;try{window.AndroidBridge.sendPacket(JSON.stringify(packet))}catch(e){notice('Network send failed')}}
 function loop(now){const dt=clamp((now-lastTime)/1000,0,.085);lastTime=now;
+ if(mode==='guest'&&releaseShot){releaseShot.ttl-=dt;
+  if(!releaseMode()||releaseShot.ttl<=0||releaseShot.matchId!==state.matchId)releaseShot=null;
+ }
  if(mode==='solo'||mode==='duel'||mode==='host'){if(!paused&&state.winner<0){fixedAccumulator=Math.min(.12,fixedAccumulator+dt);let ticks=0;while(fixedAccumulator>=STEP&&ticks++<5){step(STEP);fixedAccumulator-=STEP}}else fixedAccumulator=0;}
  updateVisuals(dt);hudTimer+=dt;if(hudTimer>.15){hudTimer=0;refreshHUD();}
- if(mode==='host'&&connected){snapshotTimer+=dt;if(snapshotTimer>.09){snapshotTimer=0;nativePacket({type:'state',state:serializeState()})}}
- if(mode==='guest'&&connected){sendTimer+=dt;if(sendTimer>.05){sendTimer=0;nativePacket({type:'input',input:menu.classList.contains('hidden')&&!document.hidden?makeControl(true):{moveX:0,moveY:0,fire:false}})}}
+ if(mode==='host'&&connected&&state.config?.lanHostSolo!==true&&!(lanLobby&&lanLobby.active)){snapshotTimer+=dt;if(snapshotTimer>.09){snapshotTimer=0;nativePacket({type:'state',state:serializeState()})}}
+ if(mode==='guest'&&connected&&!(lanLobby&&lanLobby.active)){sendTimer+=dt;if(sendTimer>.05){sendTimer=0;nativePacket({type:'input',input:menu.classList.contains('hidden')&&!document.hidden?makeControl(true):{moveX:0,moveY:0,fire:false}})}}
  render(dt);drawLobbyPreview(dt);updateMusic();requestAnimationFrame(loop)}
 function bridgeReady(){return !!window.AndroidBridge}
-function host(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('host');setPanel('<div class="eyebrow">NEARBY PLAY</div><h2>HOSTING MATCH</h2><p id="host-status">Starting local game...</p><div class="host-address" id="host-address"></div><button data-action="close">CANCEL</button>');window.AndroidBridge.hostGame()}
+
+/* Nearby LAN lobby v1 — host owns all match rules; guest explicitly readies.
+   No saved Solo/Quick Play options, match scoring or Wi-Fi host authority changes. */
+let lanLobby=null;
+const LAN_SIDES={ffa:'FREE FOR ALL',coop:'CO-OP VS BOTS',teams:'OPPOSING TEAMS',tdm:'TEAM DEATHMATCH'};
+const LAN_SIZE={small:'SMALL',standard:'STANDARD',large:'LARGE'};
+const LAN_SKILL={casual:'RELAXED',normal:'STANDARD',spicy:'CHALLENGE'};
+// Ignore malformed network snapshots before they can replace the live game state.
+ // Android transport bounds packet size, but a peer can still send a short,
+ // structurally incomplete JSON object. Never promote it into render/HUD state.
+function validRemoteSnapshot(s){
+ const n=Array.isArray(s?.tanks)?s.tanks.length:0;
+ if(n<2||n>6||!s.config||typeof s.config!=='object'||Array.isArray(s.config))return false;
+ if(!Number.isInteger(s.mazeSeed)||s.mazeSeed<1||!Number.isFinite(s.elapsedSeconds)||s.elapsedSeconds<0)return false;
+ if(!Array.isArray(s.lives)||s.lives.length!==n||!s.lives.every(v=>Number.isInteger(v)&&v>=0))return false;
+ if(s.config.teamIdsMode!==undefined&&s.config.teamIdsMode!==s.config.teamMode)return false;
+ if(s.config.teamIds!==undefined&&(!Array.isArray(s.config.teamIds)||s.config.teamIds.length!==n||
+  !s.config.teamIds.every((id,i)=>Number.isInteger(id)&&
+   (s.config.teamMode==='ffa'?id===i:(id===0||id===1)))))return false;
+ if(s.config.ffaColors!==undefined&&(!Array.isArray(s.config.ffaColors)||
+  (s.config.teamMode==='ffa'&&(s.config.ffaColors.length!==n||
+   new Set(s.config.ffaColors).size!==n||
+   !s.config.ffaColors.every(c=>PALETTE.includes(c))))))return false;
+ // Host-authored scored state must be complete before guest HUD can use it.
+ if(s.config.matchModeId==='scored_tdm'&&!s.scored)return false;
+ if(s.scored!==undefined&&s.scored!==null){
+  const m=s.scored;
+  if(!m||m.version!==1||m.matchId!==s.matchId||m.playerCount!==n||
+   !Number.isInteger(m.scoreTarget)||m.scoreTarget<1||m.scoreTarget>100||
+   !Number.isFinite(m.clockSeconds)||m.clockSeconds<30||m.clockSeconds>1800||
+   !Number.isFinite(m.elapsedSeconds)||m.elapsedSeconds<0||m.elapsedSeconds>m.clockSeconds||
+   !Array.isArray(m.teamIds)||m.teamIds.length!==n||
+   !Array.isArray(m.operatorKOs)||m.operatorKOs.length!==n||
+   !Array.isArray(m.deaths)||m.deaths.length!==n||
+   !Array.isArray(m.respawns)||m.respawns.length!==n||
+   ![...m.operatorKOs,...m.deaths,...m.respawns].every(v=>Number.isSafeInteger(v)&&v>=0)||
+   !Array.isArray(m.creditedIncidents)||m.creditedIncidents.length>200||
+   !m.creditedIncidents.every(v=>typeof v==='string'&&/^[-a-zA-Z0-9_:]{1,80}$/.test(v))||
+   typeof m.finished!=='boolean'||(m.finished&&(!m.result||!Array.isArray(m.result.scores))))return false;
+  if(m.mode==='teams'){
+   if(s.config.teamMode!=='teams'||!s.config.teamIds||
+     !m.teamIds.every((v,i)=>v===s.config.teamIds[i])||
+     m.teamIds.filter(v=>v===0).length!==m.teamIds.filter(v=>v===1).length)return false;
+   if(s.config.lanScoredTdm===true&&m.scoreTarget!==s.config.lanScoreTarget)return false;
+  }else if(m.mode!=='ffa'||!m.teamIds.every((v,i)=>v===i))return false;
+  if(m.finished&&((!Number.isInteger(m.result.winningSide)&&m.result.winningSide!==null)||
+   m.result.scoreTarget!==m.scoreTarget||m.result.scores.length!==(m.mode==='teams'?2:n)))return false;
+ }
+ if(s.config.lanScoredTdm===true&&s.config.lanSeriesRounds===3){
+  if(!window.SectorLanSeries?.valid(s.lanSeries,{matchId:s.matchId,finished:s.scored?.finished===true}))return false;
+  if(s.winner>=0&&s.scored?.result?.winningSide!==undefined&&
+    s.lanSeries.wins[s.scored.result.winningSide]===undefined&&s.scored.result.winningSide!==null)return false;
+ }else if(s.lanSeries!==undefined&&s.lanSeries!==null)return false;
+ if(!Array.isArray(s.kos)||s.kos.length!==n||!s.kos.every(v=>Number.isInteger(v)&&v>=0))return false;
+ if(!Array.isArray(s.bullets)||s.bullets.length>128||!Array.isArray(s.vehicles)||s.vehicles.length>10
+    ||!Array.isArray(s.pickups)||s.pickups.length>8||!Array.isArray(s.fxEvents)||s.fxEvents.length>12)return false;
+ const point=t=>t&&typeof t==='object'&&Number.isFinite(t.x)&&Number.isFinite(t.y);
+ if(!s.tanks.every(t=>point(t)&&Number.isFinite(t.a)))return false;
+ if(!s.bullets.every(b=>point(b)&&Number.isFinite(b.vx)&&Number.isFinite(b.vy)))return false;
+ if(!s.vehicles.every(v=>point(v)&&Number.isFinite(v.armor)))return false;
+ if(!s.pickups.every(point))return false;
+ if(!s.fxEvents.every(e=>point(e)&&Number.isFinite(e.id)))return false;
+ // Optional host-approved local visibility metadata: never accept enemy or
+ // player indices, malformed arrays, duplicates or more than two entries.
+ if(s.allyAim!==undefined&&(!Array.isArray(s.allyAim)||s.allyAim.length>2||
+  new Set(s.allyAim).size!==s.allyAim.length||
+  !s.allyAim.every(i=>Number.isInteger(i)&&i>=s.humanCount&&i<n&&
+    teamOf(i,s)===teamOf(1,s))))return false;
+ return true;
+}
+function sanitizeLanOptions(raw){
+ const v=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{},base=selectedRules;
+ const teamMode=LAN_SIDES[v.lanMode]?v.lanMode:LAN_SIDES[v.teamMode]?v.teamMode:'ffa';
+ let botCount=Number.isInteger(v.botCount)&&v.botCount>=0&&v.botCount<=4?v.botCount:0;
+ // D3-A2: both TDM and Team Survival require equal faction rosters.
+ if((teamMode==='tdm'||teamMode==='teams')&&botCount%2)botCount=Math.min(4,botCount+1);
+ return {mapSize:LAN_SIZE[v.mapSize]?v.mapSize:base.mapSize,
+  botCount,teamMode,
+  hostSide:v.hostSide==='coral'||v.lanHostSide==='coral'?'coral':'cyan',
+  scoreTarget:[15,30].includes(v.scoreTarget)?v.scoreTarget:[15,30].includes(v.lanScoreTarget)?v.lanScoreTarget:15,
+  rounds:teamMode==='tdm'&&(v.rounds===3||v.lanSeriesRounds===3)?3:1,
+  startLives:[2,3,5].includes(v.startLives)?v.startLives:base.startLives,
+  botSkill:LAN_SKILL[v.botSkill]?v.botSkill:base.botSkill,
+  friendlyFire:teamMode!=='ffa'&&v.friendlyFire===true};
+}
+function lanDescription(r){
+ const score=r.teamMode==='tdm'?' · FIRST TO '+r.scoreTarget+' KOs · '+(r.rounds===3?'BEST OF 3':'SINGLE MATCH'):' · '+r.startLives+' LIVES';
+ const sides=(r.teamMode==='tdm'||r.teamMode==='teams')?
+  ' · HOST '+(r.hostSide==='coral'?'CORAL':'CYAN')+' / GUEST '+(r.hostSide==='coral'?'CYAN':'CORAL'):'';
+ const hostOnly=mode==='host'&&!connected;
+ const bots=r.botCount+(hostOnly?1:0);
+ const role=hostOnly?(r.teamMode==='coop'?' · 1 AI ALLY / '+r.botCount+' ENEMY BOTS':
+  ' · 1 HUMAN / '+bots+' AI'):'';
+ return (bots===0?'NO BOTS':bots+' BOT'+(bots===1?'':'S'))+role+
+  ' · '+LAN_SIZE[r.mapSize]+score+sides+' · FF '+(r.friendlyFire?'ON':'OFF');
+}
+function lanCanStart(){
+ if(!lanLobby||mode!=='host')return false;
+ const r=lanLobby.rules;
+ if(!connected){
+  // Reserved seat 1 becomes real AI, but Co-op still requires enemy actors.
+  return r.teamMode==='ffa'||(r.teamMode==='coop'&&r.botCount>=1)||
+   ((r.teamMode==='teams'||r.teamMode==='tdm')&&r.botCount%2===0);
+ }
+ return !!lanLobby.guestReady&&!(r.teamMode==='coop'&&r.botCount===0)&&
+  !((r.teamMode==='teams'||r.teamMode==='tdm')&&r.botCount%2!==0);
+}
+function lanLobbyHTML(hostRole){
+ const name=hostRole?'HOST MATCH':'JOINED MATCH';
+ const controls=hostRole?'<div class="lan-grid">'+
+ '<label>SIDES<select data-lan-setting="teamMode"><option value="ffa">FREE FOR ALL</option><option value="coop">CO-OP VS BOTS</option><option value="teams">OPPOSING TEAMS</option><option value="tdm">TEAM DEATHMATCH · SCORE</option></select></label>'+
+ '<label>HOST FACTION<select data-lan-setting="hostSide"><option value="cyan">CYAN · GUEST CORAL</option><option value="coral">CORAL · GUEST CYAN</option></select></label>'+
+ '<label>KO TARGET<select data-lan-setting="scoreTarget"><option value="15">15 TEAM KOs</option><option value="30">30 TEAM KOs</option></select></label>'+
+ '<label>MATCH SERIES<select data-lan-setting="rounds"><option value="1">SINGLE MATCH</option><option value="3">BEST OF 3</option></select></label>'+
+ '<label>ADDITIONAL AI SLOTS<select data-lan-setting="botCount"><option value="0">0 · 1v1 NO BOTS</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>'+
+ '<label>MAZE<select data-lan-setting="mapSize"><option value="small">SMALL</option><option value="standard">STANDARD</option><option value="large">LARGE</option></select></label>'+
+ '<label>PILOT LIVES<select data-lan-setting="startLives"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>'+
+ '<label>BOT SKILL<select data-lan-setting="botSkill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>'+ 
+ '<label>FRIENDLY FIRE<select data-lan-setting="friendlyFire"><option value="off">OFF · ALLIES PASS THROUGH</option><option value="on">ON · ALLIES SOLID</option></select></label>'+
+ '</div>':'<div class="lan-summary"><strong id="lan-guest-rules">AWAITING HOST RULES</strong><span>Only the host can change the match setup.</span></div>';
+ return '<section class="lan-lobby" aria-label="Local multiplayer waiting room">'+
+ '<header class="lan-lobby-head"><div class="eyebrow">LOCAL WI-FI / PRIVATE MATCH</div><h2>'+name.replace(' ',' <span>')+'</span></h2><p>'+(hostRole?'Start a bot-filled match without waiting, or keep the room open for another phone.':'Join the host room and press READY when available.')+'</p></header>'+
+ '<div class="lan-presence"><span>PLAYER 1 · HOST</span><strong id="lan-host-presence">CONNECTED</strong><span>PLAYER 2 · GUEST</span><strong id="lan-guest-presence">WAITING</strong></div>'+
+ (hostRole?'<p class="lan-address">HOST ADDRESS · <span id="host-address">STARTING WI-FI ROOM...</span></p>':'')+
+ controls+
+ '<p id="lan-lobby-message" class="lan-lobby-message" role="status">WAITING FOR PLAYER TWO</p>'+
+ '<div class="lan-lobby-actions">'+(hostRole?'<button class="primary" type="button" data-action="lan-start" disabled>START MATCH</button>':'<button class="primary" type="button" data-action="lan-ready" disabled>READY</button>')+
+ '<button type="button" data-action="close">LEAVE MATCH</button></div></section>';
+}
+function refreshLanLobby(){
+ if(!lanLobby||!document.getElementById('lan-lobby-message'))return;
+ const r=lanLobby.rules,hostRole=mode==='host';
+ if(hostRole)for(const el of document.querySelectorAll('[data-lan-setting]'))el.value=el.dataset.lanSetting==='friendlyFire'?(r.friendlyFire?'on':'off'):String(r[el.dataset.lanSetting]);
+ const ffLabel=document.querySelector('[data-lan-setting="friendlyFire"]')?.closest?.('label');if(ffLabel)ffLabel.hidden=r.teamMode==='ffa';
+ const sideLabel=document.querySelector('[data-lan-setting="hostSide"]')?.closest?.('label');
+ if(sideLabel)sideLabel.hidden=!(r.teamMode==='teams'||r.teamMode==='tdm');
+ const targetLabel=document.querySelector('[data-lan-setting="scoreTarget"]')?.closest?.('label');
+ if(targetLabel)targetLabel.hidden=r.teamMode!=='tdm';
+ const seriesLabel=document.querySelector('[data-lan-setting="rounds"]')?.closest?.('label');
+ if(seriesLabel)seriesLabel.hidden=r.teamMode!=='tdm';
+ const livesLabel=document.querySelector('[data-lan-setting="startLives"]')?.closest?.('label');
+ if(livesLabel)livesLabel.hidden=r.teamMode==='tdm';
+ const botSelect=document.querySelector('[data-lan-setting="botCount"]');
+ if(botSelect?.options)for(const option of botSelect.options){
+  const n=Number(option.value);const hostOnly=hostRole&&!connected;
+  option.disabled=((r.teamMode==='tdm'||r.teamMode==='teams')&&n%2===1)||
+   (r.teamMode==='coop'&&n===0);
+  if((r.teamMode==='tdm'||r.teamMode==='teams')&&n%2===0){
+   const bots=n+(hostOnly?1:0);
+   option.textContent=bots+' BOT'+(bots===1?'':'S')+' · '+(n/2+1)+'v'+(n/2+1);
+  }else if(hostOnly&&r.teamMode==='coop'){
+   option.textContent=(n+1)+' AI · 1 ALLY + '+n+' ENEM'+(n===1?'Y':'IES');
+  }else if(hostOnly&&r.teamMode==='ffa'){
+   option.textContent=(n+1)+' AI OPPONENT'+(n===0?'':'S');
+  }else option.textContent=n+' ADDITIONAL AI';
+ }
+ if((mode==='host'||mode==='guest')&&lanLobby.hasRules){
+  const teamMatch=r.teamMode==='teams'||r.teamMode==='tdm';
+  const team=mode==='host'?(r.hostSide==='coral'?1:0):(r.hostSide==='coral'?0:1);
+  document.getElementById('mode-label').textContent=teamMatch?'YOU: '+(team===0?'CYAN':'CORAL'):mode==='host'?'HOST MATCH':'JOIN MATCH';
+ }
+ const skillLabel=document.querySelector('[data-lan-setting="botSkill"]')?.closest?.('label');
+ if(skillLabel)skillLabel.hidden=r.botCount===0&&!(hostRole&&!connected&&lanCanStart());
+ const guestPresence=document.getElementById('lan-guest-presence');
+ if(guestPresence)guestPresence.textContent=!connected?'WAITING':hostRole?(lanLobby.guestReady?'READY':'NOT READY'):lanLobby.hostBusy?'HOST IN MATCH':(lanLobby.myReady?'READY':'NOT READY');
+ const hostPresence=document.getElementById('lan-host-presence');
+ if(hostPresence)hostPresence.textContent=connected?'CONNECTED':'HOSTING';
+ const summary=document.getElementById('lan-guest-rules');
+ if(summary)summary.textContent=LAN_SIDES[r.teamMode]+' · '+lanDescription(r);
+ const problem=r.teamMode==='coop'&&r.botCount===0;
+ const message=document.getElementById('lan-lobby-message');
+ if(message)message.textContent=problem?'CO-OP REQUIRES AT LEAST ONE BOT':
+  !connected?(hostRole&&lanCanStart()?'ROOM OPEN · START VS BOTS NOW':'WAITING FOR LEGAL MATCH RULES'):
+  hostRole?(lanLobby.guestReady?'BOTH PLAYERS READY · DEPLOY WHEN READY':'GUEST NOT READY · WAIT FOR READY'):
+  lanLobby.hostBusy?'HOST IS PLAYING BOTS · WAIT FOR NEXT MATCH':
+  lanLobby.myReady?'READY · WAIT FOR HOST TO START':'CHECK RULES, THEN PRESS READY';
+ const start=document.querySelector('[data-action="lan-start"]');
+ if(start){start.disabled=!lanCanStart();start.textContent=!connected&&lanCanStart()?'START VS BOTS':'START MATCH';}
+ const ready=document.querySelector('[data-action="lan-ready"]');
+ if(ready){ready.disabled=!connected||!lanLobby.hasRules||lanLobby.hostBusy===true;ready.textContent=lanLobby.myReady?'CANCEL READY':'READY';}
+}
+function publishLanLobby(){
+ if(mode!=='host'||!connected||!lanLobby)return;
+ nativePacket({type:'lobby',version:1,revision:lanLobby.revision,rules:lanLobby.rules,postMatch:!!lanLobby.postMatch});
+}
+function startLanLobby(fromResults=false){
+ const rules=fromResults?sanitizeLanOptions(state.config):sanitizeLanOptions({...selectedRules,botCount:0,teamMode:'ffa'});
+ lanLobby={rules,revision:fromResults?(lanLobby?.revision||1)+1:1,guestReady:false,myReady:false,hasRules:true,active:true,postMatch:fromResults};
+ setPanel(lanLobbyHTML(true));refreshLanLobby();
+}
+function changeLanRule(el){
+ if(!lanLobby||mode!=='host'||!lanLobby.active)return;
+ const key=el.dataset.lanSetting;
+ if(!['teamMode','botCount','mapSize','startLives','botSkill','friendlyFire','hostSide','scoreTarget','rounds'].includes(key))return;
+ const next=sanitizeLanOptions({...lanLobby.rules,[key]:key==='friendlyFire'?el.value==='on':['botCount','startLives','scoreTarget','rounds'].includes(key)?Number(el.value):el.value});
+ if(JSON.stringify(next)===JSON.stringify(lanLobby.rules))return;
+ lanLobby.rules=next;lanLobby.revision++;lanLobby.guestReady=false;
+ refreshLanLobby();publishLanLobby();
+}
+function guestLanReady(){
+ if(!lanLobby||mode!=='guest'||!connected||!lanLobby.hasRules||lanLobby.hostBusy)return;
+ lanLobby.myReady=!lanLobby.myReady;
+ nativePacket({type:'ready',revision:lanLobby.revision,ready:lanLobby.myReady});
+ refreshLanLobby();
+}
+function returnToLanRules(){
+ if(mode!=='host'||(!connected&&state.config?.lanHostSolo!==true)||state.winner<0||lanLobby?.active)return;
+ paused=true;neutralizeGuestInput();releaseControls();
+ startLanLobby(true);publishLanLobby();
+}
+function launchLanMatch(){
+ if(!lanCanStart())return;
+ const r=lanLobby.rules,tdm=r.teamMode==='tdm';
+ // Lobby 'tdm' maps to the already tested teams/KO scorer at deployment.
+ const config={...selectedRules,...r,teamMode:tdm?'teams':r.teamMode,
+  lanMode:r.teamMode,lanSquads:tdm||r.teamMode==='teams',lanHostSide:r.hostSide,
+  lanScoredTdm:tdm,lanScoreTarget:r.scoreTarget,lanSeriesRounds:r.rounds,
+  lanHostSolo:!connected,pilotMode:true,
+  matchModeId:tdm?'scored_tdm':null,quickPlayMatch:false,customMatch:false};
+ if(config.teamMode==='coop'&&config.botCount===0)return;
+ state=initialState(0,config,freshSectorSeed(state?.mazeSeed));
+ neutralizeGuestInput();camera.zoom=null;roundUnlocks=[];lastRemoteFxId=0;
+ lanLobby.active=false;paused=false;fixedAccumulator=0;
+ document.getElementById('mode-label').textContent=config.teamMode==='teams'?'YOU: '+(state.config.teamIds[0]===0?'CYAN':'CORAL'):'HOST MATCH';
+ refreshHUD();
+ // Separate start event precedes the first authoritative snapshot on TCP.
+ if(connected){
+  nativePacket({type:'start',revision:lanLobby.revision});
+  nativePacket({type:'state',state:serializeState()});
+ }
+ exitMenu();audioCue('deploy');notice('NEW FIELD · FIGHT!',1400);
+}
+
+function host(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('host');startLanLobby();window.AndroidBridge.hostGame()}
 function find(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('guest');setPanel('<div class="eyebrow">NEARBY PLAY</div><h2>FIND A MATCH</h2><p id="find-status">Looking for games on the same Wi-Fi...</p><div id="rooms"></div><button data-action="manual">JOIN BY LOCAL IP</button><button data-action="close">BACK</button>');window.AndroidBridge.findGames()}
 function manual(){if(!bridgeReady()){notice('Manual LAN join requires the Android APK');return}newMatch('guest');setPanel('<div class="eyebrow">FALLBACK</div><h2>JOIN BY ADDRESS</h2><p>Enter the IP:port shown on the host screen, such as 192.168.1.25:47321</p><input id="lan-address" placeholder="192.168.1.25:47321" inputmode="url" autocapitalize="off"><button data-action="ip-join">CONNECT</button><button data-action="find">FIND NEARBY</button>')}
-function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;mode='idle';releaseControls();document.getElementById('mode-label').textContent='NO GAME ACTIVE';panel.innerHTML=originalPanel;applyPrefsToUI();menu.classList.remove('hidden')}
+function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;lanLobby=null;neutralizeGuestInput();mode='idle';playlistBag=[];lastSoloModeId=null;releaseControls();document.getElementById('mode-label').textContent='NO GAME ACTIVE';panel.innerHTML=originalPanel;applyPrefsToUI();menu.classList.remove('hidden')}
 const originalPanel=panel.innerHTML;
-panel.addEventListener('change',e=>{const el=e.target;if(el.id?.startsWith('pref-')){const key=el.id.slice(5);if(key in comfort)comfort[key]=el.checked;applyPrefsToUI()}savePrefs()});
+panel.addEventListener('change',e=>{const el=e.target;if(el?.dataset?.lanSetting){changeLanRule(el);return;}if(el.id==='custom-preset-select'){pendingPresetDelete='';refreshCustomPresetUI();customPresetStatus('SELECT LOAD TO APPLY SAVED RULES');return;}if(el.id?.startsWith('custom-')){readCustomScreen();refreshCustomUI();return;}if(el.id?.startsWith('pref-')){const key=el.id.slice(5);if(key in comfort)comfort[key]=el.checked;applyPrefsToUI()}savePrefs()});
 loadPrefs();
+dossierStore=window.SectorDossier?.createStore((()=>{try{return window.localStorage}catch(_){return null}})())||null;
+loadPaint(); // Dossier milestones must be available before restoring earned selections.
 
+menu.addEventListener('keydown',e=>{
+ const tab=e.target.closest?.('.hangar-tabs [role="tab"]');
+ if(!tab||!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
+ e.preventDefault();
+ const next=e.key==='Home'?'paint':e.key==='End'?'insignia':tab.dataset.hangarTab==='paint'?'insignia':'paint';
+ showHangarTab(next);
+ document.querySelector('.hangar-tabs [data-hangar-tab="'+next+'"]')?.focus();
+});
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
- if(a==='help'){setPanel('<div class="eyebrow">FIELDGRID / FIELD MANUAL</div><h2>HOW TO <span>PLAY</span></h2><div class="help-copy"><p><strong>01 / MOVE + FIRE</strong>Steer with the left thumb. Hold FIRE on the right; only a few shells can be active.</p><p><strong>02 / KEEP FIGHTING</strong>Hits remove vehicle armor first. A destroyed vehicle ejects its pilot; losing a life happens on foot.</p><p><strong>03 / RECOVER A RIDE</strong>Pilots are faster, smaller and armed. Walk or drive through an empty tank or mech. Tap ENTER when close to activate it.</p><p><strong>04 / READ THE FIELD</strong>Every match builds a new maze. The radar shows gunfire and incoming vehicle deployments.</p></div><button class="primary" data-action="help-back">BACK TO MENU</button>')}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">TWO PHONES · SAME WI-FI</div><h2>PLAY <span>TOGETHER</span></h2><p>One phone hosts. The other finds and joins it. Both use the same match rules and can drive, eject, and enter tanks.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
+ if(a==='toggle-sound'||a==='toggle-music'){togglePauseAudio(a==='toggle-sound'?'sound':'music',b);return;}
+ if(!['solo','settings-play','cqc','scored_ffa','scored_tdm','custom-play','duel','host','find','custom-preset-save','custom-preset-delete','custom-preset-load','ip-join'].includes(a))
+  audioCue(['settings-back','help-back','dossier-back','backup-back','modes-back','custom-back','close','resume'].includes(a)?'ui-back':'ui-select');
+ if(a==='lan-ready'){guestLanReady();return;}else if(a==='lan-start'){launchLanMatch();return;}else if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest?.('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
+   const ok=equipPaint(b.dataset.paintId);
+   refreshHangar();const status=document.getElementById('hangar-status');
+   if(!ok&&status)status.textContent=paintProgress(b.dataset.paintId).eligible?'COULD NOT SAVE PAINT · CURRENT PAINT KEPT':'LOCKED · COMPLETE DOSSIER MILESTONE FIRST';
+  }else if(a==='equip-emblem'){
+   const ok=equipEmblem(b.dataset.emblemId);refreshHangar();
+   const status=document.getElementById('emblem-status');
+   if(!ok&&status)status.textContent=emblemProgress(b.dataset.emblemId).eligible?'COULD NOT SAVE INSIGNIA':'INSIGNIA LOCKED · COMPLETE DOSSIER MILESTONE';
+  }else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel(document.getElementById('help-template').innerHTML)}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='daily')launchDailySector();else if(a==='forwardbay')launchForwardBayExercise();else if(a==='ctf')launchCtfExercise();else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){openModes();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
+ else if(a==='custom-reset'){resetCustomDraft();refreshCustomUI();customPresetStatus('DEFAULT RULES RESTORED · SAVED PRESETS KEPT');}
+ else if(a==='custom-preset-save'){
+  readCustomScreen();const input=document.getElementById('custom-preset-name'),name=cleanPresetName(input?.value);
+  const outcome=saveNamedCustomPreset(name);customPresetStatus(outcome.message);
+  if(outcome.ok){if(input)input.value='';refreshCustomPresetUI(name);}
+ }
+ else if(a==='custom-preset-load'){
+  const outcome=loadNamedCustomPreset(document.getElementById('custom-preset-select')?.value);
+  customPresetStatus(outcome.message);if(outcome.ok)refreshCustomUI();
+ }
+ else if(a==='custom-preset-delete'){
+  const name=document.getElementById('custom-preset-select')?.value;
+  const outcome=deleteNamedCustomPreset(name);customPresetStatus(outcome.message);
+  if(outcome.ok)refreshCustomPresetUI();
+ }
+ else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">LOCAL WI-FI / BETA</div><h2>PLAY <span>TOGETHER</span></h2><p>Two Android phones on the same Wi-Fi. One hosts, the other joins.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
  const s=document.getElementById('lan-address').value.trim(),m=s.match(/^([\da-fA-F:.]+):(\d{1,5})$/);
  if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';window.AndroidBridge.joinGame(m[1],Number(m[2]));}});
+function showRestartConfirmation(){
+ if(mode==='guest'||mode==='idle'||!paused)return;
+ setPanel(state.config?.dailySector?'<div class="eyebrow">DAILY SECTOR / CONFIRM</div><h2>RESTART <span>ATTEMPT?</span></h2><p class="pause-hint">Your current attempt ends. The daily maze stays the same.</p><div class="pause-actions"><button class="primary" data-action="confirm-restart">RETRY SECTOR</button><button data-action="cancel-restart">KEEP CURRENT MATCH</button></div>':'<div class="eyebrow">FIELDGRID / CONFIRM</div><h2>START <span>NEW FIELD?</span></h2><p class="pause-hint">The current match will end. A fresh maze will replace it.</p><div class="pause-actions"><button class="primary" data-action="confirm-restart">START NEW FIELD</button><button data-action="cancel-restart">KEEP CURRENT MATCH</button></div>');
+}
 function showPauseMenu(){releaseControls();if(mode==='idle')return;
- if(mode==='solo'||mode==='duel'){paused=true;setPanel('<div class="eyebrow">FIELDGRID / PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">The field is frozen. Continue or generate a fresh sector.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">NEW FIELD</button><button data-action="close">MAIN MENU</button></div>')}
- else if(mode==='host'){paused=true;guestInput={moveX:0,moveY:0,fire:false};setPanel('<div class="eyebrow">FIELDGRID / HOST PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">Both players are paused.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">NEW FIELD</button><button data-action="close">DISCONNECT</button></div>')}
- else if(mode==='guest'){if(connected)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}});setPanel('<div class="eyebrow">FIELDGRID / PLAYER MENU</div><h2>SECTOR <span>MENU</span></h2><p class="pause-hint">The host controls rematches.</p><div class="pause-actions"><button class="primary" data-action="resume">BACK TO ARENA</button><button data-action="close">DISCONNECT</button></div>')}}
-document.getElementById('menu-button').addEventListener('click',showPauseMenu);
-document.getElementById('quick-rematch')?.addEventListener('click',()=>{if(state.winner>=0&&mode!=='guest'&&mode!=='idle'){resetAll();notice('NEW FIELD · NEW FIGHT',1400)}});
- document.getElementById('results-menu')?.addEventListener('click',()=>{if(state.winner>=0&&mode!=='idle')stop()});
+ if(mode==='solo'||mode==='duel'){paused=true;setPanel(state.config?.dailySector?'<div class="eyebrow">DAILY SECTOR / PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">The daily maze remains fixed for this attempt.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">RETRY SECTOR</button><button data-action="close">MAIN MENU</button></div>'+pauseAudioControls():'<div class="eyebrow">FIELDGRID / PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">The field is frozen. Continue or generate a fresh sector.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">NEW FIELD</button><button data-action="close">MAIN MENU</button></div>'+pauseAudioControls())}
+ else if(mode==='host'){paused=true;neutralizeGuestInput();setPanel('<div class="eyebrow">FIELDGRID / HOST PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">Both players are paused.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">NEW FIELD</button><button data-action="close">DISCONNECT</button></div>'+pauseAudioControls())}
+ else if(mode==='guest'){if(connected)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}});setPanel('<div class="eyebrow">FIELDGRID / PLAYER MENU</div><h2>SECTOR <span>MENU</span></h2><p class="pause-hint">The host controls rematches.</p><div class="pause-actions"><button class="primary" data-action="resume">BACK TO ARENA</button><button data-action="close">DISCONNECT</button></div>'+pauseAudioControls())}}
+document.getElementById('menu-button').addEventListener('click',()=>{if(mode!=='idle')audioCue('ui-select');showPauseMenu()});
+document.getElementById('quick-rematch')?.addEventListener('click',()=>{if(state.winner>=0&&mode!=='guest'&&mode!=='idle'){if(resetAll(mode==='solo'&&!!state.config?.quickPlayMatch)!==false){audioCue('deploy');notice(state.config?.dailySector?'SAME DAILY SECTOR · NEW ATTEMPT':'NEW FIELD · NEW FIGHT',1400)}}});
+ document.getElementById('results-menu')?.addEventListener('click',()=>{if(state.winner>=0&&mode!=='idle'){audioCue('ui-back');stop()}});
+// Saved Solo rewards are actionable, never imaginary unlocks or LAN entitlements.
+document.getElementById('aa-rewards')?.addEventListener('click',()=>{
+ if(mode!=='solo'||state.winner<0||!roundUnlocks.length)return;
+ audioCue('ui-select');stop();openHangar();
+});
+ document.getElementById('custom-edit')?.addEventListener('click',()=>{if(state.winner>=0&&mode==='solo'&&state.config?.customMatch){stop();openCustomScreen();}});
+document.getElementById('lan-edit-rules')?.addEventListener('click',returnToLanRules);
 document.getElementById('interact-btn')?.addEventListener('pointerdown',e=>{e.preventDefault();if(mode==='guest'){if(connected&&!paused&&menu.classList.contains('hidden')&&!state.hostPaused)nativePacket({type:'interact'});}else tryInteract(0)});
 menu.addEventListener('click',e=>{const a=e.target?.dataset?.action;
  if(a==='resume'){if(mode==='solo'||mode==='duel'||mode==='host')paused=false;exitMenu()}
- else if(a==='restart'&&mode!=='guest'){resetAll();exitMenu()}});
-window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if([...Object.values(keys1),...Object.values(keys2)].includes(e.code))e.preventDefault();pressed.add(e.code);if(e.code==='KeyR'&&state.winner>=0&&mode!=='guest')resetAll();if(e.code==='KeyE'&&!e.repeat&&menu.classList.contains('hidden')){if(mode==='guest'&&connected&&!state.hostPaused)nativePacket({type:'interact'});else if(mode==='solo'||mode==='host'||mode==='duel')tryInteract(0)}});
+ else if(a==='restart'&&mode!=='guest'){showRestartConfirmation()}
+ else if(a==='cancel-restart'){showPauseMenu()}
+ else if(a==='confirm-restart'&&mode!=='guest'&&paused){resetAll();exitMenu()}});
+window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if([...Object.values(keys1),...Object.values(keys2)].includes(e.code))e.preventDefault();pressed.add(e.code);if(e.code==='KeyR'&&state.winner>=0&&mode!=='guest')resetAll(mode==='solo'&&!!state.config?.quickPlayMatch);if(e.code==='KeyE'&&!e.repeat&&menu.classList.contains('hidden')){if(mode==='guest'&&connected&&!state.hostPaused)nativePacket({type:'interact'});else if(mode==='solo'||mode==='host'||mode==='duel')tryInteract(0)}});
 window.addEventListener('keyup',e=>pressed.delete(e.code));window.addEventListener('blur',releaseControls);
-for(const b of document.querySelectorAll('[data-key]')){const k=b.dataset.key;const release=e=>{touch.delete(k);b.classList.remove('active');try{b.releasePointerCapture(e.pointerId)}catch(_){}};
- b.addEventListener('pointerdown',e=>{e.preventDefault();touch.add(k);b.classList.add('active');b.setPointerCapture(e.pointerId)});b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);b.addEventListener('lostpointercapture',()=>{touch.delete(k);b.classList.remove('active')})}
+for(const b of document.querySelectorAll('[data-key]')){const k=b.dataset.key;const release=e=>{
+ if(k==='fire'&&fireAim.pointerId===e.pointerId&&e.type==='pointerup'){
+  updateFireAim(e);queuePilotRelease();
+ }
+ touch.delete(k);b.classList.remove('active');
+ if(k==='fire'&&fireAim.pointerId===e.pointerId)clearFireAim();
+ try{b.releasePointerCapture(e.pointerId)}catch(_){}
+};
+ b.addEventListener('pointerdown',e=>{e.preventDefault();touch.add(k);b.classList.add('active');if(k==='fire'){releaseShot=null;beginFireAim(e)}b.setPointerCapture(e.pointerId)});
+ if(k==='fire')b.addEventListener('pointermove',e=>{if(fireAim.pointerId===e.pointerId){e.preventDefault();updateFireAim(e)}});
+ b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);b.addEventListener('lostpointercapture',e=>{touch.delete(k);b.classList.remove('active');if(k==='fire'&&fireAim.pointerId===e.pointerId)clearFireAim()})}
 const joystick=document.getElementById('joystick'),knob=document.getElementById('stick-knob');
 function clearStick(){stick.x=stick.y=0;stick.pointerId=null;knob.style.transform='translate(-50%, -50%)';joystick.classList.remove('active')}
+function clearFireAim(){fireAim.pointerId=null;fireAim.source=null;fireAim.x=0;fireAim.y=0;fireAim.active=false;}
+function beginFireAim(e,source='fire'){
+ if(fireAim.pointerId!==null||source!=='fire')return;
+ // On-foot FIRE-drag works for both LAN seats, with guest state sourced
+ // from the latest authoritative host snapshot (seat 1).
+ if(source==='fire'&&!releaseMode())return;
+ fireAim.pointerId=e.pointerId;fireAim.source=source;fireAim.startX=Number(e.clientX)||0;fireAim.startY=Number(e.clientY)||0;
+ fireAim.x=0;fireAim.y=0;fireAim.active=false;
+}
+function updateFireAim(e){
+ if(fireAim.pointerId!==e.pointerId)return;
+ if(!releaseMode()){clearFireAim();return;}
+ const dx=(Number(e.clientX)||0)-fireAim.startX,dy=(Number(e.clientY)||0)-fireAim.startY,d=Math.hypot(dx,dy);
+ // Preserve accepted pilot FIRE drag sensitivity without new tuning.
+ if(d<14)return;
+ fireAim.x=dx/d;fireAim.y=dy/d;fireAim.active=true;
+}
 function updateStick(e){const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,rad=Math.max(1,r.width*.32);
  const dx=e.clientX-cx,dy=e.clientY-cy,d=Math.hypot(dx,dy),factor=Math.min(1,rad/Math.max(1,d));stick.x=dx*factor/rad;stick.y=dy*factor/rad;
  if(Math.hypot(stick.x,stick.y)<.12){stick.x=stick.y=0}
@@ -938,22 +3155,72 @@ joystick.addEventListener('pointerdown',e=>{if(stick.pointerId!==null)return;e.p
 joystick.addEventListener('pointermove',e=>{if(stick.pointerId===e.pointerId){e.preventDefault();updateStick(e)}});
 for(const key of ['pointerup','pointercancel','lostpointercapture'])joystick.addEventListener(key,e=>{if(stick.pointerId===e.pointerId){clearStick();try{joystick.releasePointerCapture(e.pointerId)}catch(_){}}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&window.RR?.appPause)window.RR.appPause()});
-window.RR={openMenu(){if(menu.classList.contains('hidden'))showPauseMenu();else if(mode==='idle')stop();else if(mode==='solo'||mode==='duel'||mode==='host'){paused=false;exitMenu()}else exitMenu()},appPause(){releaseControls();if((mode==='solo'||mode==='duel'||mode==='host')&&menu.classList.contains('hidden')){showPauseMenu();if(mode==='host'&&connected)nativePacket({type:'state',state:serializeState()});}
+window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop();return;}if(menu.classList.contains('hidden'))showPauseMenu();else if(mode==='idle')stop();else if(mode==='solo'||mode==='duel'||mode==='host'){paused=false;exitMenu()}else exitMenu()},appPause(){releaseControls();if((mode==='solo'||mode==='duel'||mode==='host')&&menu.classList.contains('hidden')){showPauseMenu();if(mode==='host'&&connected)nativePacket({type:'state',state:serializeState()});}
   if(mode==='guest'&&connected)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}})},nativeMessage(json){let msg;try{msg=JSON.parse(json)}catch(_){return}if(!msg||typeof msg.type!=='string')return;
- switch(msg.type){case 'hosting':{const p=document.getElementById('host-status');if(p)p.textContent='Waiting for another phone to join...';const a=document.getElementById('host-address');if(a)a.textContent=(msg.address||'LOCAL NETWORK')+':'+msg.port;break}
+ switch(msg.type){case 'hosting':{const p=document.getElementById('host-status');if(p)p.textContent='Waiting for another phone to join...';const a=document.getElementById('host-address');if(a)a.textContent=(msg.address||'LOCAL NETWORK')+':'+msg.port;refreshLanLobby();break}
  case 'found':{const r=document.getElementById('rooms');if(r&&!r.querySelector('[data-host="'+msg.host+'"]')){const b=document.createElement('button');b.textContent='JOIN '+(msg.name||'NEARBY GAME');b.dataset.host=msg.host;b.onclick=()=>{window.AndroidBridge.joinGame(msg.host,msg.port);document.getElementById('find-status').textContent='Connecting...'};r.appendChild(b)}break}
- case 'connected':{connected=true;paused=false;document.getElementById('mode-label').textContent=mode==='guest'?'YOU: CORAL':mode==='host'?'YOU: CYAN':'CONNECTED';exitMenu();notice('Player connected — FIGHT!');if(mode==='host'){state=initialState(state.arenaId,state.config,state.mazeSeed);refreshHUD()}break}
- case 'state':if(mode==='guest'&&msg.state&&Array.isArray(msg.state.tanks)&&msg.state.tanks.length>=2&&msg.state.tanks.length<=6&&Array.isArray(msg.state.lives)&&msg.state.lives.length===msg.state.tanks.length&&Array.isArray(msg.state.kos)&&msg.state.kos.length===msg.state.tanks.length){const upcoming=msg.state;const currentEvents=Array.isArray(upcoming.fxEvents)?upcoming.fxEvents:[];for(const event of currentEvents){if(event.id>lastRemoteFxId&&event.id<lastRemoteFxId+1000&&Number.isFinite(event.x)&&Number.isFinite(event.y)){spawnParticles(event.kind,event.x,event.y,event.color);if(event.kind==='hit'&&event.target===1){damagePulse=.58;screenKick=comfort.shake?3.2:0}if(event.kind==='shot'){
+ case 'connected':{
+ if(mode!=='host'&&mode!=='guest')break;
+ if(mode==='host'&&state.config?.lanHostSolo===true&&lanLobby&&!lanLobby.active){
+  connected=true;neutralizeGuestInput();remoteReleaseShot=null;
+  nativePacket({type:'lobby',version:1,revision:lanLobby.revision,rules:lanLobby.rules,
+   postMatch:false,hostBusy:true});
+  notice('GUEST CONNECTED · WAITING FOR NEXT MATCH',2300);break;
+ }
+ if(mode==='host'){neutralizeGuestInput();lastGuestFireSeq=0;remoteReleaseShot=null;}
+ connected=true;paused=true;
+ document.getElementById('mode-label').textContent=mode==='guest'?'YOU: CORAL':'YOU: CYAN';
+ if(mode==='host'){if(!lanLobby)startLanLobby();lanLobby.guestReady=false;refreshLanLobby();publishLanLobby();}
+ else {lanLobby={rules:sanitizeLanOptions({}),revision:0,guestReady:false,myReady:false,hasRules:false,active:true};setPanel(lanLobbyHTML(false));refreshLanLobby();}
+ break;}
+ case 'lobby':{
+ if(mode!=='guest'||!connected||!lanLobby||msg.version!==1||!Number.isInteger(msg.revision)||msg.revision<1||msg.revision<lanLobby.revision)break;
+ if(!lanLobby.active){
+  if((state.winner<0&&msg.postMatch!==true)||msg.revision<=lanLobby.revision)break;
+  paused=true;neutralizeGuestInput();lanLobby.active=true;lanLobby.myReady=false;setPanel(lanLobbyHTML(false));
+ }
+ if(msg.revision!==lanLobby.revision)lanLobby.myReady=false;
+ lanLobby.revision=msg.revision;lanLobby.rules=sanitizeLanOptions(msg.rules);lanLobby.hasRules=true;
+ lanLobby.hostBusy=msg.hostBusy===true;
+ refreshLanLobby();break;}
+ case 'ready':{
+ if(mode!=='host'||!connected||!paused||!lanLobby||!lanLobby.active||msg.revision!==lanLobby.revision||typeof msg.ready!=='boolean')break;
+ lanLobby.guestReady=msg.ready;refreshLanLobby();break;}
+ case 'start':{
+ if(mode!=='guest'||!connected||!lanLobby||!lanLobby.active||!lanLobby.myReady||msg.revision!==lanLobby.revision)break;
+ lanLobby.active=false;paused=false;lastRemoteFxId=0;exitMenu();notice('NEW FIELD · FIGHT!',1400);break;}
+ case 'state':if(mode==='guest'&&(!lanLobby||!lanLobby.active)&&validRemoteSnapshot(msg.state)){const upcoming=msg.state;const currentEvents=Array.isArray(upcoming.fxEvents)?upcoming.fxEvents:[];for(const event of currentEvents){if(event.id>lastRemoteFxId&&event.id<lastRemoteFxId+1000&&Number.isFinite(event.x)&&Number.isFinite(event.y)){spawnParticles(event.kind,event.x,event.y,event.color);if(event.kind==='hit'&&event.target===1){damagePulse=.58;screenKick=comfort.shake?3.2:0}
+ if(event.kind==='armor'&&event.target===1){damagePulse=.28;screenKick=comfort.shake?2.3:0}if(event.kind==='shot'){
  const shooter=upcoming.tanks?.[event.owner],vehicle=upcoming.vehicles?.[shooter?.vehicleId];
  audioCue(shooter?.onFoot?'pilot-shot':vehicle?.type==='mech'?'mech-shot':'tank-shot',event.x,event.y);
  }
- if(event.kind==='hit')audioCue('armor-hit',event.x,event.y);
+ if(event.kind==='armor')audioCue('armor-hit',event.x,event.y);
+ if(event.kind==='bounce')audioCue('ricochet',event.x,event.y);
+  if(event.kind==='hit')audioCue('pilot-hit',event.x,event.y);
  if(event.kind==='eject')audioCue('eject',event.x,event.y);
  if(event.kind==='guard')audioCue('barrier',event.x,event.y);
- if(event.kind==='pickup')audioCue('pickup',event.x,event.y);lastRemoteFxId=event.id}}state=upcoming;setArena(0,state.mazeSeed,state.config?.mapSize);refreshHUD()}break;
- case 'input':if(mode==='host'&&msg.input){guestInput.moveX=clamp(Number(msg.input.moveX)||0,-1,1);guestInput.moveY=clamp(Number(msg.input.moveY)||0,-1,1);guestInput.fire=msg.input.fire===true}break;
- case 'interact':if(mode==='host'&&connected&&!paused)tryInteract(1);break;
- case 'disconnected':connected=false;paused=true;guestInput={moveX:0,moveY:0,fire:false};clearStick();notice('Other player disconnected');setPanel('<h2>CONNECTION LOST</h2><p>Return to the main menu and reconnect.</p><button data-action="close">MAIN MENU</button>');break;
+ if(event.kind==='pickup')audioCue('pickup',event.x,event.y);lastRemoteFxId=event.id}}if(state?.matchId!==upcoming.matchId){resultCuePlayed=false;camera.zoom=null;lastRemoteFxId=0;}state=upcoming;setArena(0,state.mazeSeed,state.config?.mapSize);
+ document.getElementById('mode-label').textContent=state.config?.teamMode==='teams'?'YOU: '+(teamOf(1,state)===0?'CYAN':'CORAL'):'JOIN MATCH';refreshHUD()}break;
+ case 'input':if(mode==='host'&&connected&&!paused&&state.winner<0&&state.config?.lanHostSolo!==true&&msg.input){guestInput=normalizeLanInput(msg.input);guestInputAge=0;}break;
+ case 'fire-request':{
+  if(mode!=='host'||!connected||paused||state.config?.lanHostSolo===true||state.winner>=0||state.lives[1]<=0||
+    msg.matchId!==state.matchId||!Number.isInteger(msg.seq)||
+    msg.seq<=lastGuestFireSeq||msg.seq>2147483600)break;
+  const x=Number(msg.aimX),y=Number(msg.aimY),len=Math.hypot(x,y);
+  if(!Number.isFinite(len)||len<.6||len>1.1)break;
+  lastGuestFireSeq=msg.seq;
+  remoteReleaseShot={x:x/len,y:y/len,ttl:1.6,matchId:state.matchId};
+  break;
+ }
+ case 'interact':if(mode==='host'&&connected&&!paused&&state.config?.lanHostSolo!==true)tryInteract(1);break;
+ case 'disconnected':
+  if(mode==='host'&&(lanLobby?.active===true||state.config?.lanHostSolo===true)){
+   connected=false;neutralizeGuestInput();
+   if(lanLobby?.active){lanLobby.guestReady=false;refreshLanLobby();}
+   notice('GUEST LEFT · HOST CONTINUES',2200);break;
+  }
+  connected=false;paused=true;lanLobby=null;neutralizeGuestInput();clearStick();notice('Other player disconnected');
+  setPanel('<h2>CONNECTION LOST</h2><p>Return to the main menu and reconnect.</p><button data-action="close">MAIN MENU</button>');break;
  case 'error':notice(msg.message||'Network error');break;}}};
 resizeArenaCanvas();refreshHUD();requestAnimationFrame(loop);
 })();

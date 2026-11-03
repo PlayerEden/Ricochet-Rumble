@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const java=fs.readFileSync('android/app/src/main/java/com/playereden/ricochetrumble/MainActivity.java','utf8');
+const frame=fs.readFileSync('android/app/src/main/java/com/playereden/ricochetrumble/BoundedLanReader.java','utf8');
+assert.ok(java.includes('BoundedLanReader.readPacket(reader, MAX_PACKET)'),'network peer must use bounded reader');
+assert.ok(!java.includes('reader.readLine()'),'unbounded reader must not return');
+assert.ok(frame.includes('line.length() >= maxChars'),'guard before append');
+assert.ok(frame.includes('throw new IOException'),'overlength must fail closed');
+assert.ok(java.includes('if (myGen == generation.get())')&&java.includes('signalType("disconnected")'),'disconnect cleanup preserved');
+console.log('LAN_FRAMING_SOURCE_GUARD_PASS: size cap enforced during untrusted peer reads');

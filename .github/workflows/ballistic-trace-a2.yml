@@ -1,0 +1,29 @@
+name: Sector Rebound - A2 ballistic contract (fast)
+on:
+  push:
+    branches: [experiment/trajectory-physics-core-a2, experiment/bot-trace-aim-a3-v1]
+    paths:
+      - 'web/game.js'
+      - 'android/app/src/main/assets/game.js'
+      - 'tests/ballistic-trace-a2.mjs'
+      - 'tests/bot-shot-parity-qa.mjs'
+      - '.github/workflows/ballistic-trace-a2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  a2-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Mirror and JS syntax
+        run: |
+          cmp web/game.js android/app/src/main/assets/game.js
+          node --check web/game.js
+          node --check tests/ballistic-trace-a2.mjs
+      - name: Actual static ballistic parity contract
+        run: node tests/ballistic-trace-a2.mjs

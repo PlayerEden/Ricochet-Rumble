@@ -1,0 +1,58 @@
+name: Sector Rebound - Contested CTF input-driven combat audit
+on:
+  push:
+    branches: [experiment/ctf-contested-human-attack-v1, audit/ctf-armed-attacker-v1, experiment/ctf-human-escort-lane-clearance-v1, experiment/friendly-unit-pass-through-v1, experiment/combat-parity-trajectory-a1, experiment/trajectory-physics-core-a2, experiment/bot-trace-aim-a3-v1, experiment/friendly-fire-policy-b1, experiment/allied-aim-traces-b2, experiment/match-identity-colors-c1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contested-ctf:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check browser / Android source mirror
+        run: |
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/ctf-ai.js android/app/src/main/assets/ctf-ai.js
+          cmp web/ctf-rules.js android/app/src/main/assets/ctf-rules.js
+          cmp web/forward-bays.js android/app/src/main/assets/forward-bays.js
+      - name: Verify objective rules and gameplay contracts
+        run: |
+          node tests/ctf-objective-ai.mjs
+          node tests/ctf-rules.mjs
+          node tests/smoke.mjs
+          node tests/ballistic-trace-a2.mjs
+          node tests/save-backup.mjs
+      - name: Simulate player-controlled flag theft, interception and legacy browser gameplay
+        shell: bash
+        run: |
+          set -euo pipefail
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          npm install --no-save --ignore-scripts playwright-core@1.56.1
+          node tests/pilot-combat-fairness-qa.mjs
+          node tests/bot-shot-parity-qa.mjs
+          node tests/bot-combat-cues-qa.mjs
+          node tests/ctf-contested-human-attack.mjs
+          node tests/ctf-objective-bots-live-qa.mjs
+          node tests/ctf-natural-match-qa.mjs
+          node tests/ctf-live-qa.mjs
+          node tests/forward-bays-live-qa.mjs
+          node tests/quick-play-live-flow-qa.mjs
+          node tests/backup-stale-export-browser-qa.mjs
+          node tests/first-match-entry-browser-qa.mjs
+          node tests/visual-qa.mjs
+      - name: Preserve contested match telemetry and browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sector-rebound-ctf-armed-attacker-qa
+          path: |
+            qa-results/ctf-contested-human-attack.json
+            qa-screens/
+          retention-days: 14
+          if-no-files-found: ignore

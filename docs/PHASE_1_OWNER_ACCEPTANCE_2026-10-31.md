@@ -1,0 +1,11 @@
+# Phase 1 — Source-backed acceptance and approved preview rollback (2026-10-31)
+
+**Preserve owner-approved build:** [Preview 100004 checkpoint](https://github.com/PlayerEden/Ricochet-Rumble/tree/checkpoint/sector-rebound-preview-100004-approved), exact SHA `234e06dbe80df96207fec768429a252876962a1f`. User confirmed the center-pivot tank feels right and Android installed Preview 100004 over the earlier preview without uninstalling. **Saved preferences/Dossier survival was not explicitly verified.** Never confuse a compatible upgrade with verified user data persistence.
+
+**Exact-SHA CI:** [fast PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41174189700), [full Chromium/Android PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41174189702), [signed APK PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41174186104). This is a generic AOSP PUBLIC test signer and preview-only package, not Play production security.
+
+**Mode test findings:** `tests/quick-play-live-flow-qa.mjs` uses real Chromium input to prove Survival Quick Play mode selection, combat-derived wins/losses, truthful After Action KOs/deaths, NEXT MATCH fresh seed/ID/mode selection and persistence, plus separate pilot-only CQC. `tests/scored-match-kernel.mjs` + `tests/natural-bot-audit.mjs` exercise scored CQC/FFA/TDM, operator-KO and timeouts. `tests/dossier.mjs` + `tests/save-backup.mjs` test synthetic offline saved preferences/backup, not physical upgrades. 3,000-map structural fairness and recovery placements have source-backed reports.
+
+**Pending phone acceptance:** real Android Quick Play, Custom/FFA/TDM/CQC feel, Dossier save survival, Android interruptions, device performance, two-phone LAN. **Integration remains draft** [PR #85](https://github.com/PlayerEden/Ricochet-Rumble/pull/85), 53 changed files, at this checkpoint 15 commits ahead and 8 behind stable main. Reconcile main's newer handoff docs before merging; do not silently merge experimental game code. Stable `main` gameplay remains v0.9.21.
+
+**Phase 1 source, QA, rollback: COMPLETE. Stable-branch promotion and full physical mode acceptance: OPEN.** Phase 2 begins with a small distinct armor-hit versus pilot-hit visual feedback experiment; all unbuilt later phases remain plans.

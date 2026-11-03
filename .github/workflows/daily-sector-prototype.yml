@@ -1,0 +1,65 @@
+name: Sector Rebound - experimental Daily Sector contract QA
+on:
+  push:
+    branches: [experiment/daily-sector-offline-v1]
+    paths:
+      - 'web/daily-sector.js'
+      - 'android/app/src/main/assets/daily-sector.js'
+      - 'tests/daily-sector.mjs'
+      - 'tests/daily-sector-live-qa.mjs'
+      - 'web/game.js'
+      - 'web/index.html'
+      - 'web/style.css'
+      - 'web/save-backup.js'
+      - 'android/app/src/main/assets/game.js'
+      - 'android/app/src/main/assets/index.html'
+      - 'android/app/src/main/assets/style.css'
+      - 'android/app/src/main/assets/save-backup.js'
+      - '.github/workflows/daily-sector-prototype.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Guard Android and browser service parity
+        run: |
+          cmp web/daily-sector.js android/app/src/main/assets/daily-sector.js
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/index.html android/app/src/main/assets/index.html
+          cmp web/style.css android/app/src/main/assets/style.css
+          cmp web/save-backup.js android/app/src/main/assets/save-backup.js
+      - name: Execute standalone deterministic Daily Sector contract
+        run: node tests/daily-sector.mjs
+      - name: Protect existing gameplay regression
+        run: node tests/smoke.mjs
+      - name: Verify manual backup compatibility
+        run: node tests/save-backup.mjs
+      - name: Run live Chromium Daily Sector match flow
+        shell: bash
+        run: |
+          set -euo pipefail
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          npm install --no-save --ignore-scripts playwright-core@1.56.1
+          node tests/daily-sector-live-qa.mjs
+          node tests/quick-play-live-flow-qa.mjs
+          node tests/backup-stale-export-browser-qa.mjs
+          node tests/first-match-entry-browser-qa.mjs
+          node tests/visual-qa.mjs
+      - name: Preserve isolated responsive screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sector-rebound-daily-ui-screenshots
+          path: qa-screens/
+          if-no-files-found: ignore
+          retention-days: 7

@@ -1,0 +1,56 @@
+name: Sector Rebound - D3-A1 host-only TDM bots and legacy LAN
+on:
+  push:
+    branches: [experiment/lan-host-bots-d3-a1]
+    paths:
+      - 'web/**'
+      - 'android/app/src/main/assets/**'
+      - 'tests/**'
+      - '.github/workflows/lan-host-bots-d3-a1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  host-bots:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Web and Android gameplay parity
+        run: |
+          set -euo pipefail
+          for f in game.js index.html lan-series.js lan-room.js scored-match.js style.css; do cmp "web/$f" "android/app/src/main/assets/$f"; done
+          node --check web/game.js
+          node --check web/lan-room.js
+          node --check tests/lan-host-bots-d3-a1.mjs
+      - name: Verify D3-A0 contract and D2 game physics/scoring/saves
+        run: |
+          node tests/lan-room-state-d3-a0.mjs
+          node tests/lan-series-kernel.mjs
+          node tests/smoke.mjs
+          node tests/scored-match-kernel.mjs
+          node tests/ballistic-trace-a2.mjs
+          node tests/save-backup.mjs
+      - name: Install Chromium runner dependency
+        run: npm install --no-save --ignore-scripts playwright-core@1.56.1
+      - name: Host-alone AI and legacy two-human LAN browser QA
+        run: |
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          node tests/lan-host-bots-d3-a1.mjs
+          node tests/lan-lobby-flow-qa.mjs
+          node tests/ui-layout-geometry-v0948.mjs
+          node tests/visual-qa.mjs
+      - name: Archive real game and UI QA screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sector-rebound-d3-a1-chromium
+          path: |
+            qa-screens/
+            qa-layout/
+          retention-days: 14
+          if-no-files-found: warn

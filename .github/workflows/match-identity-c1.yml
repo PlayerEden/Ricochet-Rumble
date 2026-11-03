@@ -1,0 +1,35 @@
+name: Sector Rebound - C1 match identity fast contract
+on:
+  push:
+    branches: [experiment/match-identity-colors-c1]
+    paths:
+      - '.github/workflows/match-identity-c1.yml'
+      - 'web/game.js'
+      - 'web/index.html'
+      - 'android/app/src/main/assets/game.js'
+      - 'android/app/src/main/assets/index.html'
+      - 'tests/smoke.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  identity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source mirrors and JS syntax
+        run: |
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/index.html android/app/src/main/assets/index.html
+          node --check web/game.js
+          node --check tests/smoke.mjs
+      - name: Verify true teams, independent FFA paint, CTF and saved rules
+        run: |
+          node tests/smoke.mjs
+          node tests/ballistic-trace-a2.mjs
+          node tests/ctf-rules.mjs
+          node tests/save-backup.mjs

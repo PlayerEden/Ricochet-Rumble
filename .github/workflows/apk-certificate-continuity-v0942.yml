@@ -1,0 +1,74 @@
+name: Sector Rebound - archive APK signer and update compatibility audit
+on:
+  push:
+    branches: [qa/apk-certificate-continuity-v0942]
+    paths:
+      - 'tools/audit-apk-certificate-continuity.mjs'
+      - '.github/workflows/apk-certificate-continuity-v0942.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  archive-apk-certificate-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check no-secret certificate audit parser
+        run: |
+          set -euo pipefail
+          node --check tools/audit-apk-certificate-continuity.mjs
+          node tools/audit-apk-certificate-continuity.mjs --self-test
+      - name: Install official Android signing and package-verification tools
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" --install "build-tools;35.0.0"
+          test -x "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/apksigner"
+          test -x "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/aapt"
+      - name: Retrieve ORIGINAL immutable GitHub APK assets and their original hash manifest
+        run: |
+          set -euo pipefail
+          mkdir -p qa-input
+          tags=(
+            v0.9.32-vehicle-precision-test
+            v0.9.37-scored-quick-play-test
+            v0.9.39-player-dossier-test
+            v0.9.40-upgrade-readiness-test
+          )
+          for tag in "${tags[@]}"; do
+            dir="qa-input/$tag"
+            mkdir -p "$dir"
+            gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern '*.apk' --pattern '*sha256.txt' --dir "$dir"
+            apk="$(find "$dir" -maxdepth 1 -name '*.apk' -type f)"
+            test -n "$apk" && test -s "$apk"
+            count="$(find "$dir" -maxdepth 1 -name '*.apk' | wc -l)"
+            test "$count" -eq 1
+            manifest="$(find "$dir" -maxdepth 1 -iname '*sha256.txt' -type f)"
+            test -n "$manifest"
+            cp "$manifest" "$dir/release-sha256.txt"
+            sha256sum "$apk" | cut -d' ' -f1 > "$dir/apk-sha256.txt"
+            "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/apksigner" verify --min-sdk-version 26 --verbose --print-certs "$apk" > "$dir/certificate.txt"
+            "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/aapt" dump badging "$apk" > "$dir/package.txt"
+          done
+      - name: Compare exact signer fingerprint, app ID, version, and release asset SHA
+        run: node tools/audit-apk-certificate-continuity.mjs --input qa-input
+      - name: Retain evidence without keys or APK re-signing
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: original-apk-certificate-compatibility-v0942
+          path: |
+            qa-results/apk-certificate-continuity-v0942.json
+            qa-input/*/certificate.txt
+            qa-input/*/package.txt
+            qa-input/*/apk-sha256.txt
+            qa-input/*/release-sha256.txt
+          if-no-files-found: warn
+          retention-days: 90
