@@ -96,6 +96,9 @@ try{
   ok((await inspect(guest)).guestRole==='queued'&&
     (await guest.locator('#spectator-queue').textContent()).includes('CANCEL'),
     'guest receives authentic queue acknowledgment and can cancel');
+  await send(guest,{...ack1,role:'player',seq:ack1.seq+1});
+  ok((await inspect(guest)).guestRole==='queued',
+    'forged or replayed queue status cannot grant the player role');
   ok((await guest.locator('#spectator-status').textContent()).includes('READ ONLY'),
     'queued participant remains a read-only spectator');
   const count1=(await packets(host,'join-next-status')).length;
