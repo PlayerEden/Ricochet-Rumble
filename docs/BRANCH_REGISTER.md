@@ -1,5 +1,9 @@
 # Branch register — Sector Rebound
 
+**M1 owner preview verified 2026-11-02:** D3-A1 [PR #100](https://github.com/PlayerEden/Ricochet-Rumble/pull/100) staged source `848a14832d03486239b30d510f2fe5ae28fac7e6`, signed v0.9.72 owner preview versionCode `340001`, [CI SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41572106373), [artifact](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41572106373/artifacts/13201384029); exact-source rollback at `checkpoint/sector-rebound-v0972-host-bots-signed-ci-340001`. [A0 #99](https://github.com/PlayerEden/Ricochet-Rumble/pull/99) also GREEN. **Both drafts unmerged**, owner phone installation and two-phone acceptance pending; stable main unchanged.
+
+
+
 **2026-11-02 M1 implementation branches:** [D3-A0 #99](https://github.com/PlayerEden/Ricochet-Rumble/pull/99) pure LAN room kernel `35b7ed75b049a3b7e0fb9a16f88cf5c84a980a58` [full QA PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41570686213); [D3-A1 #100](https://github.com/PlayerEden/Ricochet-Rumble/pull/100) real one-phone host-only bot TDM source `860e15432cc32dfbf08f38f324f04a0937922289`, full QA/owner Android **pending**. Both are experimental descendants of D2 v0.9.71; stable main, rollback and signed APK unchanged.
 
 

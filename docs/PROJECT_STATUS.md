@@ -1,3 +1,11 @@
+# 2026-11-02 — M1 D3-A1 SIGNED v0.9.72 OWNER PREVIEW GREEN (REAL SOURCE, PHONE REVIEW PENDING)
+
+The user's master-plan first playable milestone **is implemented experimentally** in [draft PR #100](https://github.com/PlayerEden/Ricochet-Rumble/pull/100) / `experiment/lan-host-bots-d3-a1`: one-phone Android host creates a LAN room and can start scored 1v1/2v2/3v3 TDM against bots without a second phone, including true AI at the reserved remote player seat and D2 Best-of-3 series. **Browser/scoring/LAN/UI CI SUCCESS [41571580793](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41571580793)** (32 host-bot game checks + 101 original two-browser LAN checks). **Signed Android preview v0.9.72 SUCCESS [41572106373](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41572106373)**; exact owner APK source SHA `848a14832d03486239b30d510f2fe5ae28fac7e6`, versionCode `340001`, same public test certificate as v0.9.71, preserved checkpoint `checkpoint/sector-rebound-v0972-host-bots-signed-ci-340001`, [download APK ZIP](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41572106373/artifacts/13201384029). [Full owner Android acceptance handoff](https://github.com/PlayerEden/Ricochet-Rumble/blob/experiment/lan-host-bots-d3-a1/docs/LAN_HOST_BOTS_D3_A1_ANDROID_OWNER_v0972.md).
+
+**Next:** actual one-phone owner physical install-over, data retention, TDM/bot/round/UI playtest. Then address observed defects. D3-A2 host-alone other modes; D3-B1 spectator; D3-B2 joining queue and bot takeover; D3-C native accept/reconnect and real two-phone Wi-Fi still NOT implemented/accepted. Keep `main`, v0.9.71 rollback and production signer untouched. **Master plan remains the priority; no new feature detour.**
+
+---
+
 # 2026-11-02 — M1 EXECUTION CHECKPOINT: D3-A0 GREEN, D3-A1 EXPERIMENTAL
 
 **D3-A0 code BUILT and full automated QA SUCCESS:** [draft PR #99](https://github.com/PlayerEden/Ricochet-Rumble/pull/99), source `35b7ed75b049a3b7e0fb9a16f88cf5c84a980a58`, [Actions run 41570686213](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41570686213). Pure room/role and absent AI-seat contract, Web/Android mirror, old D2 two-client, layout and 44-view tests completed. This is kernel, **not yet playable**.

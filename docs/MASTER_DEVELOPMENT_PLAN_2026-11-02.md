@@ -1,5 +1,9 @@
 # SECTOR REBOUND — MASTER DEVELOPMENT PLAN
 
+> **M1 VERIFIED BUILD (2026-11-02 Kentucky / 2026-11-03 UTC):** The **D3-A1 one-phone host-vs-bots playable code and signed preview are implemented and CI-verified**, not physically user-accepted yet. [D3-A1 PR #100](https://github.com/PlayerEden/Ricochet-Rumble/pull/100), [real gameplay/legacy LAN QA PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41571580793), [signed Android run PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41572106373), [v0.9.72 owner APK ZIP](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41572106373/artifacts/13201384029). Exact signed source `848a14832d03486239b30d510f2fe5ae28fac7e6`, APK versionCode `340001`, preserved checkpoint `checkpoint/sector-rebound-v0972-host-bots-signed-ci-340001`. First **manual gate**: backup/install-over and owner 1v1/2v2/3v3/best-of-three UX on a single phone. Late spectator, queued human promotion, repeat native connections and true 2-phone LAN remain planned. The "M1 — FIRST NEW PLAYABLE" row below now means **code verified / physical acceptance pending**.
+
+
+
 > **M1 execution 2026-11-02:** D3-A0 engineering is implemented and [full CI PASS 41570686213](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41570686213) on [draft #99](https://github.com/PlayerEden/Ricochet-Rumble/pull/99), exact A0 SHA `35b7ed75b049a3b7e0fb9a16f88cf5c84a980a58`. D3-A1 one-phone host-vs-bots prototype is committed on [draft #100](https://github.com/PlayerEden/Ricochet-Rumble/pull/100), source `860e15432cc32dfbf08f38f324f04a0937922289`; **full QA / signed APK / phone acceptance pending**. D3-B1 spectator and D3-B2 queued joining still design-only. This note updates status, not release scope.
 
 
