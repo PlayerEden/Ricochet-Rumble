@@ -7,7 +7,7 @@
 - Old pre-consolidation `main`: `9f67b2bea83d552cdbae8af1964c30eecf49022c` (v0.9.21) preserved at `archive/main-v0921-before-2026-11-02-integration`.
 - Selected **signed game source** `45e06297cf440a4d5f5606c8f282957dba602d4f` from `checkpoint/sector-rebound-v0975-rare-ai-openings-signed-ci-370001`, via the adjacent AI2 source-only docs head `5753fcfd318baa0634f7aa6b50302b9ee5ff401d`. The latter has the *same gameplay tree* and one additional documentation commit after signing.
 - GitHub compare old `main` → **exact signed v0.9.75 source**: `ahead 415 / behind 0`; **`main` is an ancestor, not a conflicting branch**. Integration PR must be a normal (non-squash) merge preserving these commits and their historical review provenance. No `main` force-push/rebase.
-- New integration candidate: `integration/v0975-main-consolidation-2026-11-02`, starting from above source/history. Its **only post-signed changes** are documentation, archival manifests and a dedicated regression workflow; do not alter `web/`, Android Java, or embedded Android assets as part of this consolidation.
+- New integration candidate: `integration/v0975-main-consolidation-2026-11-02`, starting from above source/history. Its **only post-signed changes** are documentation, archival manifests, updated stale QA harnesses and a dedicated regression workflow; do not alter `web/`, Android Java, or embedded Android assets as part of this consolidation.
 - History retained: `docs/PROJECT_STATUS_HISTORY_THROUGH_2026-11-02.md` entire previous 225 KB log; full latest historical master `docs/MASTER_DEVELOPMENT_PLAN_2026-11-02.md`; all `docs/design` files, owner-approved art, signed source checkpoints v0.9.71–75, previous v0.9.21 archive. Existing archive branch for old v0.6.3 remains.
 
 ## Independent test evidence inherited unchanged
@@ -34,7 +34,7 @@
 - New concise `docs/MASTER_DEVELOPMENT_PLAN.md` is the single order-of-work reference. Original longer master remains an *archived snapshot*; outdated research and status logs are preserved.
 - New `docs/ARCHIVE_INDEX.md` and historic snapshots make source decisions/rollbacks navigable. `docs/DEVELOPMENT_PROTOCOL.md`, `docs/BRANCH_REGISTER.md` and the older Google Play roadmap are marked with current-priority overrides rather than silently erased.
 - New `.github/workflows/current-main-regression.yml` tests AI fairness+rare frequency, host-only LAN modes, 101 two-Chromium LAN, responsive UI, smoke/scoring/saves and byte parity; **no signing or artifact release**.
-- Before promotion: run integration PR CI (fast, full Android, new QA), confirm only documentation/workflow changes since signed source and that no unexpected automation publishes a Play or GitHub release.
+- Before promotion: run integration PR CI (fast, full Android, new QA), confirm no gameplay, WebView assets, or Android Java changes since signed source; only docs, historical tests and workflow changed and that no unexpected automation publishes a Play or GitHub release.
 - After promotion: recheck `main` head and explicit GitHub diff (no game asset drift); post provenance/QA results here; archive superseded PRs conservatively, recording remaining side branches and leaving unverified claims OPEN.
 
 ## Release gate

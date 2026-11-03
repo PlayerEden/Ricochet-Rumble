@@ -16,7 +16,8 @@ for(const file of mirrored){
 const html=read('web/index.html'),game=read('web/game.js'),manifest=read('android/app/src/main/AndroidManifest.xml'),
  gradle=read('android/app/build.gradle'),main=read('android/app/src/main/java/com/playereden/ricochetrumble/MainActivity.java');
 const scripts=[...html.matchAll(/<script\s+src="([^"]+)"/g)].map(x=>x[1]);
-assert.deepEqual(scripts,['save-backup.js','dossier.js','scored-match.js','game.js'],'scripts and dependency order');
+assert.deepEqual(scripts,['save-backup.js','dossier.js','scored-match.js','forward-bays.js','lan-series.js','lan-room.js','game.js'],
+ 'scripts and dependency order');
 pass('Correct offline gameplay script bundle',scripts.join(', '));
 for(const id of ['solo','cqc','scored_ffa','scored_tdm','custom','nearby','dossier','settings']){
  assert.ok(html.includes('data-action="'+id+'"'),'missing real button '+id);
@@ -74,10 +75,11 @@ for(const [name,detail] of [
  ['Two-phone same-Wi-Fi LAN acceptance','Physical devices must verify NSD discovery, join by IP, gameplay sync, ejection/score and disconnect/reconnect'],
  ['Owner decision for v1 scope and visual/audio polish','Choose LAN must-have vs offline-first launch; inspect pilot art, accessibility, sound/music and match feel on actual devices'],
  ['Production signing, Play Console and privacy','No release upload key, signed AAB, verified developer package registration, public privacy policy, Data safety, store listing or account verification established'],
- ['Final integrated merge/release candidate','Multiple dependent experimental PRs remain unmerged; live dependency graph, owner approval and release-tagged rollback required']
+ ['Final integrated source and independent public release approval',
+  'Merging a development baseline does not prove physical LAN, production signing or Play GO']
  ])blocked(name,detail);
 const report={schemaVersion:1,audit:'First development plan cross-system source and automated-contract audit',
- scope:'Current source-validated experimental development branch; not stable main and not a Play production build',
+ scope:'Source-validated v0.9.75 development integration; not a Play production build',
  mode:'source contract plus prior independent gameplay/Chromium/Android and natural-bot evidence',
  checks,manual,summary:{automatedPass:checks.length,automatedFail:0,manualPending:manual.length,releaseDecision:'NO_GO_PENDING_MANUAL_AND_SIGNING'},
  sourceHash:{game:sha('web/game.js'),androidGradle:sha('android/app/build.gradle'),offlineBackup:sha('web/save-backup.js')}};

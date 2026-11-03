@@ -8,7 +8,10 @@ const root=path.resolve('web'),source=fs.readFileSync(path.join(root,'game.js'),
 assert.match(source,/\}\)\(\);\s*$/);
 const hook='window.__soak={start(id){newMatch(id);return this.read()},replay(next){resetAll(next);return this.read()},frames(n){for(let i=0;i<n;i++)step(1/60);return this.read()},read(){return {mode,paused,matchId:state.matchId,seed:state.mazeSeed,config:{...state.config},winner:state.winner,elapsed:state.elapsedSeconds,actors:state.tanks.map(t=>({x:t.x,y:t.y,a:t.a,vx:t.vx,vy:t.vy,onFoot:t.onFoot})),lives:state.lives.slice(),bullets:state.bullets.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy})),fx:state.fxEvents.length,pickups:state.pickups.length,vehicles:state.vehicles.length,finalResult:!!state.finalResult,dom:document.querySelectorAll("*").length}}};})();';
 const game=source.replace(/\}\)\(\);\s*$/,hook);
-const names=new Set(['index.html','style.css','game.js','scored-match.js','dossier.js','save-backup.js']);
+// Serve the actual runtime dependency chain; the old harness omitted the
+// Forward Bays planner and gave a false failure when a team match spawned.
+const names=new Set(['index.html','style.css','game.js','scored-match.js',
+ 'dossier.js','save-backup.js','forward-bays.js','lan-series.js','lan-room.js']);
 const server=http.createServer((req,res)=>{
  const name=new URL(req.url,'http://127.0.0.1/').pathname.replace(/^\/+/,'')||'index.html';
  if(name==='favicon.ico'){res.writeHead(204);res.end();return;}
