@@ -981,7 +981,8 @@ function makeControl(isPlayer1){return isPlayer1?inputFrom(keys1,true):inputFrom
 function serializeState(){return {allyAim:alliedAimIntentIndices(1),tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,vehicleDropTimer:state.vehicleDropTimer,dropIndex:state.dropIndex,vehicleBeacon:state.vehicleBeacon?{...state.vehicleBeacon}:null,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,scored:state.scored,lanSeries:state.lanSeries,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,elapsedSeconds:state.elapsedSeconds,deaths:state.deaths.slice(),hostPaused:mode==='host'&&paused};}
 function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  document.getElementById('score0').textContent=state.lives[me]??0;document.getElementById('score1').textContent=state.lives[other]??0;
- const botLives=mode==='solo'?opposingCount(me):state.lives.slice(state.humanCount||2).filter(v=>v>0).length,
+ const botLives=mode==='solo'||(mode==='host'&&state.config?.lanHostSolo===true)?
+  opposingCount(me):state.lives.slice(state.humanCount||2).filter(v=>v>0).length,
  active=state.bullets.filter(b=>b.owner===me&&b.life>0).length; // Same live-projectile rule as shoot().
  const phase=document.getElementById('round'),localPilot=state.tanks[me],localVehicle=currentVehicle(localPilot),foot=!!localPilot?.onFoot,hostPaused=mode==='guest'&&state.hostPaused;
  const armor=localVehicle?.armor??0,maxArmor=vehicleDef(localVehicle).armor;
@@ -1087,8 +1088,14 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  const label1=document.getElementById('player1-label');if(label1)label1.textContent=
   ctf?(mySide===1?'CORAL FLAGS · YOU':'CORAL FLAGS'):
   tdm?(mySide===1?'CORAL KOs · YOU':'CORAL KOs'):
-  isScoredMatch()?'LEADER':mode==='solo'&&isTeams?(mySide===1?'CYAN · ENEMIES':'CORAL · ENEMIES'):mode==='solo'?'ENEMIES':state.config?.teamMode==='coop'?'BOTS':mode==='guest'?'HOST':'RIVAL';
- if(mode==='solo'||((mode==='host'||mode==='guest')&&state.config?.teamMode==='coop'))document.getElementById('score1').textContent=botLives;
+  isScoredMatch()?'LEADER':
+  mode==='host'&&state.config?.lanHostSolo===true?
+   state.config.teamMode==='coop'?'ENEMY BOTS':
+   isTeams?(mySide===1?'CYAN · ENEMIES':'CORAL · ENEMIES'):'ENEMIES LEFT':
+  mode==='solo'&&isTeams?(mySide===1?'CYAN · ENEMIES':'CORAL · ENEMIES'):
+  mode==='solo'?'ENEMIES':state.config?.teamMode==='coop'?'BOTS':mode==='guest'?'HOST':'RIVAL';
+ if(mode==='solo'||(mode==='host'&&state.config?.lanHostSolo===true&&!tdm)||
+  ((mode==='host'||mode==='guest')&&state.config?.teamMode==='coop'))document.getElementById('score1').textContent=botLives;
  const objective=document.getElementById('ctf-status');
  if(objective){objective.classList.toggle('hidden',!ctf);
   if(ctf){
@@ -2825,7 +2832,8 @@ function sanitizeLanOptions(raw){
  const v=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{},base=selectedRules;
  const teamMode=LAN_SIDES[v.lanMode]?v.lanMode:LAN_SIDES[v.teamMode]?v.teamMode:'ffa';
  let botCount=Number.isInteger(v.botCount)&&v.botCount>=0&&v.botCount<=4?v.botCount:0;
- if(teamMode==='tdm'&&botCount%2)botCount=Math.min(4,botCount+1);
+ // D3-A2: both TDM and Team Survival require equal faction rosters.
+ if((teamMode==='tdm'||teamMode==='teams')&&botCount%2)botCount=Math.min(4,botCount+1);
  return {mapSize:LAN_SIZE[v.mapSize]?v.mapSize:base.mapSize,
   botCount,teamMode,
   hostSide:v.hostSide==='coral'||v.lanHostSide==='coral'?'coral':'cyan',
@@ -2839,16 +2847,23 @@ function lanDescription(r){
  const score=r.teamMode==='tdm'?' · FIRST TO '+r.scoreTarget+' KOs · '+(r.rounds===3?'BEST OF 3':'SINGLE MATCH'):' · '+r.startLives+' LIVES';
  const sides=(r.teamMode==='tdm'||r.teamMode==='teams')?
   ' · HOST '+(r.hostSide==='coral'?'CORAL':'CYAN')+' / GUEST '+(r.hostSide==='coral'?'CYAN':'CORAL'):'';
- const bots=mode==='host'&&!connected&&r.teamMode==='tdm'?r.botCount+1:r.botCount;
- return (bots===0?'NO BOTS':bots+' BOT'+(bots===1?'':'S'))+
+ const hostOnly=mode==='host'&&!connected;
+ const bots=r.botCount+(hostOnly?1:0);
+ const role=hostOnly?(r.teamMode==='coop'?' · 1 AI ALLY / '+r.botCount+' ENEMY BOTS':
+  ' · 1 HUMAN / '+bots+' AI'):'';
+ return (bots===0?'NO BOTS':bots+' BOT'+(bots===1?'':'S'))+role+
   ' · '+LAN_SIZE[r.mapSize]+score+sides+' · FF '+(r.friendlyFire?'ON':'OFF');
 }
 function lanCanStart(){
  if(!lanLobby||mode!=='host')return false;
  const r=lanLobby.rules;
- if(!connected)return r.teamMode==='tdm'&&[0,2,4].includes(r.botCount);
+ if(!connected){
+  // Reserved seat 1 becomes real AI, but Co-op still requires enemy actors.
+  return r.teamMode==='ffa'||(r.teamMode==='coop'&&r.botCount>=1)||
+   ((r.teamMode==='teams'||r.teamMode==='tdm')&&r.botCount%2===0);
+ }
  return !!lanLobby.guestReady&&!(r.teamMode==='coop'&&r.botCount===0)&&
-  !(r.teamMode==='tdm'&&r.botCount%2!==0);
+  !((r.teamMode==='teams'||r.teamMode==='tdm')&&r.botCount%2!==0);
 }
 function lanLobbyHTML(hostRole){
  const name=hostRole?'HOST MATCH':'JOINED MATCH';
@@ -2857,14 +2872,14 @@ function lanLobbyHTML(hostRole){
  '<label>HOST FACTION<select data-lan-setting="hostSide"><option value="cyan">CYAN · GUEST CORAL</option><option value="coral">CORAL · GUEST CYAN</option></select></label>'+
  '<label>KO TARGET<select data-lan-setting="scoreTarget"><option value="15">15 TEAM KOs</option><option value="30">30 TEAM KOs</option></select></label>'+
  '<label>MATCH SERIES<select data-lan-setting="rounds"><option value="1">SINGLE MATCH</option><option value="3">BEST OF 3</option></select></label>'+
- '<label>AI OPPONENTS<select data-lan-setting="botCount"><option value="0">0 · 1v1 NO BOTS</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>'+
+ '<label>ADDITIONAL AI SLOTS<select data-lan-setting="botCount"><option value="0">0 · 1v1 NO BOTS</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>'+
  '<label>MAZE<select data-lan-setting="mapSize"><option value="small">SMALL</option><option value="standard">STANDARD</option><option value="large">LARGE</option></select></label>'+
  '<label>PILOT LIVES<select data-lan-setting="startLives"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>'+
  '<label>BOT SKILL<select data-lan-setting="botSkill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>'+ 
  '<label>FRIENDLY FIRE<select data-lan-setting="friendlyFire"><option value="off">OFF · ALLIES PASS THROUGH</option><option value="on">ON · ALLIES SOLID</option></select></label>'+
  '</div>':'<div class="lan-summary"><strong id="lan-guest-rules">AWAITING HOST RULES</strong><span>Only the host can change the match setup.</span></div>';
  return '<section class="lan-lobby" aria-label="Local multiplayer waiting room">'+
- '<header class="lan-lobby-head"><div class="eyebrow">LOCAL WI-FI / PRIVATE MATCH</div><h2>'+name.replace(' ',' <span>')+'</span></h2><p>'+(hostRole?'Start scored TDM against bots now, or wait for a second phone.':'Join the host room and press READY when available.')+'</p></header>'+
+ '<header class="lan-lobby-head"><div class="eyebrow">LOCAL WI-FI / PRIVATE MATCH</div><h2>'+name.replace(' ',' <span>')+'</span></h2><p>'+(hostRole?'Start a bot-filled match without waiting, or keep the room open for another phone.':'Join the host room and press READY when available.')+'</p></header>'+
  '<div class="lan-presence"><span>PLAYER 1 · HOST</span><strong id="lan-host-presence">CONNECTED</strong><span>PLAYER 2 · GUEST</span><strong id="lan-guest-presence">WAITING</strong></div>'+
  (hostRole?'<p class="lan-address">HOST ADDRESS · <span id="host-address">STARTING WI-FI ROOM...</span></p>':'')+
  controls+
@@ -2887,11 +2902,17 @@ function refreshLanLobby(){
  if(livesLabel)livesLabel.hidden=r.teamMode==='tdm';
  const botSelect=document.querySelector('[data-lan-setting="botCount"]');
  if(botSelect?.options)for(const option of botSelect.options){
-  const n=Number(option.value);option.disabled=r.teamMode==='tdm'&&n%2===1;
-  if(r.teamMode==='tdm'&&[0,2,4].includes(n)){
-   const bots=n+(hostRole&&!connected?1:0);
+  const n=Number(option.value);const hostOnly=hostRole&&!connected;
+  option.disabled=((r.teamMode==='tdm'||r.teamMode==='teams')&&n%2===1)||
+   (r.teamMode==='coop'&&n===0);
+  if((r.teamMode==='tdm'||r.teamMode==='teams')&&n%2===0){
+   const bots=n+(hostOnly?1:0);
    option.textContent=bots+' BOT'+(bots===1?'':'S')+' · '+(n/2+1)+'v'+(n/2+1);
-  }
+  }else if(hostOnly&&r.teamMode==='coop'){
+   option.textContent=(n+1)+' AI · 1 ALLY + '+n+' ENEM'+(n===1?'Y':'IES');
+  }else if(hostOnly&&r.teamMode==='ffa'){
+   option.textContent=(n+1)+' AI OPPONENT'+(n===0?'':'S');
+  }else option.textContent=n+' ADDITIONAL AI';
  }
  if((mode==='host'||mode==='guest')&&lanLobby.hasRules){
   const teamMatch=r.teamMode==='teams'||r.teamMode==='tdm';
@@ -2899,7 +2920,7 @@ function refreshLanLobby(){
   document.getElementById('mode-label').textContent=teamMatch?'YOU: '+(team===0?'CYAN':'CORAL'):mode==='host'?'HOST MATCH':'JOIN MATCH';
  }
  const skillLabel=document.querySelector('[data-lan-setting="botSkill"]')?.closest?.('label');
- if(skillLabel)skillLabel.hidden=r.botCount===0&&!(hostRole&&!connected&&r.teamMode==='tdm');
+ if(skillLabel)skillLabel.hidden=r.botCount===0&&!(hostRole&&!connected&&lanCanStart());
  const guestPresence=document.getElementById('lan-guest-presence');
  if(guestPresence)guestPresence.textContent=!connected?'WAITING':hostRole?(lanLobby.guestReady?'READY':'NOT READY'):lanLobby.hostBusy?'HOST IN MATCH':(lanLobby.myReady?'READY':'NOT READY');
  const hostPresence=document.getElementById('lan-host-presence');
@@ -2909,12 +2930,12 @@ function refreshLanLobby(){
  const problem=r.teamMode==='coop'&&r.botCount===0;
  const message=document.getElementById('lan-lobby-message');
  if(message)message.textContent=problem?'CO-OP REQUIRES AT LEAST ONE BOT':
-  !connected?(hostRole&&r.teamMode==='tdm'?'ROOM OPEN · START VS BOTS NOW':'WAITING FOR SECOND PHONE'):
+  !connected?(hostRole&&lanCanStart()?'ROOM OPEN · START VS BOTS NOW':'WAITING FOR LEGAL MATCH RULES'):
   hostRole?(lanLobby.guestReady?'BOTH PLAYERS READY · DEPLOY WHEN READY':'GUEST NOT READY · WAIT FOR READY'):
   lanLobby.hostBusy?'HOST IS PLAYING BOTS · WAIT FOR NEXT MATCH':
   lanLobby.myReady?'READY · WAIT FOR HOST TO START':'CHECK RULES, THEN PRESS READY';
  const start=document.querySelector('[data-action="lan-start"]');
- if(start){start.disabled=!lanCanStart();start.textContent=!connected&&r.teamMode==='tdm'?'START VS BOTS':'START MATCH';}
+ if(start){start.disabled=!lanCanStart();start.textContent=!connected&&lanCanStart()?'START VS BOTS':'START MATCH';}
  const ready=document.querySelector('[data-action="lan-ready"]');
  if(ready){ready.disabled=!connected||!lanLobby.hasRules||lanLobby.hostBusy===true;ready.textContent=lanLobby.myReady?'CANCEL READY':'READY';}
 }
