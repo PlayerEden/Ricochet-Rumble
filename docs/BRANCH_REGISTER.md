@@ -1,5 +1,9 @@
 # Branch register — Sector Rebound
 
+**D3-A2 one-phone LAN four-mode signed preview (Nov 2 local):** [draft PR #101](https://github.com/PlayerEden/Ricochet-Rumble/pull/101), exact signed source `08580417bb43877b472f5b378d449f77e74bd4de`, versionCode `350001`, [Android PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41574012652), [game PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41573556329), [owner ZIP](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41574012652/artifacts/13203185715), checkpoint `checkpoint/sector-rebound-v0973-lan-modes-signed-ci-350001`. Owner phone/manual save acceptance and true two-phone Wi-Fi still pending; stable main and v0.9.71/72 unchanged.
+
+
+
 **M1 owner preview verified 2026-11-02:** D3-A1 [PR #100](https://github.com/PlayerEden/Ricochet-Rumble/pull/100) staged source `848a14832d03486239b30d510f2fe5ae28fac7e6`, signed v0.9.72 owner preview versionCode `340001`, [CI SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41572106373), [artifact](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41572106373/artifacts/13201384029); exact-source rollback at `checkpoint/sector-rebound-v0972-host-bots-signed-ci-340001`. [A0 #99](https://github.com/PlayerEden/Ricochet-Rumble/pull/99) also GREEN. **Both drafts unmerged**, owner phone installation and two-phone acceptance pending; stable main unchanged.
 
 
