@@ -2,7 +2,7 @@
 
 **Last reconciled:** 2026-11-02 (America/Kentucky/Louisville) · **repository:** `PlayerEden/Ricochet-Rumble` · **game name:** Sector Rebound.
 
-> **Repo integration scope:** The current game code is the verified v0.9.75 experimental **development baseline**. It is being promoted to `main` via [the audited 2026-11-02 integration](MAINLINE_PROMOTION_AUDIT_2026-11-02.md). **This is not a Play Store public release, and real two-phone Wi-Fi testing remains outstanding.** Confirm that the integration PR has actually merged before treating the new `main` SHA as accepted.
+> **Repo integration scope:** The current game code is the verified v0.9.75 experimental **development baseline**. It was merged into `main` as `b55e1ea1f59ca72663896d8f37d612547e253fbe` via [the audited 2026-11-02 integration](MAINLINE_PROMOTION_AUDIT_2026-11-02.md). **This is not a Play Store public release, and real two-phone Wi-Fi testing remains outstanding.** The post-merge main smoke and full gameplay/LAN regression both passed; this remains a **development baseline**, not a production app.
 
 **Current canonical navigation:** [Master development plan](MASTER_DEVELOPMENT_PLAN.md) · [Archive index](ARCHIVE_INDEX.md) · [preconsolidation full project log](PROJECT_STATUS_HISTORY_THROUGH_2026-11-02.md).
 
@@ -23,12 +23,12 @@
 - Web/Android offline gameplay: pilot/tank/mech, bank shots and procedural arenas, FFA and Team Survival, scored FFA/TDM, pilot-only CQC, Quick Play, custom presets, Dossier/earned cosmetics, Hangar, backup/export.
 - Local Wi-Fi beta: host/join/Ready and authoritative rounds/Best of 3; **host alone can start** FFA, balanced Team Survival, Co-op and scored TDM against real AI with one vacant guest seat.
 - Fair AI: bounded trajectory plan, finite turn/speed/aim cues; rare v0.9.75 **shorter aim acquisition** under eligible direct vehicle shot conditions. Human controls, projectile physics and production Play status unaffected.
-- **Not built:** live spectator camera or queued-human promotion, native LAN repeat-accept/reconnect, remote internet games, account/friends/ranked and purchase services.
+- **Current experimental PR #105:** D3-B1 real late-joining spectator camera, active host snapshots, and read-only authority gate on a one-connection Android transport. **Not built:** join-next queue/human takeover, native LAN repeat-accept/reconnect, remote internet games, account/friends/ranked and purchase services.
 
 ## Open gates and immediate next action
 
-1. **Current: merge an audited integration PR into `main` with green fast smoke, current combat/LAN browser QA, full Android build and protected archive.** No public release.
-2. **Next planned feature: D3-B1.** A late guest must receive **actual live spectator state/camera** and never control the host's ongoing bot. Then D3-B2 safe join-next role swap, and D3-C native repeated accept/reconnect plus **two genuine Android phones**.
+1. **M0 consolidation verified:** current v0.9.75 baseline merged to `main` with old main archived; post-merge smoke and full LAN regression PASS.
+2. **D3-B1 [draft PR #105](https://github.com/PlayerEden/Ricochet-Rumble/pull/105):** source implemented with genuine active spectator state and no input authority. [Live two-browser test #41587683366](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41587683366) PASS on initial SHA; final HUD refinement and full native Android PR checks are being rerun. **Owner real two-phone acceptance pending**. Next D3-B2 queue and D3-C repeat accept.
 3. **Manual device:** compare v0.9.75 rare fast bot shots with accepted v0.9.74; verify save-preserving install-over, landscape/portrait, play duration/FPS/heat, Dossier, controls and one-phone match fun.
 4. **Google Play is NO-GO:** production signer/AAB, authentic approved store assets, public privacy/support, Data safety, account testing, local data migration and release owner GO not complete.
 

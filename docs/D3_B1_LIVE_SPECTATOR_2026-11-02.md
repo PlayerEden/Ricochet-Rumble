@@ -1,0 +1,15 @@
+# D3-B1 — Genuine active-room spectator, source and QA contract
+**Branch** `feature/d3-b1-live-lan-spectator` / [draft PR #105](https://github.com/PlayerEden/Ricochet-Rumble/pull/105), based on audited `main` merge SHA `b55e1ea1f59ca72663896d8f37d612547e253fbe`. **Do not merge without final Android/Chrome checks.**
+
+## Runtime contract
+A host can already start a LAN game against actual AI. When the first guest joins this *active* same-Wi-Fi room, the host **does not pause or surrender bot seat 1**. Instead it emits a truthful v1 `lobby` packet with `hostBusy:true`, then a new versioned v2 `spectate` message bound to room revision and match ID, followed by the current real `serializeState()` snapshot. The Android `MainActivity.java` whitelist now forwards the `spectate` type from host to joining guest over its existing TCP connection. The host continues to stream match snapshots even though `lanHostSolo===true`.
+
+The guest stays in a waiting lobby until it has **both** a valid host v2 role notice and a structurally valid host snapshot with the exact match ID and `lanHostSolo===true`. Only then does it display the **actual arena**, using an observer camera following host seat 0, true neutral Cyan/Coral KO scoring in TDM, real actors and ballistics, and a visible SPECTATING/READ ONLY HUD. Both MOVE/FIRE control surfaces are removed. No spectator movement, pilot fire, interact, Ready, release request or Dossier match-reward call is allowed. The host continues to ignore injected control messages while seat 1 is an AI.
+
+A spectator who stays connected can watch across host rematches (rebound match ID required). After a host finishes and changes rules, the guest returns to an ordinary Ready lobby, never silently taking control of a bot mid-round. If the guest disconnects, host's bot match continues and native reconnection remains a later deliverable.
+
+## Independent automated acceptance
+[Initial CI #41587683366](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41587683366): **43 live two-Chromium spectator assertions at two phone-sized landscape viewports**, 101 inherited two-browser LAN checks, D3-A2 47 host-alone modes, D3-A1 32 bot matches, 44 visual screens; source/Android mirrored web assets and pure game/save/score pass. A separate final HUD label/aim-overlay refinement is under rerun, and full Android Java compile is explicitly requested by PR [full-qa] gate. This proves genuine browser state and actor simulation, **not** actual two physical Android phones or latency.
+
+## Explicit limitations and next slices
+Android still accepts only one remote TCP peer via one `ServerSocket.accept()`; B1 can demonstrate a *first* late joining spectator but cannot reliably accept a second guest after disconnect. Native disconnect/reconnect, busy/full discovery, repeated accept loop are D3-C. **JOIN NEXT** queue and bot-to-human transition only at a safe round/match boundary are D3-B2, not part of B1. No internet play/cloud hosting, no Google Play production signing or automatic release.
