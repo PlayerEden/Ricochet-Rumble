@@ -264,7 +264,7 @@ public final class MainActivity extends Activity {
                 try {
                     JSONObject packet = new JSONObject(line);
                     String kind = packet.optString("type", "");
-                    if ((host && ("input".equals(kind) || "interact".equals(kind) || "ready".equals(kind))) || (!host && ("state".equals(kind) || "lobby".equals(kind) || "start".equals(kind)))) signal(packet);
+                    if ((host && ("input".equals(kind) || "interact".equals(kind) || "ready".equals(kind))) || (!host && ("state".equals(kind) || "lobby".equals(kind) || "start".equals(kind) || "spectate".equals(kind)))) signal(packet);
                 } catch (Exception ignored) { }
             }
         } catch (IOException ignored) { }
@@ -282,7 +282,7 @@ public final class MainActivity extends Activity {
         try {
             JSONObject json = new JSONObject(packet);
             String kind = json.optString("type");
-            if (isHosting && !("state".equals(kind) || "lobby".equals(kind) || "start".equals(kind))) return;
+            if (isHosting && !("state".equals(kind) || "lobby".equals(kind) || "start".equals(kind) || "spectate".equals(kind))) return;
             if (!isHosting && !("input".equals(kind) || "interact".equals(kind) || "ready".equals(kind))) return;
             synchronized (outputLock) {
                 if (out != null) { out.write(json.toString()); out.write('\n'); out.flush(); }
