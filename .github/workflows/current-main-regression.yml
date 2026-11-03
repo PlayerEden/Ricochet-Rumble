@@ -53,6 +53,7 @@ jobs:
           node --check tests/android-canvas-resize-qa.mjs
           node --check tests/reward-hangar-navigation-qa.mjs
           node --check tests/m9-results-layout-qa.mjs
+          node --check tests/landscape-hud-safe-zones-qa.mjs
       - name: Run pure room, gameplay, save, update and ballistic safeguards
         run: |
           set -euo pipefail
@@ -86,6 +87,7 @@ jobs:
           node tests/android-canvas-resize-qa.mjs
           node tests/reward-hangar-navigation-qa.mjs
           node tests/m9-results-layout-qa.mjs
+          node tests/landscape-hud-safe-zones-qa.mjs
           node tests/ui-layout-geometry-v0948.mjs
           node tests/visual-qa.mjs
           node tests/m2-camera-widen-qa.mjs
