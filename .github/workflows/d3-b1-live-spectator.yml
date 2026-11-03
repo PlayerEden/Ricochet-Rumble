@@ -1,0 +1,64 @@
+name: Sector Rebound - D3-B1 real live LAN spectator
+
+on:
+  push:
+    branches: [feature/d3-b1-live-lan-spectator]
+    paths: ['web/**', 'android/**', 'tests/**', '.github/workflows/d3-b1-live-spectator.yml']
+  pull_request:
+    branches: [main]
+    paths: ['web/**', 'android/**', 'tests/**', '.github/workflows/d3-b1-live-spectator.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-spectator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact Android WebView game source and syntax
+        run: |
+          set -euo pipefail
+          for f in game.js index.html style.css scored-match.js dossier.js save-backup.js ctf-rules.js ctf-ai.js forward-bays.js lan-series.js lan-room.js; do cmp "web/$f" "android/app/src/main/assets/$f"; done
+          node --check web/game.js
+          node --check tests/d3-b1-live-spectator.mjs
+      - name: Room, scoring, ballistics, save and signing safeguards
+        run: |
+          set -euo pipefail
+          node tests/lan-room-state-d3-a0.mjs
+          node tests/lan-series-kernel.mjs
+          node tests/smoke.mjs
+          node tests/scored-match-kernel.mjs
+          node tests/ballistic-trace-a2.mjs
+          node tests/save-backup.mjs
+          node tests/android-upgrade-readiness.mjs
+      - name: Real two-browser live spectator plus previous LAN/AI/visual behavior
+        run: |
+          set -euo pipefail
+          npm install --no-save --ignore-scripts playwright-core@1.56.1
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          node tests/d3-b1-live-spectator.mjs
+          node tests/lan-lobby-flow-qa.mjs
+          node tests/lan-modes-d3-a2.mjs
+          node tests/lan-host-bots-d3-a1.mjs
+          node tests/bot-rare-opportunities-m2-a2.mjs
+          node tests/ai-aim-posture-m2-a1.mjs
+          node tests/ui-layout-geometry-v0948.mjs
+          node tests/visual-qa.mjs
+      - name: Preserve inspectable spectator/browser QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sr-d3-b1-live-spectator-${{ github.run_id }}
+          path: |
+            qa-results/
+            qa-screens/
+            qa-layout/
+          if-no-files-found: warn
+          retention-days: 21
