@@ -21,3 +21,6 @@
 - After successful exact-source CI, build same-signer higher-version Android preview and ask owner to compare matched scenarios, ideally 1v1 tank and 2v2 team versus bots. **No assertion that a numeric test proves fun/fairness**; owner phone feedback is acceptance.
 - Warning: overly defensive AI can become stationary target practice; if actual human play reports bots "never attack" or "stop and wait too long", adjust the posture limits in another small A/B pass, not by restoring instant-fire.
 - Preserve `main`, signed v0.9.73 and all earlier checkpoint SHAs. No standalone network upgrade, spectator, queue, production Google Play work in this slice.
+
+## Verified v0.9.74 owner preview
+[Exact-source signed preview and user one-phone A/B checklist](AI_SHOT_POSTURE_M2_A1_ANDROID_OWNER_v0974.md) · [APK CI SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41576134341), source checkpoint `checkpoint/sector-rebound-v0974-ai-shot-posture-signed-ci-360001`. No physical owner acceptance yet.
