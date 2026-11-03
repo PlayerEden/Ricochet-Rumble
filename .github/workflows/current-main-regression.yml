@@ -73,10 +73,10 @@ jobs:
           node tests/lan-modes-d3-a2.mjs
           node tests/lan-host-bots-d3-a1.mjs
           node tests/lan-lobby-flow-qa.mjs
+          node tests/solo-practice-onboarding.mjs
           node tests/ui-layout-geometry-v0948.mjs
           node tests/visual-qa.mjs
           node tests/m2-camera-widen-qa.mjs
-          node tests/solo-practice-onboarding.mjs
       - name: Preserve inspectable QA outputs
         if: always()
         uses: actions/upload-artifact@v4
