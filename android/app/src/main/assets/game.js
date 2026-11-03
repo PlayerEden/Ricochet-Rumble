@@ -2413,7 +2413,7 @@ const CAMERA_APRON=420;
 // This changes the viewport only: no changes to player size, input, physics,
 // AI acquisition rates, projectile lifetime or simulation camera authority.
 function unitTargetZoom(t){
- if(!t)return .98;
+ if(!t)return 1.00; // Preserve empty-state and preview camera baseline.
  if(t.onFoot)return .98;
  const v=currentVehicle(t);
  return v?.type==='mech'?.71:v?.type==='tank'?.75:.98;
