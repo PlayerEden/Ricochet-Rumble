@@ -2868,7 +2868,7 @@ function joinNextBoundary(){
 function guestJoinNextAction(action){
  if(mode!=='guest'||!connected||!lanSpectating||!lanLobby||lanGuestJoinPending||
   !['join','cancel'].includes(action)||!Number.isSafeInteger(state?.matchId)||
-  (action==='join'&&lanGuestJoinNext!=='none')||
+  (action==='join'&&lanGuestJoinNext==='queued')||
   (action==='cancel'&&lanGuestJoinNext!=='queued'))return false;
  lanGuestJoinSeq++;lanGuestJoinPending=true;
  nativePacket({type:'join-next',version:2,revision:lanLobby.revision,
