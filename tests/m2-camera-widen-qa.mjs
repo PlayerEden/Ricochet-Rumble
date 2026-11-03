@@ -1,4 +1,4 @@
-// M2 camera-awareness owner preview: exercise the actual Canvas game in real Chromium.
+// M2 camera v2 fine-tune owner preview: exercise the actual Canvas game in real Chromium.
 // Automated viewport check, not a replacement for on-phone legibility/feel.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -39,7 +39,7 @@ const browser=await chromium.launch({headless:true,executablePath:process.env.CH
 const page=await browser.newPage({viewport:{width:915,height:412}});
 const errors=[];page.on('pageerror',err=>errors.push(err.message));
 const records=[];
-const prior={pilot:1.07,tank:.82,mech:.77},newTarget={pilot:.98,tank:.75,mech:.71};
+const prior={pilot:.98,tank:.75,mech:.71},newTarget={pilot:.94,tank:.73,mech:.69};
 try{
  await page.goto('http://127.0.0.1:'+server.address().port+'/');
  await page.waitForFunction(()=>!!window.__cameraWidenQA);
@@ -54,9 +54,9 @@ try{
     assert.ok(row.zoom>=row.floor-1e-7,'perimeter zoom floor preserved');
     assert.ok(Math.abs(row.zoom-Math.max(newTarget[unit],row.floor))<1e-7,'correct vehicle zoom incl. floor');
     const oldZoom=Math.max(prior[unit],row.floor);
-    assert.ok(row.visibleWorldWidth>=row.W/oldZoom*1.075,'wider world view than previous camera by at least 7.5%');
-    assert.ok(row.visibleWorldHeight>=row.H/oldZoom*1.075,'wider vertical view by at least 7.5%');
-    assert.ok(row.visibleWorldWidth<=row.W/oldZoom*1.105,'not excessively zoomed out');
+    assert.ok(row.visibleWorldWidth>=row.W/oldZoom*1.025,'wider world view than previous camera by at least 2.5%');
+    assert.ok(row.visibleWorldHeight>=row.H/oldZoom*1.025,'wider vertical view by at least 2.5%');
+    assert.ok(row.visibleWorldWidth<=row.W/oldZoom*1.045,'not excessively zoomed out');
     assert.ok(row.cameraX>=-row.apron-1e-7&&row.cameraY>=-row.apron-1e-7,'camera apron safety');
     measurements[mapSize+':'+unit]=row;
     records.push({viewport:viewport.width+'x'+viewport.height,...row});
@@ -69,7 +69,7 @@ try{
  assert.deepEqual(missing,[],'no missing bundled game assets');
  fs.mkdirSync('qa-results',{recursive:true});
  fs.writeFileSync('qa-results/m2-camera-widen.json',JSON.stringify({status:'PASS',type:'CHROMIUM_VIEWPORT_QA_NOT_PHYSICAL_ANDROID',records},null,2)+'\n');
- console.log('M2_CAMERA_WIDEN_PASS: '+records.length+' real rendering checks across 4 landscape/portrait sizes, 2 arenas and 3 units, no errors, correct floor/order');
+ console.log('M2_CAMERA_V2_PASS: '+records.length+' real rendering checks across 4 landscape/portrait sizes, 2 arenas and 3 units, no errors, correct floor/order');
 } finally{
  await page.close().catch(()=>{});await browser.close();await new Promise(ok=>server.close(ok));
 }
