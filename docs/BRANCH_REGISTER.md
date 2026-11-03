@@ -1,5 +1,9 @@
 # Branch register — Sector Rebound
 
+**M2 AI fairness v0.9.74 owner preview:** [draft PR #102](https://github.com/PlayerEden/Ricochet-Rumble/pull/102), signed source `0797cc8f18b6da35a1bdcaf62e4d49c2dd52c1aa`, [game test SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41575543007), [Android signer/asset SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41576134341), [APK artifact ZIP](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41576134341/artifacts/13202544914), code 360001, same public AOSP preview signer. Exact source rollback `checkpoint/sector-rebound-v0974-ai-shot-posture-signed-ci-360001`, **do not delete/force push**, phone acceptance pending. v0.9.73 and main preserved.
+
+
+
 **D3-A2 one-phone LAN four-mode signed preview (Nov 2 local):** [draft PR #101](https://github.com/PlayerEden/Ricochet-Rumble/pull/101), exact signed source `08580417bb43877b472f5b378d449f77e74bd4de`, versionCode `350001`, [Android PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41574012652), [game PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41573556329), [owner ZIP](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41574012652/artifacts/13203185715), checkpoint `checkpoint/sector-rebound-v0973-lan-modes-signed-ci-350001`. Owner phone/manual save acceptance and true two-phone Wi-Fi still pending; stable main and v0.9.71/72 unchanged.
 
 

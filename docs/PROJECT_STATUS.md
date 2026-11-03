@@ -1,3 +1,9 @@
+# 2026-11-02 — MASTER M2 AI FAIRNESS OWNER TEST READY (v0.9.74)
+
+Bot firing realism updated after v0.9.73 phone feedback: physically align muzzle, brake while aiming, only acquire shot while aligned and moving slowly. [AI game CI PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41575543007), [same-signer Android build PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41576134341), [owner APK ZIP](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41576134341/artifacts/13202544914) v0.9.74 code 360001. Signed source `0797cc8f18b6da35a1bdcaf62e4d49c2dd52c1aa`, rollback `checkpoint/sector-rebound-v0974-ai-shot-posture-signed-ci-360001`; prior v0.9.73 rollback remains. [D3/M2 owner test card](https://github.com/PlayerEden/Ricochet-Rumble/blob/experiment/ai-shot-posture-m2-a1/docs/AI_SHOT_POSTURE_M2_A1_ANDROID_OWNER_v0974.md). **Phone install and perceived fairness still not accepted**. Follow M2 observed refinement if necessary; resume D3-B1 spectating after owner reports. Stable main unchanged.
+
+---
+
 # 2026-11-02 — M2 OWNER AI FAIRNESS: PHYSICAL v0.9.73 FEEDBACK
 
 **Physical device feedback:** bots can appear to shoot while driving without turning and lining up. Actual source root cause: aim acquisition timer did not wait for physical alignment or reasonable traveling speed. [Targeted AI aim-posture experiment PR #102](https://github.com/PlayerEden/Ricochet-Rumble/pull/102) and [design/acceptance report](https://github.com/PlayerEden/Ricochet-Rumble/blob/experiment/ai-shot-posture-m2-a1/docs/AI_SHOT_POSTURE_M2_A1_2026-11-02.md). Experimental code slows while locking, counts aim time only while aligned/settled, and requires real physical heading to fire. **Not yet automated-accepted or user-playtested in new APK** at this note. Older verified v0.9.73 is safe rollback. Next: CI → signed preview with exact signer → owner phone A/B → D3-B1 spectator.
