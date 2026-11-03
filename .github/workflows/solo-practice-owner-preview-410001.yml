@@ -38,7 +38,7 @@ jobs:
           test "$GITHUB_REF" = "refs/heads/main"
           test "$GITHUB_RUN_ATTEMPT" = "1"
           test "$GITHUB_RUN_NUMBER" = "1"
-          BASE=ae00b9b27743d10dca9f2c8f0c951be3ec447603
+          BASE=dd2fa206b6850f1f2eb25bed62202d1ffe3101cd
           git merge-base --is-ancestor "$BASE" HEAD
           # Subsequent docs and this workflow may differ; gameplay, package
           # and test source must still be identical to the reviewed Solo practice PR.
@@ -114,7 +114,7 @@ jobs:
           cp "$apk" dist/sector-rebound-solo-practice-410001.apk
           {
             echo "SOURCE_SHA=$GITHUB_SHA"
-            echo "GAMEPLAY_REVIEWED_SHA=ae00b9b27743d10dca9f2c8f0c951be3ec447603"
+            echo "GAMEPLAY_REVIEWED_SHA=dd2fa206b6850f1f2eb25bed62202d1ffe3101cd"
             echo "APPLICATION_ID=com.playereden.ricochetrumble.preview"
             echo "VERSION_NAME=0.9.79-practice.1"
             echo "VERSION_CODE=410001"
