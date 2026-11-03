@@ -11,7 +11,9 @@ const end=/\}\)\(\);\s*$/;assert.ok(end.test(source));
 function hooks(){
  window.__cueQA={
   setup(seed,kind,skill){
-   mode='solo';paused=false;menu.classList.add('hidden');
+   // Freeze the simulated combat loop across asynchronous Playwright calls;
+   // cue checks still run with an active, unpaused match.
+   mode='solo';paused=true;menu.classList.add('hidden');
    state=initialState(0,{mapSize:'small',matchModeId:kind==='pilot'?'cqc':'scored_ffa',
     pilotMode:true,botCount:1,botSkill:skill,teamMode:'ffa'},seed);
    const human=state.tanks[0],enemy=state.tanks[1];
@@ -35,6 +37,7 @@ function hooks(){
     visible:pilotInLocalView(enemy.x,enemy.y,0)&&pilotInLocalView(human.x,human.y,0)};
   },
   screenshotScene(){
+   paused=false; // Evaluate actual game cues synchronously with live semantics.
    // Documentation screenshots use an actual open corridor, never actor
    // overlap deliberately created for the 55-unit first-shot test fixture.
    const human=state.tanks[0],enemy=state.tanks[1],brain=botBrains.get(1);
@@ -55,10 +58,12 @@ function hooks(){
    if(!placed)throw Error('No open corridor for aim cue screenshot');
    render(1/60);
    const cue=enemyBotCue(1,0);
+   paused=true;
    return {placed,actorGap:Math.hypot(enemy.x-human.x,enemy.y-human.y),
     visible:!!cue&&cue.phase==='acquire'};
   },
   evaluate(){
+   paused=false; // No intervening animation frame can fire a real bot shot.
    const human=state.tanks[0],enemy=state.tanks[1],brain=botBrains.get(1);
    const check=()=>enemyBotCue(1,0);
    const positive=check();const startAngle=enemy.a;
@@ -92,6 +97,7 @@ function hooks(){
    // Real rendering, not only the helper's model.
    render(1/60);
    state.config.botSkill=originalSkill;
+   paused=true;
    return {positive,firstFrame,recovering,unrelatedTarget,wrongMuzzle,
     realMuzzle,offscreen,guest,dead,behindWall,coveredFound};
   }
