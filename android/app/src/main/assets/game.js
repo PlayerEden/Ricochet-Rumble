@@ -2414,9 +2414,9 @@ const CAMERA_APRON=420;
 // AI acquisition rates, projectile lifetime or simulation camera authority.
 function unitTargetZoom(t){
  if(!t)return 1.00; // Preserve empty-state and preview camera baseline.
- if(t.onFoot)return .98;
+ if(t.onFoot)return .94; // M2 v2: modest pilot tactical pullback.
  const v=currentVehicle(t);
- return v?.type==='mech'?.71:v?.type==='tank'?.75:.98;
+ return v?.type==='mech'?.69:v?.type==='tank'?.73:.94;
 }
 function cameraZoom(t=state?.tanks?.[mode==='guest'?1:0]){
  return mazeGrid?Math.max(unitTargetZoom(t),W/(worldW+CAMERA_APRON*2),H/(worldH+CAMERA_APRON*2)):1;
