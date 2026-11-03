@@ -1,6 +1,6 @@
-name: Sector Rebound - Solo practice same-signer owner QA APK
-# One-shot: only the reviewed introduction of this workflow to main runs it.
-# Changing arbitrary game source does not rebuild or silently ship an owner APK.
+name: Sector Rebound - consolidated mainline owner QA APK
+# Reuse the existing verified owner-preview workflow lane. No new per-feature workflow copies.
+# Changing ordinary game source does not rebuild or silently ship an owner APK.
 on:
   push:
     branches: [main]
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: sector-rebound-solo-practice-410001-internal-apk
+  group: sector-rebound-current-mainline-preview-internal-apk
   cancel-in-progress: false
 
 jobs:
@@ -37,16 +37,17 @@ jobs:
           set -euo pipefail
           test "$GITHUB_REF" = "refs/heads/main"
           test "$GITHUB_RUN_ATTEMPT" = "1"
-          test "$GITHUB_RUN_NUMBER" = "1"
-          BASE=dd2fa206b6850f1f2eb25bed62202d1ffe3101cd
+          test "$GITHUB_RUN_NUMBER" = "2"
+          BASE=1062ea3bc3c85dfa42999ed1988fe0ea7ec8c083
           git merge-base --is-ancestor "$BASE" HEAD
           # Subsequent docs and this workflow may differ; gameplay, package
-          # and test source must still be identical to the reviewed Solo practice PR.
+          # and test source must remain identical to reviewed M5 save-hardening PR.
           git diff --quiet "$BASE" HEAD -- web/ android/ game-data/ tests/
           test -n "$GITHUB_SHA"
           node --check web/game.js
           node --check tests/m2-camera-widen-qa.mjs
           node --check tests/solo-practice-onboarding.mjs
+          node --check tests/backup-share-ui.mjs
           node tests/smoke.mjs
           node tests/dossier.mjs
           node tests/save-backup.mjs
@@ -82,14 +83,14 @@ jobs:
           echo "SR_TEST_STORE_PASSWORD=disposable-preview-only" >> "$GITHUB_ENV"
           echo "SR_TEST_KEY_ALIAS=aosp-public-testkey" >> "$GITHUB_ENV"
           echo "SR_TEST_KEY_PASSWORD=disposable-preview-only" >> "$GITHUB_ENV"
-      - name: Build preview v0.9.79 Solo practice with strictly higher versionCode
+      - name: Build one consolidated v0.9.80 mainline owner preview
         working-directory: android
         run: |
           set -euo pipefail
           gradle --no-daemon :app:assembleDebug \
             -PsrPreviewPackage=true \
-            -PsrPreviewVersionCode=410001 \
-            -PsrPreviewVersionName=0.9.79-practice.1
+            -PsrPreviewVersionCode=420001 \
+            -PsrPreviewVersionName=0.9.80-main.1
       - name: Verify certificate, package identity, upgrade code, exact assets and SHA
         run: |
           set -euo pipefail
@@ -105,29 +106,29 @@ jobs:
           test "$actual" = "$pin"
           metadata="$("$aapt" dump badging "$apk" | head -n 1)"
           [[ "$metadata" == *"name='com.playereden.ricochetrumble.preview'"* ]]
-          [[ "$metadata" == *"versionCode='410001'"* ]]
-          [[ "$metadata" == *"versionName='0.9.79-practice.1'"* ]]
+          [[ "$metadata" == *"versionCode='420001'"* ]]
+          [[ "$metadata" == *"versionName='0.9.80-main.1'"* ]]
           for asset in game.js index.html style.css scored-match.js dossier.js save-backup.js ctf-rules.js ctf-ai.js forward-bays.js lan-series.js lan-room.js; do
             cmp "web/$asset" <(unzip -p "$apk" "assets/$asset")
           done
           mkdir -p dist
-          cp "$apk" dist/sector-rebound-solo-practice-410001.apk
+          cp "$apk" dist/sector-rebound-current-preview-420001.apk
           {
             echo "SOURCE_SHA=$GITHUB_SHA"
-            echo "GAMEPLAY_REVIEWED_SHA=dd2fa206b6850f1f2eb25bed62202d1ffe3101cd"
+            echo "GAMEPLAY_REVIEWED_SHA=1062ea3bc3c85dfa42999ed1988fe0ea7ec8c083"
             echo "APPLICATION_ID=com.playereden.ricochetrumble.preview"
-            echo "VERSION_NAME=0.9.79-practice.1"
-            echo "VERSION_CODE=410001"
+            echo "VERSION_NAME=0.9.80-main.1"
+            echo "VERSION_CODE=420001"
             echo "PUBLIC_AOSP_CERT_SHA256=$actual"
-            echo "APK_SHA256=$(sha256sum dist/sector-rebound-solo-practice-410001.apk | awk '{print $1}')"
+            echo "APK_SHA256=$(sha256sum dist/sector-rebound-current-preview-420001.apk | awk '{print $1}')"
             echo "INTERNAL_DEV_TEST_ONLY_NOT_GOOGLE_PLAY"
             echo "TWO_PHONE_WIFI_AND_REAL_INSTALL_OVER_NOT_YET_ACCEPTED"
           } > dist/verification.txt
-          echo "SOLO_PRACTICE_PREVIEW_410001_SIGNER_PACKAGE_ASSETS_PASS"
+          echo "MAINLINE_PREVIEW_420001_SIGNER_PACKAGE_ASSETS_PASS"
       - name: Upload installable INTERNAL APK and provenance, not public release
         uses: actions/upload-artifact@v4
         with:
-          name: sector-rebound-solo-practice-owner-preview-410001
+          name: sector-rebound-mainline-owner-preview-420001
           path: dist/
           if-no-files-found: error
           retention-days: 14
