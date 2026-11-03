@@ -1,4 +1,8 @@
 # SECTOR REBOUND — MASTER DEVELOPMENT PLAN
+
+> **M1 execution 2026-11-02:** D3-A0 engineering is implemented and [full CI PASS 41570686213](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41570686213) on [draft #99](https://github.com/PlayerEden/Ricochet-Rumble/pull/99), exact A0 SHA `35b7ed75b049a3b7e0fb9a16f88cf5c84a980a58`. D3-A1 one-phone host-vs-bots prototype is committed on [draft #100](https://github.com/PlayerEden/Ricochet-Rumble/pull/100), source `860e15432cc32dfbf08f38f324f04a0937922289`; **full QA / signed APK / phone acceptance pending**. D3-B1 spectator and D3-B2 queued joining still design-only. This note updates status, not release scope.
+
+
 **Canonical cross-project roadmap / audit checkpoint: 2026-11-02 (America/Kentucky/Louisville)**  
 **Status:** Master planning and issue-triage reference for the experimental game. **NOT** a release authorization, not a declaration that future features are built. This document supersedes older "next step" recommendations in the 2026-10-27 through 2026-11-01 roadmaps where they conflict with tested source or the owner's current D3 direction. Historical design Bibles and technical audits remain linked evidence, not deleted.
 

@@ -1,3 +1,11 @@
+# 2026-11-02 — M1 EXECUTION CHECKPOINT: D3-A0 GREEN, D3-A1 EXPERIMENTAL
+
+**D3-A0 code BUILT and full automated QA SUCCESS:** [draft PR #99](https://github.com/PlayerEden/Ricochet-Rumble/pull/99), source `35b7ed75b049a3b7e0fb9a16f88cf5c84a980a58`, [Actions run 41570686213](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41570686213). Pure room/role and absent AI-seat contract, Web/Android mirror, old D2 two-client, layout and 44-view tests completed. This is kernel, **not yet playable**.
+
+**D3-A1 real host-only TDM gameplay is now on isolated [draft PR #100](https://github.com/PlayerEden/Ricochet-Rumble/pull/100)**. New source `860e15432cc32dfbf08f38f324f04a0937922289` allows one-phone host to start scored TDM against real AI in reserved guest seat, with Best-of-3 and room return. [Live browser/full regression run](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41571580793) **PENDING at this note**, so no acceptance or APK claim. Next: verify CI, fix failures, build properly signed higher-version preview, then owner single-phone check. Legacy D2 v0.9.71 and `main` preserved; physical two-phone still untested.
+
+---
+
 ## 2026-11-02 canonical master roadmap reconciliation
 
 [**MASTER DEVELOPMENT PLAN — CURRENT CROSS-PROJECT PRIORITIES**](MASTER_DEVELOPMENT_PLAN_2026-11-02.md) now supersedes older "next task" advice where it conflicts with v0.9.71 experimental source and the owner's D3 direction.

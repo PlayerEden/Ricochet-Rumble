@@ -1,5 +1,9 @@
 # Branch register — Sector Rebound
 
+**2026-11-02 M1 implementation branches:** [D3-A0 #99](https://github.com/PlayerEden/Ricochet-Rumble/pull/99) pure LAN room kernel `35b7ed75b049a3b7e0fb9a16f88cf5c84a980a58` [full QA PASS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41570686213); [D3-A1 #100](https://github.com/PlayerEden/Ricochet-Rumble/pull/100) real one-phone host-only bot TDM source `860e15432cc32dfbf08f38f324f04a0937922289`, full QA/owner Android **pending**. Both are experimental descendants of D2 v0.9.71; stable main, rollback and signed APK unchanged.
+
+
+
 **Canonical master plan update (2026-11-02):** [Sector Rebound Master Development Plan](MASTER_DEVELOPMENT_PLAN_2026-11-02.md) now owns the ordered roadmap, implemented-vs-designed inventory, D3 one-phone first milestone, open issue/PR reconciliation, Android/Google Play gates and owner decisions. This older plan is a **historical technical reference**, not the current next-task list. Follow the master and newest [Project Status](PROJECT_STATUS.md); do not interpret older "NOT IMPLEMENTED" design bullets as current runtime truth.
 
 
