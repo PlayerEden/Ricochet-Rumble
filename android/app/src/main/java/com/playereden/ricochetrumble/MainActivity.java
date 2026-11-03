@@ -50,8 +50,11 @@ public final class MainActivity extends Activity {
     private volatile BufferedWriter out;
     private volatile boolean isHosting = false;
     private volatile boolean stopped = false;
+    private volatile boolean hostEndedInBackground = false;
     private final AtomicInteger generation = new AtomicInteger(0);
     private final Object outputLock = new Object();
+    private final Object peerLock = new Object();
+    private final LanPeerAdmission admission = new LanPeerAdmission();
 
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -147,11 +150,18 @@ public final class MainActivity extends Activity {
         isHosting = false;
         stopDiscovery();
         unregister();
-        try { if (connection != null) connection.close(); } catch (IOException ignored) { }
-        try { if (server != null) server.close(); } catch (IOException ignored) { }
-        connection = null;
-        server = null;
-        out = null;
+        final Socket oldPeer;
+        final ServerSocket oldServer;
+        synchronized (peerLock) {
+            oldPeer = connection;
+            oldServer = server;
+            admission.clear();
+            connection = null;
+            server = null;
+            synchronized (outputLock) { out = null; }
+        }
+        try { if (oldPeer != null) oldPeer.close(); } catch (IOException ignored) { }
+        try { if (oldServer != null) oldServer.close(); } catch (IOException ignored) { }
     }
     private void registerHost(int port) {
         NsdServiceInfo info = new NsdServiceInfo();
@@ -168,27 +178,66 @@ public final class MainActivity extends Activity {
         try { nsd.registerService(info, NsdManager.PROTOCOL_DNS_SD, listener); }
         catch (Exception ex) { error("Nearby broadcast unavailable. You can join by local IP."); }
     }
+    // Extra visitors cannot evict an active player/spectator or take seat 1.
+    private void rejectBusy(Socket extra) {
+        try {
+            extra.setTcpNoDelay(true);
+            JSONObject busy = new JSONObject();
+            busy.put("type", "busy");
+            busy.put("reason", "room-full");
+            BufferedWriter writer = new BufferedWriter(
+                new OutputStreamWriter(extra.getOutputStream(), StandardCharsets.UTF_8));
+            writer.write(busy.toString());
+            writer.write('\n');
+            writer.flush();
+        } catch (Exception ignored) { }
+        finally { try { extra.close(); } catch (IOException ignored) { } }
+    }
     private void startHost() {
         closeNetwork();
         stopped = false;
         isHosting = true;
+        hostEndedInBackground = false;
         final int myGen = generation.get();
         new Thread(() -> {
             try {
-                ServerSocket ss = new ServerSocket(0, 1);
-                if (myGen != generation.get()) { ss.close(); return; }
-                server = ss;
+                ServerSocket ss = new ServerSocket(0, 8);
+                synchronized (peerLock) {
+                    if (myGen != generation.get() || stopped) { ss.close(); return; }
+                    server = ss;
+                }
                 registerHost(ss.getLocalPort());
+                if (myGen != generation.get()) return;
                 JSONObject payload = new JSONObject();
                 payload.put("type", "hosting");
                 payload.put("address", ipv4());
                 payload.put("port", ss.getLocalPort());
                 signal(payload);
-                Socket peer = ss.accept();
-                if (myGen != generation.get()) { peer.close(); return; }
-                attachPeer(peer, myGen, true);
+                // Native host keeps accepting while game runs, even after a guest leaves.
+                while (myGen == generation.get() && !stopped) {
+                    final Socket peer = ss.accept();
+                    boolean accepted = false;
+                    synchronized (peerLock) {
+                        if (myGen == generation.get() && !stopped && isHosting
+                            && admission.claim(peer)) {
+                            connection = peer;
+                            accepted = true;
+                        }
+                    }
+                    if (accepted) {
+                        new Thread(() -> attachPeer(peer, myGen, true),
+                            "RR-Host-Peer").start();
+                    } else if (myGen == generation.get() && !stopped) {
+                        rejectBusy(peer);
+                    } else {
+                        try { peer.close(); } catch (IOException ignored) { }
+                    }
+                }
+            } catch (IOException ex) {
+                // Closing the listener on Stop / leave is intentional.
+                if (myGen == generation.get() && !stopped) error("Host listener stopped unexpectedly.");
             } catch (Exception ex) {
-                if (myGen == generation.get()) error("Could not host: " + ex.getClass().getSimpleName());
+                if (myGen == generation.get() && !stopped) error("Could not host: " + ex.getClass().getSimpleName());
             }
         }, "RR-Host").start();
     }
@@ -246,17 +295,29 @@ public final class MainActivity extends Activity {
                 Network wifi = connectedWifi();
                 Socket sock = wifi != null ? wifi.getSocketFactory().createSocket() : new Socket();
                 sock.connect(new InetSocketAddress(ip, port), 3500);
-                if (myGen != generation.get()) { sock.close(); return; }
+                boolean accepted;
+                synchronized (peerLock) {
+                    accepted = myGen == generation.get() && !stopped && admission.claim(sock);
+                    if (accepted) connection = sock;
+                }
+                if (!accepted) { sock.close(); return; }
                 attachPeer(sock, myGen, false);
             } catch (Exception ex) { if (myGen == generation.get()) error("Could not connect. Confirm both phones share Wi-Fi."); }
         }, "RR-Join").start();
     }
     private void attachPeer(Socket sock, int myGen, boolean host) {
         try {
-            connection = sock;
+            synchronized (peerLock) {
+                if (myGen != generation.get() || !admission.isActive(sock)) return;
+            }
             sock.setTcpNoDelay(true);
             sock.setKeepAlive(true);
-            synchronized (outputLock) { out = new BufferedWriter(new OutputStreamWriter(sock.getOutputStream(), StandardCharsets.UTF_8)); }
+            synchronized (peerLock) {
+                if (myGen != generation.get() || !admission.isActive(sock)) return;
+                synchronized (outputLock) {
+                    out = new BufferedWriter(new OutputStreamWriter(sock.getOutputStream(), StandardCharsets.UTF_8));
+                }
+            }
             signalType("connected");
             BufferedReader reader = new BufferedReader(new InputStreamReader(sock.getInputStream(), StandardCharsets.UTF_8));
             String line;
@@ -264,16 +325,19 @@ public final class MainActivity extends Activity {
                 try {
                     JSONObject packet = new JSONObject(line);
                     String kind = packet.optString("type", "");
-                    if ((host && ("input".equals(kind) || "interact".equals(kind) || "ready".equals(kind) || "join-next".equals(kind))) || (!host && ("state".equals(kind) || "lobby".equals(kind) || "start".equals(kind) || "spectate".equals(kind) || "join-next-status".equals(kind) || "join-next-promote".equals(kind)))) signal(packet);
+                    if ((host && ("input".equals(kind) || "interact".equals(kind) || "ready".equals(kind) || "join-next".equals(kind))) || (!host && ("state".equals(kind) || "lobby".equals(kind) || "start".equals(kind) || "spectate".equals(kind) || "join-next-status".equals(kind) || "join-next-promote".equals(kind) || "busy".equals(kind)))) signal(packet);
                 } catch (Exception ignored) { }
             }
         } catch (IOException ignored) { }
         finally {
             try { sock.close(); } catch (Exception ignored) { }
-            if (myGen == generation.get()) {
-                connection = null;
-                out = null;
-                signalType("disconnected");
+            synchronized (peerLock) {
+                // Never allow a stale reader to clear a newer peer's writer/seat.
+                if (myGen == generation.get() && admission.release(sock)) {
+                    connection = null;
+                    synchronized (outputLock) { out = null; }
+                    signalType("disconnected");
+                }
             }
         }
     }
@@ -301,11 +365,23 @@ public final class MainActivity extends Activity {
         super.onPause();
         if (web != null) web.onPause();
     }
-    @Override protected void onResume() { super.onResume(); enterImmersiveMode(); if (web != null) web.onResume(); }
+    @Override protected void onResume() {
+        super.onResume();
+        enterImmersiveMode();
+        if (web != null) web.onResume();
+        if (hostEndedInBackground) {
+            hostEndedInBackground = false;
+            signalType("host-offline");
+        }
+    }
     @Override protected void onStop() {
+        boolean wasHosting = isHosting;
         boolean wasConnected = connection != null;
+        hostEndedInBackground = wasHosting;
         closeNetwork();
-        if (wasConnected) signalType("disconnected");
+        // A host cannot claim its server remains discoverable after Android Stop.
+        // Defer the honest host-offline message until WebView resumes.
+        if (wasConnected && !wasHosting) signalType("disconnected");
         super.onStop();
     }
     @Override protected void onDestroy() { closeNetwork(); if (web != null) { web.removeJavascriptInterface("AndroidBridge"); web.destroy(); web = null; } super.onDestroy(); }

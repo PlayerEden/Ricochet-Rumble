@@ -1,0 +1,43 @@
+name: Sector Rebound - D3-C1 native repeat LAN peer accept
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'android/app/src/main/java/**'
+      - 'android/app/src/main/assets/game.js'
+      - 'web/game.js'
+      - 'tests/d3-c1-native-host-contract.mjs'
+      - 'tests/java/LanPeerAdmissionTest.java'
+      - '.github/workflows/d3-c1-native-reaccept.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-session-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Repeat accept guard, bounded framing and asset parity
+        run: |
+          set -euo pipefail
+          node tests/d3-c1-native-host-contract.mjs
+          node tests/lan-framing-contract.mjs
+          node --check web/game.js
+      - name: Exercise identity-safe peer admission on real JVM
+        run: |
+          set -euo pipefail
+          mkdir -p qa-results/d3-c1-jvm
+          javac -d qa-results/d3-c1-jvm \
+            android/app/src/main/java/com/playereden/ricochetrumble/LanPeerAdmission.java \
+            tests/java/LanPeerAdmissionTest.java
+          java -cp qa-results/d3-c1-jvm com.playereden.ricochetrumble.LanPeerAdmissionTest

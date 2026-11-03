@@ -2859,6 +2859,7 @@ function bridgeReady(){return !!window.AndroidBridge}
 let lanLobby=null;
 // D3-B1 read-only spectator + D3-B2 host-owned next-round/match queue.
 let lanSpectating=false,lanSpectatePending=null;
+let lanRoomFull=false;
 let lanHostJoinNext=null,lanHostJoinSeq=0,lanHostPromotedMatchId=0;
 let lanGuestJoinNext='none',lanGuestQueueBoundary='match',lanGuestJoinSeq=0,
  lanGuestJoinPending=false,lanGuestPromotePending=null;
@@ -3108,7 +3109,7 @@ function launchLanMatch(){
 function host(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('host');startLanLobby();window.AndroidBridge.hostGame()}
 function find(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}newMatch('guest');setPanel('<div class="eyebrow">NEARBY PLAY</div><h2>FIND A MATCH</h2><p id="find-status">Looking for games on the same Wi-Fi...</p><div id="rooms"></div><button data-action="manual">JOIN BY LOCAL IP</button><button data-action="close">BACK</button>');window.AndroidBridge.findGames()}
 function manual(){if(!bridgeReady()){notice('Manual LAN join requires the Android APK');return}newMatch('guest');setPanel('<div class="eyebrow">FALLBACK</div><h2>JOIN BY ADDRESS</h2><p>Enter the IP:port shown on the host screen, such as 192.168.1.25:47321</p><input id="lan-address" placeholder="192.168.1.25:47321" inputmode="url" autocapitalize="off"><button data-action="ip-join">CONNECT</button><button data-action="find">FIND NEARBY</button>')}
-function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;lanLobby=null;lanSpectating=false;lanSpectatePending=null;
+function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;lanLobby=null;lanSpectating=false;lanSpectatePending=null;lanRoomFull=false;
  lanHostJoinNext=null;lanHostJoinSeq=0;lanHostPromotedMatchId=0;
  lanGuestJoinNext='none';lanGuestQueueBoundary='match';lanGuestJoinSeq=0;lanGuestJoinPending=false;lanGuestPromotePending=null;
  document.getElementById('game-screen')?.classList.remove('spectating');neutralizeGuestInput();mode='idle';playlistBag=[];lastSoloModeId=null;releaseControls();document.getElementById('mode-label').textContent='NO GAME ACTIVE';panel.innerHTML=originalPanel;applyPrefsToUI();menu.classList.remove('hidden')}
@@ -3230,6 +3231,7 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
  case 'found':{const r=document.getElementById('rooms');if(r&&!r.querySelector('[data-host="'+msg.host+'"]')){const b=document.createElement('button');b.textContent='JOIN '+(msg.name||'NEARBY GAME');b.dataset.host=msg.host;b.onclick=()=>{window.AndroidBridge.joinGame(msg.host,msg.port);document.getElementById('find-status').textContent='Connecting...'};r.appendChild(b)}break}
  case 'connected':{
  if(mode!=='host'&&mode!=='guest')break;
+ if(mode==='guest')lanRoomFull=false;
  if(mode==='host'&&state.config?.lanHostSolo===true&&lanLobby&&!lanLobby.active){
   connected=true;neutralizeGuestInput();remoteReleaseShot=null;
   lanHostJoinNext=null;lanHostJoinSeq=0;lanHostPromotedMatchId=0;
@@ -3356,20 +3358,37 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
  }
  case 'interact':if(mode==='host'&&connected&&!paused&&state.config?.lanHostSolo!==true&&
    (!lanHostPromotedMatchId||(msg.matchId===state.matchId&&msg.revision===lanLobby?.revision)))tryInteract(1);break;
+ case 'busy':
+  if(mode==='guest'&&connected&&msg.reason==='room-full'){
+   lanRoomFull=true;notice('ROOM FULL · ONE REMOTE GUEST AT A TIME',2600);
+  }break;
+ case 'host-offline':
+  if(mode==='host'){
+   connected=false;paused=true;neutralizeGuestInput();releaseControls();
+   lanHostJoinNext=null;lanHostJoinSeq=0;
+   setPanel('<h2>ROOM OFFLINE</h2><p>Android paused LAN hosting while this app was in the background. Return to the menu and open a fresh room.</p><button data-action="close">MAIN MENU</button>');
+   notice('HOST OFFLINE · REOPEN THE ROOM',2500);
+  }break;
  case 'disconnected':
-  if(mode==='host'&&(lanLobby?.active===true||state.config?.lanHostSolo===true||lanHostPromotedMatchId)){
-   connected=false;neutralizeGuestInput();lanHostJoinNext=null;lanHostJoinSeq=0;
-   if(lanHostPromotedMatchId&&state?.config){
+  // Host keeps its advertised room available, even after a human guest leaves.
+  if(mode==='host'&&lanLobby){
+   connected=false;neutralizeGuestInput();remoteReleaseShot=null;
+   lanHostJoinNext=null;lanHostJoinSeq=0;
+   if(!lanLobby.active&&state?.config?.lanHostSolo!==true){
     state.config.lanHostSolo=true;lanHostPromotedMatchId=0;
    }
-   if(lanLobby?.active){lanLobby.guestReady=false;refreshLanLobby();}
-   refreshHUD();notice('GUEST LEFT · BOT RESUMES',2200);break;
+   if(lanLobby.active){lanLobby.guestReady=false;refreshLanLobby();}
+   refreshHUD();notice('GUEST LEFT · ROOM STILL OPEN',2200);break;
   }
+  const roomWasFull=mode==='guest'&&lanRoomFull;
   connected=false;paused=true;lanLobby=null;lanSpectating=false;lanSpectatePending=null;
-  lanGuestJoinNext='none';lanGuestJoinPending=false;lanGuestPromotePending=null;
+  lanRoomFull=false;lanGuestJoinNext='none';lanGuestJoinPending=false;lanGuestPromotePending=null;
   document.getElementById('game-screen')?.classList.remove('spectating');
-  neutralizeGuestInput();clearStick();notice('Other player disconnected');
-  setPanel('<h2>CONNECTION LOST</h2><p>Return to the main menu and reconnect.</p><button data-action="close">MAIN MENU</button>');break;
+  neutralizeGuestInput();clearStick();
+  notice(roomWasFull?'ROOM FULL · TRY AGAIN LATER':'Other player disconnected');
+  setPanel(roomWasFull?
+   '<h2>ROOM FULL</h2><p>This host already has a guest or spectator. Try again after they leave.</p><button data-action="close">MAIN MENU</button>':
+   '<h2>CONNECTION LOST</h2><p>Return to the main menu and reconnect.</p><button data-action="close">MAIN MENU</button>');break;
  case 'error':notice(msg.message||'Network error');break;}}};
 resizeArenaCanvas();refreshHUD();requestAnimationFrame(loop);
 })();
