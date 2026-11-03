@@ -145,7 +145,7 @@ try{
  CHECK((await guest.locator('#mode-label').textContent()).includes('CYAN'),'guest lobby displays real Cyan faction');
  CHECK((await guest.locator('#lan-guest-rules').textContent()).includes('FIRST TO 30 KOs'),'guest previews scored rules');
  CHECK((await guest.locator('#lan-guest-rules').textContent()).includes('HOST CORAL / GUEST CYAN'),'guest previews real factions');
- CHECK(await host.locator('[data-lan-setting="botCount"] option[value="3"]').isDisabled(),'uneven bot count disabled for TDM');
+ CHECK(await host.locator('[data-lan-setting="botCount"] option[value="3"]').evaluate(el=>el.disabled),'uneven bot count disabled for TDM');
  await guest.locator('button[data-action="lan-ready"]').click();
  await receive(host,await lastPacket(guest,'ready'));
  CHECK(await host.locator('button[data-action="lan-start"]').isEnabled(),'Ready unlocks scored team start');
