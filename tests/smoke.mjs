@@ -24,7 +24,7 @@ vm.runInNewContext(fs.readFileSync(new URL('../web/scored-match.js',import.meta.
 vm.runInNewContext(fs.readFileSync(new URL('../web/forward-bays.js',import.meta.url),'utf8'),env,{filename:'forward-bays.js'});
 vm.runInNewContext(fs.readFileSync(new URL('../web/dossier.js',import.meta.url),'utf8'),env,{filename:'dossier.js'});
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
-script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,get customDraft(){return {...customDraft}},normalizeCustomDraft,customOptionsFor,setCustomDraft,loadCustomDraft,cleanPresetName,normalizeCustomPresets,loadCustomPresets,saveNamedCustomPreset,loadNamedCustomPreset,deleteNamedCustomPreset,resetCustomDraft,get customPresets(){return customPresets.map(p=>({name:p.name,rules:{...p.rules}}))},freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,projectileHitRadius,beginFireAim,updateFireAim,clearFireAim,get fireAim(){return {...fireAim}},get touch(){return touch},tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,friendlyFireEnabled,projectileCanHit,botFriendlyLaneClear,traceProjectile,alliedAimActive,alliedAimIntentIndices,visibleAlliedAimIndices,validRemoteSnapshot,get botBrains(){return botBrains},setModeForTest(v){mode=v},sanitizeLanOptions,lanLobbyHTML,closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,resolveUnitMaterials,get equippedPaint(){return equippedPaint},get dossierStore(){return dossierStore},setDossierStoreForTest(next){dossierStore=next},paintProgress,equipPaint,loadPaint,normalizePaint,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
+script=script.replace(/\}\)\(\);\s*$/,'window.__test={get state(){return state},get selectedPlaylistIds(){return selectedPlaylistIds.slice()},finalizeRound,durationLabel,setPlaylistModes,nextPlaylistMode,normalizePlaylistModes,loadPrefs,savePrefs,soloOptionsFor,get customDraft(){return {...customDraft}},normalizeCustomDraft,customOptionsFor,setCustomDraft,loadCustomDraft,cleanPresetName,normalizeCustomPresets,loadCustomPresets,saveNamedCustomPreset,loadNamedCustomPreset,deleteNamedCustomPreset,resetCustomDraft,get customPresets(){return customPresets.map(p=>({name:p.name,rules:{...p.rules}}))},freshSectorSeed,resetAll,newMatch,get world(){return [worldW,worldH]},get walls(){return wallSet},get maze(){return mazeGrid},get camera(){return camera},registerHit,finishScoredMatch,creditScoredPilotKO,tryCqcRespawn,projectileHitRadius,beginFireAim,updateFireAim,clearFireAim,get fireAim(){return {...fireAim}},get touch(){return touch},tryInteract,nearestEmptyVehicle,resetAll,step,makeControl,setArena,spawnPickup,collectPickup,serializeState,shoot,activeBulletCap,fireInterval,audioCue,AUDIO_CUES,collectPickup,spawnPickup,teamOf,botInput,chooseBotObjective,coachTip,updateQuietMatchPrompt,armMusic,updateMusic,drawLobbyPreview,hasLineOfSight,blocked,parkedVehicleAt,tankMove,spawnVehicles,initialState,ejectPilot,combatColor,opposingCount,friendlyFireEnabled,projectileCanHit,botFriendlyLaneClear,traceProjectile,alliedAimActive,alliedAimIntentIndices,visibleAlliedAimIndices,validRemoteSnapshot,get botBrains(){return botBrains},setModeForTest(v){mode=v},sanitizeLanOptions,lanLobbyHTML,startLanLobby,changeLanRule,launchLanMatch,get lanLobby(){return lanLobby},closestAvailableVehicle,refreshHUD,resizeArenaCanvas,cameraZoom,unitTargetZoom,render,drawTopTank,drawTopMech,drawTopPilot,drawPilotLocator,resolveUnitMaterials,FIELDGRID_UNIT_SKINS,resolveUnitMaterials,get equippedPaint(){return equippedPaint},get dossierStore(){return dossierStore},setDossierStoreForTest(next){dossierStore=next},paintProgress,equipPaint,loadPaint,normalizePaint,comfort,releaseControls,get damagePulse(){return damagePulse},resetSeededMatch(seed,mapSize="standard",botSkill="normal"){mode="solo";state=initialState(0,{...state.config,mapSize,botSkill,botCount:2,startLives:2,teamMode:"ffa"},seed);paused=false;fireCooldown.fill(0);return state;}};})();');
 vm.runInNewContext(script,env,{filename:'game.js'});
 assert.ok(frame,'animation callback scheduled');
 function click(action){for(const f of handlers['menu:click'])f({target:{closest(){return {dataset:{action}}},dataset:{action}}})}
@@ -2542,4 +2542,45 @@ console.log('PASS v0.9.46 presentation: interactive pause SFX/music, persistence
  api.setCustomDraft({modeId:'survival_ffa',sidePreference:'random',friendlyFire:false});
  api.setPlaylistModes(oldPlaylist);
  console.log('PASS C1 identity: distinct seeded FFA colors + host replication, locked Custom Coral/Cyan FOB, Quick Play team side rotation');
+}
+
+
+// D1 LAN scored squads: engine-authoritative team identity, KO targets and guest packet.
+{
+ const api=win.__test;
+ api.setModeForTest('host');
+ win.RR.nativeMessage(JSON.stringify({type:'connected'}));
+ api.startLanLobby();
+ assert.equal(api.lanLobby.rules.teamMode,'ffa','default LAN human-only duel retained');
+ api.changeLanRule({dataset:{lanSetting:'teamMode'},value:'tdm'});
+ api.changeLanRule({dataset:{lanSetting:'botCount'},value:'3'});
+ assert.equal(api.lanLobby.rules.botCount,4,'odd TDM bots normalize to paired roster');
+ api.changeLanRule({dataset:{lanSetting:'hostSide'},value:'coral'});
+ api.changeLanRule({dataset:{lanSetting:'scoreTarget'},value:'30'});
+ const revision=api.lanLobby.revision;
+ win.RR.nativeMessage(JSON.stringify({type:'ready',revision:revision-1,ready:true}));
+ assert.equal(api.lanLobby.guestReady,false,'stale guest ready rejected');
+ win.RR.nativeMessage(JSON.stringify({type:'ready',revision,ready:true}));
+ assert.equal(api.lanLobby.guestReady,true,'current Ready accepted');
+ api.changeLanRule({dataset:{lanSetting:'friendlyFire'},value:'on'});
+ assert.equal(api.lanLobby.guestReady,false,'changing lobby FF revokes Ready');
+ win.RR.nativeMessage(JSON.stringify({type:'ready',revision:api.lanLobby.revision,ready:true}));
+ api.launchLanMatch();
+ const m=st(),snapshot=api.serializeState();
+ assert.equal(m.humanCount,2,'LAN scored TDM has two human seats');
+ assert.equal(m.tanks.length,6,'2 humans and 4 paired bots make 3v3');
+ assert.deepEqual([...m.config.teamIds],[1,0,1,0,1,0],'Coral host, Cyan guest, paired allies');
+ assert.equal(api.teamOf(0),1,'host physically Coral');
+ assert.equal(api.teamOf(1),0,'guest physically Cyan');
+ assert.equal(m.config.friendlyFire,true,'friendly fire host rule frozen');
+ assert.equal(m.config.matchModeId,'scored_tdm','existing scored TDM engine used');
+ assert.equal(m.scored.scoreTarget,30,'score target 30 passed to KO scorer');
+ assert.deepEqual([...m.scored.teamIds],[...m.config.teamIds],'score and combat team IDs identical');
+ assert.ok(snapshot.scored&&api.validRemoteSnapshot(snapshot),'host scored ledger carried to guest');
+ assert.equal(api.validRemoteSnapshot({...snapshot,scored:null}),false,'missing scored ledger rejected');
+ assert.equal(api.validRemoteSnapshot({...snapshot,scored:{...snapshot.scored,teamIds:[0,1,0,1,0,1]}}),false,'spoofed teams rejected');
+ assert.equal(api.validRemoteSnapshot({...snapshot,scored:{...snapshot.scored,scoreTarget:15}}),false,'spoofed KO target rejected');
+ assert.ok(packets.some(p=>p.type==='start')&&packets.some(p=>p.type==='state'&&p.state?.scored?.scoreTarget===30),'host transmitted scored start');
+ api.setModeForTest('solo');
+ console.log('PASS D1 LAN: 3v3 Coral host, paired bots, scored 30-KO target, guest score sync and ready revision');
 }

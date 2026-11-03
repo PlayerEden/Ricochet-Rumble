@@ -14,8 +14,8 @@ const j=fs.readFileSync(path.join(root,'android','app','src','main','java','com'
 assert.ok(j.includes('"ready".equals(kind)')&&j.includes('"lobby".equals(kind)')&&j.includes('"start".equals(kind)'),'native bridge recognizes only role-scoped lobby controls');
 const original=fs.readFileSync(path.join(web,'game.js'),'utf8'),close=/\}\)\(\);\s*$/;
 assert.ok(close.test(original),'actual game runtime IIFE found');
-const game=original.replace(close,"window.__lanQA={get mode(){return mode},get paused(){return paused},get connected(){return connected},get lobby(){return lanLobby&&{...lanLobby,rules:{...lanLobby.rules}}},get state(){return state},refresh(){refreshHUD()},snapshot(){return serializeState()}};})();");
-const files={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/game.js':'game.js','/scored-match.js':'scored-match.js','/dossier.js':'dossier.js','/save-backup.js':'save-backup.js'};
+const game=original.replace(close,"window.__lanQA={get mode(){return mode},get paused(){return paused},get connected(){return connected},get lobby(){return lanLobby&&{...lanLobby,rules:{...lanLobby.rules}}},get state(){return state},refresh(){refreshHUD()},snapshot(){return serializeState()},credit(attacker,victim){return creditScoredPilotKO(attacker,victim)}};})();");
+const files={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/game.js':'game.js','/scored-match.js':'scored-match.js','/forward-bays.js':'forward-bays.js','/dossier.js':'dossier.js','/save-backup.js':'save-backup.js'};
 const server=http.createServer((req,resp)=>{let f=files[new URL(req.url,'http://localhost').pathname];if(!f){resp.writeHead(404);resp.end();return}resp.writeHead(200,{'Content-Type':f.endsWith('.js')?'text/javascript':f.endsWith('.css')?'text/css':'text/html'});resp.end(f==='game.js'?game:fs.readFileSync(path.join(web,f)))});
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const url='http://127.0.0.1:'+server.address().port;
@@ -132,6 +132,58 @@ try{
  await guest.locator('#menu button[data-action="nearby"]').click();await guest.locator('button[data-action="find"]').click();
  await receive(guest,{type:'connected'});await receive(host,{type:'connected'});await receive(guest,await lastPacket(host,'lobby'));
  CHECK(await host.locator('.lan-lobby').isVisible()&&await guest.locator('.lan-lobby').isVisible(),'both waiting rooms accessible after match');
+ // D1: Two genuine independent browser game runtimes; only the native
+ // Android LAN transport is mocked at the bridge boundary.
+ await change(host,'teamMode','tdm');
+ await change(host,'hostSide','coral');
+ await change(host,'botCount',2);
+ await change(host,'scoreTarget',30);
+ await change(host,'friendlyFire','on');
+ const tdmLobby=await lastPacket(host,'lobby');
+ await receive(guest,tdmLobby);
+ CHECK((await host.locator('#mode-label').textContent()).includes('CORAL'),'host lobby displays real Coral faction');
+ CHECK((await guest.locator('#mode-label').textContent()).includes('CYAN'),'guest lobby displays real Cyan faction');
+ CHECK((await guest.locator('#lan-guest-rules').textContent()).includes('FIRST TO 30 KOs'),'guest previews scored rules');
+ CHECK((await guest.locator('#lan-guest-rules').textContent()).includes('HOST CORAL / GUEST CYAN'),'guest previews real factions');
+ CHECK(await host.locator('[data-lan-setting="botCount"] option[value="3"]').evaluate(el=>el.disabled),'uneven bot count disabled for TDM');
+ await guest.locator('button[data-action="lan-ready"]').click();
+ await receive(host,await lastPacket(guest,'ready'));
+ CHECK(await host.locator('button[data-action="lan-start"]').isEnabled(),'Ready unlocks scored team start');
+ await host.locator('button[data-action="lan-start"]').click();
+ await receive(guest,await lastPacket(host,'start'));
+ await receive(guest,await lastPacket(host,'state'));
+ const teams=await host.evaluate(()=>({ids:[...window.__lanQA.state.config.teamIds],scored:window.__lanQA.state.scored,ff:window.__lanQA.state.config.friendlyFire}));
+ CHECK(JSON.stringify(teams.ids)===JSON.stringify([1,0,1,0]),'Coral host and bot versus Cyan guest and bot (actual '+JSON.stringify(teams.ids)+')');
+ CHECK(teams.scored.mode==='teams'&&teams.scored.scoreTarget===30&&teams.ff,'2v2 scored rules frozen in engine');
+ CHECK(await guest.evaluate(()=>JSON.stringify(window.__lanQA.state.config.teamIds))===JSON.stringify(teams.ids),'host and guest share teams');
+ CHECK((await guest.locator('#player0-label').textContent()).includes('CYAN KOs · YOU'),'guest scoreboard labels own Cyan side');
+ CHECK((await host.locator('#player1-label').textContent()).includes('CORAL KOs · YOU'),'host scoreboard labels own Coral side');
+ await host.evaluate(()=>{
+   const qa=window.__lanQA;qa.state.tanks[1].onFoot=true;
+   if(!qa.credit(0,1))throw Error('host did not record real pilot KO event');
+ });
+ await receive(guest,{type:'state',state:await host.evaluate(()=>window.__lanQA.snapshot())});
+ CHECK((await guest.locator('#score1').textContent()).trim()==='1','guest displays host-owned Coral KO');
+ CHECK((await host.locator('#score1').textContent()).trim()==='1','host sees same scored team total');
+ await host.evaluate(()=>{
+   const qa=window.__lanQA;
+   for(let i=1;i<30;i++){
+     qa.state.lives[1]=1;qa.state.tanks[1].onFoot=true;
+     if(!qa.credit(0,1))throw Error('pilot KO failure '+i);
+   }
+ });
+ await receive(guest,{type:'state',state:await host.evaluate(()=>window.__lanQA.snapshot())});
+ CHECK((await guest.locator('#score1').textContent()).trim()==='30','guest receives final 30-KO authoritative score');
+ CHECK(await guest.locator('#after-action').isVisible(),'guest receives scored TDM finish');
+ CHECK((await host.locator('#aa-outcome').textContent()).includes('VICTORY'),'Coral host wins scored match');
+ CHECK((await guest.locator('#aa-outcome').textContent()).includes('DEFEAT'),'Cyan guest loses scored match');
+ await host.screenshot({path:path.join(dir,'915x412-tdm-final-host.png'),animations:'disabled'});
+ await guest.screenshot({path:path.join(dir,'915x412-tdm-final-guest.png'),animations:'disabled'});
+ results.screens.push('TDM final host','TDM final guest');
+ await host.locator('#lan-edit-rules').click();
+ await receive(guest,await lastPacket(host,'lobby'));
+ CHECK(await guest.locator('.lan-lobby').isVisible(),'scored guest returns to rules after results');
+ CHECK((await guest.locator('#lan-guest-rules').textContent()).includes('FIRST TO 30 KOs'),'postmatch lobby preserves scored rules');
  // End-to-end screenshots of both lobby roles and narrow-layout geometry.
  for(const [w,h] of [[568,320],[740,360],[915,412],[1280,720]]){
   await host.setViewportSize({width:w,height:h});
