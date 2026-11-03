@@ -37,7 +37,7 @@ await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_BIN,args:['--no-sandbox','--disable-dev-shm-usage']});
 const cases=[],errors=[];
 try {
- for(const [width,height] of [[740,360],[915,412],[1280,720]]){
+ for(const [width,height] of [[568,320],[740,360],[915,412],[1280,720]]){
   const page=await browser.newPage({viewport:{width,height}});
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:'+server.address().port,{waitUntil:'load'});
@@ -74,6 +74,17 @@ try {
   await page.locator('#menu button[data-action="modes"]').click();
   assert.equal(await page.locator('.practice-launch').count(),1);
   assert.match(await page.locator('.practice-launch').innerText(),/NO BOTS · NO RECORD/);
+  // Short landscape: secondary actions must share a compact, reachable row.
+  const rects=await page.evaluate(()=>{
+   const names=['.practice-launch','.daily-launch','.mode-back'];
+   return names.map(sel=>{const r=document.querySelector(sel).getBoundingClientRect();
+    return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}});
+  });
+  const overlap=(x,y)=>Math.max(0,Math.min(x.right,y.right)-Math.max(x.left,y.left))*
+   Math.max(0,Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top));
+  assert.equal(overlap(rects[0],rects[1]),0,'Practice and Daily must not overlap');
+  assert.equal(overlap(rects[0],rects[2]),0,'Practice must not overlap Back');
+  assert.equal(overlap(rects[1],rects[2]),0,'Daily must not be obscured by sticky Back');
   await page.locator('.practice-launch').click();
   const fromModes=await page.evaluate(()=>window.__practiceQA.status());
   assert.equal(fromModes.botCount,0);
