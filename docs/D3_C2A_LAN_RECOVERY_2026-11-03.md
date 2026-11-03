@@ -13,4 +13,4 @@
 ## Verification and next gates
 - Dedicated Playwright test `tests/d3-c2a-recovery-browser.mjs`: two phone-size viewport runs, manual connect/failure/retry, successful guest lobby, dropped session, explicit BUSY, fresh discovery, stale callback isolation, foreground host re-open. Native bridge mocked, real HTML/game/DOM.
 - This PR must pass exact-source fast regression, D3-B1/B2 browser flows, Android Gradle+visual QA and dedicated C2A browser QA before merge. **None of these replaces physical two-Android-phone LAN acceptance.**
-- Next: owner-compatible higher-version signed preview, backup and install-over check, real host/join/retry/late spectate/queue/foreground/background tests. No Play Store publication.
+- Next: [verified D3-C owner-preview report](D3_C_OWNER_PREVIEW_380001_2026-11-03.md) recorded verified same-signer internal preview code **380001** ([workflow PASS #41672939440](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41672939440)); owner backup + physical install-over, real host/join/retry/late spectate/queue/foreground/background tests remain pending. No Play Store publication.
