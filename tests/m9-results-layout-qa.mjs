@@ -36,6 +36,11 @@ try{
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:'+server.address().port+'/',{waitUntil:'load'});
   await page.waitForFunction(()=>!!document.getElementById('after-action'));
+  // The live idle game loop owns the 'hidden' flag and can overwrite our
+  // synthetic result fixture between geometry capture and scroll assertions.
+  // Keep only this diagnostic overlay visible with a test-scoped style rule;
+  // production game/stylesheet behavior remains unchanged.
+  await page.addStyleTag({content:'#after-action.hidden{display:grid!important}'});
   for(const config of variants){
    await page.evaluate(c=>{
     const $=id=>document.getElementById(id);
