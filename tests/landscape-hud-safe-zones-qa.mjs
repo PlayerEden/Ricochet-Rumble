@@ -25,11 +25,15 @@ const viewports=[{width:568,height:320},{width:640,height:300},
  {width:960,height:540},{width:1280,height:720}];
 const modes=['survival-pilot','scored-clock','scored-power-coach',
  'ctf-objective','ctf-power-coach','ctf-alert-power','scored-alert'];
+const safeVariants=[{name:'flat',top:0,right:0,bottom:0,left:0},
+ {name:'cutout',top:30,right:24,bottom:12,left:24}];
+const viewportVariants=viewports.flatMap(viewport=>safeVariants.map(safe=>({viewport,safe})));
 const results=[],errors=[];
-const keys=['menu-button','.scorestrip','score-clock','ctf-status','power-status',
+const keys=['menu-button','.scorestrip','.blue-tag','round','.pink-tag','score0','score1','player0-label','player1-label','score-clock','ctf-status','power-status',
  'field-coach','toast','joystick','.fire-btn','interact-btn','shell-meter','shell-slots'];
 const shouldNotCross=[
  ['menu-button','.scorestrip'],['menu-button','score-clock'],
+ ['.blue-tag','round'],['round','.pink-tag'],['.blue-tag','.pink-tag'],
  ['.scorestrip','score-clock'],['.scorestrip','ctf-status'],
  ['score-clock','ctf-status'],['score-clock','power-status'],
  ['score-clock','field-coach'],['score-clock','toast'],
@@ -46,10 +50,14 @@ function intersects(a,b){
   Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1;
 }
 try {
- for(const viewport of viewports){
+ for(const {viewport,safe} of viewportVariants){
   const page=await browser.newPage({viewport,deviceScaleFactor:1});
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:'+server.address().port,{waitUntil:'load'});
+  await page.evaluate(safe=>{
+   for(const edge of ['top','right','bottom','left'])
+    document.documentElement.style.setProperty('--sr-safe-'+edge,safe[edge]+'px');
+  },safe);
   for(const name of modes){
    for(const swap of [false,true]){
     const data=await page.evaluate(({name,swap,keys})=>{
@@ -74,6 +82,8 @@ try {
      if(name==='survival-pilot')get('interact-btn').classList.remove('hidden');
      get('shell-meter').textContent='3/4 CYCLING';
      get('shell-slots').innerHTML='<i class="shell-slot ready"></i>'.repeat(3)+'<i class="shell-slot"></i>';
+     get('player0-label').textContent=scored?'CYAN SQUAD ALPHA':'YOU';
+     get('player1-label').textContent=scored?'CORAL SQUAD BRAVO':'ENEMIES';
      const out={};
      for(const key of keys){
       const node=get(key),style=getComputedStyle(node);
@@ -81,7 +91,7 @@ try {
       const visible=style.display!=='none'&&style.visibility!=='hidden'&&
        Number(style.opacity)>.01&&r.width>=1&&r.height>=1;
       out[key]={visible,rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,
-       width:r.width,height:r.height},text:node.textContent.trim().slice(0,100)};
+       width:r.width,height:r.height},fontSize:parseFloat(style.fontSize),text:node.textContent.trim().slice(0,100)};
      }
      return out;
     },{name,swap,keys});
@@ -91,6 +101,17 @@ try {
      assert.ok(rect.left>=-1&&rect.top>=-1&&rect.right<=viewport.width+1&&
       rect.bottom<=viewport.height+1,viewport.width+'x'+viewport.height+' '+name+' '+key+
       ' outside viewport: '+JSON.stringify(rect));
+    }
+    for(const key of ['menu-button','.scorestrip','joystick','.fire-btn','interact-btn','shell-meter']){
+     const {visible,rect}=data[key];if(!visible)continue;
+     assert.ok(rect.left>=safe.left-1&&rect.right<=viewport.width-safe.right+1&&
+      rect.top>=safe.top-1&&rect.bottom<=viewport.height-safe.bottom+1,
+      viewport.width+'x'+viewport.height+' '+safe.name+' '+name+' '+key+' violates inset: '+JSON.stringify(rect));
+    }
+    for(const key of ['score0','score1'])assert.equal(data[key].visible,true,'KO counters must remain visible');
+    if(viewport.width<=760){
+     for(const key of ['.blue-tag','.pink-tag'])
+      assert.ok(data[key].fontSize>=9.99,'compact team labels must be at least 10px');
     }
     assert.equal(data['shell-meter'].visible,true,
      'readable shell status required even in short landscape');
@@ -108,7 +129,11 @@ try {
     }
     if(name==='ctf-alert-power'||name==='scored-alert')
      assert.equal(data['field-coach'].visible,false,'alert gets priority over coach');
-    results.push({viewport,name,swap,geometry:'PASS'});
+    if(safe.name==='cutout'&&!swap&&name==='ctf-power-coach'&&[568,915].includes(viewport.width)){
+     fs.mkdirSync('qa-results',{recursive:true});
+     await page.screenshot({path:'qa-results/m10-hud-'+viewport.width+'x'+viewport.height+'-cutout.png'});
+    }
+    results.push({viewport,safe:safe.name,name,swap,geometry:'PASS'});
    }
   }
   await page.close();
@@ -117,7 +142,7 @@ try {
  fs.mkdirSync('qa-results',{recursive:true});
  fs.writeFileSync('qa-results/landscape-hud-safe-zones.json',JSON.stringify({results},null,2));
  console.log('LANDSCAPE_HUD_SAFE_ZONES_REAL_BROWSER_PASS '+JSON.stringify({
-  cases:results.length,viewports:viewports.length,states:modes.length,
+  cases:results.length,viewports:viewports.length,safeAreaVariants:safeVariants.length,states:modes.length,
   leftHanded:true,clockAndCtfDistinct:true,powerStatusSeparated:true,
   coachingAndAlertsSafe:true,ammoVisible:true,minimumThumbSize:true}));
 }finally{await browser.close();await new Promise(done=>server.close(done));}
