@@ -63,9 +63,33 @@ function showHangarTab(which){
  }
  const p=document.getElementById('panel');if(p)p.scrollTop=0;
 }
-function openHangar(fromDossier=false){
+// After Action unlocks should open the exact Hangar category they earned.
+ // Only this transient result-navigation path is emphasized; ordinary Hangar
+ // and Dossier visits always use the familiar Paint tab without extra copy.
+function rewardHangarTab(unlocks){
+ if(!Array.isArray(unlocks))return 'paint';
+ return unlocks.some(name=>typeof name==='string'&&name.endsWith(' PAINT'))?'paint':
+  unlocks.some(name=>typeof name==='string'&&name.endsWith(' INSIGNIA'))?'insignia':'paint';
+}
+function openHangar(fromDossier=false,newUnlocks=[]){
  hangarReturnToDossier=!!fromDossier;
- setPanel(document.getElementById('hangar-template').innerHTML);refreshHangar();showHangarTab('paint');
+ setPanel(document.getElementById('hangar-template').innerHTML);refreshHangar();
+ const rewards=Array.isArray(newUnlocks)?newUnlocks.filter(s=>typeof s==='string').slice(0,5):[];
+ showHangarTab(rewardHangarTab(rewards));
+ if(rewards.length){
+  const banner=document.getElementById('hangar-new-unlocks');
+  if(banner){banner.hidden=false;banner.textContent='NEW UNLOCK · '+rewards.join(' · ')+' · SELECT TO EQUIP';}
+  for(const tab of document.querySelectorAll('.hangar-tabs [data-hangar-tab]')){
+   const kind=tab.dataset.hangarTab;
+   tab.classList.toggle('new-reward',rewards.some(s=>s.endsWith(kind==='paint'?' PAINT':' INSIGNIA')));
+  }
+  for(const item of document.querySelectorAll('[data-action="equip-paint"],[data-action="equip-emblem"]')){
+   const paint=HANGAR_PAINTS[item.dataset.paintId];
+   const emblem=OPERATOR_EMBLEMS[item.dataset.emblemId];
+   const label=paint?paint.label+' PAINT':emblem?emblem.glyph+' '+emblem.label+' INSIGNIA':'';
+   item.classList.toggle('new-reward-item',rewards.includes(label));
+  }
+ }
  const back=document.querySelector('.hangar-screen button[data-action="hangar-back"]');
  back?.setAttribute?.('aria-label',hangarReturnToDossier?'Back to Dossier':'Back to main menu');
 }
@@ -3246,7 +3270,10 @@ document.getElementById('quick-rematch')?.addEventListener('click',()=>{if(state
 // Saved Solo rewards are actionable, never imaginary unlocks or LAN entitlements.
 document.getElementById('aa-rewards')?.addEventListener('click',()=>{
  if(mode!=='solo'||state.winner<0||!roundUnlocks.length)return;
- audioCue('ui-select');stop();openHangar();
+ // stop() returns to the menu. Snapshot the actual earned rewards before
+ // changing screens, and never generate a new reward or Dossier write here.
+ const justEarned=roundUnlocks.slice();
+ audioCue('ui-select');stop();openHangar(false,justEarned);
 });
  document.getElementById('custom-edit')?.addEventListener('click',()=>{if(state.winner>=0&&mode==='solo'&&state.config?.customMatch){stop();openCustomScreen();}});
 document.getElementById('lan-edit-rules')?.addEventListener('click',returnToLanRules);
