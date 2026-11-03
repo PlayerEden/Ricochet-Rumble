@@ -82,7 +82,7 @@ try{
    });
    assert.notEqual(geometry.outcomeDisplay,'none','outcome not hidden on narrow phone');
    assert.equal(geometry.outcomeValue,config.outcome,'correct outcome visible');
-   assert.ok(geometry.outcome.width>25,'outcome has visual width');
+   assert.ok(geometry.outcome.width>25,'outcome has visual width '+JSON.stringify({viewport:width+'x'+height,variant:config.kind,outcome:geometry.outcome,rail:geometry.rail,card:geometry.card}));
    assert.ok(geometry.outcome.right<=geometry.rail.right+1,'outcome fits rail horizontally');
    assert.ok(geometry.outcome.left>=geometry.mode.right-1,'mode context yields space to outcome');
    assert.ok(geometry.card.left>=-1&&geometry.card.right<=width+1,'result card within phone width');
