@@ -48,6 +48,7 @@ jobs:
           node --check tests/m2-camera-widen-qa.mjs
           node --check tests/solo-practice-onboarding.mjs
           node --check tests/backup-share-ui.mjs
+          node --check tests/android-focus-pause-qa.mjs
       - name: Run pure room, gameplay, save, update and ballistic safeguards
         run: |
           set -euo pipefail
@@ -76,6 +77,7 @@ jobs:
           node tests/lan-lobby-flow-qa.mjs
           node tests/solo-practice-onboarding.mjs
           node tests/backup-share-ui.mjs
+          node tests/android-focus-pause-qa.mjs
           node tests/ui-layout-geometry-v0948.mjs
           node tests/visual-qa.mjs
           node tests/m2-camera-widen-qa.mjs
