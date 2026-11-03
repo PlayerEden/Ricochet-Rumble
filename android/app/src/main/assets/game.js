@@ -455,13 +455,23 @@ const pickupSpots=[[480,300],[195,300],[765,300],[372,300],[587,300],[390,90],[5
 const canvas=document.getElementById('arena'),ctx=canvas.getContext('2d');
 // Viewport owns the arena resolution, not a fixed 960:600 content window.
 // Clamp render pixel density for stable Android GPU memory/frame pacing.
+// Don't clear/reallocate the drawing buffer for a duplicate resize event:
+// notification overlays and orientation callbacks can report unchanged bounds.
+let canvasPixelRatio=NaN;
 function resizeArenaCanvas(){
  const vw=Number(window.innerWidth),vh=Number(window.innerHeight);
  if(!Number.isFinite(vw)||!Number.isFinite(vh)||vw<280||vh<200)return false;
  W=Math.round(vw);H=Math.round(vh);
  const dpr=Math.min(1.6,Math.max(1,Number(window.devicePixelRatio)||1));
- canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);
+ const pixelW=Math.round(W*dpr),pixelH=Math.round(H*dpr);
+ const resized=canvas.width!==pixelW||canvas.height!==pixelH;
+ if(!resized&&canvasPixelRatio===dpr)return false;
+ // Each HTMLCanvasElement dimension write resets its state and backing store.
+ // Only touch the dimensions that actually changed, then restore the scale.
+ if(canvas.width!==pixelW)canvas.width=pixelW;
+ if(canvas.height!==pixelH)canvas.height=pixelH;
  if(typeof ctx.setTransform==='function')ctx.setTransform(dpr,0,0,dpr,0,0);
+ canvasPixelRatio=dpr;
  return true;
 }
 window.addEventListener('resize',resizeArenaCanvas);
@@ -2673,7 +2683,10 @@ function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick
    if(x<0||y<0||x>=worldW||y>=worldH){c.fillStyle='#10242e';c.fillRect(x+1,y+1,tile-2,tile-2);c.strokeStyle='#25414b';c.lineWidth=1;c.strokeRect(x+2,y+2,tile-4,tile-4);continue;}
    c.fillStyle=hash%3===0?'#132632':hash%3===1?'#142733':'#162a36';c.fillRect(x+1,y+1,tile-2,tile-2);
    c.strokeStyle='#29424e';c.lineWidth=1;c.strokeRect(x+2,y+2,tile-4,tile-4);
-   c.fillStyle='#29424e';for(const dx of [12,tile-16])for(const dy of [12,tile-16])c.fillRect(x+dx,y+dy,3,3);
+   // Four corner rivets, without creating two new arrays per tile/frame.
+   c.fillStyle='#29424e';const edge=tile-16;
+   c.fillRect(x+12,y+12,3,3);c.fillRect(x+12,y+edge,3,3);
+   c.fillRect(x+edge,y+12,3,3);c.fillRect(x+edge,y+edge,3,3);
    if(hash===0||hash===6){c.fillStyle='#264654';c.fillRect(x+15,y+16,36,4);c.fillRect(x+15,y+22,20,2)}
    if(hash===4){c.fillStyle='#33454b';c.fillRect(x+tile-32,y+tile-24,20,8);c.fillStyle='#91773d';c.fillRect(x+tile-32,y+tile-26,8,2)}
    if(hash===8){c.fillStyle='#314c54';c.font='800 13px system-ui';c.textAlign='left';c.fillText('FG',x+17,y+tile-18)}
