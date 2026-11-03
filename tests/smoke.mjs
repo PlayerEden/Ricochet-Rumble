@@ -1275,7 +1275,15 @@ console.log('PASS v0.9.22-dev3 tactical pullback, wide-screen floor and class hi
  assert.ok(.69<.73&&.73<.94,'mech, tank, pilot hierarchy unchanged');
  // True 1536px wide, SMALL map must not clamp either vehicle above its target.
  win.innerWidth=1536;win.innerHeight=672;win.devicePixelRatio=1;
- assert.equal(api.resizeArenaCanvas(),true);
+ // Older smoke expected every resize callback to reallocate. It is now a
+ // deliberate no-op if the current backing dimensions/DPR are unchanged.
+ const beforeBacking=[node('arena').width,node('arena').height];
+ const resized=api.resizeArenaCanvas();
+ assert.equal(node('arena').width,1536);
+ assert.equal(node('arena').height,672);
+ assert.equal(resized,beforeBacking[0]!==1536||beforeBacking[1]!==672,
+  'only a changed backing store needs allocation');
+ assert.equal(api.resizeArenaCanvas(),false,'duplicate same-size callback does not reset canvas');
  const [w,h]=api.world;
  assert.equal(w,9*132);assert.equal(h,6*132,'small-map test uses real 9x6 world');
  const floor=Math.max(1536/(w+840),672/(h+840));
