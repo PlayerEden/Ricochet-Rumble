@@ -93,9 +93,18 @@ public final class MainActivity extends Activity {
             | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
             | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
     }
+    // A notification shade or system overlay can remove window focus without
+    // calling Activity.onPause(). Freeze local play before the player loses sight
+    // of the arena; never auto-resume when focus is restored.
+    private void pauseGameForLifecycle() {
+        if (web != null) {
+            web.evaluateJavascript("window.RR && window.RR.appPause && window.RR.appPause()", null);
+        }
+    }
     @Override public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) enterImmersiveMode();
+        else pauseGameForLifecycle();
     }
 
     private void signal(JSONObject data) {
@@ -394,7 +403,8 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public void sendPacket(String packet) { send(packet); }
     }
     @Override protected void onPause() {
-        if (web != null) web.evaluateJavascript("window.RR && window.RR.appPause && window.RR.appPause()", null);
+        // Idempotent with window-focus loss and WebView visibility events.
+        pauseGameForLifecycle();
         super.onPause();
         if (web != null) web.onPause();
     }
