@@ -45,7 +45,7 @@ try{
  await page.locator('button[data-action="host"]').click();
  await receive({type:'hosting',address:'192.168.1.20',port:47212});
  CHECK(await page.locator('.lan-lobby').isVisible(),'one-phone room visible');
- CHECK(await page.locator('button[data-action="lan-start"]').isDisabled(),'legacy FFA still guest-only in A1');
+ CHECK(await page.locator('button[data-action="lan-start"]').isEnabled(),'D3-A2 FFA now starts against an AI before guest joins');
  CHECK((await page.evaluate(()=>window.__calls)).filter(x=>x==='host').length===1,'one host socket created');
  await change('teamMode','tdm');
  CHECK(await page.locator('button[data-action="lan-start"]').isEnabled(),'TDM start enabled without guest');

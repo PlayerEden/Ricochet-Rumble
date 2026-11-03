@@ -1,3 +1,9 @@
+# 2026-11-02 — D3-A2 FFA / TEAM SURVIVAL / CO-OP BOT-FILLED LAN ROOMS (EXPERIMENT)
+
+Implemented on `experiment/lan-mode-compatibility-d3-a2`: host alone can launch FFA (1–5 bots), balanced Team Survival 1v1–3v3, and Co-op host+AI ally against 1–4 enemy bots; corrected no-guest room/HUD truth and legacy human-guest gate. [A2 technical acceptance](LAN_MODES_D3_A2_2026-11-02.md). **Status: code awaiting exact-source CI**, NOT phone accepted, no new Android preview yet; previous v0.9.72 signed checkpoint and stable main untouched.
+
+---
+
 # 2026-11-02 — D3-A1 VERIFIED SIGNED ANDROID v0.9.72 OWNER PREVIEW (EXPERIMENT)
 
 **Installable preview READY — no real-device acceptance yet.** [Full owner handoff, signed artifact and safe install instructions](LAN_HOST_BOTS_D3_A1_ANDROID_OWNER_v0972.md). **APK-source SHA `848a14832d03486239b30d510f2fe5ae28fac7e6`**, checkpoint `checkpoint/sector-rebound-v0972-host-bots-signed-ci-340001`, app `com.playereden.ricochetrumble.preview`, code **340001**, name `0.9.72-hostbots.1`. Public development signer SHA256 `a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc` matches v0.9.71. [GitHub Actions signed build #41572106373 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41572106373), [APK ZIP artifact](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41572106373/artifacts/13201384029). **Game+client verification:** [#41571580793 SUCCESS](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41571580793) (32 host-alone gameplay checks + 101 two-browser-client D2 checks, UI/visual/source parity); owner APK CI repeated expanded combat/browser checks and validated embedded assets/signing. 

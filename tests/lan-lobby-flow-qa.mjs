@@ -44,10 +44,10 @@ try{
  await host.locator('#menu button[data-action="nearby"]').click();
  await host.locator('button[data-action="host"]').click();
  CHECK(await host.locator('.lan-lobby').isVisible(),'host lobby opens without automatically starting match');
- CHECK(await host.locator('[data-lan-setting="botCount"]').inputValue()==='0','host defaults to no AI');
+ CHECK(await host.locator('[data-lan-setting="botCount"]').inputValue()==='0','host defaults to zero extra AI slots; vacant guest seat is backfilled in host-alone games');
  CHECK(await host.locator('[data-lan-setting="teamMode"]').inputValue()==='ffa','host defaults to human 1v1');
  CHECK(await host.locator('[data-lan-setting="botSkill"]').isVisible()===false,'AI-only skill hidden in no-bot 1v1');
- CHECK(await host.locator('button[data-action="lan-start"]').isDisabled(),'host cannot start without guest');
+ CHECK(await host.locator('button[data-action="lan-start"]').isEnabled(),'D3-A2 host can start FFA with bots; two-human Ready gate still applies once joined');
  CHECK(await host.evaluate(()=>window.__lanQA.paused),'host simulation paused during lobby');
  await receive(host,{type:'hosting',address:'192.168.1.20',port:47321});
  CHECK((await host.locator('#host-address').textContent()).includes('192.168.1.20:47321'),'host local address visible');
