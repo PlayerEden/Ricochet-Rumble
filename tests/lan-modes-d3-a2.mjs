@@ -101,7 +101,11 @@ try{
  await page.locator('button[data-action="lan-start"]').click();
  s=await inspect();CHECK(s.players===6&&JSON.stringify(s.teamIds)==='[1,0,1,0,1,0]','balanced 3v3 Survival with host +2 AI allies');
  await finishByHuman([1,3,5]);await room();
+ // Begin with a legal FFA zero-extra-bot selection before selecting co-op.
+ // The prior Team Survival 3v3 deliberately left four extra bots selected.
+ await change('teamMode','ffa');await change('botCount',0);
  await change('teamMode','coop');
+ CHECK(await page.locator('[data-lan-setting="botCount"]').inputValue()==='0','co-op invalid case has actually selected zero enemy slots');
  CHECK(await page.locator('[data-lan-setting="botCount"] option[value="0"]').evaluate(x=>x.disabled),'co-op cannot deploy without an enemy');
  CHECK(await page.locator('button[data-action="lan-start"]').isDisabled(),'invalid empty co-op Start blocked');
  await change('botCount',1);
