@@ -14,11 +14,13 @@
 | **Multiplayer** | Local Wi-Fi host/join, host-versus-bots, spectators/JOIN NEXT/reconnect are implemented and CI-tested; **two actual Android phones are not yet tested**—deferred by owner |
 | **Distribution** | Developer previews only. Google Play signing, privacy/store declarations and real-device acceptance are **NOT complete** |
 
-### One current phone preview
+### One current phone preview — v0.9.80
 
-The most recent **owner-compatible and signed** Android test build is **v0.9.79 / versionCode 410001**, package `com.playereden.ricochetrumble.preview`, from [verified GitHub workflow #41715192220](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41715192220) ([artifact](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41715192220/artifacts/13270206832), temporary). It has the owner-approved camera/AI baseline and Solo Practice. **Newer source features, including Backup Share, are merged on `main` but not in that older compatible APK.** A subsequent consolidated owner preview must be verified against the same preview package, pinned test certificate and a higher version code. Do not install a differently signed debug build over this app, or uninstall it just to force a test; back up Dossier first.
+**Only current recommended installable preview:** [Sector Rebound v0.9.80-main.1](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41721309696), versionCode **420001**, app ID `com.playereden.ricochetrumble.preview`. The APK includes all current `main` gameplay, Solo Practice, Backup Share, and [M5 restore-safety changes #127](https://github.com/PlayerEden/Ricochet-Rumble/pull/127). [Consolidated build workflow #128](https://github.com/PlayerEden/Ricochet-Rumble/pull/128) **PASS**: source `50401f71a63a8375f1b7a7230617acb1167682af`, reviewed runtime `1062ea3bc3c85dfa42999ed1988fe0ea7ec8c083`, package/version/asset/signature verified; APK SHA-256 `1bc0aaed1b7557ff2b894b6e25441a4181e7f6a7440d9fcad7b14c5ceed35f36`. [Current GitHub APK artifact](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41721309696/artifacts/13272356875) expires **2026-11-17**.
 
-**No new APK for each tiny edit.** Group tested one-phone improvements and distribute one clearly identified consolidated preview after the relevant source and Android QA gates pass. An occasional side-by-side CI debug artifact is testing evidence, **not** the current player build. Historical APK hashes and prior preview links live in the [archive index](docs/ARCHIVE_INDEX.md).
+**In-place upgrade only:** same public disposable AOSP **test certificate** and app ID as preview code 410001, higher version code 420001. Back up Dossier first and **never uninstall to bypass a mismatch**. The user has not yet confirmed physical upgrade/save continuity on v0.9.80; this is **not** a Google Play production signing or published build. Old APKs remain *rollback records* in [archive](docs/ARCHIVE_INDEX.md), not a menu of games to maintain.
+
+**Build policy:** `main` is the one game and the one installed preview line. The existing signed preview workflow was **reused**, not multiplied by one workflow per feature. Group tested improvements before a new owner APK, and identify exactly one current preview. CI debug apps with a different package are test evidence, not user upgrades.
 
 ## Development and status
 
