@@ -31,8 +31,9 @@ The owner reports Sector Rebound's **v0.9.78 camera and current AI feel good for
 
 1. **Save/restore hardening complete in source** — PR #127 merged; all applicable automated data/visual/LAN checks passed. Next is owner physical install-over, saved data and background/resume validation using v0.9.80, not another backup feature.
 2. **Single-device QA — automated gates complete for this pass** — M6 focus-loss pause [PR #129](https://github.com/PlayerEden/Ricochet-Rumble/pull/129) and real UI reload/reopen [PR #130](https://github.com/PlayerEden/Ricochet-Rumble/pull/130) merged, **all applicable CI green**. [Canonical test run #41724607061](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41724607061) verified Settings, named Custom preset, 3 synthetic Dossier matches, DUNE paint, VECTOR insignia, exact five-record backup, and document reopen at 740×360 and 915×412. **Physical** install-over, notification shade, saved data, orientations, heat/FPS and crash behavior remain open.
-3. **UI/audio/playability polish** — clear results and progression, distinct mechanical sounds and original menu/game music while protecting approved tactical presentation.
-4. **Google Play beta preparation** — signing/identity migration plan, privacy/store assets, app size/SDK checks, internal/closed testing before any public GO.
-5. **Real phone-to-phone LAN** — resume only when the owner has two actual Android phones available.
+3. **UI and gameplay presentation polish — next** — improve menu/HUD readability, results screens, Dossier/Hangar progression presentation and one-phone performance without changing approved combat feel.
+4. **Music and sound — intentionally deferred** — current synth/SFX are sufficient for interim QA. Soundtrack design, Suno tracks, authored effects and mixing will be handled later; no new music/audio assets or purchases are required from the owner now. Track music/licensing and test it before release.
+5. **Google Play beta preparation** — signing/identity migration plan, privacy/store assets, app size/SDK checks, internal/closed testing before any public GO.
+6. **Real phone-to-phone LAN** — resume only when the owner has two actual Android phones available.
 
 [Master development plan](MASTER_DEVELOPMENT_PLAN.md) · [Developer protocol](DEVELOPMENT_PROTOCOL.md) · [Full historical archive](ARCHIVE_INDEX.md) · [M4 save-sharing evidence](M4_OFFLINE_BACKUP_SHARE_2026-11-03.md)
