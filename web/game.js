@@ -863,9 +863,13 @@ function opposingCount(i,st=state){
  return st.lives.reduce((sum,lives,j)=>sum+(lives>0&&!friendlyForState(i,j,st)?1:0),0);
 }
 function friendlyForState(a,b,st){return teamOf(a,st)===teamOf(b,st);}
-function label(i){return i<state.humanCount?
+// D3-A1: reserved LAN seat 1 is an actual bot when no guest was Ready.
+function lanBotSeat(i,st=state){return i>=st.humanCount||(i===1&&st.config?.lanHostSolo===true);}
+function botOrdinal(i,st=state){return i===1&&st.config?.lanHostSolo===true?1:
+ i-st.humanCount+1+(st.config?.lanHostSolo===true?1:0);}
+function label(i){return !lanBotSeat(i)?
  (state.config?.teamMode==='ffa'?matchColorName(combatColor(i)):(teamOf(i)===0?'CYAN':'CORAL')):
- `BOT ${i-state.humanCount+1}`;}
+ `BOT ${botOrdinal(i)}`;}
 // A completed result is a frozen per-match record. HUD refreshes must never re-score it.
 function finalizeRound(){
  if(isCtfMatch()&&state.winner>=0){
@@ -1074,7 +1078,7 @@ function refreshHUD(){const me=mode==='guest'?1:0,other=me===0?1:0;
  const replay=document.getElementById('quick-rematch');if(replay){replay.textContent=state.lanSeries?(state.lanSeries.concluded?'↻ NEW SERIES':'↻ NEXT ROUND '+(state.lanSeries.round+1)+'/3'):state.config?.dailySector?'↻ RETRY SAME SECTOR':state.config?.customMatch?'↻ SAME RULES · NEW SECTOR':mode==='solo'?'↻ NEXT MATCH':'↻ NEW SECTOR';replay.classList.toggle('hidden',!(ended&&mode!=='guest'&&menu.classList.contains('hidden')));}
  const tdm=isScoredMatch()&&state.scored.mode==='teams',ctf=isCtfMatch();
  const editRules=document.getElementById('custom-edit');if(editRules)editRules.classList.toggle('hidden',!(ended&&mode==='solo'&&!!state.config?.customMatch));
- const lanEdit=document.getElementById('lan-edit-rules');if(lanEdit)lanEdit.classList.toggle('hidden',!(ended&&mode==='host'&&connected));
+ const lanEdit=document.getElementById('lan-edit-rules');if(lanEdit)lanEdit.classList.toggle('hidden',!(ended&&mode==='host'&&(connected||state.config?.lanHostSolo===true)));
  const mySide=teamOf(me),isTeams=state.config?.teamMode==='teams';
  const label0=document.getElementById('player0-label');if(label0)label0.textContent=
   ctf?(mySide===0?'CYAN FLAGS · YOU':'CYAN FLAGS'):
@@ -1139,7 +1143,7 @@ function resetAll(advancePlaylist=false){
  dailyAttemptedKey='';dailyLastRecord=null;
  if(mode==='host')neutralizeGuestInput();
  if(mode==='solo')document.getElementById('mode-label').textContent=options.botCount===0?'PRACTICE FIELD':options.dailySector?'DAILY SECTOR':options.ctfExercise?'CAPTURE THE FLAG · TEST':options.forwardBayExercise?'FORWARD BAY · TEAM EXERCISE':(options.customMatch?'CUSTOM · ':'')+soloModeLabel(options);
- camera.zoom=null;resultCuePlayed=false;roundUnlocks=[];quietContactSeconds=0;radarReminderShown=false;coachRemaining=0;document.getElementById('field-coach')?.classList.add('hidden');fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();clearFireAim();releaseShot=null;remoteReleaseShot=null;paused=(mode==='guest'||mode==='host')&&!connected;refreshHUD();
+ camera.zoom=null;resultCuePlayed=false;roundUnlocks=[];quietContactSeconds=0;radarReminderShown=false;coachRemaining=0;document.getElementById('field-coach')?.classList.add('hidden');fixedAccumulator=0;particles=[];screenKick=damagePulse=0;lastRemoteFxId=fxSeq;fireCooldown.fill(0);clearStick();clearFireAim();releaseShot=null;remoteReleaseShot=null;paused=mode==='guest'||(mode==='host'&&!connected&&!options.lanHostSolo);refreshHUD();
  if(mode==='host'&&connected&&lanLobby&&!lanLobby.active)nativePacket({type:'state',state:serializeState()});
  if(mode!=='guest')notice(options.dailySector?'SAME DAILY SECTOR · RETRY':'NEW FIELD GENERATED — GO!');}
 function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
@@ -1823,11 +1827,12 @@ function step(dt){if(paused||state.winner>=0)return;
  state.vehicleDropTimer=(state.vehicleDropTimer??28)-dt;
  if(!isCqcMatch()&&state.vehicleDropTimer<=0){deployVehicle();state.vehicleDropTimer=30+mazeRandom(deploymentSeed(state.mazeSeed,state.dropIndex+9))()*12;}
  if(!isCqcMatch()&&state.pickupTimer<=0){if(state.pickups.length)state.pickups=[];spawnPickup();state.pickupTimer=state.pickups.length?13:3;}
- const inputs=state.tanks.map((t,i)=>i===0?makeControl(true):i===1&&mode==='duel'?makeControl(false):i===1&&mode==='host'?{...guestInput}:botInput(i,dt));
- if(mode==='host'&&remoteReleaseShot&&state.matchId===remoteReleaseShot.matchId){
+ const inputs=state.tanks.map((t,i)=>i===0?makeControl(true):i===1&&mode==='duel'?makeControl(false):
+ i===1&&mode==='host'&&state.config?.lanHostSolo!==true?{...guestInput}:botInput(i,dt));
+ if(mode==='host'&&state.config?.lanHostSolo!==true&&remoteReleaseShot&&state.matchId===remoteReleaseShot.matchId){
   inputs[1].aimX=remoteReleaseShot.x;inputs[1].aimY=remoteReleaseShot.y;
  }
- if(remoteReleaseShot&&(!connected||mode!=='host'||remoteReleaseShot.matchId!==state.matchId||
+ if(remoteReleaseShot&&(!connected||mode!=='host'||state.config?.lanHostSolo===true||remoteReleaseShot.matchId!==state.matchId||
   state.lives[1]<=0||paused||(remoteReleaseShot.ttl-=dt)<=0))remoteReleaseShot=null;
  for(let i=0;i<state.tanks.length;i++){const t=state.tanks[i];if(state.lives[i]<=0)continue;
  t.powerTimer=Math.max(0,(t.powerTimer||0)-dt);if(t.powerTimer<=0)t.powerType=null;t.flash=Math.max(0,(t.flash||0)-dt);t.recoil=Math.max(0,(t.recoil||0)-dt*6);t.ejectAnim=Math.max(0,(t.ejectAnim||0)-dt);
@@ -1835,7 +1840,7 @@ function step(dt){if(paused||state.winner>=0)return;
  for(const p of state.pickups){if(Math.hypot(t.x-p.x,t.y-p.y)<(t.onFoot?23:35)&&collectPickup(t,i,p))break}
  fireCooldown[i]=Math.max(0,(fireCooldown[i]||0)-dt);
  // Host-authoritative fire from one physical release, after facing alignment.
- const queued=i===0&&mode!=='guest'?releaseShot:i===1&&mode==='host'?remoteReleaseShot:null;
+ const queued=i===0&&mode!=='guest'?releaseShot:i===1&&mode==='host'&&state.config?.lanHostSolo!==true?remoteReleaseShot:null;
  let releaseReady=false;
  if(queued&&queued.matchId===state.matchId&&state.lives[i]>0){
   const angle=Math.atan2(queued.y,queued.x),
@@ -2469,7 +2474,7 @@ function drawTrajectoryPreview(c,t,angle){
 // concealed shooter, and never infer unsynced AI state on a LAN guest.
 function enemyBotCue(i,me=mode==='guest'?1:0){
  if(mode!=='solo'&&mode!=='host')return null;
- if(!state||paused||state.winner>=0||i===me||i<state.humanCount||
+ if(!state||paused||state.winner>=0||i===me||!lanBotSeat(i)||
     state.lives[i]<=0||state.lives[me]<=0||friendly(i,me))return null;
  const enemy=state.tanks[i],local=state.tanks[me],brain=botBrains.get(i);
  if(!enemy||!local||!brain)return null;
@@ -2635,7 +2640,7 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  c.fillStyle=paint;c.font='bold 13px system-ui';c.textAlign='center';
  // Ground personnel stand close to parked vehicles. Move their label
  // to the side, rather than painting it across the abandoned tank.
- c.fillText(i<state.humanCount?'P'+(i+1):state.config?.teamMode==='teams'&&friendly(i,mode==='guest'?1:0)?'ALLY '+(i-state.humanCount+1):'AI'+(i-state.humanCount+1),t.x+(t.onFoot?42:0),t.y+(t.onFoot?-18:-38));
+ c.fillText(!lanBotSeat(i)?'P'+(i+1):state.config?.teamMode==='teams'&&friendly(i,mode==='guest'?1:0)?'ALLY '+botOrdinal(i):'AI'+botOrdinal(i),t.x+(t.onFoot?42:0),t.y+(t.onFoot?-18:-38));
  if(i===(mode==='guest'?1:0)){
   c.beginPath();
   if(t.onFoot){c.moveTo(t.x-30,t.y);c.lineTo(t.x-40,t.y-6);c.lineTo(t.x-40,t.y+6);}
@@ -2649,7 +2654,8 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
   drawTrajectoryPreview(c,t,aim?Math.atan2(aim.y,aim.x):t.a);
  }
  // Small warning only when an enemy actually sees the local player.
- for(let i=state.humanCount;i<state.tanks.length;i++){
+ for(let i=0;i<state.tanks.length;i++){
+  if(!lanBotSeat(i))continue;
   const cue=enemyBotCue(i,mode==='guest'?1:0);
   if(cue)drawEnemyBotCue(c,state.tanks[i],cue);
  }
@@ -2741,7 +2747,7 @@ function loop(now){const dt=clamp((now-lastTime)/1000,0,.085);lastTime=now;
  }
  if(mode==='solo'||mode==='duel'||mode==='host'){if(!paused&&state.winner<0){fixedAccumulator=Math.min(.12,fixedAccumulator+dt);let ticks=0;while(fixedAccumulator>=STEP&&ticks++<5){step(STEP);fixedAccumulator-=STEP}}else fixedAccumulator=0;}
  updateVisuals(dt);hudTimer+=dt;if(hudTimer>.15){hudTimer=0;refreshHUD();}
- if(mode==='host'&&connected&&!(lanLobby&&lanLobby.active)){snapshotTimer+=dt;if(snapshotTimer>.09){snapshotTimer=0;nativePacket({type:'state',state:serializeState()})}}
+ if(mode==='host'&&connected&&state.config?.lanHostSolo!==true&&!(lanLobby&&lanLobby.active)){snapshotTimer+=dt;if(snapshotTimer>.09){snapshotTimer=0;nativePacket({type:'state',state:serializeState()})}}
  if(mode==='guest'&&connected&&!(lanLobby&&lanLobby.active)){sendTimer+=dt;if(sendTimer>.05){sendTimer=0;nativePacket({type:'input',input:menu.classList.contains('hidden')&&!document.hidden?makeControl(true):{moveX:0,moveY:0,fire:false}})}}
  render(dt);drawLobbyPreview(dt);updateMusic();requestAnimationFrame(loop)}
 function bridgeReady(){return !!window.AndroidBridge}
@@ -2833,13 +2839,16 @@ function lanDescription(r){
  const score=r.teamMode==='tdm'?' · FIRST TO '+r.scoreTarget+' KOs · '+(r.rounds===3?'BEST OF 3':'SINGLE MATCH'):' · '+r.startLives+' LIVES';
  const sides=(r.teamMode==='tdm'||r.teamMode==='teams')?
   ' · HOST '+(r.hostSide==='coral'?'CORAL':'CYAN')+' / GUEST '+(r.hostSide==='coral'?'CYAN':'CORAL'):'';
- return (r.botCount===0?'NO BOTS':r.botCount+' BOT'+(r.botCount===1?'':'S'))+
+ const bots=mode==='host'&&!connected&&r.teamMode==='tdm'?r.botCount+1:r.botCount;
+ return (bots===0?'NO BOTS':bots+' BOT'+(bots===1?'':'S'))+
   ' · '+LAN_SIZE[r.mapSize]+score+sides+' · FF '+(r.friendlyFire?'ON':'OFF');
 }
 function lanCanStart(){
- if(!lanLobby||mode!=='host'||!connected||!lanLobby.guestReady)return false;
+ if(!lanLobby||mode!=='host')return false;
  const r=lanLobby.rules;
- return !(r.teamMode==='coop'&&r.botCount===0)&&!(r.teamMode==='tdm'&&r.botCount%2!==0);
+ if(!connected)return r.teamMode==='tdm'&&[0,2,4].includes(r.botCount);
+ return !!lanLobby.guestReady&&!(r.teamMode==='coop'&&r.botCount===0)&&
+  !(r.teamMode==='tdm'&&r.botCount%2!==0);
 }
 function lanLobbyHTML(hostRole){
  const name=hostRole?'HOST MATCH':'JOINED MATCH';
@@ -2855,7 +2864,7 @@ function lanLobbyHTML(hostRole){
  '<label>FRIENDLY FIRE<select data-lan-setting="friendlyFire"><option value="off">OFF · ALLIES PASS THROUGH</option><option value="on">ON · ALLIES SOLID</option></select></label>'+
  '</div>':'<div class="lan-summary"><strong id="lan-guest-rules">AWAITING HOST RULES</strong><span>Only the host can change the match setup.</span></div>';
  return '<section class="lan-lobby" aria-label="Local multiplayer waiting room">'+
- '<header class="lan-lobby-head"><div class="eyebrow">LOCAL WI-FI / PRIVATE MATCH</div><h2>'+name.replace(' ',' <span>')+'</span></h2><p>Two Android phones. The host starts when the guest is ready.</p></header>'+
+ '<header class="lan-lobby-head"><div class="eyebrow">LOCAL WI-FI / PRIVATE MATCH</div><h2>'+name.replace(' ',' <span>')+'</span></h2><p>'+(hostRole?'Start scored TDM against bots now, or wait for a second phone.':'Join the host room and press READY when available.')+'</p></header>'+
  '<div class="lan-presence"><span>PLAYER 1 · HOST</span><strong id="lan-host-presence">CONNECTED</strong><span>PLAYER 2 · GUEST</span><strong id="lan-guest-presence">WAITING</strong></div>'+
  (hostRole?'<p class="lan-address">HOST ADDRESS · <span id="host-address">STARTING WI-FI ROOM...</span></p>':'')+
  controls+
@@ -2877,25 +2886,37 @@ function refreshLanLobby(){
  const livesLabel=document.querySelector('[data-lan-setting="startLives"]')?.closest?.('label');
  if(livesLabel)livesLabel.hidden=r.teamMode==='tdm';
  const botSelect=document.querySelector('[data-lan-setting="botCount"]');
- if(botSelect?.options)for(const option of botSelect.options)option.disabled=r.teamMode==='tdm'&&Number(option.value)%2===1;
+ if(botSelect?.options)for(const option of botSelect.options){
+  const n=Number(option.value);option.disabled=r.teamMode==='tdm'&&n%2===1;
+  if(r.teamMode==='tdm'&&[0,2,4].includes(n)){
+   const bots=n+(hostRole&&!connected?1:0);
+   option.textContent=bots+' BOT'+(bots===1?'':'S')+' · '+(n/2+1)+'v'+(n/2+1);
+  }
+ }
  if((mode==='host'||mode==='guest')&&lanLobby.hasRules){
   const teamMatch=r.teamMode==='teams'||r.teamMode==='tdm';
   const team=mode==='host'?(r.hostSide==='coral'?1:0):(r.hostSide==='coral'?0:1);
   document.getElementById('mode-label').textContent=teamMatch?'YOU: '+(team===0?'CYAN':'CORAL'):mode==='host'?'HOST MATCH':'JOIN MATCH';
  }
  const skillLabel=document.querySelector('[data-lan-setting="botSkill"]')?.closest?.('label');
- if(skillLabel)skillLabel.hidden=r.botCount===0;
+ if(skillLabel)skillLabel.hidden=r.botCount===0&&!(hostRole&&!connected&&r.teamMode==='tdm');
  const guestPresence=document.getElementById('lan-guest-presence');
- if(guestPresence)guestPresence.textContent=!connected?'WAITING':hostRole?(lanLobby.guestReady?'READY':'NOT READY'):(lanLobby.myReady?'READY':'NOT READY');
+ if(guestPresence)guestPresence.textContent=!connected?'WAITING':hostRole?(lanLobby.guestReady?'READY':'NOT READY'):lanLobby.hostBusy?'HOST IN MATCH':(lanLobby.myReady?'READY':'NOT READY');
  const hostPresence=document.getElementById('lan-host-presence');
  if(hostPresence)hostPresence.textContent=connected?'CONNECTED':'HOSTING';
  const summary=document.getElementById('lan-guest-rules');
  if(summary)summary.textContent=LAN_SIDES[r.teamMode]+' · '+lanDescription(r);
  const problem=r.teamMode==='coop'&&r.botCount===0;
  const message=document.getElementById('lan-lobby-message');
- if(message)message.textContent=problem?'CO-OP REQUIRES AT LEAST ONE BOT':!connected?'WAITING FOR SECOND PHONE':hostRole?lanLobby.guestReady?'BOTH PLAYERS READY · DEPLOY WHEN READY':'WAIT FOR PLAYER TWO TO PRESS READY':lanLobby.myReady?'READY · WAIT FOR HOST TO START':'CHECK RULES, THEN PRESS READY';
- const start=document.querySelector('[data-action="lan-start"]');if(start)start.disabled=!lanCanStart();
- const ready=document.querySelector('[data-action="lan-ready"]');if(ready){ready.disabled=!connected||!lanLobby.hasRules;ready.textContent=lanLobby.myReady?'CANCEL READY':'READY';}
+ if(message)message.textContent=problem?'CO-OP REQUIRES AT LEAST ONE BOT':
+  !connected?(hostRole&&r.teamMode==='tdm'?'ROOM OPEN · START VS BOTS NOW':'WAITING FOR SECOND PHONE'):
+  hostRole?(lanLobby.guestReady?'BOTH PLAYERS READY · DEPLOY WHEN READY':'GUEST NOT READY · WAIT FOR READY'):
+  lanLobby.hostBusy?'HOST IS PLAYING BOTS · WAIT FOR NEXT MATCH':
+  lanLobby.myReady?'READY · WAIT FOR HOST TO START':'CHECK RULES, THEN PRESS READY';
+ const start=document.querySelector('[data-action="lan-start"]');
+ if(start){start.disabled=!lanCanStart();start.textContent=!connected&&r.teamMode==='tdm'?'START VS BOTS':'START MATCH';}
+ const ready=document.querySelector('[data-action="lan-ready"]');
+ if(ready){ready.disabled=!connected||!lanLobby.hasRules||lanLobby.hostBusy===true;ready.textContent=lanLobby.myReady?'CANCEL READY':'READY';}
 }
 function publishLanLobby(){
  if(mode!=='host'||!connected||!lanLobby)return;
@@ -2916,13 +2937,13 @@ function changeLanRule(el){
  refreshLanLobby();publishLanLobby();
 }
 function guestLanReady(){
- if(!lanLobby||mode!=='guest'||!connected||!lanLobby.hasRules)return;
+ if(!lanLobby||mode!=='guest'||!connected||!lanLobby.hasRules||lanLobby.hostBusy)return;
  lanLobby.myReady=!lanLobby.myReady;
  nativePacket({type:'ready',revision:lanLobby.revision,ready:lanLobby.myReady});
  refreshLanLobby();
 }
 function returnToLanRules(){
- if(mode!=='host'||!connected||state.winner<0||lanLobby?.active)return;
+ if(mode!=='host'||(!connected&&state.config?.lanHostSolo!==true)||state.winner<0||lanLobby?.active)return;
  paused=true;neutralizeGuestInput();releaseControls();
  startLanLobby(true);publishLanLobby();
 }
@@ -2932,7 +2953,8 @@ function launchLanMatch(){
  // Lobby 'tdm' maps to the already tested teams/KO scorer at deployment.
  const config={...selectedRules,...r,teamMode:tdm?'teams':r.teamMode,
   lanMode:r.teamMode,lanSquads:tdm||r.teamMode==='teams',lanHostSide:r.hostSide,
-  lanScoredTdm:tdm,lanScoreTarget:r.scoreTarget,lanSeriesRounds:r.rounds,pilotMode:true,
+  lanScoredTdm:tdm,lanScoreTarget:r.scoreTarget,lanSeriesRounds:r.rounds,
+  lanHostSolo:!connected,pilotMode:true,
   matchModeId:tdm?'scored_tdm':null,quickPlayMatch:false,customMatch:false};
  if(config.teamMode==='coop'&&config.botCount===0)return;
  state=initialState(0,config,freshSectorSeed(state?.mazeSeed));
@@ -2941,8 +2963,10 @@ function launchLanMatch(){
  document.getElementById('mode-label').textContent=config.teamMode==='teams'?'YOU: '+(state.config.teamIds[0]===0?'CYAN':'CORAL'):'HOST MATCH';
  refreshHUD();
  // Separate start event precedes the first authoritative snapshot on TCP.
- nativePacket({type:'start',revision:lanLobby.revision});
- nativePacket({type:'state',state:serializeState()});
+ if(connected){
+  nativePacket({type:'start',revision:lanLobby.revision});
+  nativePacket({type:'state',state:serializeState()});
+ }
  exitMenu();audioCue('deploy');notice('NEW FIELD · FIGHT!',1400);
 }
 
@@ -3065,6 +3089,12 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
  case 'found':{const r=document.getElementById('rooms');if(r&&!r.querySelector('[data-host="'+msg.host+'"]')){const b=document.createElement('button');b.textContent='JOIN '+(msg.name||'NEARBY GAME');b.dataset.host=msg.host;b.onclick=()=>{window.AndroidBridge.joinGame(msg.host,msg.port);document.getElementById('find-status').textContent='Connecting...'};r.appendChild(b)}break}
  case 'connected':{
  if(mode!=='host'&&mode!=='guest')break;
+ if(mode==='host'&&state.config?.lanHostSolo===true&&lanLobby&&!lanLobby.active){
+  connected=true;neutralizeGuestInput();remoteReleaseShot=null;
+  nativePacket({type:'lobby',version:1,revision:lanLobby.revision,rules:lanLobby.rules,
+   postMatch:false,hostBusy:true});
+  notice('GUEST CONNECTED · WAITING FOR NEXT MATCH',2300);break;
+ }
  if(mode==='host'){neutralizeGuestInput();lastGuestFireSeq=0;remoteReleaseShot=null;}
  connected=true;paused=true;
  document.getElementById('mode-label').textContent=mode==='guest'?'YOU: CORAL':'YOU: CYAN';
@@ -3079,6 +3109,7 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
  }
  if(msg.revision!==lanLobby.revision)lanLobby.myReady=false;
  lanLobby.revision=msg.revision;lanLobby.rules=sanitizeLanOptions(msg.rules);lanLobby.hasRules=true;
+ lanLobby.hostBusy=msg.hostBusy===true;
  refreshLanLobby();break;}
  case 'ready':{
  if(mode!=='host'||!connected||!paused||!lanLobby||!lanLobby.active||msg.revision!==lanLobby.revision||typeof msg.ready!=='boolean')break;
@@ -3098,9 +3129,9 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
  if(event.kind==='guard')audioCue('barrier',event.x,event.y);
  if(event.kind==='pickup')audioCue('pickup',event.x,event.y);lastRemoteFxId=event.id}}if(state?.matchId!==upcoming.matchId){resultCuePlayed=false;camera.zoom=null;lastRemoteFxId=0;}state=upcoming;setArena(0,state.mazeSeed,state.config?.mapSize);
  document.getElementById('mode-label').textContent=state.config?.teamMode==='teams'?'YOU: '+(teamOf(1,state)===0?'CYAN':'CORAL'):'JOIN MATCH';refreshHUD()}break;
- case 'input':if(mode==='host'&&connected&&!paused&&state.winner<0&&msg.input){guestInput=normalizeLanInput(msg.input);guestInputAge=0;}break;
+ case 'input':if(mode==='host'&&connected&&!paused&&state.winner<0&&state.config?.lanHostSolo!==true&&msg.input){guestInput=normalizeLanInput(msg.input);guestInputAge=0;}break;
  case 'fire-request':{
-  if(mode!=='host'||!connected||paused||state.winner>=0||state.lives[1]<=0||
+  if(mode!=='host'||!connected||paused||state.config?.lanHostSolo===true||state.winner>=0||state.lives[1]<=0||
     msg.matchId!==state.matchId||!Number.isInteger(msg.seq)||
     msg.seq<=lastGuestFireSeq||msg.seq>2147483600)break;
   const x=Number(msg.aimX),y=Number(msg.aimY),len=Math.hypot(x,y);
@@ -3109,8 +3140,15 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
   remoteReleaseShot={x:x/len,y:y/len,ttl:1.6,matchId:state.matchId};
   break;
  }
- case 'interact':if(mode==='host'&&connected&&!paused)tryInteract(1);break;
- case 'disconnected':connected=false;paused=true;lanLobby=null;neutralizeGuestInput();clearStick();notice('Other player disconnected');setPanel('<h2>CONNECTION LOST</h2><p>Return to the main menu and reconnect.</p><button data-action="close">MAIN MENU</button>');break;
+ case 'interact':if(mode==='host'&&connected&&!paused&&state.config?.lanHostSolo!==true)tryInteract(1);break;
+ case 'disconnected':
+  if(mode==='host'&&(lanLobby?.active===true||state.config?.lanHostSolo===true)){
+   connected=false;neutralizeGuestInput();
+   if(lanLobby?.active){lanLobby.guestReady=false;refreshLanLobby();}
+   notice('GUEST LEFT · HOST CONTINUES',2200);break;
+  }
+  connected=false;paused=true;lanLobby=null;neutralizeGuestInput();clearStick();notice('Other player disconnected');
+  setPanel('<h2>CONNECTION LOST</h2><p>Return to the main menu and reconnect.</p><button data-action="close">MAIN MENU</button>');break;
  case 'error':notice(msg.message||'Network error');break;}}};
 resizeArenaCanvas();refreshHUD();requestAnimationFrame(loop);
 })();
