@@ -15,7 +15,7 @@ assert.ok(j.includes('"ready".equals(kind)')&&j.includes('"lobby".equals(kind)')
 const original=fs.readFileSync(path.join(web,'game.js'),'utf8'),close=/\}\)\(\);\s*$/;
 assert.ok(close.test(original),'actual game runtime IIFE found');
 const game=original.replace(close,"window.__lanQA={get mode(){return mode},get paused(){return paused},get connected(){return connected},get lobby(){return lanLobby&&{...lanLobby,rules:{...lanLobby.rules}}},get state(){return state},refresh(){refreshHUD()},snapshot(){return serializeState()},credit(attacker,victim){return creditScoredPilotKO(attacker,victim)}};})();");
-const files={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/game.js':'game.js','/scored-match.js':'scored-match.js','/dossier.js':'dossier.js','/save-backup.js':'save-backup.js'};
+const files={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/game.js':'game.js','/scored-match.js':'scored-match.js','/forward-bays.js':'forward-bays.js','/dossier.js':'dossier.js','/save-backup.js':'save-backup.js'};
 const server=http.createServer((req,resp)=>{let f=files[new URL(req.url,'http://localhost').pathname];if(!f){resp.writeHead(404);resp.end();return}resp.writeHead(200,{'Content-Type':f.endsWith('.js')?'text/javascript':f.endsWith('.css')?'text/css':'text/html'});resp.end(f==='game.js'?game:fs.readFileSync(path.join(web,f)))});
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const url='http://127.0.0.1:'+server.address().port;
