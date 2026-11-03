@@ -196,7 +196,7 @@ function stats(dt,renderDuration){
  if(renderSamples.length>=150)renderSamples.shift();
  frameSamples.push(dt*1000);renderSamples.push(renderDuration);
  frame++;
- if(frame%25!==0)return;
+ if(frame%8!==0)return;
  const fps=frameSamples.length?1000/(frameSamples.reduce((a,b)=>a+b,0)/frameSamples.length):0;
  $('fps').textContent='FPS '+fps.toFixed(1);
  $('render-ms').textContent='CPU submit p95 '+percentile(renderSamples,.95).toFixed(2)+' ms';
@@ -211,6 +211,7 @@ function switchRenderer(next){
  $('use-pixi').classList.toggle('selected',engine==='pixi');
  $('use-canvas').classList.toggle('selected',engine==='canvas');
  frameSamples=[];renderSamples=[];frame=0;prev=0;
+ window.__pixiProbe={...(window.__pixiProbe||{}),ready:!!pixi,engine,frames:0,fps:0,renderP95:0,shots:scene.shots.length,kills:scene.kills,backend:pixi?.app?.renderer?.name||'none'};
 }
 function bindStick(){
  const el=$('stick'),knob=$('knob');
