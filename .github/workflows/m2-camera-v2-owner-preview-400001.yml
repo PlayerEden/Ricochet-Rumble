@@ -38,7 +38,7 @@ jobs:
           test "$GITHUB_REF" = "refs/heads/main"
           test "$GITHUB_RUN_ATTEMPT" = "1"
           test "$GITHUB_RUN_NUMBER" = "1"
-          BASE=973ae099aea9903223ec2d5aaaf7382004cc758e
+          BASE=bcc2c45b69b2b45b8f16da965a627f281dce149c
           git merge-base --is-ancestor "$BASE" HEAD
           # Subsequent docs and this workflow may differ; gameplay, package
           # and test source must still be identical to the reviewed camera PR.
@@ -113,7 +113,7 @@ jobs:
           cp "$apk" dist/sector-rebound-camera-v2-400001.apk
           {
             echo "SOURCE_SHA=$GITHUB_SHA"
-            echo "GAMEPLAY_REVIEWED_SHA=973ae099aea9903223ec2d5aaaf7382004cc758e"
+            echo "GAMEPLAY_REVIEWED_SHA=bcc2c45b69b2b45b8f16da965a627f281dce149c"
             echo "APPLICATION_ID=com.playereden.ricochetrumble.preview"
             echo "VERSION_NAME=0.9.78-camera2.1"
             echo "VERSION_CODE=400001"
