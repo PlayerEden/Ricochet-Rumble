@@ -1,3 +1,11 @@
+# 2026-11-02 — D3-A0 REAL SOURCE IMPLEMENTATION / PURE ROOM CONTROLLER (EXPERIMENT)
+
+**Actual code milestone:** `experiment/lan-room-state-d3-a0` based on exact signed D2 source `333fc9d9ffc5f5ff5e136121217240112def531e`. New `SectorLanRoom` pure immutable room/seat kernel + mirrored Web/Android assets + tests + dedicated CI. [Technical handoff](LAN_ROOM_KERNEL_D3_A0_2026-11-02.md) · [master plan](MASTER_DEVELOPMENT_PLAN_2026-11-02.md). **This is an A0 code foundation, NOT a playable host-alone lobby, spectator, queued guest or APK.** The D2 engine, Java transport, tested v0.9.71 and `main` remain unchanged.
+
+**Next:** await verified CI, then D3-A1 integration to use the AI controller for guest seat 1 in **actual** host combat, remove Ready gate for empty host rooms and keep room alive through match/series. Deliver signed preview only after real game/Android QA, and request one-phone owner feedback. True 2-phone LAN remains physically untested.
+
+---
+
 # 2026-11-02 — C1 MATCH IDENTITIES AND SOLO TEAM SIDE ROTATION
 
 **VERIFIED experimental checkpoint:** [draft PR #95](https://github.com/PlayerEden/Ricochet-Rumble/pull/95) on `experiment/match-identity-colors-c1`, built over B2 v0.9.69. Stable `main` remains unchanged.

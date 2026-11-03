@@ -1,0 +1,56 @@
+name: Sector Rebound - D3-A0 LAN room state and source parity
+on:
+  push:
+    branches: [experiment/lan-room-state-d3-a0]
+    paths:
+      - 'web/**'
+      - 'android/app/src/main/assets/**'
+      - 'tests/**'
+      - '.github/workflows/lan-room-state-d3-a0.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  room-kernel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify mirrored runtime and syntax
+        run: |
+          set -euo pipefail
+          for file in game.js index.html lan-series.js lan-room.js scored-match.js style.css; do
+            cmp "web/$file" "android/app/src/main/assets/$file"
+          done
+          node --check web/lan-room.js
+          node --check web/game.js
+          node --check tests/lan-room-state-d3-a0.mjs
+      - name: Pure D3 room transition and existing D2 regressions
+        run: |
+          node tests/lan-room-state-d3-a0.mjs
+          node tests/lan-series-kernel.mjs
+          node tests/smoke.mjs
+          node tests/scored-match-kernel.mjs
+          node tests/save-backup.mjs
+      - name: Install Chromium test library
+        run: npm install --no-save --ignore-scripts playwright-core@1.56.1
+      - name: Existing two-client LAN, mobile layout and visual regression
+        run: |
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          node tests/lan-lobby-flow-qa.mjs
+          node tests/ui-layout-geometry-v0948.mjs
+          node tests/visual-qa.mjs
+      - name: Archive mobile UI regression screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sector-rebound-d3-a0-ui-qa
+          path: |
+            qa-screens/
+            qa-layout/
+          if-no-files-found: warn
+          retention-days: 14
