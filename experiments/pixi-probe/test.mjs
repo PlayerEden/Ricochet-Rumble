@@ -38,14 +38,14 @@ try {
   assert.ok(await pixiCanvas.isVisible(),'Pixi canvas must be visible');
   const frameBefore=pixi.frames;
   await page.locator('#fire').click({force:true});
-  await page.waitForTimeout(200);
+  await page.waitForFunction(()=>window.__pixiProbe?.shots>=1&&window.__pixiProbe?.frames>0,{timeout:20000});
   pixi=await page.evaluate(()=>window.__pixiProbe);
   assert.ok(pixi.frames>frameBefore,'Pixi draw loop survives control interaction');
   assert.ok(pixi.shots>=1,'player control emitted a projectile');
   const pixiShot=await page.screenshot({path:'qa-results/pixi-probe/pixi-'+width+'x'+height+'.png'});
   assert.ok(pixiShot.byteLength>7000,'Pixi scene screenshot is not empty');
   await page.locator('#use-canvas').click();
-  await page.waitForTimeout(350);
+  await page.waitForFunction(()=>window.__pixiProbe?.engine==='canvas'&&window.__pixiProbe?.frames>=8,{timeout:20000});
   const canvas=await page.evaluate(()=>window.__pixiProbe);
   assert.equal(canvas.engine,'canvas');
   assert.ok(canvas.frames>=10,'Canvas loop should render');
@@ -56,7 +56,7 @@ try {
   await page.waitForTimeout(200);
   assert.equal(await page.locator('#kills').innerText(),'0','reset restores same starting scenario');
   await page.locator('#use-pixi').click();
-  await page.waitForTimeout(180);
+  await page.waitForFunction(()=>window.__pixiProbe?.engine==='pixi'&&window.__pixiProbe?.frames>=8,{timeout:20000});
   assert.equal((await page.evaluate(()=>window.__pixiProbe)).engine,'pixi','repeat switch remains stable');
   assert.deepEqual(errors,[],'no runtime page exceptions');
   results.push({viewport:width+'x'+height,backend:pixi.backend,pixiFrames:pixi.frames,canvasFrames:canvas.frames,
