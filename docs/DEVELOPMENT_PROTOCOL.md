@@ -3,6 +3,8 @@
 > **POST-CONSOLIDATION OVERRIDE (2026-11-02):** After the audited v0.9.75 integration, **`main` (not an old v0.9.21 experimental fallback)** is the primary development source. Before each new D3/M2 task, read [current PROJECT_STATUS](PROJECT_STATUS.md) + [canonical master](MASTER_DEVELOPMENT_PLAN.md) + [archive](ARCHIVE_INDEX.md). Always branch from verified `main` after promotion, use focused PRs and tests. Historical v0.9.21 instructions below remain for source provenance, but no longer define the active baseline; no public release authority is implied. Never close unrelated divergent PRs merely to reduce counts.
 
 
+> **CURRENT MAINLINE POLICY — 2026-11-03:** The owner requests **one active Sector Rebound, not separate ongoing copies**. `main` is canonical source, `docs/PROJECT_STATUS.md` is the short handoff, `docs/ARCHIVE_INDEX.md` records the historical versions. Use small temporary PR branches, merge after QA, and make **one compatible owner preview after a useful group of changes**, rather than a new APK/workflow for every small slice. Preserve existing source/checkpoint hashes and don't mass-close divergent research PRs. Distribution must use the same approved preview package + certificate + increasing code, with exact Android asset parity. A CI debug app with another ID is **not** the owner preview. The owner has deferred two-phone hardware testing, not abandoned LAN. Protect the accepted pilot/tank/mech zooms `0.94/0.73/0.69` and fair AI until new evidence warrants adjustment.
+
 **Maintained with:** [Project Status & Handoff](PROJECT_STATUS.md)  
 **Purpose:** Keep the repo readable, reproducible, and resilient when a ChatGPT conversation ends or an assistant changes.
 
@@ -11,7 +13,7 @@
 - The default-branch `docs/PROJECT_STATUS.md` is the **navigation/status entry point**. Update it whenever current branch, release, validation, blockers, or planned next action changes. It links to the versioned technical/design documents.
 - **Actual tested source and tests** determine what exists. A design Bible is not implementation. A CI pass is not proof of human hardware acceptance.
 - Design decisions belong in `docs/design/`. Audit and acceptance notes belong in `docs/design/reviews/` or a clearly named release QA report. Long-term Play planning belongs in the roadmap. Avoid duplicating full Bibles into README.
-- README on `main` now describes the accepted v0.9.21 development game. Keep it, project status and actual source synchronized after each accepted slice.
+- README on `main` describes the **current consolidated game** and one owner preview; historical v0.9.21 documentation is in the archive. Keep it, project status and actual source synchronized after each accepted slice.
 - If documentation gets behind reality, repair its status **in the same session** as code work, not "next time."
 
 ## Branches and commit discipline
@@ -19,7 +21,7 @@
 1. Preserve v0.9.20 baseline `dev/sector-rebound-integrated-v0920`, v0.9.21 preview `dev/sector-rebound-polish-v0921`, and pre-integration `archive/legacy-main-v063-before-sector-rebound`. Historical PRs #1–#17 are closed after consolidation, but retained for traceability.
 2. Create each new development slice from the **known-good `main`** or another documented accepted baseline. Use descriptive names such as `dev/sector-rebound-quick-play-v0922` for experiments.
 3. Keep code/visual/gameplay changes together only when they form one reviewable feature. Commit scopes plainly; use draft PR until full checks and owner review.
-4. Never discard an earlier working APK. Use annotated notes/release tags for acceptance checkpoints and keep download links pointing to **GitHub Releases**, rather than expiring chat/Actions artifact URLs.
+4. Preserve the last working APK and exact source/checksum in archive history, **without reuploading or maintaining many player-facing copies**. Prefer one current preview download and a permanent verified release artifact when available; old Actions artifacts expire.
 5. For each new feature PR into `main`, review diff/history and source parity, require successful checks, preserve rollback evidence and update README/status as part of acceptance. The exceptional v0.9.21 historical consolidation has already occurred.
 
 ## Definition of done per slice
