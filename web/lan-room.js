@@ -125,7 +125,7 @@ function acceptGuestControl(r,{kind,matchId,revision,seq}={}){
   r.controllers[1]!=='remote'||!KINDS.includes(kind)||
   matchId!==r.matchId||revision!==r.revision||
   !Number.isSafeInteger(seq)||seq<=r.lastPeerSeq||seq>MAX_SEQ)return null;
- return next(r,{lastPeerSeq:seq});
+ return frozen({...r,lastPeerSeq:seq}); // high-frequency input cannot bump room revision
 }
 root.SectorLanRoom=Object.freeze({createRoom,valid,connect,requestQueue,
  cancelQueue,startRound,finishRound,toLobby,disconnect,close,roster,status,acceptGuestControl});

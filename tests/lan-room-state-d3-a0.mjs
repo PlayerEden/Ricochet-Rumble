@@ -88,6 +88,13 @@ refuses(k.acceptGuestControl(human,{kind:'input',matchId:21,revision:human.revis
 refuses(k.acceptGuestControl(human,{kind:'state',matchId:21,revision:human.revision,seq:1}),'guest cannot forge authoritative state');
 let accepted=expectOk(k.acceptGuestControl(human,{kind:'input',matchId:21,revision:human.revision,seq:10}));
 assert.equal(accepted.lastPeerSeq,10);
+assert.equal(accepted.revision,human.revision,'input does not change room revision or require heartbeat sync');
+const seq11=expectOk(k.acceptGuestControl(accepted,{kind:'fire-request',matchId:21,
+ revision:accepted.revision,seq:11}));
+assert.equal(seq11.revision,accepted.revision,'consecutive packets use stable room revision');
+assert.equal(seq11.lastPeerSeq,11);
+refuses(k.acceptGuestControl(seq11,{kind:'interact',matchId:21,revision:seq11.revision,seq:11}),'replayed guest command rejected');
+
 refuses(k.acceptGuestControl(accepted,{kind:'input',matchId:21,revision:accepted.revision,seq:10}),'replayed sequence denied');
 refuses(k.acceptGuestControl(accepted,{kind:'input',matchId:21,revision:accepted.revision,seq:11.5}),'noninteger seq denied');
 assert.equal(k.roster(accepted).humans,2);
