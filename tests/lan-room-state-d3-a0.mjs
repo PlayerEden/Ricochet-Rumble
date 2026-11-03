@@ -11,7 +11,7 @@ vm.runInNewContext(source,context);
 const k=context.SectorLanRoom;
 assert.ok(k,'D3-A0 host-owned room kernel exported');
 function expectOk(r,message){assert.equal(k.valid(r),true,message);return r}
-function sameArray(a,b,message){assert.deepEqual(Array.from(a),b,message)}
+function sameArray(a,b,message){assert.deepEqual(Array.from(a),Array.from(b),message)}
 function refuses(action,message){assert.equal(action,null,message)}
 let cases=0;
 for(const teamSize of [1,2,3])for(const hostSide of ['cyan','coral']){
