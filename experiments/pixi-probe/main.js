@@ -123,83 +123,78 @@ function advance(dt){
  camera.y=clamp(p.y-viewH/2,0,WORLD_HEIGHT-viewH);
  if(keyboard.has(' '))shoot(p);
 }
-function paintTank(c,u){
- c.save();c.translate(u.x,u.y);c.rotate(u.dir);
- c.fillStyle='#0b1a25';c.fillRect(-27,-19,53,38);
- c.fillStyle='#172d39';c.fillRect(-27,-22,53,8);c.fillRect(-27,14,53,8);
- c.fillStyle=u.team===0?colors.cyan:colors.coral;c.fillRect(-21,-14,42,28);
- c.fillStyle='#203d4c';c.fillRect(-18,-10,34,20);
- c.strokeStyle='#9cbdc8';c.lineWidth=2;c.strokeRect(-21,-14,42,28);
- c.restore();
- c.save();c.translate(u.x,u.y);c.rotate(u.a);
- c.fillStyle='#17232e';c.fillRect(-1,-7,36,14);
- c.fillStyle=u.team===0?colors.cyan:colors.coral;c.fillRect(2,-4,32,8);
- c.fillStyle='#bbd8db';c.fillRect(32,-3,6,6);
- c.beginPath();c.arc(0,0,10,0,Math.PI*2);c.fillStyle='#1b3849';c.fill();
- c.strokeStyle='#8faebc';c.lineWidth=2;c.stroke();c.restore();
+// The baseline and Pixi now draw the SAME exact production art textures.
+// Pre-rendering is an optimization applied to BOTH paths, not just Pixi.
+function textureKey(unit){
+ const p=((Math.floor(time*8+unit.x*.01)%4)+4)%4;
+ return unit.team+'-'+unit.type+'-'+p;
 }
 function canvasFrame(){
- ctx.fillStyle='#0d2734';ctx.fillRect(0,0,W,H);
- ctx.strokeStyle='#224252';ctx.lineWidth=1;ctx.beginPath();
- for(let x=0;x<W;x+=48){ctx.moveTo(x,0);ctx.lineTo(x,H);}
- for(let y=0;y<H;y+=48){ctx.moveTo(0,y);ctx.lineTo(W,y);}ctx.stroke();
- for(const w of walls){
-  ctx.fillStyle=colors.wall;ctx.fillRect(w.x,w.y,w.w,w.h);
-  ctx.strokeStyle=colors.trim;ctx.lineWidth=2;ctx.strokeRect(w.x+.5,w.y+.5,w.w-1,w.h-1);
+ ctx.clearRect(0,0,W,H);
+ ctx.save();ctx.scale(camera.zoom,camera.zoom);ctx.translate(-camera.x,-camera.y);
+ ctx.drawImage(floorCanvas,0,0);
+ const units=[...scene.parked,scene.player,...scene.bots];
+ for(let i=0;i<units.length;i++){
+  const u=units[i],image=art[textureKey(u)];
+  ctx.save();ctx.translate(u.x,u.y);ctx.rotate(u.a);
+  if(i<scene.parked.length)ctx.globalAlpha=.58;
+  ctx.drawImage(image,-unitSize/2,-unitSize/2);ctx.restore();
  }
- for(const u of [scene.player,...scene.bots])paintTank(ctx,u);
- for(const b of scene.shots){ctx.fillStyle=b.team===0?'#b7f8ff':'#ffd1b7';ctx.beginPath();ctx.arc(b.x,b.y,5,0,Math.PI*2);ctx.fill();}
-}
-function pixiTank(u){
- const g=new Graphics();
- g.rect(-27,-22,53,44).fill(0x0b1a25);
- g.rect(-27,-22,53,8).rect(-27,14,53,8).fill(0x172d39);
- g.rect(-21,-14,42,28).fill(u.team===0?0x76dce6:0xed947a);
- g.rect(-18,-10,34,20).fill(0x203d4c);
- const barrel=new Graphics().rect(-1,-7,36,14).fill(0x17232e)
-  .rect(2,-4,32,8).fill(u.team===0?0x76dce6:0xed947a)
-  .rect(32,-3,6,6).fill(0xbbd8db)
-  .circle(0,0,10).fill(0x1b3849);
- const pivot=new Container();pivot.addChild(g);
- const turret=new Container();turret.addChild(barrel);
- return {pivot,turret};
+ for(const b of scene.shots){
+  ctx.save();ctx.translate(b.x,b.y);ctx.rotate(Math.atan2(b.vy,b.vx));
+  ctx.drawImage(bulletArt,-38,-20);ctx.restore();
+ }
+ for(const fx of effects){ctx.globalAlpha=Math.max(0,fx.life/fx.maxLife);ctx.fillStyle=TEAM_COLORS[fx.team];ctx.fillRect(fx.x,fx.y,fx.size,fx.size);}
+ ctx.globalAlpha=1;ctx.restore();
 }
 async function makePixi(){
  const app=new Application();
  await app.init({width:W,height:H,preference:'webgl',backgroundColor:BASE_COLOR,antialias:false,resolution:1,autoStart:false});
  $('pixi-host').appendChild(app.canvas);
  app.canvas.style.width='100%';app.canvas.style.height='100%';
- const grid=new Graphics();
- for(let x=0;x<W;x+=48){grid.moveTo(x,0).lineTo(x,H);}
- for(let y=0;y<H;y+=48){grid.moveTo(0,y).lineTo(W,y);}
- grid.stroke({width:1,color:0x224252});app.stage.addChild(grid);
- const board=new Graphics();
- for(const w of walls)board.rect(w.x,w.y,w.w,w.h).fill(0x567789);
- app.stage.addChild(board);
- const units=[pixiTank(scene.player),...scene.bots.map(pixiTank)];
- for(const {pivot,turret} of units){app.stage.addChild(pivot);app.stage.addChild(turret);}
- const bullets=Array.from({length:MAX_SHOTS},()=>new Graphics().circle(0,0,5).fill(0xffffff));
- for(const b of bullets){b.visible=false;app.stage.addChild(b);}
- return {app,units,bullets};
+ unitTextures=Object.fromEntries(Object.entries(art).map(([id,c])=>[id,Texture.from(c)]));
+ projectileTexture=Texture.from(bulletArt);
+ const world=new Container();app.stage.addChild(world);
+ world.addChild(new Sprite(Texture.from(floorCanvas)));
+ const units=Array.from({length:21},()=>{
+  const sprite=new Sprite(unitTextures['0-tank-0']);sprite.anchor.set(.5);
+  sprite.visible=false;world.addChild(sprite);return sprite;
+ });
+ const bullets=Array.from({length:MAX_SHOTS},()=>{
+  const sprite=new Sprite(projectileTexture);
+  sprite.anchor.set(38/64,.5);sprite.visible=false;world.addChild(sprite);return sprite;
+ });
+ const fx=Array.from({length:240},()=>{
+  const item=new Graphics().rect(0,0,4,4).fill(0xffffff);
+  item.visible=false;world.addChild(item);return item;
+ });
+ return {app,world,units,bullets,fx};
 }
 function pixiFrame(){
- const units=[scene.player,...scene.bots];
- for(let i=0;i<units.length;i++){
-  const v=units[i],view=pixi.units[i];
-  view.pivot.position.set(v.x,v.y);view.pivot.rotation=v.dir;
-  view.turret.position.set(v.x,v.y);view.turret.rotation=v.a;
+ const units=[...scene.parked,scene.player,...scene.bots];
+ for(let i=0;i<pixi.units.length;i++){
+  const v=pixi.units[i],u=units[i];v.visible=!!u;if(!u)continue;
+  v.texture=unitTextures[textureKey(u)];v.position.set(u.x,u.y);v.rotation=u.a;
+  v.alpha=i<scene.parked.length?.58:1;
  }
  for(let i=0;i<pixi.bullets.length;i++){
-  const v=pixi.bullets[i],b=scene.shots[i];
-  v.visible=!!b;if(!b)continue;
-  v.position.set(b.x,b.y);v.tint=b.team===0?0xb7f8ff:0xffd1b7;
+  const v=pixi.bullets[i],b=scene.shots[i];v.visible=!!b;if(!b)continue;
+  v.position.set(b.x,b.y);v.rotation=Math.atan2(b.vy,b.vx);
+  v.tint=b.team===0?0xc8f8ff:0xffd1bd;
  }
+ for(let i=0;i<pixi.fx.length;i++){
+  const v=pixi.fx[i],fx=effects[i];v.visible=!!fx;if(!fx)continue;
+  v.position.set(fx.x,fx.y);v.scale.set(fx.size/4);v.alpha=Math.max(0,fx.life/fx.maxLife);
+  v.tint=fx.team===0?0x60dfff:0xffb06e;
+ }
+ pixi.world.scale.set(camera.zoom);
+ pixi.world.position.set(-camera.x*camera.zoom,-camera.y*camera.zoom);
  pixi.app.render();
 }
 function updateHud(){
  if(!scene)return;
  $('kills').textContent=String(scene.kills);$('deaths').textContent=String(scene.deaths);
- $('shots').textContent='Shots '+String(scene.shots.length);
+ $('shots').textContent='SHOTS '+String(scene.shots.length)+' · BOTS '+scene.bots.length;
 }
 function percentile(samples,q){
  if(!samples.length)return 0;
@@ -216,7 +211,7 @@ function stats(dt,renderDuration){
  $('fps').textContent='FPS '+fps.toFixed(1);
  $('render-ms').textContent='CPU submit p95 '+percentile(renderSamples,.95).toFixed(2)+' ms';
  updateHud();
- window.__pixiProbe={ready:!!pixi,engine,frames:frame,fps:fps,renderP95:percentile(renderSamples,.95),shots:scene.shots.length,kills:scene.kills,backend:pixi?.app?.renderer?.name||'none'};
+ window.__pixiProbe={ready:!!pixi,engine,frames:frame,fps,renderP95:percentile(renderSamples,.95),shots:scene.shots.length,kills:scene.kills,bots:scene.bots.length,load,visuals:'production-path-art',backend:pixi?.app?.renderer?.name||'none'};
 }
 function switchRenderer(next){
  if(next==='pixi'&&!pixi)return;
@@ -226,7 +221,7 @@ function switchRenderer(next){
  $('use-pixi').classList.toggle('selected',engine==='pixi');
  $('use-canvas').classList.toggle('selected',engine==='canvas');
  frameSamples=[];renderSamples=[];frame=0;prev=0;
- window.__pixiProbe={...(window.__pixiProbe||{}),ready:!!pixi,engine,frames:0,fps:0,renderP95:0,shots:scene.shots.length,kills:scene.kills,backend:pixi?.app?.renderer?.name||'none'};
+ window.__pixiProbe={...(window.__pixiProbe||{}),ready:!!pixi,engine,frames:0,fps:0,renderP95:0,shots:scene.shots.length,kills:scene.kills,bots:scene.bots.length,load,visuals:'production-path-art',backend:pixi?.app?.renderer?.name||'none'};
 }
 function bindStick(){
  const el=$('stick'),knob=$('knob');
@@ -254,11 +249,14 @@ function bindFire(){
  el.addEventListener('pointerup',e=>{if(pointerId!==e.pointerId)return;pointerId=null;shoot(scene.player);});
  el.addEventListener('pointercancel',e=>{if(pointerId===e.pointerId)pointerId=null;});
 }
+function setLoad(next){load=next;$('use-match').classList.toggle('selected',load==='match');$('use-stress').classList.toggle('selected',load==='stress');reset();}
 function bindControls(){
  bindStick();bindFire();
  $('use-pixi').addEventListener('click',()=>switchRenderer('pixi'));
  $('use-canvas').addEventListener('click',()=>switchRenderer('canvas'));
  $('reset').addEventListener('click',()=>reset());
+ $('use-match').addEventListener('click',()=>setLoad('match'));
+ $('use-stress').addEventListener('click',()=>setLoad('stress'));
  window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault();keyboard.add(k);});
  window.addEventListener('keyup',e=>keyboard.delete(e.key.toLowerCase()));
  document.addEventListener('visibilitychange',()=>{paused=document.hidden;prev=0;});
@@ -273,11 +271,11 @@ function loop(now){
  requestAnimationFrame(loop);
 }
 async function start(){
- reset();bindControls();
+ reset();art=buildUnitArt();floorCanvas=createFieldgridFloor();bulletArt=makeBulletCanvas();bindControls();
  try{
   pixi=await makePixi();
   switchRenderer('pixi');
-  $('notice').textContent='Prototype only • one simulation, two renderers • move left, drag/release FIRE • no network required';
+  $('notice').textContent='FIELDGRID game art & tiled arena • SAME animated units in both renderers • benchmark only';
  }catch(error){
   console.error('Pixi backend unavailable:',error);
   switchRenderer('canvas');
