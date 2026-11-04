@@ -2723,7 +2723,7 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 }
 .after-action .aa-stats span{color:#afc7ce}
 .after-action .aa-stats strong{color:#f5f7f3}
-.after-action .aa-actions{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:7px}
+.after-action .aa-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
 .after-action .aa-actions button{border-radius:4px;min-height:44px}
 .after-action .aa-actions .quick-rematch:not(.hidden){
  background:linear-gradient(#ffcf7e,#e9ab46);border-color:#ffe5aa;
