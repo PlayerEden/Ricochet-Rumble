@@ -27,11 +27,17 @@ Real Android screenshots from two consecutive `SR Hybrid Test` builds proved the
 - [ ] Capture real WebGL/Canvas screenshots and browser checks for menu/card removals, button clicks, lower GPU load and small-phone visibility.
 - [ ] Owner phone approval before merging.
 
-### UIV2-B — Mode selection (planned)
-- Four differentiated core mode cards; compact Practice/Daily/Experimental utility rail; data labels and real modes unchanged; Back must never obscure choices.
+### UIV2-B — Mode selection (implemented, automated QA passed)
+- Four differentiated core mode cards; compact Practice/Daily/Experimental utility rail; data labels and real modes unchanged; Back must never obscure choices. Automated hybrid/browser, game/LAN, Android and visual workflows passed at the UIV2-B checkpoint.
 
-### UIV2-C — Mission Setup (planned)
+### UIV2-C — Mission Setup (implemented in draft; regression QA gate pending)
 - Group field size, bot count, advanced rules and controls into purposeful setup modules; keep native select accessibility and exact current persistence and rules behavior; avoid new settings concepts.
+- [x] Recast Match Settings as MISSION SETUP with Field Parameters, Controls & Feedback (input plus audio/display), and expandable Quick Play Playlist & Advanced Rules.
+- [x] Keep every original field/select/checkbox ID, all five playlist mode values, native `<select>` elements, settings-back / settings-play routing and saved preferences unchanged. No modifications to combat logic, Android bridge, AI or LAN.
+- [x] Keep Back and Start Match in an always-visible footer; scroll content separately on landscape phones without hiding controls or the advanced playlist.
+- [x] Mirror HTML and CSS exactly between `web/` and `android/app/src/main/assets/`.
+- [ ] Pass dedicated real Chromium browser QA at 568×320, 640×360, 740×360, 915×412 and 1280×720, including touch hit tests, scrolling, playlist invalid/valid toggles, rule changes and persistence after Back/Reopen.
+- [ ] Pass full regression/Android bundling and receive physical phone approval before making this production.
 
 ### UIV2-D — LAN / social play (planned)
 - Present Host / Find / Join with network hierarchy and clear two-phone Wi-Fi explanation; leave socket/LAN/spectator state machine untouched.
@@ -67,8 +73,8 @@ Each step: targeted screen-specific real-browser screenshot QA plus existing fas
 | Screen | Identity / treatment | Data/behavior to preserve | Status |
 | --- | --- | --- | --- |
 | Home | Full-screen hangar showcase, warm single Quick Play CTA, quiet nav | Original Canvas vehicle, real button routing, optional Pixi | UIV2-A browser checked, owner reviewed |
-| Mode Select | Four distinctive mission cards + restrained practice/daily/experimental rail | Existing score targets, modes, daily seed and rules | UIV2-B next |
-| Match Settings | Deployment briefing: field/bots above organized rules and controls | Every existing checkbox, playlist, preferences and Start Match | UIV2-C next |
+| Mode Select | Four distinctive mission cards + restrained practice/daily/experimental rail | Existing score targets, modes, daily seed and rules | UIV2-B implemented; automated QA passed |
+| Match Settings | Deployment briefing: field/bots, grouped controls/audio, expandable playlist/rules and persistent launch footer | Every existing checkbox, playlist, preferences and Start Match | UIV2-C implemented in draft; full QA/phone review pending |
 | Local Wi-Fi | Host / Discover / Join screen with clear connection hierarchy | Existing LAN discovery, IP join and team flows | UIV2-D next |
 | Hangar | Real vehicle bay + paint/insignia workbench | `rr-hangar-paint-v1`, selected/locked states, unlock thresholds | UIV2-E implemented, phone acceptance pending |
 | Dossier | Readable operator summary + mode history with always-visible utility footer | `rr-dossier-v1`, backup/restore, record integrity | UIV2-F implemented, phone acceptance pending |
@@ -79,3 +85,7 @@ Each step: targeted screen-specific real-browser screenshot QA plus existing fas
 **Shared style contract:** warm gold = primary commitment and key outcome; pale cyan = telemetry, selection or informational accents; subdued navy = surfaces; light text = essential content; tiny monospace = optional metadata only. Reduce generic full-width rectangles and avoid making every screen look like a dashboard. Respect reduced motion, WebGL failure, accessible focus and meaningful labels.
 
 **Release rules:** only draft PR #140 until targeted real-browser visual QA + existing fast/native/LAN regressions and a **separate test APK** pass. Actual Android owner acceptance is required to promote; no change to production `main`, owner signing, saves, or recommended APK.
+
+## UIV2-C implementation checkpoint (draft PR #140)
+
+Changes are intentionally limited to the original Settings template, its CSS presentation, browser-level QA and this design log. Web and Android package assets are edited in lockstep. The new `mission-setup-screen` makes a distinctly designed deployment briefing while keeping `map-size`, `bot-count`, `lives-choice`, `bullet-cap`, `bot-skill`, all original `pref-*` IDs and `data-playlist-mode` IDs intact. Native storage and match rules remain handled by the untouched game logic. The previous test gate was fully green before UIV2-C changes; the new test gate must be evaluated independently. Do not merge or issue a recommended APK until it passes and the owner reviews a physical phone preview.
