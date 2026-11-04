@@ -208,10 +208,11 @@ try{
   assert.ok(expMode.headerVisible&&expMode.exerciseVisible&&expMode.backVisible&&
     expMode.coreHidden&&expMode.scroll<=3,
     'Field Exercises must replace core modes in-place with no scrolling '+w+'x'+h);
+  await page.screenshot({path:dir+'/mode-density-expanded-'+w+'x'+h+'.png',animations:'disabled'});
   await page.locator('.bay-exercise-fold summary').click();
   assert.ok(await page.locator('.mode-grid').isVisible(),
     'closing experimental mode sheet restores all four core choices');
-  await page.screenshot({path:dir+'/mode-density-expanded-'+w+'x'+h+'.png',animations:'disabled'});
+  await page.screenshot({path:dir+'/mode-density-return-'+w+'x'+h+'.png',animations:'disabled'});
 
   await page.screenshot({path:dir+'/mode-quality-'+w+'x'+h+'.png',animations:'disabled'});
   await page.locator('#menu button[data-action="modes-back"]').click();
