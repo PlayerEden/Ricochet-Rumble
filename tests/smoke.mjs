@@ -2,6 +2,9 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
+// Keep every existing headless gameplay test while running the small UI safety
+// contract first on the same exact PR head.
+import './uiv3-ui-contract.mjs';
 const handlers={},nodes=new Map();
 // Simulate Android WebView local preferences and controls when exercising settings.
 const savedStorage=new Map();let acceptancePlaylistInputs=null,acceptancePlayButtons=null;
