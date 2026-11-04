@@ -138,6 +138,24 @@ function rewardHangarTab(unlocks){
  return unlocks.some(name=>typeof name==='string'&&name.endsWith(' PAINT'))?'paint':
   unlocks.some(name=>typeof name==='string'&&name.endsWith(' INSIGNIA'))?'insignia':'paint';
 }
+// M12 isolated Hangar art study: URL opt-in only, never saved or shipped by default.
+const M12_HANGAR_STUDIES=['warm','blueprint','original'];
+const M12_ART_PARAM=(()=>{
+ try{const value=new URLSearchParams(String(window.location?.search||'')).get('m12Art');
+  return M12_HANGAR_STUDIES.includes(value)?value:null;}catch(_){return null}
+})();
+let m12HangarStudy=M12_ART_PARAM;
+function refreshM12HangarStudy(){
+ const stage=document.querySelector('.hangar-bay'),control=document.querySelector('.m12-art-cycle');
+ if(!stage)return;
+ if(!M12_ART_PARAM){stage.removeAttribute('data-m12-art');if(control)control.hidden=true;return;}
+ stage.dataset.m12Art=m12HangarStudy;
+ if(control){
+  control.hidden=false;control.textContent='ART: '+m12HangarStudy.toUpperCase();
+  control.setAttribute('aria-label','Experimental Hangar background: '+m12HangarStudy+'. Tap to compare another stage');
+  control.setAttribute('aria-pressed',String(m12HangarStudy!=='original'));
+ }
+}
 function openHangar(fromDossier=false,newUnlocks=[]){
  hangarReturnToDossier=!!fromDossier;
  hangarPreviewUnit='tank';
@@ -146,6 +164,7 @@ function openHangar(fromDossier=false,newUnlocks=[]){
  const study=/(?:^|[?&])hangarStudy=blueprint(?:&|$)/.test(String(window.location?.search||''))?'blueprint':'warm';
  const dock=document.querySelector('.hangar-bay');
  if(dock)dock.dataset.hangarStudy=study==='blueprint'?'blueprint':'warm';
+ refreshM12HangarStudy();
  refreshHangar();
  const rewards=Array.isArray(newUnlocks)?newUnlocks.filter(s=>typeof s==='string').slice(0,5):[];
  showHangarTab(rewardHangarTab(rewards));
@@ -3456,7 +3475,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
  if(a==='toggle-sound'||a==='toggle-music'){togglePauseAudio(a==='toggle-sound'?'sound':'music',b);return;}
  if(!['solo','settings-play','practice','cqc','scored_ffa','scored_tdm','custom-play','duel','host','find','custom-preset-save','custom-preset-delete','custom-preset-load','ip-join'].includes(a))
   audioCue(['settings-back','help-back','dossier-back','backup-back','modes-back','custom-back','close','resume'].includes(a)?'ui-back':'ui-select');
- if(a==='lan-retry'){retryLanEndpoint();return;}else if(a==='lan-ready'){guestLanReady();return;}else if(a==='lan-start'){launchLanMatch();return;}else if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest?.('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-preview-unit'){hangarPreviewUnit=hangarPreviewUnit==='tank'?'mech':'tank';drawHangarUnitPreview()}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
+ if(a==='lan-retry'){retryLanEndpoint();return;}else if(a==='lan-ready'){guestLanReady();return;}else if(a==='lan-start'){launchLanMatch();return;}else if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest?.('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-preview-unit'){hangarPreviewUnit=hangarPreviewUnit==='tank'?'mech':'tank';drawHangarUnitPreview()}else if(a==='m12-art-next'){if(M12_ART_PARAM){m12HangarStudy=M12_HANGAR_STUDIES[(M12_HANGAR_STUDIES.indexOf(m12HangarStudy)+1)%3];refreshM12HangarStudy();}return;}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
    const ok=equipPaint(b.dataset.paintId);
    refreshHangar();const status=document.getElementById('hangar-status');
    if(!ok&&status)status.textContent=paintProgress(b.dataset.paintId).eligible?'COULD NOT SAVE PAINT · CURRENT PAINT KEPT':'LOCKED · COMPLETE DOSSIER MILESTONE FIRST';

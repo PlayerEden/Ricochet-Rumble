@@ -270,10 +270,11 @@
 </template>
 <template id="hangar-template">
  <section class="hangar-screen" aria-label="Offline Hangar paint choices">
-  <header class="hangar-head"><div class="hangar-title"><div class="eyebrow">SOLO / CUSTOMIZATION</div><h2>THE <span>HANGAR</span></h2><p>Choose your look</p></div><button type="button" data-action="hangar-back" class="screen-back">← BACK</button></header>
+  <header class="hangar-head"><div class="hangar-title"><div class="eyebrow">SOLO / CUSTOMIZATION</div><h2>THE <span>HANGAR</span></h2><p>Choose your look</p></div><button type="button" class="m12-art-cycle" data-action="m12-art-next" aria-label="Compare experimental Hangar backgrounds" hidden>ART: WARM</button><button type="button" data-action="hangar-back" class="screen-back">← BACK</button></header>
   <div class="hangar-body">
    <section class="hangar-bay" aria-label="Equipped unit preview">
     <div class="hangar-bay-caption"><div class="hangar-preview-title"><span class="sr-kicker">UNIT PREVIEW · COSMETICS</span><strong id="hangar-unit-label">STANDARD / TANK PREVIEW</strong></div><button type="button" class="hangar-unit-toggle" data-action="hangar-preview-unit" aria-label="Preview mech instead of tank">VIEW MECH</button></div>
+    <div class="m12-art-plate" aria-hidden="true"></div>
     <div class="hangar-architecture" aria-hidden="true"></div>
     <canvas id="hangar-unit-preview" width="400" height="240" aria-label="Equipped paint on Sector Rebound tank"></canvas>
     <div class="hangar-bay-foot"><span id="hangar-preview-unit-label">PREVIEW ONLY · COSMETIC</span><span id="hangar-preview-paint">PAINT · STANDARD</span></div>
