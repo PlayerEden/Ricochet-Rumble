@@ -92,3 +92,20 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 }
+// M11 hybrid packaging fail-closed gate. The source repository intentionally
+// stores a Canvas fallback stub. An Android builder MUST first compile the
+// pinned local Pixi library in hybrid-ui. No APK/AAB may carry that stub.
+tasks.register('verifyBundledHybridMenu') {
+    doLast {
+        def asset = file('src/main/assets/hybrid-menu-pixi.bundle.js')
+        if (asset.exists()) {
+            if (asset.length() <= 150000 || !asset.getText('UTF-8').contains('SR_HYBRID_PIXI_V1') ||
+                asset.getText('UTF-8').contains("build:'placeholder'")) {
+                throw new GradleException('Hybrid Pixi bundle is a placeholder or invalid. Run npm --prefix hybrid-ui install --ignore-scripts and npm --prefix hybrid-ui run build before Android packaging.')
+            }
+        }
+    }
+}
+tasks.named('preBuild').configure {
+    dependsOn tasks.named('verifyBundledHybridMenu')
+}
