@@ -1,0 +1,98 @@
+name: Sector Rebound - isolated Hybrid Android test APK
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/m11-hybrid-test-apk.yml'
+      - 'hybrid-ui/**'
+      - 'web/**'
+      - 'android/**'
+      - 'tests/m11-hybrid-menu-qa.mjs'
+      - 'tests/m11-premium-menu-qa.mjs'
+      - 'tools/verify-hybrid-menu-bundle.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sr-hybrid-phone-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-isolated-hybrid:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Prepare only locally bundled Pixi assets
+        run: |
+          set -euo pipefail
+          npm --prefix hybrid-ui install --ignore-scripts --no-audit --no-fund
+          npm --prefix hybrid-ui run build
+          node tools/verify-hybrid-menu-bundle.mjs
+          for f in game.js index.html style.css; do cmp "web/$f" "android/app/src/main/assets/$f"; done
+          node tests/smoke.mjs
+          node tests/save-backup.mjs
+          node tests/android-upgrade-readiness.mjs
+      - name: Install Android platform API 36 and build tools
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" --install "platforms;android-36" "build-tools;35.0.0"
+      - name: Build SR Hybrid Test app with a unique package and disposable CI debug signer
+        working-directory: android
+        run: |
+          set -euo pipefail
+          gradle --no-daemon :app:assembleDebug -PsrHybridLabPackage=true
+      - name: Verify package, label, APK signer, offline Pixi bytes, and opt-in launch URL
+        run: |
+          set -euo pipefail
+          apk="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$apk"
+          node tools/verify-hybrid-menu-bundle.mjs --apk="$apk"
+          aapt="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/aapt"
+          signer="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/apksigner"
+          "$signer" verify --min-sdk-version 26 --print-certs "$apk" > /tmp/sr-hybrid-test-cert.txt
+          line="$("$aapt" dump badging "$apk" | head -n 1)"
+          [[ "$line" == *"name='com.playereden.ricochetrumble.hybridtest'"* ]] || { echo "FAIL unexpected package: $line"; exit 1; }
+          "$aapt" dump badging "$apk" | grep -F "application-label:'SR Hybrid Test'"
+          unzip -p "$apk" classes.dex | strings | grep -F 'index.html?hybridMenu=1'
+          # The ordinary game and owner preview package IDs must never be delivered.
+          [[ "$line" != *"name='com.playereden.ricochetrumble.preview'"* ]]
+          [[ "$line" != *"name='com.playereden.ricochetrumble'"* ]]
+          mkdir -p dist
+          cp "$apk" dist/SR-Hybrid-Test.apk
+          hash="$(sha256sum dist/SR-Hybrid-Test.apk | awk '{print $1}')"
+          sed -nE 's/.*Signer #1 certificate SHA-256 digest: ([a-fA-F0-9:]+).*$/\1/p' /tmp/sr-hybrid-test-cert.txt > dist/certificate-sha256.txt
+          {
+            echo "SOURCE_SHA=$GITHUB_SHA"
+            echo "PACKAGE=com.playereden.ricochetrumble.hybridtest"
+            echo "LAUNCHER=SR Hybrid Test"
+            echo "LAUNCH_URL=file:///android_asset/index.html?hybridMenu=1"
+            echo "APK_SHA256=$hash"
+            echo "SIGNER=DISPOSABLE_CI_DEBUG_ONLY"
+            echo "CAN_COEXIST_WITH=Sector Rebound,SR Pixi Premium,owner preview"
+            echo "NO_PRODUCTION_SIGNER_OR_OWNER_SAVE_ACCESS"
+            echo "PHONE_INSTALL_AND_GPU_PERFORMANCE_NOT_YET_TESTED"
+          } > dist/verification.txt
+          echo "SR_HYBRID_PHONE_APK_VERIFIED $hash"
+      - name: Upload only the isolated test app and verification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: SR-Hybrid-Test-APK-${{ github.run_id }}
+          path: dist/
+          retention-days: 14
+          if-no-files-found: error
