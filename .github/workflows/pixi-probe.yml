@@ -29,7 +29,7 @@ jobs:
           test -s experiments/pixi-probe/dist/bundle.js
           ! grep -qE 'https?://' experiments/pixi-probe/index.html || exit 1
           node --check experiments/pixi-probe/test.mjs
-      - name: Browser QA: layered art, zoom, VFX, stress and fallback
+      - name: Browser QA - layered art, zoom, VFX, stress and fallback
         run: |
           set -euo pipefail
           export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
