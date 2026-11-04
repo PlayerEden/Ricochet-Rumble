@@ -103,7 +103,11 @@
   </main>
 <template id="modes-template">
  <section class="mode-screen" aria-label="Choose a game mode">
-  <header class="mode-head"><div class="eyebrow">SOLO PLAY</div><h2>CHOOSE <span>MODE</span></h2><p>Every match generates a new arena.</p></header>
+  <header class="mode-head">
+   <div class="mode-header-copy"><div class="eyebrow">SOLO PLAY</div><h2>CHOOSE <span>MODE</span></h2><p>Every match generates a new arena.</p></div>
+   <canvas id="menu-preview" class="mode-vehicle-preview" width="240" height="110" aria-hidden="true"></canvas>
+   <button type="button" class="mode-back" data-action="modes-back" aria-label="Back to main menu">← BACK</button>
+  </header>
   <div class="mode-grid" aria-label="Core field operations">
    <button type="button" class="mode-mission mode-cqc" data-action="cqc"><span class="mode-icon" aria-hidden="true">⌖</span><span class="mode-copy"><span class="mode-serial">01 / CLOSE-RANGE</span><strong>CLOSE QUARTERS</strong><small>PILOTS ONLY · 10 KOs</small></span><span class="mode-arrow" aria-hidden="true">›</span></button>
    <button type="button" class="mode-mission mode-ffa" data-action="scored_ffa"><span class="mode-icon" aria-hidden="true">◎</span><span class="mode-copy"><span class="mode-serial">02 / FREE ENGAGEMENT</span><strong>FREE-FOR-ALL</strong><small>VEHICLE COMBAT · 10 KOs</small></span><span class="mode-arrow" aria-hidden="true">›</span></button>
@@ -115,7 +119,7 @@
    <button type="button" class="daily-launch" data-action="daily"><strong>DAILY SECTOR</strong><span>DAILY MAP · LOCAL BEST</span></button>
   </div>
   <details class="bay-exercise-fold"><summary>FIELD EXERCISES · EXPERIMENTAL</summary><button type="button" class="bay-exercise-launch" data-action="forwardbay">FORWARD BAYS · 2 TEAMS / VEHICLE DEPOTS</button><button type="button" class="bay-exercise-launch" data-action="ctf">CAPTURE THE FLAG · PILOTS CARRY / 3 FLAGS</button></details>
-  <button type="button" class="mode-back" data-action="modes-back">BACK TO MENU</button>
+
  </section>
 </template>
 <template id="help-template">
