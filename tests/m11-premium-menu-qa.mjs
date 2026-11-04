@@ -129,7 +129,7 @@ try{
   assert.ok(dossier.workspace.bottom<=dossier.footer.y+2,'Dossier stats cannot overlap footer');
   for(const item of dossier.buttons){
    assert.ok(item.rect.x>=0&&item.rect.right<=w+1&&item.rect.bottom<=h+1,
-    'Dossier action clipped: '+item.name+' at '+w+'x'+h);
+    'Dossier action clipped: '+item.name+' at '+w+'x'+h+' '+JSON.stringify({item,dossier}));
    assert.equal(item.hit,item.name,'Dossier action must remain tappable: '+item.name);
    assert.ok(item.rect.height>=31,'Dossier action thumb target too small');
   }
