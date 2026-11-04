@@ -38,4 +38,12 @@ Install the verified experimental APK, play 5-bot and 18-bot loads with FX ON/OF
 
 ## Verified results
 
-Pending latest experimental GitHub Actions run and Android artifact; update only when all checks complete.
+**All applicable checks PASS** on tested code commit `79ebb4d7087a00ccdea6296e9847398f57c7c3a5`.
+
+- [**Pixi FX Lab / real browser + Android CI PASS #41746991009**](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41746991009): 3/3 landscape viewports (568×320, 740×360, 915×412), PixiJS WebGL and Canvas2D functionality, 5-bot and 18-bot load checks, player fire/reset, renderer toggles, simulated FX showcase, and frozen-state Pixi FX ON vs OFF screenshots (visually different inside the canvas). FX OFF has zero enhanced sprites. No runtime errors.
+- [**Unchanged mainline fast regression PASS #41746991024**](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41746991024).
+- Native Gradle **BUILD SUCCESSFUL** and independent Android package verified as `com.playereden.ricochetrumble.pixifx` with launcher label `SR Pixi FX` and exact offline asset parity. Uses only ephemeral CI debug signer, not the owner's saved-data compatible certificate.
+- [**Download separate SR Pixi FX test APK artifact (ZIP)**](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41746991009/artifacts/13284182443). Extract `app-debug.apk` and install alongside normal Sector Rebound and original SR Pixi Test.
+- [**Download browser evidence / FX ON-OFF screenshots (ZIP)**](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41746991009/artifacts/13284047625). Contains paired PNGs and measured CPU submit p95, not actual phone GPU timing.
+
+**No migration decision:** Physical one-phone FX quality, performance, comfort, longer-session heat and battery tests remain unverified. The current game APK v0.9.80-main.1 remains the owner preview. The experimental PR is draft and must not be merged to `main` automatically.
