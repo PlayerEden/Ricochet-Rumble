@@ -1,28 +1,20 @@
 // Premium FIELDGRID showpiece - an isolated experiment, not the live game's UI.
 // WebGL GLSL shader is applied only to a small holographic panel; real controls
 // stay accessible HTML/CSS. No network assets or production save writes.
-import {Container,Graphics,Sprite,Texture,Filter,GlProgram} from 'pixi.js';
-const VERTEX=[
-'in vec2 aPosition;','out vec2 vTextureCoord;',
-'uniform vec4 uInputSize;','uniform vec4 uOutputFrame;','uniform vec4 uOutputTexture;',
-'void main(void){','vec2 p=aPosition*uOutputFrame.zw+uOutputFrame.xy;',
-'p.x=p.x*(2.0/uOutputTexture.x)-1.0;',
-'p.y=p.y*(2.0*uOutputTexture.z/uOutputTexture.y)-uOutputTexture.z;',
-'gl_Position=vec4(p,0.0,1.0);',
-'vTextureCoord=aPosition*(uOutputFrame.zw*uInputSize.zw);','}'
-].join('\n');
-const FRAGMENT=[
-'precision highp float;','in vec2 vTextureCoord;','out vec4 finalColor;','uniform sampler2D uTexture;',
-'uniform vec4 uInputSize;','uniform float uTime;','uniform float uStrength;',
-'void main(void){','vec2 uv=vTextureCoord;',
-'float wave=sin(uv.y*56.0+uTime*2.4)*sin(uv.y*16.0-uTime*1.5);',
-'uv.x+=wave*0.0024*uStrength;','vec4 c=texture(uTexture,uv);',
-'float scan=0.86+0.14*sin(uv.y*uInputSize.y*0.47+uTime*7.5);',
-'float band=smoothstep(0.93,1.0,sin(uv.y*8.0-uTime*0.85));',
-'c.rgb*=mix(1.0,scan,uStrength);',
-'c.rgb+=vec3(0.00,0.065,0.08)*band*uStrength*c.a;',
-'finalColor=c;','}'
-].join('\n');
+import {Container,Graphics,Sprite,Texture,DisplacementFilter,NoiseFilter} from 'pixi.js';
+// A GPU displacement map is built locally and reused by Pixi's WebGL shader.
+// The transform changes slightly each frame, keeping the source hologram legible.
+function makeMap(){
+ const c=document.createElement('canvas');c.width=c.height=128;
+ const x=c.getContext('2d'),im=x.createImageData(128,128);
+ for(let y=0;y<128;y++)for(let px=0;px<128;px++){
+  const index=(y*128+px)*4;
+  im.data[index]=128+Math.round(24*Math.sin(y*.22+px*.022));
+  im.data[index+1]=128+Math.round(17*Math.cos(y*.16+px*.035));
+  im.data[index+2]=128;im.data[index+3]=255;
+ }
+ x.putImageData(im,0,0);return Texture.from(c);
+}
 const cyan=0x70e4f2,warm=0xe2ba78;
 const line=(g,x,y,u,v,c,w=1,a=1)=>g.moveTo(x,y).lineTo(u,v).stroke({color:c,width:w,alpha:a});
 function makeHolo(){
@@ -82,17 +74,23 @@ export class PremiumStage{
   this.comms.addChild(housing);
   this.holo=new Sprite(makeHolo());this.holo.position.set(741,79);this.holo.width=185;this.holo.height=118;
   this.comms.addChild(this.holo);this.stage.addChild(this.comms);
-  this.shader=null;this.shaderOk=false;
+  this.shader=null;this.shaderOk=false;this.noise=null;
   try{
-   this.shader=Filter.from({gl:{fragment:FRAGMENT},
-    resources:{fxUniforms:{uTime:{value:0,type:'f32'},uStrength:{value:1,type:'f32'}}}});
-   this.holo.filters=[this.shader];this.shaderOk=true;
-  }catch(error){console.warn('Premium GLSL hologram disabled',error);}
+   this.displacementMap=new Sprite(makeMap());
+   this.displacementMap.position.set(741,79);
+   this.displacementMap.width=185;this.displacementMap.height=118;
+   this.displacementMap.renderable=false;
+   this.stage.addChild(this.displacementMap);
+   this.shader=new DisplacementFilter({sprite:this.displacementMap,scale:{x:3.2,y:1.6}});
+   this.noise=new NoiseFilter({noise:.045,seed:.27});
+   this.holo.filters=[this.shader,this.noise];this.shaderOk=true;
+  }catch(error){console.warn('GPU hologram filters unavailable',error);this.holo.filters=null;}
  }
  setMode(mode){this.mode=mode;this.stage.visible=mode!=='combat';}
  setQuality(quality){
   this.quality=quality;this.glow.visible=quality==='cinematic';
   if(this.shader)this.shader.enabled=quality==='cinematic';
+  if(this.noise)this.noise.enabled=quality==='cinematic';
  }
  update(dt){
   if(!this.stage.visible)return;
@@ -101,7 +99,12 @@ export class PremiumStage{
   this.hero.position.y=253+Math.sin(this.t*1.2)*3;
   this.gun.position.x=-2*Math.max(0,Math.sin(this.t));
   this.glow.alpha=.78+.19*Math.sin(this.t*.8);
-  if(this.shader?.enabled)this.shader.resources.fxUniforms.uniforms.uTime=this.t;
+  if(this.shader?.enabled){
+   this.shader.scale.x=3.0+Math.sin(this.t*2.1)*1.15;
+   this.shader.scale.y=1.5+Math.cos(this.t*1.3)*.45;
+   this.displacementMap.position.y=79+Math.sin(this.t*1.6)*4;
+   this.noise.seed=(Math.sin(this.t*.7)+1)*.5;
+  }
  }
  get status(){return {view:this.mode,quality:this.quality,shader:!!this.shader?.enabled&&this.shaderOk};}
 }
