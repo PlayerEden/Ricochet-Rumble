@@ -3491,7 +3491,7 @@ resizeArenaCanvas();refreshHUD();requestAnimationFrame(loop);
 // M11-A is opt-in while staged. No new requests, GPU contexts or dependencies
 // in the ordinary owner preview. A local, offline Pixi bundle is built and
 // checked by hybrid-ui/ before this flag may be enabled by default.
-if(new URLSearchParams(window.location.search).get('hybridMenu')==='1'){
+if(/(?:\?|&)hybridMenu=1(?:&|$)/.test(String(window.location?.search||''))){
  const optionalScript=document.createElement('script');
  optionalScript.src='hybrid-menu-pixi.bundle.js';
  optionalScript.async=true;
