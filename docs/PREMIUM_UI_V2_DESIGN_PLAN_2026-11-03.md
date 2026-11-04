@@ -63,7 +63,7 @@ Real Android screenshots from two consecutive `SR Hybrid Test` builds proved the
 - [x] Pin the footer actions inside visible panel bounds and prevent Dossier content from overlapping them; verify actions by actual Chromium hit-test at phone sizes.
 - [ ] Owner phone acceptance for 568×320 and 740×360, including backup flow.
 
-### UIV2-G — Pause / Results / Help (visual implementation in draft; QA pending)
+### UIV2-G — Pause / Results / Help (automated QA passed at `0e7e20c`, phone review pending)
 - [x] Refine compact Pause dialogs, warm Resume hierarchy and existing audio toggles without altering any Solo, Host or Guest handlers.
 - [x] Refine actual After Action score/result presentation, preserving all values, dynamic rewards, Next Match, rules and Menu actions.
 - [x] Keep the four Help instructions and both details sections, while pinning Try Practice and Back outside a scrollable guide.
@@ -109,3 +109,7 @@ Local Wi-Fi remains native-Android only: Chromium QA uses a small stub bridge fo
 ## UIV2-D recovery + UIV2-G checkpoint
 
 This pass changes presentation-only HTML/CSS and the rendered markup of existing native connection recovery screens. Network and scoring data, save format, native bridge APIs, host/guest authority and game state transitions remain unchanged. Both real web and packaged Android assets are mirrored. The browser QA uses stub bridge actions to verify screen and action routing, not as a two-phone network acceptance test. Physical phone review remains outstanding.
+
+## Consolidated cross-screen audit — 2026-11-04
+
+See [`PREMIUM_UI_V2_CROSS_SCREEN_AUDIT_2026-11-04.md`](PREMIUM_UI_V2_CROSS_SCREEN_AUDIT_2026-11-04.md) for reviewed real Chromium screenshots, nine successful CI workflow links, the small-landscape legibility watch item, the scroll-clipping diagnostic correction and physical-Android acceptance checklist. A QA-only patch adds painted-geometry clipping and makes future diagnostic failures CI-blocking; it does not change the player-facing game.
