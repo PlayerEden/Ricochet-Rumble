@@ -94,7 +94,7 @@ function refreshHangar(){
  const emblemStatus=document.getElementById('emblem-status');
  if(emblemStatus)emblemStatus.textContent='EQUIPPED · '+OPERATOR_EMBLEMS[equippedEmblem].label;
  const detailIcon=document.getElementById('insignia-detail-use');
- if(detailIcon)detailIcon.setAttribute('href','#sr-mark-'+equippedEmblem.slice(5));
+ if(typeof detailIcon?.setAttribute==='function')detailIcon.setAttribute('href','#sr-mark-'+equippedEmblem.slice(5));
  const detailName=document.getElementById('insignia-detail-name');
  if(detailName)detailName.textContent=OPERATOR_EMBLEMS[equippedEmblem].label;
  const nextProgress=document.getElementById('insignia-next-progress');
