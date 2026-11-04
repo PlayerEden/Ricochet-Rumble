@@ -2733,3 +2733,73 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 .after-action .aa-note{color:#a4bfc6}
 @media(max-width:600px){.after-action .aa-rail span:last-child{display:inline-block}}
 @media(prefers-reduced-motion:reduce){.after-action button,.help-footer button{animation:none;transition:none}}
+
+
+/* UIV2-H / owner phone feedback: Mode Selection looked magnified compared
+   with Home (1536x674 device capture). Tighten only visual density, retaining
+   2x2 mode identity, readable labels and 44 CSS-pixel touch actions. */
+#menu #panel:has(.mode-screen){
+ width:min(720px,calc(100vw - 30px));
+ max-height:calc(100dvh - 26px);
+ padding:clamp(8px,1.2dvh,13px) clamp(11px,1.5vw,18px);
+ border-radius:5px;
+}
+#menu .mode-screen{gap:clamp(4px,.8dvh,7px)}
+#menu .mode-head{
+ position:sticky;top:0;z-index:3;
+ gap:2px;padding:1px 0 5px;
+ background:#142934;
+ border-bottom:1px solid #6e8a9144;
+}
+#menu .mode-head .eyebrow{
+ font-size:clamp(9px,.96vw,10px);letter-spacing:.11em;
+}
+#menu .mode-head h2{
+ font-size:clamp(21px,3.8dvh,29px);
+ line-height:1.05;letter-spacing:.014em;
+}
+#menu .mode-head p{font-size:clamp(10px,1vw,11px);line-height:1.15}
+#menu .mode-grid{gap:clamp(5px,.7vw,8px)}
+#menu #panel .mode-grid button.mode-mission{
+ min-height:clamp(48px,10dvh,62px);
+ padding:clamp(4px,.72dvh,7px) clamp(7px,.9vw,10px);
+ grid-template-columns:clamp(26px,4.9dvh,32px) minmax(0,1fr) 8px;
+ column-gap:clamp(6px,.8vw,9px);
+}
+#menu .mode-grid .mode-icon{
+ width:clamp(26px,4.9dvh,32px);
+ height:clamp(26px,4.9dvh,32px);
+ font-size:clamp(16px,3dvh,21px);
+}
+#menu .mode-grid strong{font-size:clamp(12px,1.2vw,14px);line-height:1.08}
+#menu .mode-grid small{font-size:clamp(9px,.95vw,10px);line-height:1.1}
+#menu .mode-serial{font-size:clamp(8px,.8vw,9px);letter-spacing:.065em}
+#menu .mode-arrow{font-size:16px}
+#menu #panel .mode-secondary-actions>button{
+ min-height:44px;padding:5px 9px;gap:2px;
+}
+#menu .mode-secondary-actions :is(.practice-launch,.daily-launch) strong{
+ font-size:clamp(11px,1.2vw,13px);
+}
+#menu .mode-secondary-actions :is(.practice-launch,.daily-launch) span{
+ font-size:clamp(9px,.85vw,10px);
+}
+#menu .bay-exercise-fold>summary{
+ display:flex;align-items:center;min-height:44px;
+ padding:6px 10px;font-size:clamp(10px,.95vw,11px);
+}
+#menu #panel .bay-exercise-launch{
+ min-height:44px;padding:6px 9px;font-size:clamp(10px,.95vw,11px);
+}
+#menu #panel:has(.mode-screen) .mode-back{
+ min-height:44px;font-size:clamp(11px,1.15vw,13px);
+}
+@media(max-height:360px) and (orientation:landscape){
+ #menu #panel:has(.mode-screen){padding:7px 11px}
+ #menu .mode-screen{gap:4px}
+ #menu .mode-head{padding-bottom:3px}
+ #menu .mode-head p{display:none}
+ #menu .mode-head h2{font-size:22px}
+ #menu #panel .mode-grid button.mode-mission{min-height:48px;padding:4px 7px}
+ #menu .mode-grid .mode-icon{width:26px;height:26px}
+}

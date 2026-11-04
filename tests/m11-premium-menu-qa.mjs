@@ -163,6 +163,37 @@ try{
     'core mode buttons retain tappable sizes and actual hit targets at '+w+'x'+h);
   assert.equal(modeInfo.backPosition,'static','Back must not cover experimental modes during scrolling');
   assert.ok(modeInfo.panelBounds.x>=-1&&modeInfo.panelBounds.right<=w+1,'mode selection must not clip screen width');
+  const density=await page.evaluate(()=>{
+    const panel=document.querySelector('#panel'),title=panel.querySelector('.mode-head h2'),
+      back=panel.querySelector('.mode-back'),summary=panel.querySelector('.bay-exercise-fold summary'),
+      cards=[...panel.querySelectorAll('.mode-grid .mode-mission')];
+    const rect=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,right:r.right,bottom:r.bottom};};
+    return {panel:rect(panel),title:rect(title),back:rect(back),summary:rect(summary),
+      cards:cards.map(rect),scrollHeader:getComputedStyle(panel.querySelector('.mode-head')).position};
+  });
+  assert.ok(density.panel.w<=Math.min(730,w)+1,
+    'Mode Select should use a restrained 720px panel instead of filling the entire viewport');
+  assert.ok(density.title.h<=36,
+    'Mode Select heading should be smaller than the hero heading, not oversized');
+  assert.ok(density.cards.every(c=>c.h>=44&&c.h<=65),
+    'Mode cards should be compact yet remain finger-sized');
+  assert.ok(density.back.h>=43.5&&density.summary.h>=43.5,
+    'Back and experimental disclosure remain full-size touch targets');
+  assert.equal(density.scrollHeader,'sticky',
+    'expanded exercises should not scroll the entire mode title away');
+  await page.locator('.bay-exercise-fold summary').click();
+  await page.locator('.bay-exercise-fold button[data-action="ctf"]').scrollIntoViewIfNeeded();
+  const expMode=await page.evaluate(()=>{
+    const p=document.querySelector('#panel').getBoundingClientRect(),
+      h=document.querySelector('.mode-head').getBoundingClientRect(),
+      b=document.querySelector('.bay-exercise-fold button[data-action="ctf"]').getBoundingClientRect();
+    return {headerVisible:h.top>=p.top-3&&h.bottom<=p.bottom+1,
+      exerciseVisible:b.top>=p.top-1&&b.bottom<=p.bottom+1};
+  });
+  assert.ok(expMode.headerVisible&&expMode.exerciseVisible,
+    'expanded field exercises are scroll-reachable without losing the heading');
+  await page.screenshot({path:dir+'/mode-density-expanded-'+w+'x'+h+'.png',animations:'disabled'});
+
   await page.screenshot({path:dir+'/mode-quality-'+w+'x'+h+'.png',animations:'disabled'});
   await page.locator('#menu button[data-action="modes-back"]').click();
   await page.waitForFunction(()=>window.__SRHybridMenu?.active,null,{timeout:15000});
