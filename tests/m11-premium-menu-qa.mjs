@@ -7,6 +7,9 @@ import http from 'node:http';
 import {chromium} from 'playwright-core';
 assert.ok(process.env.CHROME_BIN,'Chromium required');
 const root=path.resolve('web'),issues=[],requests=[];
+const graphicsSource=fs.readFileSync('hybrid-ui/src/menu.js','utf8');
+assert.ok(!graphicsSource.includes('MBT // LIVE'),'fake mini-tank telemetry hologram must stay removed');
+assert.ok(!graphicsSource.includes('function holoTexture('),'old duplicate tank drawing must not return');
 const allowed=new Set(['index.html','style.css','game.js','save-backup.js','dossier.js',
  'scored-match.js','forward-bays.js','lan-series.js','lan-room.js',
  'ctf-rules.js','ctf-ai.js','hybrid-menu-pixi.bundle.js']);
@@ -47,6 +50,14 @@ try{
     playHit:hittest(play),modeHit:hittest(mode),engine:window.__SRHybridMenu.backend};
   });
   assert.equal(g.engine,'webgl');
+  assert.equal(await page.locator('.home-stage-title').count(),0,
+    'no bottom-right unit caption in premium main menu');
+  assert.equal(await page.locator('#home-unit-name').count(),0,
+    'no secondary ARMORED RESPONSE box or hidden anchor');
+  assert.equal(await page.locator('#home-unit-type').count(),0,
+    'no duplicated field-unit label');
+  assert.equal(await page.locator('.home-stage').evaluate(el=>el.textContent.includes('ARMORED RESPONSE')),
+    false,'main stage must contain no unwanted field-unit subtitle');
   assert.equal(g.headline,true,'title must be visible');
   assert.match(g.brand,/SECTOR\s+REBOUND/);
   assert.ok(g.title.h>=40&&g.motto.h>=8,'premium headline/tagline must be readable');
