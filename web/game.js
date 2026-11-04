@@ -51,7 +51,7 @@ function drawHangarUnitPreview(){
   c.strokeStyle='rgba(124,194,201,.20)';c.lineWidth=1.3;
   c.beginPath();c.ellipse(x,y,Math.min(width*.32,height*.44),Math.min(width*.32,height*.44),0,0,Math.PI*2);c.stroke();
   c.save();c.translate(x,y);c.rotate(-.24);
-  const scale=Math.max(1.45,Math.min(3.45,Math.min(width/160,height/78)));
+  const scale=Math.max(1.45,Math.min(4.5,Math.min(width/130,height/75)));
   c.scale(scale,scale);
   drawTopTank(c,'#6bcde0',false,0,0,0,0,equippedPaint);
   c.restore();
