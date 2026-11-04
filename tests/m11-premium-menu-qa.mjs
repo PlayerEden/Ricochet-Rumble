@@ -101,6 +101,30 @@ try{
   assert.ok(hangar.previewWidth>=120,'Hangar canvas has readable pixel dimensions');
   assert.ok(hangar.panel.x>=0&&hangar.panel.right<=w+1&&hangar.panel.bottom<=h+1);
   assert.ok(hangar.hero.x>=0&&hangar.hero.right<=w+1&&hangar.hero.bottom<=h+1);
+  // M1: only the true equipped item receives a check, the active tab uses
+  // an underline, and all dock staging stays invisible to the touch layer.
+  const premiumHangar=await page.evaluate(()=>{
+    const stage=document.querySelector('.hangar-bay'),
+      selected=document.querySelector('.hangar-grid button.selected'),
+      tab=document.querySelector('.hangar-tabs button[aria-selected="true"]'),
+      foot=document.querySelector('.hangar-bay-foot');
+    return {
+      dockPointer:getComputedStyle(stage,'::after').pointerEvents,
+      dockGraphic:getComputedStyle(stage,'::after').content,
+      equippedChecks:document.querySelectorAll('.hangar-grid button.selected').length,
+      equippedMark:selected?getComputedStyle(selected,'::after').content:'',
+      tabCount:document.querySelectorAll('.hangar-tabs button[aria-selected="true"]').length,
+      tabUnderline:tab?getComputedStyle(tab).borderBottomWidth:'',
+      footer:foot?.textContent||''
+    };
+  });
+  assert.equal(premiumHangar.dockPointer,'none','Decorative dock cannot steal touch');
+  assert.notEqual(premiumHangar.dockGraphic,'none','Premium Hangar includes a procedural dock');
+  assert.equal(premiumHangar.equippedChecks,1,'Exactly one paint is equipped');
+  assert.ok(premiumHangar.equippedMark.includes('✓'),'Equipped paint receives one check');
+  assert.equal(premiumHangar.tabCount,1,'Exactly one Hangar category is active');
+  assert.ok(parseFloat(premiumHangar.tabUnderline)>=2,'Active tab uses underline');
+  assert.match(premiumHangar.footer,/PREVIEW ONLY/,'Unit preview never claims a match selection');
   await page.screenshot({path:dir+'/hangar-quality-'+w+'x'+h+'.png',animations:'disabled'});
   // UIV3-J4: switch between actual tank and mech art without altering paint.
   assert.equal(await page.locator('#hangar-unit-preview').getAttribute('data-unit'),'tank');
