@@ -138,34 +138,68 @@
  </section>
 </template>
 <template id="settings-template">
-  <div class="settings-head"><div class="eyebrow">FIELDGRID // DEPLOYMENT</div><h2>MATCH <span>SETTINGS</span></h2><p>Set up your Quick Play rotation and controls.</p></div>
-  <div class="settings-grid settings-page">
-    <label>FIELD SIZE<select id="map-size"><option value="small">QUICK · CLOSE COMBAT</option><option value="standard">STANDARD</option><option value="large">WIDE · EXPLORE</option></select></label>
-    <label>BOTS<select id="bot-count"><option value="0">0 · PRACTICE</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>
-    
-  </div>
-  <details class="extra-rules"><summary>PLAYLIST &amp; ADVANCED RULES <span>QUICK PLAY ROTATION</span></summary>
-    <div class="settings-grid settings-page">
+ <section class="mission-setup-screen" aria-label="Mission setup and match settings">
+  <header class="settings-head mission-setup-head">
+   <div><div class="eyebrow">FIELDGRID / SOLO DEPLOYMENT</div><h2>MISSION <span>SETUP</span></h2><p>Configure your Quick Play deployment.</p></div>
+   <span class="mission-setup-tag">OFFLINE / LOCAL</span>
+  </header>
+  <div class="mission-setup-body">
+   <section class="mission-module mission-field" aria-label="Field parameters">
+    <div class="mission-module-heading"><span class="mission-index" aria-hidden="true">01</span><div><h3>FIELD PARAMETERS</h3><p>Choose your arena and opposition.</p></div></div>
+    <div class="settings-grid settings-page mission-field-controls">
+     <label>FIELD SIZE<select id="map-size"><option value="small">QUICK · CLOSE COMBAT</option><option value="standard">STANDARD</option><option value="large">WIDE · EXPLORE</option></select></label>
+     <label>BOTS<select id="bot-count"><option value="0">0 · PRACTICE</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>
+    </div>
+   </section>
+   <section class="mission-module mission-comfort" aria-label="Controls and audio">
+    <div class="mission-module-heading"><span class="mission-index" aria-hidden="true">02</span><div><h3>CONTROLS &amp; FEEDBACK</h3><p>Adjust how combat feels.</p></div></div>
+    <div class="comfort-grid settings-comfort">
+     <div class="mission-toggle-group" role="group" aria-label="Input controls">
+      <span class="mission-group-name">INPUT</span>
+      <label><input type="checkbox" id="pref-autoFire"> AUTO FIRE</label>
+      <label><input type="checkbox" id="pref-leftHanded"> SWAP CONTROLS</label>
+      <label title="Optional: gently adjusts a near-perfect, visible pilot-to-pilot shot. No automatic target lock."><input type="checkbox" id="pref-pilotAssist"> PILOT AIM ASSIST (LOW)</label>
+      <label title="Hold and drag FIRE to aim any weapon; release to shoot. Turn off to restore the classic hold-to-fire control."><input type="checkbox" id="pref-releaseFire"> RELEASE TO FIRE (ALL WEAPONS)</label>
+     </div>
+     <div class="mission-toggle-group" role="group" aria-label="Audio and display feedback">
+      <span class="mission-group-name">AUDIO / DISPLAY</span>
+      <label><input type="checkbox" id="pref-sound"> SOUND FX</label>
+      <label><input type="checkbox" id="pref-music"> MUSIC</label>
+      <label><input type="checkbox" id="pref-shake"> SCREEN SHAKE</label>
+     </div>
+    </div>
+   </section>
+   <details class="extra-rules mission-rules">
+    <summary><span class="mission-index" aria-hidden="true">03</span><span class="mission-rules-heading">PLAYLIST &amp; ADVANCED RULES <small>QUICK PLAY ROTATION / OPTIONAL</small></span><span class="mission-chevron" aria-hidden="true">⌄</span></summary>
+    <div class="mission-advanced-body">
+     <div class="mission-subhead">QUICK PLAY ROTATION <small>ENABLED BY DEFAULT</small></div>
+     <div class="settings-grid settings-page mission-playlist">
       <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="survival_ffa" checked> FREE-FOR-ALL SURVIVAL</label>
       <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="survival_teams" checked> TEAM SURVIVAL (BLUE + AI VS RED)</label>
-    </div>
-    <p class="settings-mode-status">OPTIONAL MODES · OFF BY DEFAULT</p>
-    <div class="settings-grid settings-page quick-scored-modes">
+     </div>
+     <p class="settings-mode-status">OPTIONAL MODES · OFF BY DEFAULT</p>
+     <div class="settings-grid settings-page quick-scored-modes mission-playlist">
       <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="cqc"> CLOSE QUARTERS · 10 KOs / 3 MIN</label>
       <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="scored_ffa"> SCORED VEHICLE FFA · 10 KOs / 4 MIN</label>
       <label class="quick-mode-option"><input type="checkbox" data-playlist-mode="scored_tdm"> TEAM DEATHMATCH · 15 KOs / 5 MIN</label>
-    </div>
-    <p id="playlist-status" class="settings-mode-status">2 SELECTED · SURVIVAL MODES ONLY</p>
-    <p class="settings-mode-status">SCORED MODES USE FIXED RULES. SURVIVAL USES YOUR SELECTED SETTINGS.</p>
-    <div class="settings-grid settings-page"><label class="quick-mode-option" title="Briefly show faint dotted trajectories from nearby visible AI teammates while they are lining up a shot."><input type="checkbox" id="pref-alliedTraces"> SHOW ALLIED AIM TRACES (TEAM MODES)</label></div>
-    <div class="settings-grid settings-page">
+     </div>
+     <p id="playlist-status" class="settings-mode-status" role="status">2 SELECTED · SURVIVAL MODES ONLY</p>
+     <p class="settings-mode-status">SCORED MODES USE FIXED RULES. SURVIVAL USES YOUR SELECTED SETTINGS.</p>
+     <div class="mission-subhead">SURVIVAL RULES <small>NOT APPLIED TO SCORED MODES</small></div>
+     <div class="settings-grid settings-page mission-rules-controls">
       <label>PILOT LIVES<select id="lives-choice"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>
       <label>TANK SHELL LIMIT<select id="bullet-cap"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4 · STANDARD</option><option value="5">5</option><option value="8">8</option></select></label>
       <label>BOT SKILL<select id="bot-skill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>
+     </div>
+     <div class="settings-grid settings-page mission-ally-controls"><label class="quick-mode-option" title="Briefly show faint dotted trajectories from nearby visible AI teammates while they are lining up a shot."><input type="checkbox" id="pref-alliedTraces"> SHOW ALLIED AIM TRACES (TEAM MODES)</label></div>
     </div>
-  </details>
-  <div class="comfort-grid settings-comfort"><label><input type="checkbox" id="pref-autoFire"> AUTO FIRE</label><label><input type="checkbox" id="pref-sound"> SOUND FX</label><label><input type="checkbox" id="pref-music"> MUSIC</label><label><input type="checkbox" id="pref-shake"> SCREEN SHAKE</label><label><input type="checkbox" id="pref-leftHanded"> SWAP CONTROLS</label><label title="Optional: gently adjusts a near-perfect, visible pilot-to-pilot shot. No automatic target lock."><input type="checkbox" id="pref-pilotAssist"> PILOT AIM ASSIST (LOW)</label><label title="Hold and drag FIRE to aim any weapon; release to shoot. Turn off to restore the classic hold-to-fire control."><input type="checkbox" id="pref-releaseFire"> RELEASE TO FIRE (ALL WEAPONS)</label></div>
-  <div class="settings-actions"><button data-action="settings-back">BACK</button><button class="primary" data-action="settings-play">START MATCH</button></div>
+   </details>
+  </div>
+  <footer class="settings-actions mission-setup-actions">
+   <button type="button" data-action="settings-back">BACK</button>
+   <button type="button" class="primary" data-action="settings-play">START MATCH</button>
+  </footer>
+ </section>
 </template>
 <template id="custom-template">
  <section id="custom-match" class="custom-screen" aria-label="Custom Match">
