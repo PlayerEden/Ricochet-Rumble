@@ -38,6 +38,18 @@ for(const id of ['aa-outcome','aa-kos','aa-deaths','aa-duration','aa-lives',
  'quick-rematch','results-menu','custom-edit','lan-edit-rules']){
  assert.ok(html.includes('id="'+id+'"'),'real After Action field/action missing: '+id);
 }
+// M2: single original offline SVG family; real action labels and all target IDs remain.
+const symbols=['play','hangar','dossier','help','modes','wifi','settings','cqc','ffa','tdm','custom'];
+for(const name of symbols){
+ assert.ok(html.includes('id="sr-icon-'+name+'"'),'missing offline navigation icon: '+name);
+ assert.ok(html.includes('href="#sr-icon-'+name+'"'),'icon not attached to a visible actual menu: '+name);
+}
+for(const action of ['hangar','dossier','help','solo','modes','nearby','settings',
+ 'cqc','scored_ffa','scored_tdm','custom']){
+ assert.ok(html.includes('data-action="'+action+'"'),'icon must keep original action: '+action);
+}
+assert.ok(css.includes('#menu .sr-ui-icon')&&css.includes('pointer-events:none'),
+ 'icons must be inert to touch; real button takes user input');
 assert.ok(js.includes("function pausePanelHTML(")&&
  js.includes('data-action="resume"')&&js.includes('data-action="restart"')&&
  js.includes('data-action="close"')&&js.includes("mode==='guest'"),
