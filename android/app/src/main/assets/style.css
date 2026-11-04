@@ -3659,3 +3659,10 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
   #menu .custom-screen,#menu .pause-screen,#menu .mode-screen,
   .after-action .aa-panel{animation:none!important;transition:none!important}
 }
+
+
+/* UIV3-J6 results typography acceptance: all four real stat captions remain
+   at least 9 CSS px on 568px phones (never gain density by shrinking to 8px). */
+@media(max-width:600px) and (orientation:landscape){
+  .after-action .aa-stats span{font-size:clamp(9px,1vw,10px)}
+}
