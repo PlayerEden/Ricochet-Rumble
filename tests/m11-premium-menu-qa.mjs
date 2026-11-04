@@ -80,6 +80,65 @@ try{
    assert.ok(b.rect.h>=31,'button '+b.action+' too short');
   }
   await page.screenshot({path:dir+'/hybrid-premium-'+w+'x'+h+'.png',animations:'disabled'});
+  // UIV2-E: the real Hangar must show equipped paint on the actual tank art,
+  // preserve all paint/insignia unlocks, and work even on 568x320 landscape.
+  await page.locator('#menu button[data-action="hangar"]').click();
+  assert.equal(await page.locator('.hangar-screen').isVisible(),true,'Hangar opens');
+  const hangar=await page.evaluate(()=>{
+   const preview=document.querySelector('#hangar-unit-preview');
+   const p=document.querySelector('#panel').getBoundingClientRect();
+   const h=document.querySelector('.hangar-bay').getBoundingClientRect();
+   const b=preview.getContext('2d');
+   const data=b.getImageData(0,0,preview.width,preview.height).data;
+   let visiblePixels=0;
+   for(let i=0;i<data.length;i+=80)if(data[i+3]>0)visiblePixels++;
+   return {paint:preview.dataset.paintId,visiblePixels,previewWidth:preview.width,
+    panel:{x:p.x,right:p.right,y:p.y,bottom:p.bottom},
+    hero:{x:h.x,right:h.right,y:h.y,bottom:h.bottom}};
+  });
+  assert.equal(hangar.paint,'fieldgrid.standard','Hangar preview starts with equipped paint');
+  assert.ok(hangar.visiblePixels>150,'Hangar must render actual tank image, not empty panel');
+  assert.ok(hangar.previewWidth>=120,'Hangar canvas has readable pixel dimensions');
+  assert.ok(hangar.panel.x>=0&&hangar.panel.right<=w+1&&hangar.panel.bottom<=h+1);
+  assert.ok(hangar.hero.x>=0&&hangar.hero.right<=w+1&&hangar.hero.bottom<=h+1);
+  await page.screenshot({path:dir+'/hangar-quality-'+w+'x'+h+'.png',animations:'disabled'});
+  await page.locator('#menu button[data-action="equip-paint"][data-paint-id="fieldgrid.moss"]').click();
+  assert.equal(await page.locator('#hangar-unit-preview').getAttribute('data-paint-id'),'fieldgrid.moss',
+   'Paint selection updates real vehicle preview with existing saved paint');
+  assert.match(await page.locator('#hangar-status').textContent(),/MOSS/);
+  await page.locator('#menu button[data-hangar-tab="insignia"]').click();
+  assert.equal(await page.locator('#hangar-insignia').isVisible(),true,'original insignia unlocks available');
+  await page.locator('#menu button[data-action="hangar-back"]').click();
+  await page.waitForFunction(()=>window.__SRHybridMenu?.active,null,{timeout:15000});
+  // UIV2-F: keep backup and Hangar utilities fully visible in the Dossier,
+  // not clipped below the modal as they were in the owner's screenshots.
+  await page.locator('#menu button[data-action="dossier"]').click();
+  assert.equal(await page.locator('.dossier-screen').isVisible(),true,'Dossier opens');
+  const dossier=await page.evaluate(()=>{
+   const rect=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,height:r.height}};
+   const btns=[...document.querySelectorAll('.dossier-backup-actions button')];
+   return {panel:rect(document.querySelector('#panel')),
+    workspace:rect(document.querySelector('.dossier-workspace')),
+    footer:rect(document.querySelector('.dossier-footer')),
+    buttons:btns.map(el=>{const r=rect(el),hit=document.elementFromPoint((r.x+r.right)/2,(r.y+r.bottom)/2);
+     return {name:el.dataset.action,rect:r,hit:hit?.closest('button')?.dataset.action||null};}),
+    modeRows:document.querySelectorAll('.dossier-mode').length};
+  });
+  assert.equal(dossier.modeRows,5,'five mode record entries retained');
+  assert.ok(dossier.footer.bottom<=h+1&&dossier.footer.y>=0,'Dossier footer visible on phone');
+  assert.ok(dossier.workspace.bottom<=dossier.footer.y+2,'Dossier stats cannot overlap footer');
+  for(const item of dossier.buttons){
+   assert.ok(item.rect.x>=0&&item.rect.right<=w+1&&item.rect.bottom<=h+1,
+    'Dossier action clipped: '+item.name+' at '+w+'x'+h);
+   assert.equal(item.hit,item.name,'Dossier action must remain tappable: '+item.name);
+   assert.ok(item.rect.height>=31,'Dossier action thumb target too small');
+  }
+  await page.screenshot({path:dir+'/dossier-quality-'+w+'x'+h+'.png',animations:'disabled'});
+  await page.locator('#menu button[data-action="backup"]').click();
+  assert.equal(await page.locator('.backup-screen').isVisible(),true,'Dossier backup still opens');
+  await page.locator('#menu button[data-action="backup-back"]').click();
+  await page.locator('#menu button[data-action="dossier-back"]').click();
+  await page.waitForFunction(()=>window.__SRHybridMenu?.active,null,{timeout:15000});
   await page.locator('#menu button[data-action="modes"]').click();
   assert.equal(await page.locator('.mode-screen').isVisible(),true,'current Choose Mode still works');
   const modeInfo=await page.evaluate(()=>{
