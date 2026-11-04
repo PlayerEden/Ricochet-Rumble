@@ -1,0 +1,16 @@
+{
+  "name": "sector-rebound-pixi-renderer-probe",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Isolated Canvas2D/PixiJS render comparison; NOT a Sector Rebound release",
+  "scripts": {
+    "build": "esbuild main.js --bundle --minify --format=iife --target=es2020 --outfile=dist/bundle.js"
+  },
+  "dependencies": {
+    "pixi.js": "8.18.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12",
+    "playwright-core": "1.56.1"
+  }
+}
