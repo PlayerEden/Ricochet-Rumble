@@ -2160,3 +2160,21 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  #menu .dossier-overview{min-height:180px}
  #menu .dossier-columns>section{min-height:190px}
 }
+
+
+/* UIV2-E/F final compact-phone screenshot review:
+   keep Hangar asset labels and Dossier backup actions in stable rows. */
+#menu .hangar-bay-foot{flex-wrap:nowrap;gap:3px}
+#menu .hangar-bay-foot span{white-space:nowrap;min-width:0}
+#menu .dossier-backup-actions{flex-direction:row;flex-wrap:nowrap;align-items:center}
+#menu #panel .dossier-backup-actions button{flex:0 0 auto;white-space:nowrap}
+@media(min-width:950px) and (orientation:landscape){
+ #menu .hangar-body{grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)}
+}
+@media(max-width:650px) and (orientation:landscape){
+ #menu .hangar-bay-foot{padding:4px 5px;font-size:7px;letter-spacing:0}
+ #menu .hangar-bay-caption strong{letter-spacing:0}
+ #menu .dossier-footer{gap:4px}
+ #menu .dossier-backup-actions{gap:4px}
+ #menu #panel .dossier-backup-actions button{min-width:73px;padding-inline:5px}
+}
