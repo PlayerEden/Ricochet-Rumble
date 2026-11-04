@@ -173,10 +173,11 @@ try{
     const canvas=hero.getContext('2d');
     return {width:hero.width,height:hero.height,
       pixel:canvas.getImageData(Math.floor(hero.width/2),Math.floor(hero.height/2),1,1).data[3],
-      backHit:hit?.closest('button')?.dataset.action};
+      backHit:hit?.closest('button')?.dataset.action,scale:Number(hero.dataset.previewScale||0)};
   });
   assert.ok(modeHero.width>=100&&modeHero.height>=50&&modeHero.pixel>0,
     'Mode Select renders real in-game vehicle presentation rather than an empty decoration');
+  assert.ok(modeHero.scale>=.55&&modeHero.scale<=1.3,'compact mode vehicle is scaled to fit its stage, not cropped: '+modeHero.scale);
   assert.equal(modeHero.backHit,'modes-back','header Back remains an actual touch hit target');
   const modeInfo=await page.evaluate(()=>{
    const p=document.querySelector('#panel'),screen=document.querySelector('.mode-screen');
@@ -254,10 +255,11 @@ try{
   const stageInfo=await page.evaluate(()=>{
     const c=document.querySelector('.mission-live-preview'),p=c.getContext('2d');
     return {w:c.width,h:c.height,alpha:p.getImageData(Math.floor(c.width/2),Math.floor(c.height/2),1,1).data[3],
-      primaryCount:document.querySelectorAll('.mission-setup-actions .primary').length};
+      scale:Number(c.dataset.previewScale||0),primaryCount:document.querySelectorAll('.mission-setup-actions .primary').length};
   });
   assert.ok(stageInfo.w>=100&&stageInfo.h>=50&&stageInfo.alpha>0,
     'Mission Setup displays real vehicle renderer instead of a placeholder');
+  assert.ok(stageInfo.scale>=.55&&stageInfo.scale<=1.3,'Mission unit stage must fit the real artwork');
   assert.equal(stageInfo.primaryCount,1,
     'Mission Setup retains one obvious Start Match primary action');
   assert.equal(await page.locator('.mission-module').count(),2,'field and control modules are both rendered');
