@@ -28,6 +28,12 @@ def defaultPreviewVersionName = '0.9.54-lan-timeout-test'
 def requestedPreviewCode = providers.gradleProperty('srPreviewVersionCode').orNull
 def requestedPreviewName = providers.gradleProperty('srPreviewVersionName').orNull
 def previewPackageSwitch = providers.gradleProperty('srPreviewPackage').orNull
+// An isolated, self-contained phone demo. Never uses the production or owner preview ID.
+def hybridLabPackage = providers.gradleProperty('srHybridLabPackage').orNull
+if (hybridLabPackage != null && hybridLabPackage != 'true')
+    throw new GradleException('srHybridLabPackage must be true when supplied')
+if (hybridLabPackage == 'true' && previewPackageSwitch != null)
+    throw new GradleException('Hybrid test package must never be combined with owner preview package')
 if (previewPackageSwitch != null && previewPackageSwitch != 'true')
     throw new GradleException('srPreviewPackage must be true when present')
 if ((requestedPreviewCode != null) != (previewPackageSwitch == 'true'))
@@ -56,6 +62,7 @@ android {
         targetSdk 36
         versionCode previewVersionCode
         versionName previewVersionName
+        manifestPlaceholders = [srLauncherLabel: hybridLabPackage == 'true' ? 'SR Hybrid Test' : 'Sector Rebound']
     }
     signingConfigs {
         if (hasUploadSigning) {
@@ -80,9 +87,11 @@ android {
             // Owner-signed previews are a separate installable package from Play/stable builds.
             // CI QA without this flag retains the historical package and version.
             if (previewPackageSwitch == 'true') applicationIdSuffix '.preview'
+            if (hybridLabPackage == 'true') applicationIdSuffix '.hybridtest'
             if (hasTestSigning) signingConfig signingConfigs.internalTest
         }
         release {
+            if (hybridLabPackage == 'true') throw new GradleException('Hybrid test ID cannot be used for release packaging')
             minifyEnabled false
             if (hasUploadSigning) signingConfig signingConfigs.releaseUpload
         }
