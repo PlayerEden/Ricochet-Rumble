@@ -51,3 +51,43 @@ Build instead:
 - [ ] Revisit J1 once owner sees real-device screenshots; art/world should be *more visible*, not just one more small icon.
 
 **Go/no-go:** Do not merge or present APK as certified until browser and native checks for the exact latest commit have completed and owner has physically evaluated the UI.
+
+
+---
+
+## M-Series — Premium Hybrid visual production pass (authorized 2026-11-04)
+
+**Owner reference:** the generated Sector Rebound multi-screen concept featuring a lit industrial Hangar, polished navigation, mission cards, emblem collection, operator identity and dimmed-battlefield Pause. The picture is **art-direction reference, not a functioning feature specification or approved game screenshot**. The owner wants the *feel* of that image, not a literal recreation. Continue **draft PR #140** in small reversible stages. K1–K5 phone feedback and green 9/9 CI at checkpoint \`b58a3c5\` are our prior baseline; new commits require fresh tests.
+
+### Production target
+Deliver a **premium hybrid shell** around the existing 2D arcade game: atmospheric staged Hangar, coherent action icons, clean compact card typography, earned insignia, real player records, recognizable branding, predictable touch navigation. Do not turn Sector Rebound into a faux 3D live-service menu. Gameplay and interface art should read as one product, even if the Hangar backdrop is more detailed than the actual battle maze.
+
+### Concept-image translation contract
+
+| Borrow / adapt | Real-game implementation | Explicitly do not copy |
+|---|---|---|
+| Industrial Hangar lighting, deck stripes, docking platform | Procedural CSS/Canvas layer **behind** existing genuine tank/mech renderer; optional approved texture in a later branch | Fake 3D model, stock/model tank replacing in-game unit, fake physics |
+| Compact branded top navigation | Existing actual Play/Choose Mode/Local/Hangar/Dossier/Help actions; clear selected/focus states, touch-first tap geometry | Non-functional buttons, fake currency/stars, reinterpreted Android Back |
+| Cohesive simple emblems and icons | Defined shared geometric symbol grammar, hand-built SVG/Canvas icons, current four earned insignia states retained | Generated achievements, arbitrary locked tiers, copied franchise logos |
+| More expressive Dossier / operator badge | Enlarge actual equipped local emblem and real six statistics/five records | Invented accounts, ranks, cloud sync, currencies or unsupported awards |
+| Strong Local Play, Results and Pause cards | Existing LAN actions/status and actual scores/host control; frozen arena behind Pause | Online matchmaking, fake friend list, fake connected peers |
+| Sharper CTA and understated accent lines | Real primary Play/Start/Resume, active-tab underline, selected cosmetic check, keyboard focus ring | Persistent double-gold borders around focus and selection |
+
+### Stages and regression gates
+
+- [x] **M0 / reference and scope lock.** Preserve the real unit renderers, mode and gameplay IDs, user-approved joystick/FIRE position/size/feel, save keys, LAN authority and packages. Name/repo migrations and physical two-phone test remain independent.
+- [ ] **M1 / Hangar stage and cosmetic state clarity.** Add a *purely decorative*, lightweight industrial dock environment behind the **actual** Canvas tank/mech and a subtle ring/deck. Separate **equipped** status from **selected tab** from **keyboard focused** styling. No generated texture in production in M1. Validate at 568×320 and all five landscape sizes, two preview units, 4 base paints, locked paints and insignia.
+- [ ] **M2 / visual navigation system.** Unify icons, title hierarchy, amber primary buttons, subtle cyan secondary actions; treat Play/Hangar/Dossier/Help as existing real routes. Remove gratuitous jargon where practical. No layout regressions or additional taps.
+- [ ] **M3 / profile and earned cosmetics.** Explore four consistent, tiny high-contrast insignia silhouettes (FIELD/VECTOR/ACE/COMMAND) as *concepts* first; preserve original equip and unlock rules; improve actual Dossier emblem stage and genuine empty-state wording.
+- [ ] **M4 / secondary-mode and LAN polish.** Give Forward Bays and Capture the Flag *accurate* small diagrams and an obvious return to core modes; Host lobby scroll hint, copy local address only when bridge supports it, clear Sides→Match Type wording, realistic "start with bots" explanation. Preserve the actual network behavior.
+- [ ] **M5 / opt-in creative-asset lab.** Make two atmospheric Hangar **background-only** studies and one consistent emblem family concept using image generation / Adobe Firefly / OpenArt if helpful; optionally compare editable component layouts in Figma. Keep all experiments outside runtime until approved. Manually clean approved art, verify rights, minimize Android/WebView bytes, include offline assets in Web+Android with parity checks; A/B against procedural base.
+- [ ] **M6 / final polish and release safety.** Current-head fast, five-size browser screenshot+hit tests, Pixi/WebGL fallback, Android/debug APK, all canonical gameplay/LAN/spectator/recovery/save tests, portrait and cutout checks, low-power observations. Owner approves actual-phone UI before merging. Physical two-phone LAN remains separate.
+
+### Non-negotiable quality criteria
+1. The existing game-authored tank, mech, pilot, shooting, joystick, FIRE and tank-exit controls are **unchanged**; optional HUD size/opacity/repositioning is a **future separate opt-in feature**, not part of M-Series.
+2. One primary action per screen, no blank dead panels, no fake progression. Selected cosmetic = clear check + persistent indicator; focused button = transient accessible outline; active tab = restrained underline; locked item = genuine requirement shown.
+3. No HUD/menu elements vanish under the header or fixed footer; 44px primary tap targets and no default-screen scrolling across **568×320, 640×360, 740×360, 915×412, 1280×720**. Advanced settings/Help/Backup/LAN roster can scroll within a bounded section.
+4. All generated assets are **concept only until owner approval**; no text embedded into production background images; no external runtime fetch, no trademark/copyright copies, verify commercial terms and optimize size.
+5. Keep web and Android assets identical. No \`main\` merge or "production-ready" claim on green CI alone. Explicit real-phone acceptance is required.
+
+**Immediate implementation:** M1 (procedural decorative Hangar environment + unambiguous equipped/tab/focus state) as a small reversible code change, then targeted CI. Do not conflate visual concept experiment with working Android features.
