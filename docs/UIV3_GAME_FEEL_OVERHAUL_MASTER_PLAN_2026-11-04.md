@@ -97,3 +97,14 @@ Deliver a **premium hybrid shell** around the existing 2D arcade game: atmospher
 **Creative asset standards:** [Premium Hybrid Art Lab Brief](PREMIUM_HYBRID_ART_LAB_BRIEF_2026-11-04.md) describes two background-only Hangar concepts and the original FIELD/VECTOR/ACE/COMMAND insignia family. Generated assets remain out of the app until approved.
 
 **Next implementation after M1 visual QA:** M2 (game-native navigation/icon consistency) and M4 (Host and Experimental Modes clarity). Do not conflate visual concept experiments with working Android features.
+
+
+### 2026-11-04 / M2 + M4 code checkpoint — release status still draft
+
+**M2 implemented (code):** exactly 11 original inline SVG symbols (play, hangar, dossier, help, modes, wifi, settings, cqc, ffa, tdm, custom), bundled identically in Web and Android. Home primary button, three utility routes, three secondary routes and the four scored/default Mode cards use those icons without changing their action IDs, labels, focus behavior or >=44px tap-target policy. Smaller landscape sizes hide nonessential Home icons for readability, not actions. Static and real-browser checks verify symbol resolution and that icons cannot intercept clicks.
+
+**M4 implemented (code, scoped):** two additional original vector diagrams (depot and flag) on accurate Forward Bays and Capture the Flag buttons, presented as two compact cards; the experimental toggle explicitly reads **BACK TO CORE MODES** while open. Original mode IDs and loaded game modules remain unchanged. In Host Match, **SIDES → MATCH TYPE**, the header explains that a guest joining while the host is playing bots waits for the next match, and the existing scrollable rules area has a visible scrollbar treatment. Nine real LAN settings, fixed Start/Leave footer and host authority are untouched. No Copy IP feature yet—verify platform clipboard support before adding it.
+
+**Proof/hold:** fast UI contract and five-viewport Chromium interaction/screenshot test were expanded. A green older commit (M1 9/9) does **not** certify M2/M4. Keep PR #140 draft until all workflows for this final head complete and owner validates on Android. No generated background/insignia has been shipped, and the approved joystick/FIRE controls are untouched.
+
+**Next:** M3 insignia + actual Dossier identity concept evaluation (genuine four existing unlocks only), then M5 optional A/B artwork/optimization and M6 complete release audit.
