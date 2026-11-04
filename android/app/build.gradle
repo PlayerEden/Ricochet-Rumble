@@ -91,7 +91,6 @@ android {
             if (hasTestSigning) signingConfig signingConfigs.internalTest
         }
         release {
-            if (hybridLabPackage == 'true') throw new GradleException('Hybrid test ID cannot be used for release packaging')
             minifyEnabled false
             if (hasUploadSigning) signingConfig signingConfigs.releaseUpload
         }
