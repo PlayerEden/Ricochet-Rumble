@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#101f2b">
-<title>Sector Rebound — Pixi FX Lab</title>
+<title>Sector Rebound — Pixi Art and Scale Lab</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -26,14 +26,17 @@
       <button id="use-pixi" type="button" class="selected">PIXI / WEBGL</button>
       <button id="use-canvas" type="button">CANVAS 2D</button>
       <button id="reset" type="button">RESET</button>
+      <button id="toggle-art" type="button" class="fx-active" aria-pressed="true" title="Switch between production-inspired rigged concept and classic artwork">LAYERED ART</button>
+      <button id="zoom-out" type="button" aria-label="Zoom out to show more arena">ZOOM −</button>
+      <button id="zoom-in" type="button" aria-label="Zoom in to inspect vehicle detail">ZOOM +</button>
       <button id="toggle-fx" type="button" class="fx-active" aria-pressed="true" title="Toggle enhanced GPU effects without changing combat">FX ON</button>
       <button id="demo-fx" type="button" aria-label="Demonstrate muzzle, bounce, impact and destruction effects">DEMO FX</button>
       <button id="use-match" type="button" class="selected">MATCH LOAD</button>
       <button id="use-stress" type="button">STRESS LOAD</button>
     </div>
-    <div class="measure"><span id="fps">FPS —</span><span id="render-ms">CPU submit —</span><span id="shots">SHOTS —</span><span id="fx-count" aria-live="off">FX —</span></div>
+    <div class="measure"><span id="fps">FPS —</span><span id="render-ms">CPU submit —</span><span id="shots">SHOTS —</span><span id="fx-count" aria-live="off">FX —</span><span id="zoom-value">ZOOM 0.94x · RIGGED</span></div>
   </footer>
-  <div id="notice" role="status" aria-live="polite">Pixi FX lab • switch FX ON/OFF in Pixi • DEMO FX shows all effects • Canvas stays baseline</div>
+  <div id="notice" role="status" aria-live="polite">Art & camera concept · layered body/turret/track animation · zoom from wide arena to close detail</div>
 </main>
 <script defer src="bundle.js"></script>
 </body>
