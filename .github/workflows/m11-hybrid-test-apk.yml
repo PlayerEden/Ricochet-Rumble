@@ -74,7 +74,16 @@ jobs:
           line="$("$aapt" dump badging "$apk" | head -n 1)"
           [[ "$line" == *"name='com.playereden.ricochetrumble.hybridtest'"* ]] || { echo "FAIL unexpected package: $line"; exit 1; }
           "$aapt" dump badging "$apk" | grep -F "application-label:'SR Hybrid Test'"
-          unzip -p "$apk" classes.dex | strings | grep -F 'index.html?hybridMenu=1'
+          python3 - "$apk" <<'PY'
+          import sys, zipfile
+          with zipfile.ZipFile(sys.argv[1]) as apk:
+              dex = [name for name in apk.namelist() if name.endswith('.dex') and name.startswith('classes')]
+              print('DEX_FILES', dex)
+              assert dex, 'APK contains no Java DEX code'
+              checks = [(name, b'hybridMenu=1' in apk.read(name)) for name in dex]
+              print('NATIVE_HYBRID_LAUNCH_STRING', checks)
+              assert any(present for _, present in checks), 'Compiled APK does not contain test-only hybrid startup URL'
+          PY
           # The ordinary game and owner preview package IDs must never be delivered.
           [[ "$line" != *"name='com.playereden.ricochetrumble.preview'"* ]]
           [[ "$line" != *"name='com.playereden.ricochetrumble'"* ]]
