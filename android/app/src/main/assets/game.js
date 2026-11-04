@@ -3319,6 +3319,19 @@ menu.addEventListener('keydown',e=>{
  showHangarTab(next);
  document.querySelector('.hangar-tabs [data-hangar-tab="'+next+'"]')?.focus();
 });
+// UIV3-J7 — game-feel UI feedback. A real click, change or disclosure is the
+// only trigger: never use timeouts, hover cues, or a new AudioContext. The
+// central audioCue() function respects the existing SOUND FX preference.
+menu.addEventListener('click',e=>{
+ const disclosure=e.target?.closest?.('summary');
+ if(disclosure&&disclosure.closest?.(
+  '.custom-advanced,.custom-preset-fold,.bay-exercise-fold,.mission-comfort-details,.mission-rules,.help-more,.privacy-more,.help-more-controls,.extra-rules'
+ ))audioCue('ui-select');
+});
+menu.addEventListener('change',e=>{
+ if(e.target?.matches?.('select,input[type="checkbox"],input[type="range"]')&&!e.target.disabled)
+  audioCue('ui-select');
+});
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
  if(a==='toggle-sound'||a==='toggle-music'){togglePauseAudio(a==='toggle-sound'?'sound':'music',b);return;}
  if(!['solo','settings-play','practice','cqc','scored_ffa','scored_tdm','custom-play','duel','host','find','custom-preset-save','custom-preset-delete','custom-preset-load','ip-join'].includes(a))
