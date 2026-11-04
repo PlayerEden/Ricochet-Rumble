@@ -106,11 +106,23 @@ try{
  for(const [vw,vh] of [[740,360],[915,412],[1280,720]]){
   await page.setViewportSize({width:vw,height:vh});
   const layout=await page.evaluate(()=>{
-   const p=document.querySelector('#panel').getBoundingClientRect(), buttons=[...document.querySelectorAll('.hangar-grid button')].map(e=>e.getBoundingClientRect());
-   return {panel:{x:p.x,right:p.right,y:p.y,bottom:p.bottom},swatches:buttons.map(x=>({x:x.x,right:x.right,width:x.width,height:x.height}))};
+   const panel=document.querySelector('#panel').getBoundingClientRect();
+   const buttons=[...document.querySelectorAll('.hangar-grid button')];
+   const rect=el=>{const x=el.getBoundingClientRect();return {x:x.x,right:x.right,width:x.width,height:x.height};};
+   return {panel:{x:panel.x,right:panel.right,y:panel.y,bottom:panel.bottom},swatches:buttons.map(rect)};
   });
   assert.ok(layout.panel.x>=0&&layout.panel.right<=vw+1,'Hangar stays within landscape width '+vw);
-  assert.ok(layout.swatches.every(b=>b.width>=45&&b.height>=64&&b.x>=0&&b.right<=vw+1),'paint swatches reachable and sized '+vw);
+  assert.ok(layout.swatches.length===6&&layout.swatches.every(b=>b.width>=45&&b.height>=44&&b.x>=0&&b.right<=vw+1),
+   'all six paint tiles retain usable 44px touch height and horizontal reachability at '+vw);
+  // Ensure a bottom-row paint button is actually reachable when the workbench
+  // scrolls. Height alone cannot prove it remains usable.
+  const bottomSwatch=page.locator('button[data-paint-id="fieldgrid.oxide"]');
+  await bottomSwatch.scrollIntoViewIfNeeded();
+  const reachable=await bottomSwatch.evaluate(el=>{
+   const r=el.getBoundingClientRect(),p=document.querySelector('#panel').getBoundingClientRect();
+   return r.top>=p.top-1&&r.bottom<=p.bottom+1&&r.left>=p.left-1&&r.right<=p.right+1;
+  });
+  assert.ok(reachable,'bottom-row paint swatch stays visible inside Hangar at '+vw);
  }
  await page.setViewportSize({width:915,height:412});
  await page.locator('#menu button[data-action="hangar-back"]').click();
