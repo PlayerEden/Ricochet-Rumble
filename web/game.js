@@ -3243,7 +3243,10 @@ function retryLanEndpoint(){
  const target=lanRetryEndpoint;
  // Native join starts a NEW socket generation. No old match/queue/input role survives.
  newMatch('guest');
- setPanel('<div class="eyebrow">LOCAL WI-FI / RETRY</div><h2>RECONNECTING</h2><p>Trying the last room address. The host may have a new address or port.</p><button data-action="close">CANCEL · MAIN MENU</button>');
+ setPanel('<section class="lan-utility lan-recovery" aria-label="Reconnecting to local game">'+
+  '<header class="lan-utility-head"><div class="eyebrow">FIELDGRID / LOCAL RECOVERY</div><h2>RECONNECTING</h2><p>Retrying the last room address.</p></header>'+
+  '<div class="lan-utility-body"><span class="lan-brief-serial">CONNECTION IN PROGRESS</span><p role="status" class="lan-recovery-message">The host may have a new address or port. Both phones must be on the same Wi-Fi.</p></div>'+
+  '<footer class="lan-utility-actions"><button type="button" data-action="close">CANCEL · MAIN MENU</button></footer></section>');
  return joinLanEndpoint(target.host,target.port);
 }
 function showLanGuestRecovery(kind){
@@ -3253,10 +3256,14 @@ function showLanGuestRecovery(kind){
  const detail=full?'This host already has a guest or spectator. Try again after they leave.':
   failed?'Could not reach the host. Check that both devices are on the same Wi-Fi.':
   'The host or network connection ended. You can reconnect to the last address.';
- setPanel('<div class="eyebrow">LOCAL WI-FI / RECOVERY</div><h2>'+title+'</h2><p>'+detail+'</p>'+
+ setPanel('<section class="lan-utility lan-recovery" aria-label="Local connection recovery">'+
+  '<header class="lan-utility-head"><div class="eyebrow">FIELDGRID / CONNECTION STATUS</div><h2>'+title+'</h2><p>LOCAL WI-FI / RECOVERY</p></header>'+
+  '<div class="lan-utility-body"><span class="lan-brief-serial">CONNECTION REPORT</span><p class="lan-recovery-message" role="status">'+detail+'</p>'+
+  '<p class="lan-utility-note">Retry this room, discover another, or enter a different host address.</p></div>'+
+  '<footer class="lan-utility-actions lan-recovery-actions">'+
   (lanRetryEndpoint?'<button class="primary" data-action="lan-retry">RETRY LAST ROOM</button>':'')+
-  '<button data-action="find">FIND NEARBY ROOMS</button><button data-action="manual">JOIN BY IP</button>'+
-  '<button data-action="close">MAIN MENU</button>');
+  '<button '+(lanRetryEndpoint?'':'class="primary" ')+'data-action="find">FIND NEARBY ROOMS</button>'+
+  '<button data-action="manual">JOIN BY IP</button><button data-action="close">MAIN MENU</button></footer></section>');
 }
 // UIV2-D presentation only. Keep the original action dispatch and native bridge.
 function lanEntryHTML(){
@@ -3540,7 +3547,10 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
   if(mode==='host'){
    connected=false;paused=true;neutralizeGuestInput();releaseControls();
    lanHostJoinNext=null;lanHostJoinSeq=0;
-   setPanel('<h2>ROOM OFFLINE</h2><p>Android stopped LAN hosting in the background. The old room is closed; opening a new one resets the match.</p><button class="primary" data-action="host">OPEN NEW ROOM</button><button data-action="close">MAIN MENU</button>');
+   setPanel('<section class="lan-utility lan-recovery" aria-label="Offline host room">'+
+    '<header class="lan-utility-head"><div class="eyebrow">FIELDGRID / LOCAL RECOVERY</div><h2>ROOM <span>OFFLINE</span></h2><p>HOST ROOM CLOSED</p></header>'+
+    '<div class="lan-utility-body"><span class="lan-brief-serial">HOST STATUS</span><p class="lan-recovery-message" role="status">Android stopped LAN hosting in the background. The old room is closed; opening a new one resets the match.</p></div>'+
+    '<footer class="lan-utility-actions"><button class="primary" data-action="host">OPEN NEW ROOM</button><button data-action="close">MAIN MENU</button></footer></section>');
    notice('HOST OFFLINE · REOPEN THE ROOM',2500);
   }break;
  case 'disconnected':

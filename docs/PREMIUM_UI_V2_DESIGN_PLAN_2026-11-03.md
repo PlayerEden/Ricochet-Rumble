@@ -30,7 +30,7 @@ Real Android screenshots from two consecutive `SR Hybrid Test` builds proved the
 ### UIV2-B — Mode selection (implemented, automated QA passed)
 - Four differentiated core mode cards; compact Practice/Daily/Experimental utility rail; data labels and real modes unchanged; Back must never obscure choices. Automated hybrid/browser, game/LAN, Android and visual workflows passed at the UIV2-B checkpoint.
 
-### UIV2-C — Mission Setup (implemented in draft; regression QA gate pending)
+### UIV2-C — Mission Setup (all automated QA passed; phone approval pending)
 - Group field size, bot count, advanced rules and controls into purposeful setup modules; keep native select accessibility and exact current persistence and rules behavior; avoid new settings concepts.
 - [x] Recast Match Settings as MISSION SETUP with Field Parameters, Controls & Feedback (input plus audio/display), and expandable Quick Play Playlist & Advanced Rules.
 - [x] Keep every original field/select/checkbox ID, all five playlist mode values, native `<select>` elements, settings-back / settings-play routing and saved preferences unchanged. No modifications to combat logic, Android bridge, AI or LAN.
@@ -39,13 +39,15 @@ Real Android screenshots from two consecutive `SR Hybrid Test` builds proved the
 - [ ] Pass dedicated real Chromium browser QA at 568×320, 640×360, 740×360, 915×412 and 1280×720, including touch hit tests, scrolling, playlist invalid/valid toggles, rule changes and persistence after Back/Reopen.
 - [ ] Pass full regression/Android bundling and receive physical phone approval before making this production.
 
-### UIV2-D — LAN / social play (implemented in draft; QA and phone acceptance gate)
+### UIV2-D — LAN / social play (main screens automated QA passed; recovery UI QA pending)
 - [x] Replace the original flat Local Play panel with a single-primary-action host briefing and clear Find Game / Join by IP alternatives. No cloud matchmaking is implied.
 - [x] Present native-discovered rooms, manual IP:port input and a readable local-network explanation in consistent FIELDGRID screens; preserve the original handlers, room ID and socket arguments.
 - [x] Preserve the nine host match rule selectors, host/guest presence, host address, guest Ready, Start, leave actions, and rule summary. Give the live lobby its own scrollable middle area and always-visible status/action footer.
 - [x] Keep every LAN network transport call, authority validation, spectator flow, reconnect protocol and match setup rule unchanged.
 - [x] Keep web and Android game/CSS assets byte-identical.
-- [ ] Pass real-browser five-size LAN UI QA (host, discovery and IP join with mock native bridge), full gameplay/LAN, Android and visual workflows.
+- [x] All nine workflows passed at commit `239e461`, including five-size LAN browser testing, full Android, gameplay and spectator tests.
+- [x] Matching recovery presentation for connection failed/lost, room full, reconnecting and host-offline while preserving native actions.
+- [ ] New recovery browser QA and full Android/LAN checks must pass.
 - [ ] Owner on-device visual review before merging or recommending an APK.
 
 ### UIV2-E — Hangar (maps to original M12) (implementation / QA in progress)
@@ -61,8 +63,12 @@ Real Android screenshots from two consecutive `SR Hybrid Test` builds proved the
 - [x] Pin the footer actions inside visible panel bounds and prevent Dossier content from overlapping them; verify actions by actual Chromium hit-test at phone sizes.
 - [ ] Owner phone acceptance for 568×320 and 740×360, including backup flow.
 
-### UIV2-G — Pause / Results / Help (planned)
-- Compact dialog UI, consistent primary CTA, touch targets, no overlapping HUD or actions and owner acceptance on smallest phone.
+### UIV2-G — Pause / Results / Help (visual implementation in draft; QA pending)
+- [x] Refine compact Pause dialogs, warm Resume hierarchy and existing audio toggles without altering any Solo, Host or Guest handlers.
+- [x] Refine actual After Action score/result presentation, preserving all values, dynamic rewards, Next Match, rules and Menu actions.
+- [x] Keep the four Help instructions and both details sections, while pinning Try Practice and Back outside a scrollable guide.
+- [x] Add five-size browser tests for the Help footer and LAN recovery actions without claiming that simulated native bridge tests prove two-phone network behavior.
+- [ ] Full visual/Android/LAN regression and physical phone acceptance before merge.
 
 ## Technical approach
 
@@ -99,3 +105,7 @@ Changes are intentionally limited to the original Settings template, its CSS pre
 ## UIV2-D checkpoint and test boundary
 
 Local Wi-Fi remains native-Android only: Chromium QA uses a small stub bridge for *presentation and original click dispatch verification*, not as evidence of real two-phone connectivity. Network packet formats, host authority, spectator queue, match-rule sanitization and Android socket code are unchanged. Changes are limited to markup returned by existing LAN screens, one presentation helper, CSS and the browser regression script. A successful visual test does not replace an actual two-phone Wi-Fi playtest before release.
+
+## UIV2-D recovery + UIV2-G checkpoint
+
+This pass changes presentation-only HTML/CSS and the rendered markup of existing native connection recovery screens. Network and scoring data, save format, native bridge APIs, host/guest authority and game state transitions remain unchanged. Both real web and packaged Android assets are mirrored. The browser QA uses stub bridge actions to verify screen and action routing, not as a two-phone network acceptance test. Physical phone review remains outstanding.

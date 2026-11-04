@@ -321,8 +321,51 @@ try{
   assert.equal((await page.evaluate(()=>window.__lanUiCalls)).some(x=>x[0]==='join'&&x[1]==='192.168.1.25'&&x[2]===47321),true,
     'valid manual address retains native join endpoint');
   await page.screenshot({path:dir+'/lan-manual-'+w+'x'+h+'.png',animations:'disabled'});
-  await page.locator('.lan-manual button[data-action="close"]').click();
+  await page.evaluate(()=>window.RR.nativeMessage(JSON.stringify({type:'error',message:'Not reachable'})));
+  assert.equal(await page.locator('.lan-recovery').isVisible(),true,
+    'native connection error opens FIELDGRID recovery UI');
+  assert.deepEqual(await page.locator('.lan-recovery button[data-action]').evaluateAll(
+    els=>els.map(e=>e.dataset.action)),['lan-retry','find','manual','close'],
+    'original retry / find / manual / close actions retained');
+  await page.screenshot({path:dir+'/lan-recovery-'+w+'x'+h+'.png',animations:'disabled'});
+  const beforeRetry=(await page.evaluate(()=>window.__lanUiCalls)).filter(x=>x[0]==='join').length;
+  await page.locator('.lan-recovery button[data-action="lan-retry"]').click();
+  assert.equal((await page.evaluate(()=>window.__lanUiCalls)).filter(x=>x[0]==='join').length,beforeRetry+1,
+    'Retry still calls native join on same saved endpoint');
+  await page.evaluate(()=>window.RR.nativeMessage(JSON.stringify({type:'error',message:'Not reachable'})));
+  await page.locator('.lan-recovery button[data-action="find"]').click();
+  assert.equal(await page.locator('.lan-discover').isVisible(),true,'recovery can navigate to discovery');
+  await page.locator('.lan-discover button[data-action="close"]').click();
+  await page.locator('#menu button[data-action="nearby"]').click();
+  await page.locator('.lan-entry button[data-action="host"]').click();
+  await page.evaluate(()=>window.RR.nativeMessage(JSON.stringify({type:'host-offline'})));
+  assert.equal(await page.locator('.lan-recovery button[data-action="host"]').count(),1,
+    'host-offline retains new-room action');
+  await page.screenshot({path:dir+'/lan-offline-'+w+'x'+h+'.png',animations:'disabled'});
+  await page.locator('.lan-recovery button[data-action="close"]').click();
   await page.evaluate(()=>{delete window.AndroidBridge;});
+  await page.waitForFunction(()=>window.__SRHybridMenu?.active,null,{timeout:15000});
+  await page.locator('#menu button[data-action="help"]').click();
+  assert.equal(await page.locator('.help-steps article').count(),4,'four tutorial steps remain');
+  const helpLayout=await page.evaluate(()=>{
+    const r=el=>{const a=el.getBoundingClientRect();return {top:a.top,bottom:a.bottom,height:a.height}};
+    return {head:r(document.querySelector('.help-head')),body:r(document.querySelector('.help-scroll')),
+      footer:r(document.querySelector('.help-footer'))};
+  });
+  assert.ok(helpLayout.head.bottom<=helpLayout.body.top+2&&
+    helpLayout.body.bottom<=helpLayout.footer.top+2&&helpLayout.footer.bottom<=h+1,
+    'Help scrolling content must not cover navigation or practice action');
+  await page.locator('.help-more summary').click();
+  await page.locator('.privacy-more summary').click();
+  await page.locator('.help-scroll').evaluate(el=>{el.scrollTop=el.scrollHeight;});
+  const practiceHit=await page.locator('.help-footer .help-practice').evaluate(el=>{
+    const r=el.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+    return {height:r.height,bottom:r.bottom,action:hit?.closest('button')?.dataset.action};
+  });
+  assert.ok(practiceHit.height>=43&&practiceHit.bottom<=h+1&&practiceHit.action==='practice',
+    'Help Practice remains visible and clickable after expanding both disclosures');
+  await page.screenshot({path:dir+'/help-refined-'+w+'x'+h+'.png',animations:'disabled'});
+  await page.locator('.help-head button[data-action="help-back"]').click();
   await page.waitForFunction(()=>window.__SRHybridMenu?.active,null,{timeout:15000});
   const reloaded=await page.evaluate(()=>({active:window.__SRHybridMenu.active,mounts:window.__SRHybridMenu.mounts}));
   assert.ok(reloaded.active&&reloaded.mounts>=2,'GPU re-created after returning home');

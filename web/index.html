@@ -121,20 +121,20 @@
 <template id="help-template">
  <section class="help-screen" aria-label="How to play Sector Rebound">
   <header class="help-head"><div><div class="eyebrow">FIELD GUIDE</div><h2>HOW TO <span>PLAY</span></h2></div><button type="button" class="screen-back" data-action="help-back">← BACK</button></header>
-  <div class="help-steps">
+  <div class="help-scroll" aria-label="Controls, tactics and privacy"><div class="help-steps">
    <article><span class="help-glyph" aria-hidden="true">✛</span><div><h3>01 · MOVE</h3><p>Steer with your left thumb. Vehicles turn to face your direction.</p></div></article>
    <article><span class="help-glyph" aria-hidden="true">◎</span><div><h3>02 · FIRE</h3><p>Drag FIRE to aim; release to shoot. Bounce shots off walls to hit around corners.</p></div></article>
    <article><span class="help-glyph" aria-hidden="true">◆</span><div><h3>03 · STAY IN THE FIGHT</h3><p>Armor protects your vehicle. If it breaks, fight on as the pilot.</p></div></article>
    <article><span class="help-glyph" aria-hidden="true">▣</span><div><h3>04 · NEW SECTOR</h3><p>Every match creates a new maze. Use the radar to locate threats.</p></div></article>
   </div>
-  <button type="button" class="help-practice" data-action="practice">TRY PRACTICE · NO BOTS</button>
   <details class="help-more"><summary>MORE CONTROLS &amp; TACTICS</summary><div><p><strong>FIRE CONTROLS</strong> Default: hold and drag FIRE to aim, then release for one shot. Auto fire and hold-to-fire are optional in Settings. Vehicle shells preview one bounce; pilot sidearms stop at walls.</p><p><strong>VEHICLES</strong> Turn with MOVE or drag FIRE for precise rotation, then release to shoot. Find an empty vehicle and tap ENTER when close. Shells return as fired rounds expire.</p><p><strong>SCORING</strong> In scored modes, KOs decide the winner. The clock shows time remaining. In Survival, the ♥ shows remaining lives.</p></div></details>
   <details class="privacy-more" aria-label="Sector Rebound privacy and local saved data"><summary>PRIVACY POLICY · LOCAL DATA</summary><div>
    <p><strong>ON-DEVICE PROGRESS</strong> Sector Rebound saves your settings, Solo match statistics, Custom Match presets, paint and insignia choices on this device. No account is required.</p>
    <p><strong>LOCAL WI-FI MATCHES</strong> If you choose Local Play, your phone exchanges gameplay input and match state with the other phone over your Wi-Fi network. A joining player may see the host phone's local IP address. This preview has no developer-hosted online matchmaking service.</p>
    <p><strong>BACKUPS</strong> Dossier includes a manual text backup and restore option. Backups stay on your device unless you copy or share them. The app does not automatically upload them.</p>
    <p><strong>NO ADS OR ANALYTICS</strong> This version does not include advertising or analytics SDKs. Saved progress can be erased by clearing app data or uninstalling; export a backup first if you want to keep it.</p>
-  </div></details>
+  </div></details></div>
+  <footer class="help-footer"><span>FIELD GUIDE / ON-DEVICE</span><button type="button" class="help-practice" data-action="practice">TRY PRACTICE · NO BOTS</button></footer>
  </section>
 </template>
 <template id="settings-template">
