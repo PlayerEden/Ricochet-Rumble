@@ -257,6 +257,19 @@ try{
     assert.ok(control.w>=90&&control.h>=43,'field selection must remain touch-sized');
   }
   await page.screenshot({path:dir+'/mission-setup-'+w+'x'+h+'.png',animations:'disabled'});
+  // Focused Controls/Feedback is a separate in-panel section; ordinary
+  // deployment must not scroll just to expose its seven toggles.
+  assert.equal(await page.locator('.mission-comfort-details').getAttribute('open'),null,
+    'Controls section starts collapsed on the main deployment page');
+  await page.locator('.mission-comfort-details summary').click();
+  assert.equal(await page.locator('#pref-shake').isVisible(),true,
+    'expanded controls exposes real audio/display preferences');
+  assert.ok(await page.locator('#panel').evaluate(el=>el.scrollHeight-el.clientHeight<=3),
+    'Controls subview fits without scrolling '+w+'x'+h);
+  await page.screenshot({path:dir+'/mission-controls-'+w+'x'+h+'.png',animations:'disabled'});
+  await page.locator('.mission-comfort-details summary').click();
+  assert.ok(await page.locator('#map-size').isVisible(),
+    'closing Controls returns to field parameters');
   await page.locator('#map-size').selectOption('large');
   await page.locator('#bot-count').selectOption('1');
   await page.locator('.mission-rules summary').click();
@@ -274,8 +287,10 @@ try{
     'enabling one existing playlist mode must restore Start Match');
   assert.match(await page.locator('#playlist-status').textContent(),/1 SELECTED/);
   await page.locator('.mission-rules summary').click();
+  await page.locator('.mission-comfort-details summary').click();
   const shakeBefore=await page.locator('#pref-shake').isChecked();
   await page.locator('#pref-shake').setChecked(!shakeBefore);
+  await page.locator('.mission-comfort-details summary').click();
   await page.locator('.mission-rules summary').click();
   await page.locator('.mission-setup-body').evaluate(el=>{el.scrollTop=el.scrollHeight;});
   const footerAfterScroll=await page.locator('.mission-setup-actions').evaluate(el=>{

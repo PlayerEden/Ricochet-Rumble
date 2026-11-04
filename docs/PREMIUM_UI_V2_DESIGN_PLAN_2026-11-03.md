@@ -128,3 +128,7 @@ Owner reviewed the UIV2-H APK screenshots on a 1536×674 landscape phone and rej
 - Dossier uses a measured record-height instead of using the entire landscape height, preserving the same six statistics, mode records and footer actions.
 - Premium five-viewport test now explicitly fails if Mode Select, Mission Setup (default), Local Play intro or Dossier requires scrolling. Advanced help/privacy, optional match rules, Custom and Backup may scroll because they contain genuinely long detail.
 - No change to gameplay, LAN bridge, game state, preferences, production signing, or the approved main-menu vehicle art. Keep PR #140 draft until CI and owner visual review.
+
+### UIV2-I focused setup correction after 568×320 browser audit
+
+The first strict no-scroll attempt showed that even compressed checkboxes caused ~74px overflow at 568×320. Rather than make controls tiny or silently clip them, the original Controls & Feedback module is now a native `<details>` subview beside Field Parameters. Default Setup displays Field Parameters, a large Controls & Feedback entry and Playlist/Advanced Rules, all above the pinned Back/Start footer. Clicking Controls exposes all original toggle IDs in their own two-column focused pane and hides the other modules until Done; opening Playlist/Advanced likewise uses its focused scrollable subview. No state, preference format or handler changes. The five-size browser suite explicitly checks that controls open/close correctly and remain no-scroll.
