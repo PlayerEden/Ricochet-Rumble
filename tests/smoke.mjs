@@ -1044,7 +1044,9 @@ console.log('PASS v0.9.15: after-action stats, result transitions, replay/menu a
  const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
  assert.ok(html.includes('id="field-coach"')&&css.includes('.field-coach.hidden'),'optional coach has an explicit hidden state');
  assert.ok(!html.includes('NO ACCOUNT REQUIRED')&&!html.includes('V0.9.20 · LOCAL'),'home must not show redundant account or build wording');
- assert.ok(html.includes('id="home-unit-name"')&&html.includes('id="pref-music"'),'rotating vehicle presentation and music preference exist');
+ const menuSource=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
+ assert.ok(html.includes('id="menu-preview"')&&menuSource.includes('Math.floor(lobbyPreviewClock/8)')&&html.includes('id="pref-music"'),
+  'real rotating tank/mech Canvas showcase and music preference remain, without rejected corner caption');
  assert.ok(html.includes('id="menu-preview"')&&html.includes('class="home-screen"'),'home menu uses the in-game tank lobby stage');
  assert.ok(html.includes('data-action="solo"')&&html.includes('data-action="nearby"')&&html.includes('data-action="settings"')&&html.includes('data-action="help"'),'all entry actions retained');
  assert.equal(html,fs.readFileSync(new URL('../android/app/src/main/assets/index.html',import.meta.url),'utf8'),'Android and web menus must remain identical');
