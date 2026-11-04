@@ -36,3 +36,26 @@ Required before promoting a build: Actions run `head_sha` equals the **exact bra
 - GitHub eventually synchronized PR head with the branch, and all **nine current-head workflows started**, resolving the prior run-discovery blocker for that commit.
 - Canonical gameplay/LAN workflow failed in `tests/one-phone-local-relaunch-qa.mjs` because two older assertions still read the deliberately hidden duplicate `#emblem-status` stripe after VECTOR equip. The live selected `#insignia-detail-name` is the correct UI and saved marker; both assertions now use that element and explicitly confirm the redundant status is hidden. No save record, data migration or gameplay engine change was needed.
 - Remaining current-head QA is still required after this test-only correction. Do not promote on an old successful run.
+
+
+## M6 exact-green evidence — checked 2026-11-04
+
+Baseline commit `3886e358f11c1fadd02a78de3a07f0ea5f5dd3bf` has **9/9 completed successful** PR workflows (no observed failures), including:
+
+| Gate | GitHub Actions run | Result |
+| --- | --- | --- |
+| Premium Hybrid real-browser and Canvas fallback, five responsive captures | [41815624885](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41815624885) | PASS |
+| Full Android/visual, gameplay lifecycle, packaged assets, signer and APK/AAB QA | [41815624794](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41815624794) | PASS |
+| Canonical gameplay, persistence/relaunch, and same-match host bot counts | [41815624791](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41815624791) | PASS |
+| Fast PR regression | [41815624813](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41815624813) | PASS |
+| Isolated Hybrid Android test APK / separate package and disposable signer | [41815624798](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41815624798) | PASS |
+| Native repeat LAN peer acceptance | [41815624774](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41815624774) | PASS |
+| LAN recovery UX | [41815624749](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41815624749) | PASS |
+| Real live LAN spectator | [41815624799](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41815624799) | PASS |
+| LAN queued spectator promotion | [41815624845](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41815624845) | PASS |
+
+PR #140, **41 changed files, 230 commits** at this green checkpoint, was reported **mergeable with clean merge state** against main `c198780293cae57f0387134f8ca074bea5b9e476`. This establishes source/CI integration readiness, not physical Android or Play readiness. Do not squash/rewrite history without separate authorization.
+
+### Additional audit improvement
+
+The M11 Hybrid browser workflow's `pull_request.paths` previously omitted the **premium browser QA test file actually executed by the job**. A future test-only correction could skip that suite. The workflow now also triggers when `tests/m11-premium-menu-qa.mjs`, `tests/uiv3-ui-contract.mjs`, `tests/smoke.mjs`, or `tools/verify-hybrid-menu-bundle.mjs` change. This is CI coverage only, not game/runtime logic. This new workflow revision must pass on its own exact-head commit before any promotion; older green evidence remains attached to `3886e35`.

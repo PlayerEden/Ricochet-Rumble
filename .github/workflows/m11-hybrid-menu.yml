@@ -8,6 +8,10 @@ on:
       - 'web/**'
       - 'android/app/src/main/assets/**'
       - 'tests/m11-hybrid-menu-qa.mjs'
+      - 'tests/m11-premium-menu-qa.mjs'
+      - 'tests/uiv3-ui-contract.mjs'
+      - 'tests/smoke.mjs'
+      - 'tools/verify-hybrid-menu-bundle.mjs'
       - '.github/workflows/m11-hybrid-menu.yml'
   workflow_dispatch:
 

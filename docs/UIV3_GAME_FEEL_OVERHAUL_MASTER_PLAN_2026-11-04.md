@@ -138,3 +138,7 @@ Deliver a **premium hybrid shell** around the existing 2D arcade game: atmospher
 
 
 **M5.1-D audit cleanup:** One equipped insignia card replaces duplicated status bars; failed saves still display a polite error. Unlock progress no longer implies a mandatory achievement order. This is draft source-only pending current-head CI and owner release gate.
+
+
+### M6 automated integration checkpoint — 2026-11-04
+At `3886e35`, all 9 applicable GitHub workflows passed, including the real-browser, gameplay/host-bot, Android, and native LAN suites. GitHub reports PR #140 mergeable/clean against `main`. [M6 audit and exact run evidence](M6_PRE_RELEASE_AUDIT_2026-11-04.md) document this separately from still-deferred physical phone/two-phone/Play gates. Also tightened M11 Hybrid browser CI triggers to cover its test-only QA files, preventing a previously possible silent skipped run. Draft only; do not merge without owner approval.
