@@ -205,6 +205,13 @@
 <template id="hangar-template">
  <section class="hangar-screen" aria-label="Offline Hangar paint choices">
   <header class="hangar-head"><div class="hangar-title"><div class="eyebrow">SOLO / CUSTOMIZATION</div><h2>THE <span>HANGAR</span></h2><p>Choose your look</p></div><button type="button" data-action="hangar-back" class="screen-back">← BACK</button></header>
+  <div class="hangar-body">
+   <section class="hangar-bay" aria-label="Equipped unit preview">
+    <div class="hangar-bay-caption"><span class="sr-kicker">ACTIVE PLATFORM / SOLO</span><strong id="hangar-unit-label">STANDARD ISSUE</strong></div>
+    <canvas id="hangar-unit-preview" width="400" height="240" aria-label="Equipped paint on Sector Rebound tank"></canvas>
+    <div class="hangar-bay-foot"><span>MBT // FIELD UNIT</span><span id="hangar-preview-paint">STANDARD</span></div>
+   </section>
+   <div class="hangar-customize">
   <div class="hangar-tabs" role="tablist" aria-label="Hangar category"><button type="button" class="active" role="tab" aria-controls="hangar-paints" aria-selected="true" data-action="hangar-tab" data-hangar-tab="paint">PAINT</button><button type="button" role="tab" aria-controls="hangar-insignia" aria-selected="false" data-action="hangar-tab" data-hangar-tab="insignia">INSIGNIA</button></div>
   <p id="hangar-new-unlocks" class="hangar-new-unlocks" role="status" aria-live="polite" hidden></p>
   <div id="hangar-paints" class="hangar-pane" role="tabpanel" aria-label="Unit paint">
@@ -230,11 +237,16 @@
   <p class="hangar-equipped" id="emblem-status" role="status">OPERATOR INSIGNIA · ◇ FIELD</p>
   </div>
   <p class="hangar-note">Cosmetic only · Unlock more by completing Solo matches.</p>
+   </div>
+  </div>
  </section>
 </template>
 <template id="dossier-template">
  <section class="dossier-screen" aria-label="Local player dossier">
   <header class="dossier-head"><div class="eyebrow">FIELDGRID / OPERATOR FILE</div><div class="dossier-identity-row"><div><h2>PLAYER <span>DOSSIER</span></h2><p>YOUR SOLO MATCH RECORD</p></div><div class="dossier-emblem" aria-label="Equipped operator insignia"><span id="dossier-emblem-mark" aria-hidden="true">◇</span><strong id="dossier-emblem-name">FIELD</strong></div><button type="button" class="screen-back" data-action="dossier-back">← BACK</button></div></header>
+  <div class="dossier-workspace">
+   <section class="dossier-overview" aria-label="Operator career summary">
+    <div class="dossier-section-tag">OPERATOR SUMMARY <span>SOLO RECORD</span></div>
   <div class="dossier-stats">
    <div><small>MATCHES</small><strong id="dossier-matches">0</strong></div>
    <div><small>VICTORIES</small><strong id="dossier-wins">0</strong></div>
@@ -243,8 +255,10 @@
    <div><small>OPERATOR KOs</small><strong id="dossier-kos">0</strong></div>
    <div><small>DEATHS</small><strong id="dossier-deaths">0</strong></div>
   </div>
+   </section>
   <div class="dossier-columns">
    <section><h3>MODE RECORD</h3><div id="dossier-modes"></div></section>
+  </div>
   </div>
   <footer class="dossier-footer">
    <div><strong id="dossier-time">0 MIN</strong> <span>COMBAT TIME</span><p id="dossier-save-status" role="status">LOCAL STORAGE READY</p></div>
