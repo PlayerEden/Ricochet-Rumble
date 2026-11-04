@@ -62,7 +62,6 @@ android {
         targetSdk 36
         versionCode previewVersionCode
         versionName previewVersionName
-        manifestPlaceholders = [srLauncherLabel: hybridLabPackage == 'true' ? 'SR Hybrid Test' : 'Sector Rebound']
     }
     signingConfigs {
         if (hasUploadSigning) {
