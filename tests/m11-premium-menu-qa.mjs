@@ -102,6 +102,16 @@ try{
   assert.ok(hangar.panel.x>=0&&hangar.panel.right<=w+1&&hangar.panel.bottom<=h+1);
   assert.ok(hangar.hero.x>=0&&hangar.hero.right<=w+1&&hangar.hero.bottom<=h+1);
   await page.screenshot({path:dir+'/hangar-quality-'+w+'x'+h+'.png',animations:'disabled'});
+  // UIV3-J4: switch between actual tank and mech art without altering paint.
+  assert.equal(await page.locator('#hangar-unit-preview').getAttribute('data-unit'),'tank');
+  await page.locator('#menu button[data-action="hangar-preview-unit"]').click();
+  assert.equal(await page.locator('#hangar-unit-preview').getAttribute('data-unit'),'mech',
+    'Hangar must draw the actual game mech');
+  assert.equal(await page.locator('#hangar-unit-preview').getAttribute('data-paint-id'),'fieldgrid.standard',
+    'Visual-only vehicle preview must not alter paint');
+  await page.locator('#menu button[data-action="hangar-preview-unit"]').click();
+  assert.equal(await page.locator('#hangar-unit-preview').getAttribute('data-unit'),'tank',
+    'Hangar returns to tank on demand');
   await page.locator('#menu button[data-action="equip-paint"][data-paint-id="fieldgrid.moss"]').click();
   assert.equal(await page.locator('#hangar-unit-preview').getAttribute('data-paint-id'),'fieldgrid.moss',
    'Paint selection updates real vehicle preview with existing saved paint');
@@ -376,6 +386,11 @@ try{
   });
   await page.locator('#menu button[data-action="nearby"]').click();
   assert.equal(await page.locator('.lan-entry').isVisible(),true,'Local Play entry is visible');
+  await page.waitForFunction(()=>
+    ['tank','mech'].includes(document.querySelector('.lan-room-preview')?.dataset.unit),
+    null,{timeout:6000});
+  assert.equal(await page.locator('.lan-room-preview').count(),1,
+    'Local Play uses only one actual Canvas scene');
   const entry=await page.evaluate(()=>{
     const panel=document.querySelector('#panel'),main=panel.querySelector('.lan-entry-main'),
       buttons=[...panel.querySelectorAll('.lan-entry button[data-action]')];
