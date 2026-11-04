@@ -35,6 +35,7 @@ try{
   await page.locator('#menu button[data-action="settings"]').click();
   await page.locator('#map-size').selectOption('large');
   await page.locator('#bot-count').selectOption('1');
+  await page.locator('.mission-comfort-details summary').click();
   await page.locator('#pref-leftHanded').check();
   await page.locator('#menu button[data-action="settings-back"]').click();
   // Configure and save a real Custom Match preset through the game UI.

@@ -3042,3 +3042,9 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 /* UIV2-I touch QA correction: native field selectors remain 44px,
    even when the surrounding mission form is condensed. */
 #menu #panel .mission-setup-screen select{height:44px;min-height:44px}
+
+
+/* UIV2-I touch integrity: retain original checkbox size in the focused pane. */
+#menu #panel .mission-toggle-group input[type="checkbox"]{
+ width:20px;height:20px;min-width:20px;flex-basis:20px;
+}

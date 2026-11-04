@@ -92,6 +92,7 @@ try{
   await page.goto('http://127.0.0.1:'+server.address().port+'/',{waitUntil:'load'});
   await page.waitForFunction(()=>!!window.__pilotQA);
   await page.locator('button[data-action="settings"]').click();
+  await page.locator('.mission-comfort-details summary').click();
   const option=page.locator('#pref-pilotAssist');
   assert.equal(await option.isChecked(),false,'soft assist defaults OFF');
   await option.check();
@@ -100,6 +101,7 @@ try{
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-options-v06')).comfort.pilotAssist),false);
   await page.reload();
   await page.locator('button[data-action="settings"]').click();
+  await page.locator('.mission-comfort-details summary').click();
   assert.equal(await page.locator('#pref-pilotAssist').isChecked(),false,'opt-out survives reload');
   for(const seed of [101,202,303]){
    const init=await page.evaluate(seed=>window.__pilotQA.setup(seed),seed);
