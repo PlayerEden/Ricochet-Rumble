@@ -3698,3 +3698,90 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 @media(max-height:340px) and (orientation:landscape){
   #menu :is(.pause-screen,.custom-screen,.help-screen){animation:none}
 }
+
+
+/* UIV3-K1 — preserve authentic unit art; keep preview controls off the sprite.
+   A preview vehicle never changes the actual match spawn vehicle. */
+#menu .hangar-bay-caption{
+  flex-direction:row;align-items:center;justify-content:space-between;
+  gap:clamp(6px,1vw,11px);min-height:58px;
+}
+#menu .hangar-preview-title{min-width:0;display:flex;flex-direction:column;gap:3px;position:relative;z-index:1}
+#menu .hangar-preview-title strong{font-size:clamp(11px,1.2vw,15px)}
+#menu #panel .hangar-bay-caption .hangar-unit-toggle{
+  flex:0 0 auto;min-height:44px;min-width:96px;max-width:130px;
+  background:#244550;border:1px solid #8cb4b6;color:#f0f5ef;
+  font:850 clamp(10px,1.05vw,12px)/1.1 system-ui,sans-serif;
+  position:relative;z-index:2;
+}
+#menu .hangar-bay-foot{gap:7px}
+#menu .hangar-bay-foot #hangar-preview-unit-label{
+  color:#afcbd0;font-size:clamp(8px,.82vw,10px);
+}
+#menu .hangar-bay-foot #hangar-preview-paint{white-space:nowrap;letter-spacing:.02em}
+@media(max-width:650px) and (orientation:landscape){
+  #menu .hangar-bay-caption{min-height:48px;padding:5px 7px}
+  #menu #panel .hangar-bay-caption .hangar-unit-toggle{min-width:75px;padding:4px 5px}
+  #menu .hangar-bay-foot{padding:4px 7px}
+  #menu .hangar-bay-foot #hangar-preview-unit-label{font-size:8px}
+}
+
+/* UIV3-K2 — LAN entry is a focused action picker, not a padded web form. */
+#menu #panel:has(.lan-entry){
+  width:min(890px,calc(100vw - 22px));height:auto;
+  max-height:calc(100dvh - 20px);
+}
+#menu .lan-entry{height:auto;min-height:0}
+#menu .lan-entry-head{
+  display:flex;align-items:center;justify-content:space-between;gap:9px;
+  padding:clamp(7px,1.2dvh,11px) clamp(11px,1.6vw,16px);
+}
+#menu .lan-entry-head>div{min-width:0}
+#menu #panel .lan-header-back{
+  flex:0 0 auto;width:auto;min-width:85px;min-height:44px;margin:0;
+  padding:5px 9px;border:1px solid #61828b;border-radius:3px;
+  color:#e8f2ef;background:#203944;font:850 clamp(10px,1.05vw,12px)/1 system-ui,sans-serif;
+}
+#menu .lan-entry-main{
+  flex:0 0 auto;grid-template-columns:minmax(0,.90fr) minmax(0,1.1fr);
+  gap:clamp(6px,1.1vw,12px);
+  padding:clamp(7px,1.1dvh,10px) clamp(11px,1.6vw,16px);
+}
+#menu .lan-entry-brief{min-height:114px}
+#menu .lan-entry-footnote{
+  flex:0 0 auto;margin:0;padding:4px clamp(11px,1.6vw,16px) 7px;
+  color:#91afb9;font:750 9px/1.15 ui-monospace,monospace;letter-spacing:.04em;
+}
+@media(max-height:355px) and (orientation:landscape){
+  #menu .lan-entry-head p{display:none}
+  #menu .lan-entry-brief{min-height:104px}
+  #menu .lan-entry-footnote{padding-top:2px;padding-bottom:4px}
+}
+
+/* UIV3-K3 — existing real emblem is the player's local identity, not
+   fabricated account/profile content. Preserve all six stat values. */
+#menu .dossier-emblem{
+  border:1px solid #7f9895;border-bottom:2px solid #d8b16f;
+  background:linear-gradient(145deg,#30434a,#182e3a);
+  border-radius:3px;box-shadow:inset 0 1px 0 #d1e6de24;
+}
+#menu .dossier-emblem #dossier-emblem-mark{
+  color:#f3cf83;text-shadow:0 0 8px #d6b46a35;
+  font-size:clamp(19px,2.5vw,26px);
+}
+#menu .dossier-section-tag #dossier-record-note{
+  color:#a7cbd0;font-size:clamp(9px,.9vw,11px);letter-spacing:.01em;
+}
+@media(max-height:360px) and (orientation:landscape){
+  #menu .dossier-emblem{padding:3px 5px}
+}
+
+/* UIV3-K4 — reveal the real frozen match beneath ONLY pause panels.
+   The existing pause state and overlay intercept all gameplay touches. */
+#menu:has(.pause-screen):not(.hidden){
+  background:rgba(3,14,22,.63);
+  backdrop-filter:blur(1.5px);
+}
+@media(prefers-reduced-motion:reduce){
+  #menu:has(.pause-screen):not(.hidden){backdrop-filter:none}
+}
