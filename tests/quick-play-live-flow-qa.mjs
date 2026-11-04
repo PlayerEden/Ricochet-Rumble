@@ -505,8 +505,14 @@ try{
  await page.locator('#custom-size').selectOption('large');
  await page.locator('#custom-bots').selectOption('1');
  await page.locator('#custom-skill').selectOption('spicy');
+ // The Advanced Rules drawer is part of the actual player flow. Don't try to
+ // interact with hidden controls without opening the section first.
+ assert.equal(await page.locator('.custom-advanced').getAttribute('open'),null);
+ await page.locator('.custom-advanced > summary').click();
+ assert.equal(await page.locator('#custom-lives').isVisible(),true);
  await page.locator('#custom-lives').selectOption('3');
  await page.locator('#custom-shells').selectOption('1');
+ await page.locator('.custom-advanced > summary').click();
  assert.ok((await page.locator('#custom-preview').textContent()).includes('3 COMBATANTS'));
  const customSaved=await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-custom-v1')));
  assert.equal(customSaved.version,1);
