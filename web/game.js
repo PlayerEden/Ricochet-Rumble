@@ -3488,4 +3488,16 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
   showLanGuestRecovery(roomWasFull?'full':'lost');break;
  case 'error':notice(msg.message||'Network error');if(mode==='guest'&&!connected)showLanGuestRecovery('failed');break;}}};
 resizeArenaCanvas();refreshHUD();requestAnimationFrame(loop);
+// M11-A is opt-in while staged. No new requests, GPU contexts or dependencies
+// in the ordinary owner preview. A local, offline Pixi bundle is built and
+// checked by hybrid-ui/ before this flag may be enabled by default.
+if(new URLSearchParams(window.location.search).get('hybridMenu')==='1'){
+ const optionalScript=document.createElement('script');
+ optionalScript.src='hybrid-menu-pixi.bundle.js';
+ optionalScript.async=true;
+ optionalScript.onerror=()=>{
+  window.__SRHybridMenu={build:'loader',active:false,backend:'canvas',reason:'optional local Pixi bundle unavailable'};
+ };
+ document.head.appendChild(optionalScript);
+}
 })();
