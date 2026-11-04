@@ -81,7 +81,12 @@ public final class MainActivity extends Activity {
         // JavaScript bridge is safe only because this WebView loads app-bundled assets.
         web.addJavascriptInterface(new GameBridge(), "AndroidBridge");
         setContentView(web);
-        web.loadUrl("file:///android_asset/index.html");
+        // Only the separate .hybridtest APK enables the Pixi menu by default.
+        // The real game/owner preview retains its original URL and Canvas fallback.
+        String initialPage = getPackageName().endsWith(".hybridtest")
+            ? "file:///android_asset/index.html?hybridMenu=1"
+            : "file:///android_asset/index.html";
+        web.loadUrl(initialPage);
     }
 
     private void enterImmersiveMode() {
