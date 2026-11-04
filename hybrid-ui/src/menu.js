@@ -10,6 +10,10 @@ let app=null,host=null,raf=0,token=0,time=0,prev=0,renderPrev=0,glow=null,visor=
 const reduced=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
 const isHome=()=>menu&&!menu.classList.contains('hidden')&&!!panel?.querySelector('.home-screen');
 const nextHost=()=>isHome()?panel.querySelector('.home-stage [data-hybrid-pixi]'):null;
+function showBackendLabel(label){
+ const el=panel?.querySelector('.home-stage-signal');
+ if(el)el.textContent=label;
+}
 function destroy(){
  token++;
  if(raf){cancelAnimationFrame(raf);raf=0;}
@@ -103,10 +107,11 @@ async function attach(node){
   node.appendChild(candidate.canvas);
   app=candidate;host=node;candidate=null;
   info.active=true;info.backend='webgl';info.mounts++;info.reason='running';
+  showBackendLabel('PIXI / WEBGL • ACTIVE');
   prev=0;renderPrev=0;raf=requestAnimationFrame(run);
  }catch(e){
   if(candidate)try{candidate.destroy(true,{children:true});}catch(_){}
-  if(mine===token){info.active=false;info.backend='canvas';info.reason='Canvas fallback: '+String(e).slice(0,100);}
+  if(mine===token){info.active=false;info.backend='canvas';info.reason='Canvas fallback: '+String(e).slice(0,100);showBackendLabel('CANVAS / FALLBACK');}
  }
 }
 function sync(){
