@@ -2972,3 +2972,25 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  overflow-y:auto;
 }
 #menu .help-scroll .help-steps article{border-radius:3px}
+
+
+/* UIV2-I small phone audit correction: 568x320 Dossier was 1–2 rows too tall.
+   Fit the complete report rather than simply clipping its footer. */
+@media(max-height:380px) and (orientation:landscape){
+ #menu .dossier-workspace{height:132px}
+ #menu .dossier-screen{gap:3px}
+ #menu .dossier-head{padding-bottom:2px}
+ #menu .dossier-head .eyebrow{font-size:9px}
+ #menu .dossier-head h2{font-size:18px;margin:1px 0}
+ #menu .dossier-head .dossier-emblem{padding:2px 4px}
+ #menu .dossier-overview,#menu .dossier-columns>section{padding:4px 5px}
+ #menu .dossier-section-tag{font-size:9px}
+ #menu .dossier-stats{gap:3px}
+ #menu .dossier-stats small{font-size:8px}
+ #menu .dossier-stats strong{font-size:18px}
+ #menu .dossier-columns h3{margin:0 0 3px;font-size:10px}
+ #menu .dossier-mode{padding:2px 0;font-size:9px}
+ #menu .dossier-mode strong{font-size:8px}
+ #menu .dossier-footer{padding-top:3px}
+ #menu .dossier-note{display:none}
+}

@@ -125,8 +125,16 @@ try{
     modeRows:document.querySelectorAll('.dossier-mode').length};
   });
   assert.equal(dossier.modeRows,5,'five mode record entries retained');
-  assert.ok(await page.locator('#panel').evaluate(el=>el.scrollHeight-el.clientHeight<=3),
-    'Dossier should be a compact, non-scrollable operator card');
+  const dossierScroll=await page.locator('#panel').evaluate(el=>({
+    excess:el.scrollHeight-el.clientHeight,
+    height:el.clientHeight,
+    content:el.scrollHeight,
+    header:el.querySelector('.dossier-head').getBoundingClientRect().height,
+    workspace:el.querySelector('.dossier-workspace').getBoundingClientRect().height,
+    footer:el.querySelector('.dossier-footer').getBoundingClientRect().height
+  }));
+  assert.ok(dossierScroll.excess<=3,
+    'Dossier should be a compact, non-scrollable operator card: '+w+'x'+h+' '+JSON.stringify(dossierScroll));
   assert.ok(dossier.footer.bottom<=h+1&&dossier.footer.y>=0,'Dossier footer visible on phone');
   assert.ok(dossier.workspace.bottom<=dossier.footer.y+2,'Dossier stats cannot overlap footer');
   for(const item of dossier.buttons){
