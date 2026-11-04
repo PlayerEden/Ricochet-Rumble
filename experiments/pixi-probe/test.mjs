@@ -48,6 +48,19 @@ try {
   await page.waitForFunction(()=>window.__pixiPremium?.quality==='cinematic'&&window.__pixiPremium?.shader===true,null,{timeout:15000});
   const premiumShot=await page.locator('#pixi-host canvas').screenshot({path:'qa-results/pixi-probe/menu-SHADER-'+width+'x'+height+'.png'});
   assert.equal(premiumShot.equals(reducedShot),false,'GLSL shader and atmospheric layers change the Pixi render');
+  // A blank shader can differ from an unfiltered panel and still pass an A/B test.
+  // Require real cyan vehicle-line detail INSIDE the filtered hologram itself.
+  const sample=await page.evaluate(async base64=>{
+   const im=new Image();im.src='data:image/png;base64,'+base64;await im.decode();
+   const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;
+   const g=c.getContext('2d');g.drawImage(im,0,0);
+   const w=c.width,h=c.height;
+   const data=g.getImageData(Math.floor(w*.78),Math.floor(h*.15),Math.floor(w*.175),Math.floor(h*.20)).data;
+   let bright=0;for(let i=0;i<data.length;i+=4)
+    if(data[i]>75&&data[i+1]>140&&data[i+2]>150)bright++;
+   return {bright,width:w,height:h};
+  },premiumShot.toString('base64'));
+  assert.ok(sample.bright>30,'enabled GPU hologram must retain readable cyan art, not blank it: '+JSON.stringify(sample));
   await page.locator('#settings-back').click();
   await page.locator('#go-deploy').click();
   await page.waitForFunction(()=>window.__pixiPremium?.view==='combat'&&window.__pixiProbe?.engine==='pixi'&&window.__pixiProbe?.frames>=8,null,{timeout:20000});
