@@ -208,7 +208,10 @@ try{
   assert.deepEqual(marks.map(x=>x.locked),[false,true,true,true]);
   assert.equal(marks.filter(x=>x.selected).length,1);
   assert.ok(marks.slice(1).every(x=>x.label.includes('LOCKED')));
-  assert.equal(await page.locator('#emblem-status').textContent(),'EQUIPPED · FIELD');
+  assert.equal(await page.locator('#emblem-status').isVisible(),false,
+    'successful emblem equip must not create a duplicate visible status stripe');
+  assert.equal(await page.locator('.insignia-detail-copy small').textContent(),'EQUIPPED INSIGNIA');
+  assert.match(await page.locator('#insignia-next-progress').textContent(),/^UNLOCK PROGRESS/);
   assert.equal(await page.locator('#insignia-detail-use').getAttribute('href'),'#sr-mark-field');
   assert.equal(await page.locator('#insignia-detail-name').textContent(),'FIELD');
   assert.match(await page.locator('#insignia-next-progress').textContent(),/VECTOR · 0 \/ 3 MATCHES/);

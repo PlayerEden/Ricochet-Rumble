@@ -53,3 +53,9 @@ This is a plan and a testable first increment, not a claim that all screenshot-r
 - Prove in real Chromium **within the exact same match**: with 0 additional slots, host alone fields exactly 1 AI opponent and HUD shows 1; with 1 additional slot, the match fields exactly 2 and HUD shows 2. Both use true runtime `opposingCount(0)`, `state.humanCount=2`, `lanHostSolo=true`, and the `LAN:S-FFA` mode chip. The previously compared S-FFA screenshot was a separate Solo game, not direct evidence of a Host Match defect.
 - Explicitly confirm roles cannot visually run into one another, 9 settings stay accessible, scroll reaches final setting above pinned Start/Leave footer at phone landscape widths, and no gameplay, packet, control, bot-team, or save semantics change.
 - **Gate remains open:** full current-head CI, real Android QA, and two-device phone acceptance are needed before release/merging PR #140.
+
+
+## M5.1-D — audit-driven insignia clarity
+- Consolidated redundant equipped insignia row into one actual selected badge card. Hidden polite status region is still revealed on an actual failed equip attempt, preserving error feedback.
+- Renamed misleading `NEXT UNLOCK` to `UNLOCK PROGRESS`, because 3 matches, 10 KOs and 12 wins are independent thresholds. IDs, unlocks and save format unchanged.
+- Source/bundle parity and the existing browser tests now assert one selected badge, real progress, and accessible error fallback. Not an owner-verified release.

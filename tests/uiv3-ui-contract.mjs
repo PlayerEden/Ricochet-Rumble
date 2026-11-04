@@ -95,4 +95,10 @@ assert.ok(js.includes('id="lan-ai-note"')&&js.includes('PLAYER 2 ADDS ONE AI'),
  'Host-only reserved guest bot cannot appear as an unexplained extra opponent');
 assert.ok(css.includes('scrollbar-gutter:stable')&&css.includes('lan-settings-guide'),
  'scrollable nine-rule region must remain visually discoverable');
+// M5.1-D: independent insignia unlocks and actionable save errors.
+assert.ok(html.includes('id="emblem-status" role="status" aria-live="polite" hidden')&&
+ html.includes('EQUIPPED INSIGNIA')&&html.includes('UNLOCK PROGRESS'),
+ 'only one equipped insignia visible; status is reserved for errors');
+assert.ok(js.includes("emblemStatus.hidden=true;")&&js.includes("if(!ok&&status){status.hidden=false;"),
+ 'actual failed saved emblem selection still presents an error');
 console.log('UIV3_UI_CONTRACT_PASS — real controls, save UI, accessibility, audio and native parity');

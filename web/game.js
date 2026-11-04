@@ -92,7 +92,7 @@ function refreshHangar(){
   if(label&&unlock.target)label.textContent=unlock.eligible?'UNLOCKED':unlock.current+' / '+unlock.target+' '+unlock.metric.toUpperCase();
  }
  const emblemStatus=document.getElementById('emblem-status');
- if(emblemStatus)emblemStatus.textContent='EQUIPPED · '+OPERATOR_EMBLEMS[equippedEmblem].label;
+ if(emblemStatus){emblemStatus.textContent='';emblemStatus.hidden=true;}
  const detailIcon=document.getElementById('insignia-detail-use');
  if(typeof detailIcon?.setAttribute==='function')detailIcon.setAttribute('href','#sr-mark-'+equippedEmblem.slice(5));
  const detailName=document.getElementById('insignia-detail-name');
@@ -103,7 +103,7 @@ function refreshHangar(){
   if(!next)nextProgress.textContent='ALL FOUR INSIGNIAS EARNED';
   else{
    const [id,def]=next,progress=emblemProgress(id);
-   nextProgress.textContent='NEXT UNLOCK · '+def.label+' · '+progress.current+' / '+progress.target+' '+progress.metric.toUpperCase();
+   nextProgress.textContent='UNLOCK PROGRESS · '+def.label+' · '+progress.current+' / '+progress.target+' '+progress.metric.toUpperCase();
   }
  }
  for(const el of document.querySelectorAll('[data-action="equip-emblem"]')){
@@ -3463,7 +3463,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
   }else if(a==='equip-emblem'){
    const ok=equipEmblem(b.dataset.emblemId);refreshHangar();
    const status=document.getElementById('emblem-status');
-   if(!ok&&status)status.textContent=emblemProgress(b.dataset.emblemId).eligible?'COULD NOT SAVE INSIGNIA':'INSIGNIA LOCKED · COMPLETE DOSSIER MILESTONE';
+   if(!ok&&status){status.hidden=false;status.textContent=emblemProgress(b.dataset.emblemId).eligible?'COULD NOT SAVE INSIGNIA':'INSIGNIA LOCKED · COMPLETE DOSSIER MILESTONE';}
   }else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-share','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel(document.getElementById('help-template').innerHTML)}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='practice')newMatch('practice');else if(a==='daily')launchDailySector();else if(a==='forwardbay')launchForwardBayExercise();else if(a==='ctf')launchCtfExercise();else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){openModes();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
  else if(a==='custom-reset'){resetCustomDraft();refreshCustomUI();customPresetStatus('DEFAULT RULES RESTORED · SAVED PRESETS KEPT');}
  else if(a==='custom-preset-save'){

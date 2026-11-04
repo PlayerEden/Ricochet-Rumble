@@ -4120,3 +4120,8 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  #menu .lan-lobby .lan-presence-slot span,#menu .lan-lobby .lan-presence-slot strong{font-size:9px}
  #menu .lan-settings-guide{font-size:9px}
 }
+
+
+/* M5.1-D: one equipped insignia card, with separate visible errors only if save fails. */
+#menu #emblem-status[hidden]{display:none!important}
+#menu #emblem-status:not([hidden]){margin:3px 0 5px;color:#f7d9a4;border-left-color:#edb66d}

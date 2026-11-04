@@ -88,7 +88,8 @@ try{
  assert.equal(await page.locator('button[data-emblem-id="mark.vector"]').isDisabled(),true,'VECTOR locked until three Solo matches');
  assert.equal(await page.locator('button[data-emblem-id="mark.ace"]').isDisabled(),true,'ACE locked until ten recorded KOs');
  assert.equal(await page.locator('button[data-emblem-id="mark.command"]').isDisabled(),true,'COMMAND locked until twelve wins');
- assert.ok((await page.locator('#emblem-status').textContent()).includes('FIELD'));
+ assert.equal(await page.locator('#emblem-status').isVisible(),false,'insignia is shown in one real detail card');
+ assert.equal((await page.locator('#insignia-detail-name').textContent()).trim(),'FIELD');
  await page.locator('button[data-hangar-tab="insignia"]').click();
  assert.equal(await page.locator('#hangar-insignia').isVisible(),true,'insignia reached with one tap');
  assert.equal(await page.locator('#hangar-paints').isVisible(),false,'paint hidden while customizing insignia');

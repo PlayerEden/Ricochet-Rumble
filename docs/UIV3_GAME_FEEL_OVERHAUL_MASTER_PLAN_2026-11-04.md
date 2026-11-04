@@ -135,3 +135,6 @@ Deliver a **premium hybrid shell** around the existing 2D arcade game: atmospher
 
 
 **M5.1-C Host-room usability/QA:** Split host/guest status into distinct cards, explain the reserved AI guest slot and guide scrolling for nine original rules. Add an actual live-browser same-match host-only zero/one additional-bot test comparing opponents and HUD totals. Preserve all LAN protocols, controls, existing saved data and draft PR release gates.
+
+
+**M5.1-D audit cleanup:** One equipped insignia card replaces duplicated status bars; failed saves still display a polite error. Unlock progress no longer implies a mandatory achievement order. This is draft source-only pending current-head CI and owner release gate.
