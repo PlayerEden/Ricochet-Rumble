@@ -1516,3 +1516,236 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 @media(prefers-reduced-motion:reduce){
   #menu .home-content .home-actions{scroll-behavior:auto}
 }
+
+
+/* M11-C / PHONE PLAYER VISUAL REVIEW (2026-11-03)
+   Replace the overbuilt blue-outline prototype look with a more restrained
+   premium FIELDGRID interface. Design only: no actions, scores or saved data. */
+#menu{
+ --sr-stage:#091722;
+ --sr-plate:#16232d;
+ --sr-plate-hi:#1d2f39;
+ --sr-line:#516b78;
+ --sr-soft:#b8cbd0;
+ --sr-gold:#e9b765;
+ --sr-glow:#83d9e6;
+ background:#060d13e8;
+}
+#menu #panel:has(.home-screen){
+ border:1px solid #48616b;
+ border-radius:10px;
+ box-shadow:0 22px 58px #01070ce0,inset 0 1px 0 #a1b6c41e;
+ background:#081621;
+}
+#menu .home-topbar{
+ background:linear-gradient(90deg,#0b1d28ef 0%,#09202ba8 65%,#0b1e28ec 100%);
+ border-bottom:1px solid #637e874b;
+}
+#menu .home-brand-mark{
+ border-color:#bce5e4;background:#81d1dc;
+ box-shadow:none;
+}
+#menu .home-overline{letter-spacing:.17em;color:#b7e2e3}
+#menu .premium-menu-intro{gap:clamp(5px,1dvh,9px)}
+#menu .premium-menu-eyebrow{
+ font-family:ui-monospace,Consolas,monospace;
+ font-size:clamp(8px,.98vw,10px);
+ letter-spacing:.13em;color:#d6bb84;
+}
+#menu .premium-menu-title{
+ font-size:clamp(28px,5.1vw,64px);
+ letter-spacing:.016em;
+ line-height:.93;
+ font-weight:900;
+ color:#f0f4f0;
+ text-shadow:0 2px 14px #03121c99;
+}
+#menu .premium-menu-title span{color:#e6b667;letter-spacing:.012em}
+#menu .premium-menu-motto{font-size:clamp(9px,1.18vw,13px);font-weight:650;letter-spacing:.035em;color:#bdd0d4}
+#menu .home-content .home-actions{width:min(47%,465px);gap:clamp(4px,.7dvh,7px)}
+#menu .home-stage:before{
+ background:linear-gradient(90deg,#07151ffa 0%,#07151feb 25%,#07151fb8 38%,#07151f37 58%,transparent 83%);
+}
+#menu .home-stage:after{
+ background:linear-gradient(0deg,#07131bbd 0%,transparent 21%,transparent 82%,#0716214b 100%);
+}
+#menu .home-stage-signal{
+ background:#0a1f2cbd;
+ color:#aac8cf;
+ font-size:clamp(8px,.9vw,10px);
+ letter-spacing:.075em;
+ padding:4px 8px;
+}
+#menu .home-stage-title strong{font-weight:850;font-size:clamp(13px,2.8dvh,21px);color:#e4c28c}
+#menu .home-stage-label{letter-spacing:.065em;color:#bfd7dc}
+#menu #panel .home-deploy{
+ min-height:clamp(44px,9.6dvh,56px);
+ border-radius:5px;
+ background:linear-gradient(180deg,#ffd17c,#ecad49);
+ border-color:#f5d18a;
+ color:#291f13;
+ box-shadow:inset 0 1px 0 #fff7d9aa,0 3px 0 #8c5f26;
+ font-weight:900;
+}
+#menu #panel .home-action-grid button{
+ background:linear-gradient(105deg,#1d303bde,#152631e0);
+ border:1px solid #57717c99;
+ border-radius:5px;
+ box-shadow:inset 2px 0 0 #82d4db36;
+}
+#menu #panel .home-action-grid button.home-modes{
+ background:linear-gradient(105deg,#2a3740e8,#202e37e8);
+ border-left:3px solid #80cdd4;
+}
+#menu .home-action-grid strong{font-weight:800;letter-spacing:.012em}
+#menu .home-action-grid small{color:#9ebac3;letter-spacing:.045em}
+#menu .home-utilities button{
+ border-radius:5px;
+}
+#menu #panel .home-utilities button{
+ background:#1b313cc9;border-color:#68848d8a;
+ box-shadow:inset 0 1px 0 #ccebf412;
+ font-weight:750;
+}
+
+/* Mode selection: reduce the giant stacked-template look. Compact, measured
+   cards and a normal (not overlapping) Back action. */
+#menu #panel:has(.mode-screen){
+ width:min(840px,calc(100vw - 22px));
+ max-height:calc(100dvh - 20px);
+ overflow-y:auto;
+ padding:clamp(10px,1.8dvh,17px) clamp(14px,2.3vw,24px);
+ border:1px solid #59717a;
+ border-radius:9px;
+ background:linear-gradient(128deg,#1a2a34,#111d26 76%);
+ box-shadow:0 24px 70px #000b;
+ scrollbar-width:thin;
+}
+#menu .mode-screen{gap:clamp(6px,1dvh,10px)}
+#menu .mode-head{
+ display:grid;grid-template-columns:1fr;
+ gap:3px;
+ padding:0 0 5px;
+ border-bottom:1px solid #607b8549;
+}
+#menu .mode-head .eyebrow{font:750 clamp(9px,1.1vw,11px)/1.1 ui-monospace,monospace;letter-spacing:.17em;color:#8dcdd4}
+#menu .mode-head h2{
+ margin:0;
+ font:900 clamp(24px,4.8dvh,36px)/1 system-ui,Arial,sans-serif;
+ letter-spacing:.012em;
+}
+#menu .mode-head h2 span{color:#e3b86f}
+#menu .mode-head p{font:500 clamp(10px,1.15vw,12px)/1.2 system-ui,sans-serif;color:#b5c7cd}
+#menu .mode-grid{gap:clamp(5px,.9vw,10px)}
+#menu #panel .mode-grid button{
+ min-height:clamp(51px,12.3dvh,76px);
+ padding:clamp(5px,.95dvh,10px) clamp(9px,1.25vw,13px);
+ grid-template-columns:clamp(27px,5.5dvh,38px) minmax(0,1fr) 8px;
+ gap:clamp(6px,.8vw,10px);
+ background:linear-gradient(135deg,#263540e0,#1c2b35e0);
+ border:1px solid #6579849e;
+ border-radius:5px;
+ box-shadow:inset 2px 0 0 #8cb9bf24;
+}
+#menu .mode-icon{
+ width:clamp(27px,5.5dvh,38px);
+ height:clamp(27px,5.5dvh,38px);
+ border-radius:5px;border:1px solid #5d828a;
+ background:#152b35;
+ color:#b2e0e4;
+ font-size:clamp(17px,3.4dvh,24px);
+}
+#menu .mode-grid strong{font-size:clamp(11px,1.42vw,15px);font-weight:800;letter-spacing:.015em}
+#menu .mode-grid small{font-size:clamp(8px,.95vw,10px);color:#a9bfc5}
+#menu .mode-arrow{font-size:18px;color:#87b3be}
+#menu #panel .mode-secondary-actions>button{
+ min-height:clamp(31px,7dvh,41px);
+ padding:5px 11px;
+ border-radius:5px;
+}
+#menu .bay-exercise-fold summary{
+ background:#1d313a;
+ border-color:#527784;
+ color:#cab38e;
+}
+#menu #panel:has(.mode-screen) .mode-back{
+ position:static;
+ flex:0 0 auto;
+ min-height:clamp(36px,8dvh,43px);
+ margin:0;
+ background:#172833;
+ border:1px solid #546b74;
+ border-radius:5px;
+ box-shadow:none;
+ font-size:clamp(11px,1.5vw,14px);
+ color:#d6e4e6;
+}
+
+/* Pause flow: small centered dialog, instead of another full-screen card. */
+#menu #panel:has(.pause-actions){
+ width:min(600px,calc(100vw - 32px));
+ max-height:calc(100dvh - 22px);
+ padding:clamp(14px,3dvh,22px) clamp(17px,3vw,27px);
+ background:linear-gradient(145deg,#1b2a34,#101c25);
+ border:1px solid #6b7f85;
+ border-radius:9px;
+ box-shadow:0 24px 76px #000d,inset 0 1px 0 #ffffff18;
+}
+#menu #panel:has(.pause-actions) .eyebrow{
+ font:800 clamp(10px,1.2vw,12px)/1.1 ui-monospace,monospace;
+ letter-spacing:.13em;color:#8fd3db;
+}
+#menu #panel:has(.pause-actions) h2{
+ font:900 clamp(26px,6dvh,39px)/1 system-ui,Arial,sans-serif;
+ letter-spacing:.015em;margin:5px 0 6px;
+}
+#menu #panel:has(.pause-actions) h2 span{color:#e9bc71}
+#menu #panel:has(.pause-actions) .pause-hint{
+ margin:2px 0 12px;
+ text-align:left;
+ font-size:clamp(11px,1.3vw,13px);
+ line-height:1.3;
+ color:#b8ced4;
+}
+#menu #panel:has(.pause-actions) .pause-actions{
+ max-width:none;margin:0;
+ display:grid;grid-template-columns:1fr 1fr;
+ gap:7px;
+}
+#menu #panel:has(.pause-actions) .pause-actions button{
+ min-height:clamp(38px,8dvh,46px);
+ padding:6px 10px;
+ margin:0;
+ border-radius:5px;
+ background:#23333d;
+ border:1px solid #627c85;
+ font-size:clamp(11px,1.5vw,15px);
+}
+#menu #panel:has(.pause-actions) .pause-actions button.primary{
+ grid-column:1/-1;
+ color:#241e13;
+ background:linear-gradient(#ffd27b,#eeb258);
+ border-color:#f7d08c;
+}
+#menu #panel:has(.pause-actions) .pause-audio{
+ margin-top:10px;
+ padding-top:9px;
+ border-top:1px solid #677f874c;
+}
+@media(max-height:365px) and (orientation:landscape){
+ #menu .home-content .home-actions{width:52%;gap:3px}
+ #menu .premium-menu-title{font-size:clamp(27px,5vw,41px)}
+ #menu .premium-menu-intro{gap:2px}
+ #menu #panel .mode-grid button{min-height:48px;padding:4px 8px}
+ #menu .mode-head{gap:1px;padding-bottom:3px}
+ #menu #panel:has(.mode-screen){padding:7px 12px}
+ #menu .mode-screen{gap:5px}
+ #menu #panel:has(.pause-actions) .pause-hint{margin-bottom:7px}
+}
+@media(max-width:610px) and (orientation:landscape){
+ #menu .home-content .home-actions{width:54%}
+ #menu .premium-menu-title{font-size:clamp(27px,5vw,36px)}
+ #menu .home-stage-signal{font-size:8px}
+ #menu .mode-grid strong{font-size:11px}
+ #menu .mode-grid small{font-size:8px}
+}
