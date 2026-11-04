@@ -1,4 +1,4 @@
-name: Sector Rebound - isolated Pixi FX lab
+name: Sector Rebound - isolated Pixi art and camera lab
 on:
   pull_request:
     branches: [main]
@@ -29,7 +29,7 @@ jobs:
           test -s experiments/pixi-probe/dist/bundle.js
           ! grep -qE 'https?://' experiments/pixi-probe/index.html || exit 1
           node --check experiments/pixi-probe/test.mjs
-      - name: Run real Chromium match/stress scenes and frozen FX A-B screenshots
+      - name: Browser QA: layered art, zoom, VFX, stress and fallback
         run: |
           set -euo pipefail
           export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
@@ -38,11 +38,15 @@ jobs:
           test -s qa-results/pixi-probe/evidence.json
           test -s qa-results/pixi-probe/fx-ON-568x320.png
           test -s qa-results/pixi-probe/fx-OFF-568x320.png
+          test -s qa-results/pixi-probe/layered-ART-568x320.png
+          test -s qa-results/pixi-probe/classic-ART-568x320.png
+          test -s qa-results/pixi-probe/close-DETAIL-568x320.png
+          test -s qa-results/pixi-probe/wide-ARENA-568x320.png
       - name: Preserve browser screenshots and measured observations
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pixi-FX-lab-browser-evidence-${{ github.run_id }}
+          name: pixi-art-scale-browser-evidence-${{ github.run_id }}
           path: qa-results/pixi-probe/
           if-no-files-found: warn
           retention-days: 14
@@ -59,7 +63,7 @@ jobs:
           sdkmanager="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
           test -n "$sdkmanager"
           "$sdkmanager" --install "platforms;android-36" "build-tools;35.0.0"
-      - name: Assemble separate Pixi FX lab package only on CI runner
+      - name: Assemble separate Pixi Art lab package only on CI runner
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -68,12 +72,12 @@ jobs:
           s=f.read_text()
           original="applicationId 'com.playereden.ricochetrumble'"
           assert s.count(original)==1
-          s=s.replace(original,"applicationId 'com.playereden.ricochetrumble.pixifx'")
+          s=s.replace(original,"applicationId 'com.playereden.ricochetrumble.pixiart'")
           f.write_text(s)
           m=Path('android/app/src/main/AndroidManifest.xml')
           s=m.read_text()
           assert 'android:label="Sector Rebound"' in s
-          s=s.replace('android:label="Sector Rebound"','android:label="SR Pixi FX"')
+          s=s.replace('android:label="Sector Rebound"','android:label="SR Pixi Art"')
           s=s.replace('android:name=".MainActivity"','android:name="com.playereden.ricochetrumble.MainActivity"')
           m.write_text(s)
           PY
@@ -87,17 +91,17 @@ jobs:
           apk=android/app/build/outputs/apk/debug/app-debug.apk
           test -s "$apk"
           aapt="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/aapt"
-          "$aapt" dump badging "$apk" | head -n 1 | grep -F "name='com.playereden.ricochetrumble.pixifx'"
-          "$aapt" dump badging "$apk" | grep -F "application-label:'SR Pixi FX'"
+          "$aapt" dump badging "$apk" | head -n 1 | grep -F "name='com.playereden.ricochetrumble.pixiart'"
+          "$aapt" dump badging "$apk" | grep -F "application-label:'SR Pixi Art'"
           for f in index.html style.css bundle.js; do
             cmp "experiments/pixi-probe/dist/$f" <(unzip -p "$apk" "assets/$f")
           done
           mkdir -p qa-results/pixi-probe
           {
             echo 'NOT A SECTOR REBOUND GAME UPDATE'
-            echo 'ISOLATED DEBUG-KEY PIXI GPU FX EXPERIMENT'
+            echo 'ISOLATED DEBUG-KEY PIXI ART AND CAMERA EXPERIMENT'
             echo "SOURCE_SHA=$GITHUB_SHA"
-            echo 'PACKAGE=com.playereden.ricochetrumble.pixifx'
+            echo 'PACKAGE=com.playereden.ricochetrumble.pixiart'
             echo 'SIGNER=EPHEMERAL_CI_DEBUG; NOT OWNER_PREVIEW_SIGNER'
             echo "SHA256=$(sha256sum "$apk" | awk '{print $1}')"
             echo 'THE EXISTING v0.9.80 OWNER APK WAS NOT REPLACED'
@@ -105,7 +109,7 @@ jobs:
       - name: Upload separately installable experiment APK
         uses: actions/upload-artifact@v4
         with:
-          name: SEPARATE-SR-Pixi-FX-lab-APK-${{ github.run_id }}
+          name: SEPARATE-SR-Pixi-Art-Scale-APK-${{ github.run_id }}
           path: |
             android/app/build/outputs/apk/debug/app-debug.apk
             qa-results/pixi-probe/android-build-proof.txt
