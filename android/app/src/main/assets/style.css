@@ -3072,3 +3072,64 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 /* UIV2-I audited density: the compact Choose Mode panel stays within the
    720px design maximum, not the earlier 750px interim width. */
 #menu #panel:has(.mode-screen){width:min(720px,calc(100vw - 24px))}
+
+
+/* UIV2-J1 — An operation picker, not a web form. Use the exact existing
+   tank/mech Canvas renderer as the header artwork (no stock or fake vehicles).
+   Relocate BACK to the screen header; leave modes and native actions intact.
+   Retain the strict no-scroll contract at short phone heights. */
+#menu .mode-head{
+  display:grid;grid-template-columns:minmax(0,1fr) clamp(104px,18vw,172px) auto;
+  align-items:center;gap:clamp(4px,.9vw,11px);
+  min-height:clamp(61px,12dvh,91px);
+  padding:0 0 clamp(3px,.7dvh,6px);
+  border-bottom:1px solid #82a9ae38;
+  background:transparent;
+}
+#menu .mode-header-copy{min-width:0;position:relative;z-index:1}
+#menu .mode-head .mode-vehicle-preview{
+  display:block;width:100%;height:clamp(54px,11dvh,82px);
+  min-width:0;pointer-events:none;opacity:.96;
+  mask-image:linear-gradient(90deg,transparent,#000 12%,#000 85%,transparent);
+}
+#menu #panel .mode-head>.mode-back{
+  position:static!important;width:auto;min-width:76px;min-height:44px;
+  max-height:44px;margin:0;padding:5px 10px;
+  align-self:center;justify-self:end;white-space:nowrap;
+  border:1px solid #466471;border-radius:3px;
+  background:#162c37;color:#d8e8e8;
+  font:800 clamp(10px,1.05vw,12px)/1.1 system-ui,sans-serif;
+}
+#menu .mode-head h2{margin:3px 0 0}
+#menu .mode-head p{margin-top:3px}
+#menu #panel .mode-grid .mode-mission{
+  border:1px solid #47636d70;border-left:3px solid var(--sr-mission-accent);
+  border-radius:2px;box-shadow:inset 0 1px 0 #d5f4ed0b;
+  background:linear-gradient(105deg,#19323ed9,#142b36e9);
+}
+#menu #panel .mode-grid .mode-mission::after{display:none}
+#menu #panel .mode-grid .mode-mission .mode-icon{
+  border:0;border-radius:2px;background:#0b222f8a;box-shadow:none;
+}
+#menu #panel .mode-secondary-actions>button{
+  background:#142c37;border-color:#43636d7f;border-radius:2px;
+}
+#menu #panel .mode-secondary-actions>button.daily-launch{
+  background:#2a2b2b;border-color:#806b4b8a;
+}
+#menu .mode-screen{animation:sr-operation-enter .16s ease-out both}
+@keyframes sr-operation-enter{
+  from{opacity:.7;transform:translateY(4px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media(max-height:410px) and (orientation:landscape){
+  #menu .mode-head{min-height:59px;padding-bottom:2px}
+  #menu .mode-head .mode-vehicle-preview{height:52px}
+  #menu .mode-head h2{font-size:22px}
+  #menu .mode-head p{display:none}
+}
+@media(max-width:620px) and (orientation:landscape){
+  #menu .mode-head{grid-template-columns:minmax(0,1fr) 100px 70px;gap:4px}
+  #menu #panel .mode-head>.mode-back{min-width:68px;padding:4px 6px}
+}
+@media(prefers-reduced-motion:reduce){#menu .mode-screen{animation:none}}
