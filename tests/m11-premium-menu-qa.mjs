@@ -274,6 +274,16 @@ try{
   assert.ok(await page.locator('#panel').evaluate(el=>el.scrollHeight-el.clientHeight<=3),
     'Core Mode Select must fit without any page scrolling at '+w+'x'+h);
   await page.locator('.bay-exercise-fold summary').click();
+  assert.equal(await page.locator('.bay-return-label').isVisible(),true,
+    'Experimental view explicitly offers Back to Core Modes');
+  assert.equal(await page.locator('.bay-exercise-launch .sr-ui-icon').count(),2,
+    'Forward Bays and CTF use two real original vector diagrams');
+  const exerciseActions=await page.locator('.bay-exercise-launch').evaluateAll(els=>
+    els.map(el=>({action:el.dataset.action,hasTitle:!!el.querySelector('strong'),
+      hasRule:!!el.querySelector('small')})));
+  assert.deepEqual(exerciseActions,[{action:'forwardbay',hasTitle:true,hasRule:true},
+    {action:'ctf',hasTitle:true,hasRule:true}],
+    'experimental actions retain their original game modes and truthful labels');
   const expMode=await page.evaluate(()=>{
     const panel=document.querySelector('#panel'),p=panel.getBoundingClientRect(),
       h=document.querySelector('.mode-head').getBoundingClientRect(),
@@ -290,6 +300,8 @@ try{
     'Field Exercises must replace core modes in-place with no scrolling '+w+'x'+h);
   await page.screenshot({path:dir+'/mode-density-expanded-'+w+'x'+h+'.png',animations:'disabled'});
   await page.locator('.bay-exercise-fold summary').click();
+  assert.equal(await page.locator('.bay-fold-label').isVisible(),true,
+    'Closing experimental restores the standard mode entry');
   assert.ok(await page.locator('.mode-grid').isVisible(),
     'closing experimental mode sheet restores all four core choices');
   await page.screenshot({path:dir+'/mode-density-return-'+w+'x'+h+'.png',animations:'disabled'});
@@ -508,6 +520,12 @@ try{
   await page.locator('.lan-entry button[data-action="host"]').click();
   assert.equal(await page.locator('.lan-lobby').isVisible(),true,'Host enters real LAN lobby');
   assert.equal(await page.locator('[data-lan-setting]').count(),9,'nine real LAN settings remain');
+  assert.equal(await page.locator('[data-lan-setting="teamMode"]').evaluate(el=>
+    el.closest('label')?.textContent.includes('MATCH TYPE')),true,
+    'Host match type must be a player-friendly label');
+  assert.match(await page.locator('.lan-lobby-head p').textContent(),
+    /joining mid-match wait for the next match/,
+    'Host explanation cannot promise immediate mid-match multiplayer joining');
   const hostFooter=async()=>await page.locator('.lan-lobby-footer').evaluate(el=>{
     const r=el.getBoundingClientRect(),p=document.querySelector('#panel').getBoundingClientRect();
     return {top:r.top,bottom:r.bottom,panelBottom:p.bottom};
