@@ -107,7 +107,7 @@ try{
   await page.locator('#menu button[data-action="hangar-preview-unit"]').click();
   assert.equal(await page.locator('#hangar-unit-preview').getAttribute('data-unit'),'mech',
     'Hangar must draw the actual game mech');
-  assert.match(await page.locator('#hangar-preview-unit-label').textContent(),/DISPLAY ONLY/,
+  assert.match(await page.locator('#hangar-preview-unit-label').textContent(),/PREVIEW ONLY/,
     'unit preview never claims to choose a spawn vehicle');
   assert.ok(Number(await page.locator('#hangar-unit-preview').getAttribute('data-preview-scale'))<3.16,
     'real sprite scales to fit the hangar stage');
