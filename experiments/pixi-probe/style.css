@@ -121,3 +121,6 @@ h1 em,h2 em{display:block;font-style:normal;color:#8bdded;letter-spacing:.035em}
 
 /* The Pixi cinematic stage owns the background; menu DOM hides completely in combat. */
 .front-end.is-hidden{display:none!important}
+
+/* Diagnostic footer copy belongs in the combat test, never on the store-quality front end. */
+#app.front-open #notice{display:none!important}
