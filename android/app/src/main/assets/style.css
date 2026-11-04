@@ -3436,3 +3436,14 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 @media(max-height:380px) and (orientation:landscape){
   #menu .dossier-workspace{height:140px}
 }
+
+
+/* UIV3 screenshot fix: the global battlefield canvas is absolute. Header
+   previews are layout elements, NOT gameplay canvases. Restore normal flow
+   so artwork cannot cover the actual MISSION label or mode heading. */
+#menu .mode-head .mode-vehicle-preview,
+#menu .mission-setup-head .mission-live-preview{
+  position:relative;inset:auto;left:auto;right:auto;top:auto;bottom:auto;
+  z-index:0;pointer-events:none;
+}
+#menu .mission-setup-head .mission-title{position:relative;z-index:1}
