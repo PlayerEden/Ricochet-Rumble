@@ -101,9 +101,9 @@ try{
  // Mode identification is derived from real runtime rule fields, never from
  // which menu button the player last pressed. Exercise the tricky variants.
  const mapped=await page.evaluate(()=>{
-  const details=(cfg,session='solo',scored=null)=>hudModeDetails({config:cfg,scored},session).code;
+  const details=(cfg,session='solo',scored=null)=>window.__SRModeHudTest({config:cfg,scored},session).code;
   return {
-   ffa:details({matchModeId:'scored_ffa',teamMode:'ffa',botCount:3},{},null),
+   ffa:details({matchModeId:'scored_ffa',teamMode:'ffa',botCount:3},'solo',null),
    tdm:details({matchModeId:'scored_tdm',teamMode:'teams',botCount:3}),
    cqc:details({matchModeId:'cqc',teamMode:'ffa',botCount:3}),
    ctf:details({matchModeId:'scored_tdm',teamMode:'teams',ctfExercise:true}),
@@ -118,7 +118,7 @@ try{
    lanCoop:details({matchModeId:'survival_ffa',teamMode:'coop',botCount:2},'host')
   };
  });
- assert.deepEqual(mapped,{ffa:'FFA',tdm:'TDM',cqc:'CQC',ctf:'CTF',bays:'BAYS',practice:'PRACT',
+ assert.deepEqual(mapped,{ffa:'FFA',tdm:'TDM',cqc:'CQC',ctf:'CTF',bays:'BAYS',practice:'PRACTICE',
   daily:'DAILY',survival:'S-FFA',teamSurvival:'S-TEAM',custom:'C:FFA',lanFfa:'LAN:S-FFA',
   lanTdm:'LAN:TDM',lanCoop:'LAN:CO-OP'});
   // UIV2-E: the real Hangar must show equipped paint on the actual tank art,
@@ -678,7 +678,7 @@ try{
     const chip=document.querySelector('#hud-mode-chip'),rail=document.querySelector('.scorestrip'),
       lives=rail.querySelector('.blue-tag'),armor=document.querySelector('#round'),enemies=rail.querySelector('.pink-tag'),
       menu=document.querySelector('#menu-button');
-    return {code:chip.textContent,actual:hudModeDetails().code,aria:chip.getAttribute('aria-label'),
+    return {code:chip.textContent,actual:window.__SRModeHudTest().code,aria:chip.getAttribute('aria-label'),
       chip:r(chip),rail:r(rail),lives:r(lives),armor:r(armor),enemies:r(enemies),menu:r(menu),
       pointer:getComputedStyle(chip).pointerEvents};
    });

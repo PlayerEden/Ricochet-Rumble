@@ -10,7 +10,7 @@ Keep the established premium FIELDGRID look and genuine Canvas tank/mech/pilot a
 
 - Put a small persistent **non-interactive mode chip in the existing top scorestrip**, adjacent to lives/armor/enemy information; no additional battlefield HUD card.
 - Read the **current actual runtime state** every HUD refresh so solo Quick Play playlist rotation, custom matches, host/guest launch, and LAN result/restart cannot leave a stale label. Never infer mode from menu text or a user-facing selection that was later overridden by match rules.
-- **Codes:** scored Free-for-All `FFA`; Team Deathmatch `TDM`; Close Quarters `CQC`; Capture the Flag `CTF` (not CTR); Forward Bays `BAYS`; Daily Sector `DAILY`; practice `PRACT`; Survival FFA `S-FFA`; Team Survival `S-TEAM`. Custom gets `C:` and LAN `LAN:` prefixes, preserving actual underlying type (`C:FFA`, `LAN:TDM`, etc.). Dual Ops `DUEL`.
+- **Codes:** scored Free-for-All `FFA`; Team Deathmatch `TDM`; Close Quarters `CQC`; Capture the Flag `CTF` (not CTR); Forward Bays `BAYS`; Daily Sector `DAILY`; practice `PRACTICE`; Survival FFA `S-FFA`; Team Survival `S-TEAM`. Custom gets `C:` and LAN `LAN:` prefixes, preserving actual underlying type (`C:FFA`, `LAN:TDM`, etc.). Dual Ops `DUEL`.
 - Long descriptive meaning in `aria-label`/title; keep chip pointer-inert, offline and inexpensive. Touch hit geometry and menu, score, radar and other HUD elements must remain readable at **568×320, 640×360, 740×360, 915×412, 1280×720**.
 - Automated assertions for all codes, real Solo match, small-screen non-overlap, and Web/Android asset parity. Match screenshots should now self-identify.
   

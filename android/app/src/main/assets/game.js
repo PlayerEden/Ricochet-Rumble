@@ -493,7 +493,7 @@ function hudModeDetails(st=state,session=mode){
  else if(cfg.ctfExercise){code='CTF';name='Capture the Flag (experimental)';}
  else if(cfg.forwardBayExercise){code='BAYS';name='Forward Bays (experimental)';}
  else if(cfg.dailySector){code='DAILY';name='Daily Sector';}
- else if(session==='solo'&&cfg.botCount===0&&!st?.scored){code='PRACT';name='Practice, no bots';}
+ else if(session==='solo'&&cfg.botCount===0&&!st?.scored){code='PRACTICE';name='Practice, no bots';}
  else if(cfg.matchModeId==='cqc'){code='CQC';name='Close Quarters';}
  else if(cfg.matchModeId==='scored_tdm'||st?.scored?.mode==='teams'||cfg.teamMode==='tdm'){
   code='TDM';name='Team Deathmatch';
@@ -3717,6 +3717,8 @@ resizeArenaCanvas();refreshHUD();requestAnimationFrame(loop);
 // in the ordinary owner preview. A local, offline Pixi bundle is built and
 // checked by hybrid-ui/ before this flag may be enabled by default.
 if(/(?:\?|&)hybridMenu=1(?:&|$)/.test(String(window.location?.search||''))){
+ // Test-only read-only resolver, not exposed in ordinary Canvas/Android play.
+ window.__SRModeHudTest=hudModeDetails;
  const optionalScript=document.createElement('script');
  optionalScript.src='hybrid-menu-pixi.bundle.js';
  optionalScript.async=true;
