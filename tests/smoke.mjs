@@ -39,7 +39,7 @@ assert.equal(menuHtml.includes('data-action="pilot"'),false);
 assert.equal(menuHtml.includes('data-action="solo"'),true);
 assert.equal(menuHtml.includes('data-action="nearby"'),true);
 assert.equal(menuHtml.includes('data-action="duel"'),false);
-assert.ok(menuHtml.includes('PILOT LIVES'));assert.ok(menuHtml.includes('FIELD SIZE'));assert.equal(menuHtml.includes('arena-choice'),false,'No map picker');
+assert.ok(menuHtml.includes('PILOT LIVES'));assert.ok(menuHtml.includes('ARENA SIZE'),'Match setup keeps the genuine map-size selector under its updated label');assert.equal(menuHtml.includes('arena-choice'),false,'No map picker');
 node('lives-choice').value='2';node('map-size').value='standard';
 click('solo');runFrames(8);assert.ok(['SOLO SURVIVAL','TEAM SURVIVAL'].includes(node('mode-label').textContent));
 assert.equal(st().config.pilotMode,true);assert.equal(st().lives[0],2);
