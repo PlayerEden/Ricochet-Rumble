@@ -2178,3 +2178,14 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  #menu .dossier-backup-actions{gap:4px}
  #menu #panel .dossier-backup-actions button{min-width:73px;padding-inline:5px}
 }
+
+/* Keep Save/Backup reachable on the narrowest landscape devices.
+   Two-column utilities are used only where the actual width allows them. */
+@media(max-width:650px) and (orientation:landscape){
+ #menu .dossier-backup-actions{flex-direction:column;align-items:stretch;gap:4px}
+ #menu #panel .dossier-backup-actions button{
+  min-width:96px;max-width:100%;
+  min-height:33px;padding:4px 7px;white-space:normal;
+  font-size:10px;
+ }
+}
