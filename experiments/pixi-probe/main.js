@@ -241,6 +241,7 @@ function updateHud(){
  $('kills').textContent=String(scene.kills);$('deaths').textContent=String(scene.deaths);
  $('shots').textContent='SHOTS '+String(scene.shots.length)+' · BOTS '+scene.bots.length;
  $('fx-count').textContent=engine==='pixi'?(fxEnabled?'FX SPRITES '+(pixi?.vfx?.activeCount||0):'FX OFF'):'CANVAS BASELINE';
+ $('zoom-value').textContent='ZOOM '+camera.zoom.toFixed(2)+'x · '+(artMode==='layered'?'RIGGED':'CLASSIC');
 }
 function percentile(samples,q){
  if(!samples.length)return 0;
@@ -257,7 +258,7 @@ function stats(dt,renderDuration){
  $('fps').textContent='FPS '+fps.toFixed(1);
  $('render-ms').textContent='CPU submit p95 '+percentile(renderSamples,.95).toFixed(2)+' ms';
  updateHud();
- window.__pixiProbe={ready:!!pixi,engine,frames:frame,fps,renderP95:percentile(renderSamples,.95),shots:scene.shots.length,kills:scene.kills,bots:scene.bots.length,load,fxEnabled,fxEvents:fxEvents.length,activeFxSprites:pixi?.vfx?.activeCount||0,visuals:'production-path-art',backend:pixi?.app?.renderer?.name||'none'};
+ window.__pixiProbe={ready:!!pixi,engine,frames:frame,fps,renderP95:percentile(renderSamples,.95),shots:scene.shots.length,kills:scene.kills,bots:scene.bots.length,load,fxEnabled,fxEvents:fxEvents.length,activeFxSprites:pixi?.vfx?.activeCount||0,artMode,zoom:camera.zoom,artRigs:pixi?.artShowcase?.active||0,pixelDensity,visuals:'production-path-art',backend:pixi?.app?.renderer?.name||'none'};
 }
 function switchRenderer(next){
  if(next==='pixi'&&!pixi)return;
@@ -265,10 +266,11 @@ function switchRenderer(next){
  $('pixi-host').style.display=engine==='pixi'?'block':'none';
  $('backend').textContent=engine==='pixi'?'PIXI / '+String(pixi.app.renderer.name).toUpperCase()+(fxEnabled?' · FX ON':' · FX OFF'):'CANVAS / 2D';
  $('toggle-fx').disabled=engine!=='pixi';
+ $('toggle-art').disabled=engine!=='pixi';
  $('use-pixi').classList.toggle('selected',engine==='pixi');
  $('use-canvas').classList.toggle('selected',engine==='canvas');
  frameSamples=[];renderSamples=[];frame=0;prev=0;
- window.__pixiProbe={...(window.__pixiProbe||{}),ready:!!pixi,engine,frames:0,fps:0,renderP95:0,shots:scene.shots.length,kills:scene.kills,bots:scene.bots.length,load,fxEnabled,fxEvents:fxEvents.length,activeFxSprites:pixi?.vfx?.activeCount||0,visuals:'production-path-art',backend:pixi?.app?.renderer?.name||'none'};
+ window.__pixiProbe={...(window.__pixiProbe||{}),ready:!!pixi,engine,frames:0,fps:0,renderP95:0,shots:scene.shots.length,kills:scene.kills,bots:scene.bots.length,load,fxEnabled,fxEvents:fxEvents.length,activeFxSprites:pixi?.vfx?.activeCount||0,artMode,zoom:camera.zoom,artRigs:pixi?.artShowcase?.active||0,pixelDensity,visuals:'production-path-art',backend:pixi?.app?.renderer?.name||'none'};
 }
 function setFx(on){
  fxEnabled=!!on;
@@ -278,6 +280,25 @@ function setFx(on){
  $('toggle-fx').setAttribute('aria-pressed',String(fxEnabled));
  if(engine==='pixi'&&pixi)$('backend').textContent='PIXI / '+String(pixi.app.renderer.name).toUpperCase()+(fxEnabled?' · FX ON':' · FX OFF');
  if(window.__pixiProbe)window.__pixiProbe.fxEnabled=fxEnabled;
+}
+function setArt(next){
+ artMode=next;
+ if(pixi)pixi.artShowcase.setEnabled(artMode==='layered');
+ $('toggle-art').textContent=artMode==='layered'?'LAYERED ART':'CLASSIC ART';
+ $('toggle-art').classList.toggle('fx-active',artMode==='layered');
+ $('toggle-art').setAttribute('aria-pressed',String(artMode==='layered'));
+ if(window.__pixiProbe)window.__pixiProbe.artMode=artMode;
+}
+function setZoom(idx){
+ zoomIndex=Math.max(0,Math.min(zoomSteps.length-1,idx));
+ const p=scene?.player;
+ camera.zoom=zoomSteps[zoomIndex];
+ if(p){camera.x=clamp(p.x-W/(2*camera.zoom),0,Math.max(0,WORLD_WIDTH-W/camera.zoom));
+  camera.y=clamp(p.y-H/(2*camera.zoom),0,Math.max(0,WORLD_HEIGHT-H/camera.zoom));}
+ $('zoom-out').disabled=zoomIndex===0;
+ $('zoom-in').disabled=zoomIndex===zoomSteps.length-1;
+ $('zoom-value').textContent='ZOOM '+camera.zoom.toFixed(2)+'x · '+(artMode==='layered'?'RIGGED':'CLASSIC');
+ if(window.__pixiProbe)window.__pixiProbe.zoom=camera.zoom;
 }
 function bindStick(){
  const el=$('stick'),knob=$('knob');
@@ -315,6 +336,9 @@ function bindControls(){
  $('use-stress').addEventListener('click',()=>setLoad('stress'));
  $('toggle-fx').addEventListener('click',()=>setFx(!fxEnabled));
  $('demo-fx').addEventListener('click',()=>showcaseFx());
+ $('toggle-art').addEventListener('click',()=>setArt(artMode==='layered'?'classic':'layered'));
+ $('zoom-out').addEventListener('click',()=>setZoom(zoomIndex-1));
+ $('zoom-in').addEventListener('click',()=>setZoom(zoomIndex+1));
  window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault();keyboard.add(k);});
  window.addEventListener('keyup',e=>keyboard.delete(e.key.toLowerCase()));
  document.addEventListener('visibilitychange',()=>{paused=document.hidden;prev=0;});
@@ -333,10 +357,12 @@ async function start(){
  window.__pixiProbeFreeze=(freeze)=>{paused=!!freeze;};
  window.__pixiFxShowcase=()=>showcaseFx();
  window.__pixiFxEvents=()=>fxEvents.map(ev=>({...ev}));
+ window.__pixiArtFreeze=(v)=>{paused=!!v;};
  try{
   pixi=await makePixi();
   switchRenderer('pixi');
   setFx(true);
+  setArt('layered');setZoom(1);
   $('notice').textContent='FIELDGRID game art & tiled arena • SAME animated units in both renderers • benchmark only';
  }catch(error){
   console.error('Pixi backend unavailable:',error);
