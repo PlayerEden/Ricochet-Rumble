@@ -9,6 +9,7 @@ function dossierLines(){
  const info=currentDossier(),modes=window.SectorDossier?.MODE_LABELS||{};
  if(!info)return;
  for(const key of ['matches','wins','losses','draws','kos','deaths']){const el=document.getElementById('dossier-'+key);if(el)el.textContent=String(info[key]||0)}
+ const note=document.getElementById('dossier-record-note');if(note)note.textContent=(info.matches||0)>0?'SOLO HISTORY':'FIRST MATCH AWAITS';
  const time=document.getElementById('dossier-time');if(time)time.textContent=Math.floor((info.seconds||0)/60)+' MIN';
  const availability=document.getElementById('dossier-save-status');if(availability)availability.textContent=dossierStore?.status||'STORAGE NOT AVAILABLE';
  const list=document.getElementById('dossier-modes');if(list){list.replaceChildren();for(const [id,label] of Object.entries(modes)){
