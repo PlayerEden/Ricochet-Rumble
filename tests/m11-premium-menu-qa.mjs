@@ -140,7 +140,7 @@ try{
   assert.equal(hangar.paint,'fieldgrid.standard','Hangar preview starts with equipped paint');
   assert.equal((await page.locator('[data-paint-id="fieldgrid.standard"] small').textContent()).trim(),
     'FACTORY COLORS','factory cyan tank and gold mech are not a single cyan-only paint');
-  assert.ok((await page.locator('[data-paint-id="fieldgrid.standard"]').getAttribute('aria-label')).includes('gold mech'));
+  assert.ok((await page.locator('button[data-paint-id="fieldgrid.standard"]').getAttribute('aria-label')).includes('gold mech'));
   assert.ok(hangar.visiblePixels>150,'Hangar must render actual tank image, not empty panel');
   assert.ok(hangar.previewWidth>=120,'Hangar canvas has readable pixel dimensions');
   assert.ok(hangar.panel.x>=0&&hangar.panel.right<=w+1&&hangar.panel.bottom<=h+1);
