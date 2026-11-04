@@ -2298,3 +2298,191 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 @media(prefers-reduced-motion:reduce){
  #menu #panel .mode-grid .mode-mission{transition:none}
 }
+
+
+/* UIV2-C — Mission Setup. Pure HTML/CSS presentation: all saved preference
+   IDs, existing select/checkbox event handlers and gameplay rules stay intact.
+   The scrolling content never displaces the always-visible deploy controls. */
+#menu #panel:has(.mission-setup-screen){
+ width:min(870px,calc(100vw - 28px));
+ height:min(572px,calc(100dvh - 28px));
+ max-height:calc(100dvh - 28px);
+ padding:0!important;
+ overflow:hidden;
+ background:linear-gradient(155deg,#1a303b,#101f29 78%);
+ border:1px solid #48616b;
+ border-radius:7px;
+}
+#menu .mission-setup-screen{
+ display:flex;flex-direction:column;min-width:0;min-height:0;
+ width:100%;height:100%;color:#ebf1f0;
+}
+#menu .mission-setup-head{
+ flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+ gap:10px;padding:clamp(9px,1.8dvh,15px) clamp(13px,2vw,22px);
+ text-align:left;border-bottom:1px solid #506a754b;
+ background:linear-gradient(110deg,#203844,#142b36 72%,#11232c);
+}
+#menu .mission-setup-head .eyebrow{color:#8dcbd0;font-size:clamp(9px,1vw,11px);letter-spacing:.12em}
+#menu #panel .mission-setup-head h2{
+ color:#eef5f2;font-size:clamp(23px,4dvh,33px);line-height:1.04;
+ margin:3px 0 0;letter-spacing:.045em;
+}
+#menu .mission-setup-head h2 span{color:#ebbd6b}
+#menu #panel .mission-setup-head p{margin:3px 0 0;color:#9ebac1;font-size:11px}
+#menu .mission-setup-tag{
+ padding:7px 10px;border:1px solid #4b727a;border-radius:3px;
+ color:#add3d4;background:#142d36;
+ font:800 10px/1.2 ui-monospace,monospace;letter-spacing:.1em;white-space:nowrap;
+}
+#menu .mission-setup-body{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:10px;align-content:start;flex:1 1 auto;min-height:0;
+ padding:clamp(9px,1.7dvh,15px) clamp(11px,1.9vw,19px);
+ overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
+ touch-action:pan-y;scrollbar-width:thin;scrollbar-color:#557883 #142833;
+}
+#menu .mission-module{
+ min-width:0;align-self:start;position:relative;
+ background:linear-gradient(160deg,#203540e6,#172c36dc);
+ border:1px solid #45606a;border-radius:4px;
+ box-shadow:inset 2px 0 0 #76b9c1;
+ padding:clamp(8px,1.2dvh,12px) clamp(9px,1.2vw,13px);
+}
+#menu .mission-module-heading{
+ display:flex;align-items:flex-start;gap:9px;
+ padding-bottom:8px;border-bottom:1px solid #53717b3d;
+}
+#menu .mission-index{
+ flex:0 0 auto;display:grid;place-items:center;
+ width:29px;height:29px;border:1px solid #59858c;
+ background:#102b36;color:#a5e0e0;border-radius:3px;
+ font:800 11px/1 ui-monospace,monospace;letter-spacing:.03em;
+}
+#menu .mission-module-heading>div{min-width:0}
+#menu .mission-module-heading h3{
+ margin:0;line-height:1.2;font-size:clamp(11px,1.3vw,15px);
+ color:#e9f3f1;font-weight:900;letter-spacing:.085em;
+}
+#menu #panel .mission-module-heading p{
+ color:#95b8c0;font-size:clamp(10px,1vw,11px);margin:3px 0 0;line-height:1.2;
+}
+#menu .mission-field-controls{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:9px;margin:9px 0 0;padding:0;
+}
+#menu .mission-field-controls label,#menu .mission-rules-controls label{
+ display:block;min-width:0;color:#b8d0d5;
+ font-size:10px;font-weight:800;letter-spacing:.06em;
+}
+#menu #panel .mission-setup-screen select{
+ width:100%;min-width:0;height:44px;min-height:44px;
+ margin-top:6px;padding:0 8px;border:1px solid #607987;border-radius:3px;
+ background:#102631;color:#f2f4f1;font-size:clamp(11px,1.1vw,13px);
+}
+#menu .mission-setup-screen .settings-comfort{
+ display:grid;grid-template-columns:1fr 1fr;gap:9px;
+ margin:8px 0 0;padding:0;border:0;justify-content:stretch;
+}
+#menu .mission-toggle-group{display:flex;flex-direction:column;gap:2px;min-width:0}
+#menu .mission-group-name{
+ display:block;margin:0 0 3px;color:#a1cbd1;
+ font:800 9px/1.3 ui-monospace,monospace;letter-spacing:.08em;
+}
+#menu #panel .mission-toggle-group label{
+ display:flex;align-items:center;gap:6px;width:100%;
+ min-height:37px;margin:0;padding:4px 3px;
+ color:#d8e8e9;font-size:clamp(10px,1.03vw,12px);line-height:1.2;
+ white-space:normal;letter-spacing:.005em;cursor:pointer;
+}
+#menu #panel .mission-toggle-group input[type="checkbox"],
+#menu #panel .mission-playlist input[type="checkbox"],
+#menu #panel .mission-ally-controls input[type="checkbox"]{
+ width:20px;height:20px;min-width:20px;flex:0 0 20px;padding:0;margin:0;
+ accent-color:#82d3dc;cursor:pointer;
+}
+#menu .mission-rules{
+ grid-column:1/-1;margin:0;min-width:0;
+ background:linear-gradient(100deg,#1b303a,#142832);
+ border:1px solid #486773;border-radius:4px;
+}
+#menu #panel .mission-rules>summary{
+ display:flex;align-items:center;gap:10px;
+ min-height:49px;padding:7px 12px;
+ list-style:none;color:#dcebe9;cursor:pointer;
+}
+#menu .mission-rules>summary::-webkit-details-marker{display:none}
+#menu .mission-rules-heading{
+ flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;
+ font-size:clamp(11px,1.24vw,14px);font-weight:900;letter-spacing:.05em;
+}
+#menu .mission-rules-heading small{
+ font:700 9px/1.3 ui-monospace,monospace;letter-spacing:.05em;color:#9cbac1;
+}
+#menu .mission-chevron{font-size:23px;color:#a6cbd0;transition:transform .14s}
+#menu .mission-rules[open] .mission-chevron{transform:rotate(180deg)}
+#menu .mission-advanced-body{
+ padding:10px 14px 13px;border-top:1px solid #4f707b69;
+}
+#menu .mission-subhead{
+ display:flex;justify-content:space-between;gap:8px;
+ margin:5px 0 7px;padding-bottom:5px;
+ border-bottom:1px solid #4c687459;
+ color:#d2e7e9;font-size:11px;font-weight:900;letter-spacing:.07em;
+}
+#menu .mission-subhead small{font-size:9px;color:#8fb3bc;font-weight:650}
+#menu .mission-playlist{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 9px;margin:0;padding:0}
+#menu #panel .mission-playlist .quick-mode-option,
+#menu #panel .mission-ally-controls .quick-mode-option{
+ display:flex;align-items:center;gap:8px;min-width:0;min-height:42px;
+ padding:5px 8px;margin:0;border:1px solid #3e5c66;border-radius:3px;
+ background:#132b35;color:#d3e5e7;
+ font-size:clamp(10px,1.08vw,12px);font-weight:750;line-height:1.2;
+ white-space:normal;cursor:pointer;
+}
+#menu #panel .mission-advanced-body .settings-mode-status{
+ text-align:left;font-size:10px;color:#a9c7cd!important;
+ margin:6px 0!important;line-height:1.25;letter-spacing:.01em;
+}
+#menu .mission-rules-controls{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:10px;padding:0;margin:0 0 7px;
+}
+#menu .mission-ally-controls{display:grid;grid-template-columns:1fr;padding:0;margin:0}
+#menu .mission-setup-actions{
+ flex:0 0 auto;display:grid;grid-template-columns:minmax(96px,1fr) minmax(150px,2fr);
+ gap:10px;padding:9px clamp(11px,1.9vw,19px);
+ border-top:1px solid #58737c75;
+ background:linear-gradient(100deg,#152b36,#10222c);
+}
+#menu #panel .mission-setup-actions button{
+ margin:0!important;width:100%;min-height:45px;
+ padding:6px 12px;background:#203742;border:1px solid #58737e;
+ color:#dae8e7;border-radius:4px;font-size:clamp(11px,1.25vw,14px);
+}
+#menu #panel .mission-setup-actions button.primary{
+ background:linear-gradient(180deg,#ffcf75,#e9ab47);
+ border-color:#ffdc91;color:#30200b;
+ box-shadow:inset 0 1px 0 #fff3b774,0 3px 0 #8f6529;
+ font-size:clamp(13px,1.4vw,16px);
+}
+#menu #panel .mission-setup-actions button.primary:disabled{
+ background:#5d5d59;box-shadow:none;color:#ccc4b8;border-color:#747570;
+}
+@media(max-width:700px) and (orientation:landscape){
+ #menu .mission-setup-body{grid-template-columns:1fr;gap:8px}
+ #menu .mission-module{padding:9px 10px}
+ #menu .mission-setup-tag{display:none}
+ #menu .mission-comfort .settings-comfort{gap:12px}
+ #menu .mission-module-heading{padding-bottom:5px}
+}
+@media(max-height:390px) and (orientation:landscape){
+ #menu .mission-setup-head{padding:7px 12px}
+ #menu .mission-setup-head p{display:none}
+ #menu .mission-setup-body{padding:8px 12px}
+ #menu .mission-setup-actions{padding:6px 12px}
+ #menu #panel .mission-setup-actions button{min-height:43px}
+ #menu .mission-module-heading h3{font-size:11px}
+ #menu .mission-module-heading p{display:none}
+}
+@media(prefers-reduced-motion:reduce){#menu .mission-chevron{transition:none}}
