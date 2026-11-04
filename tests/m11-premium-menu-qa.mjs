@@ -237,6 +237,19 @@ try{
   await page.locator('#menu button[data-action="settings"]').click();
   assert.equal(await page.locator('.mission-setup-screen').isVisible(),true,
     'Mission Setup opens from the original Settings action');
+  // UIV3-J2: confirm the authentic game renderer runs on this battle briefing.
+  await page.waitForFunction(()=>['tank','mech'].includes(
+    document.querySelector('.mission-live-preview')?.dataset.unit
+  ),null,{timeout:6000});
+  const stageInfo=await page.evaluate(()=>{
+    const c=document.querySelector('.mission-live-preview'),p=c.getContext('2d');
+    return {w:c.width,h:c.height,alpha:p.getImageData(Math.floor(c.width/2),Math.floor(c.height/2),1,1).data[3],
+      primaryCount:document.querySelectorAll('.mission-setup-actions .primary').length};
+  });
+  assert.ok(stageInfo.w>=100&&stageInfo.h>=50&&stageInfo.alpha>0,
+    'Mission Setup displays real vehicle renderer instead of a placeholder');
+  assert.equal(stageInfo.primaryCount,1,
+    'Mission Setup retains one obvious Start Match primary action');
   assert.equal(await page.locator('.mission-module').count(),2,'field and control modules are both rendered');
   assert.equal(await page.locator('.mission-rules').count(),1,'existing advanced rules remain expandable');
   const missionLayout=await page.evaluate(()=>{
