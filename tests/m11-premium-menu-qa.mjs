@@ -164,6 +164,8 @@ try{
   assert.equal(modeInfo.backPosition,'static','Back must not cover experimental modes during scrolling');
   assert.ok(modeInfo.panelBounds.x>=-1&&modeInfo.panelBounds.right<=w+1,'mode selection must not clip screen width');
   await page.screenshot({path:dir+'/mode-quality-'+w+'x'+h+'.png',animations:'disabled'});
+  await page.locator('#menu button[data-action="modes-back"]').click();
+  await page.waitForFunction(()=>window.__SRHybridMenu?.active,null,{timeout:15000});
   await page.locator('#menu button[data-action="settings"]').click();
   assert.equal(await page.locator('.mission-setup-screen').isVisible(),true,
     'Mission Setup opens from the original Settings action');
