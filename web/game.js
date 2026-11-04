@@ -23,6 +23,44 @@ function openDossier(){setPanel(document.getElementById('dossier-template').inne
  if(mark)mark.textContent=OPERATOR_EMBLEMS[equippedEmblem].glyph;
  if(name)name.textContent=OPERATOR_EMBLEMS[equippedEmblem].label;
 }
+function drawHangarUnitPreview(){
+ const canvas=document.getElementById('hangar-unit-preview');
+ const paint=HANGAR_PAINTS[equippedPaint]?.label||'STANDARD';
+ const label=document.getElementById('hangar-unit-label');
+ const readout=document.getElementById('hangar-preview-paint');
+ if(label)label.textContent=paint+' / ARMORED PLATFORM';
+ if(readout)readout.textContent=paint+' PAINT';
+ if(!canvas?.getContext)return;
+ // Presentation-only: render the SAME art and paint renderer as gameplay.
+ // A canvas context failure must never prevent equipping saved paint.
+ try{
+  const rect=canvas.getBoundingClientRect?.();
+  const width=Math.max(1,Math.round(rect?.width||400));
+  const height=Math.max(1,Math.round(rect?.height||240));
+  const dpr=Math.min(2,Math.max(1,Number(window.devicePixelRatio)||1));
+  const pw=Math.round(width*dpr),ph=Math.round(height*dpr);
+  if(canvas.width!==pw)canvas.width=pw;
+  if(canvas.height!==ph)canvas.height=ph;
+  const c=canvas.getContext('2d');
+  if(!c)return;
+  c.setTransform(dpr,0,0,dpr,0,0);
+  c.clearRect(0,0,width,height);
+  const x=width*.53,y=height*.52;
+  c.fillStyle='rgba(2,12,19,.32)';
+  c.beginPath();c.ellipse(x+4,y+20,width*.28,height*.105,-.22,0,Math.PI*2);c.fill();
+  c.strokeStyle='rgba(124,194,201,.20)';c.lineWidth=1.3;
+  c.beginPath();c.ellipse(x,y,Math.min(width*.32,height*.44),Math.min(width*.32,height*.44),0,0,Math.PI*2);c.stroke();
+  c.save();c.translate(x,y);c.rotate(-.24);
+  const scale=Math.max(1.45,Math.min(3.45,Math.min(width/160,height/78)));
+  c.scale(scale,scale);
+  drawTopTank(c,'#6bcde0',false,0,0,0,0,equippedPaint);
+  c.restore();
+  canvas.dataset.paintId=equippedPaint;
+  canvas.setAttribute('aria-label',paint+' paint preview on Sector Rebound tank');
+ }catch(error){
+  console.warn?.('Optional Hangar vehicle preview unavailable',error);
+ }
+}
 function refreshHangar(){
  const status=document.getElementById('hangar-status');
  if(status)status.textContent='EQUIPPED · '+HANGAR_PAINTS[equippedPaint].label+' · SOLO ONLY';
@@ -50,6 +88,7 @@ function refreshHangar(){
   const small=el.querySelector?.('small');
   if(small)small.textContent=progress.target?(progress.eligible?'UNLOCKED':progress.current+' / '+progress.target+' '+progress.metric.toUpperCase()):'STANDARD ISSUE';
  }
+ drawHangarUnitPreview();
 }
 let hangarReturnToDossier=false;
 function showHangarTab(which){
