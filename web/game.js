@@ -2356,7 +2356,17 @@ function drawLobbyPreview(dt){
   if(name)name.textContent=showMech?'MECHANIZED RESPONSE':'ARMORED RESPONSE';
   lobbyLastUnit=index;
  }
- const c=preview.getContext('2d'),w=preview.width,h=preview.height;
+ // Draw at real CSS pixels with capped DPR instead of stretching a 620x320
+ // bitmap to fill the full-screen home showcase. Canvas battle renderer is untouched.
+ const rect=preview.getBoundingClientRect?.();
+ const w=Math.max(1,Math.round(rect?.width||preview.width));
+ const h=Math.max(1,Math.round(rect?.height||preview.height));
+ const dpr=Math.min(2,Math.max(1,Number(window.devicePixelRatio)||1));
+ const pixelWidth=Math.round(w*dpr),pixelHeight=Math.round(h*dpr);
+ if(preview.width!==pixelWidth)preview.width=pixelWidth;
+ if(preview.height!==pixelHeight)preview.height=pixelHeight;
+ const c=preview.getContext('2d');
+ c.setTransform(dpr,0,0,dpr,0,0);
  c.clearRect(0,0,w,h);
  c.fillStyle='#142f3d';c.fillRect(0,0,w,h);
  c.strokeStyle='#335766';c.lineWidth=2;
@@ -2367,11 +2377,12 @@ function drawLobbyPreview(dt){
  // Subtle conveyor-like track below the unit, not a strobing UI animation.
  const phase=reduced?0:lobbyPreviewClock*.6;
  c.globalAlpha=.25;c.strokeStyle='#81bec7';c.lineWidth=1;
- c.beginPath();c.arc(w*.67,h*.43,109,0,Math.PI*2);c.stroke();
+ c.beginPath();c.arc(w*.70,h*.48,Math.min(115,w*.16),0,Math.PI*2);c.stroke();
  c.globalAlpha=1;
- c.save();c.translate(w*.68,h*.40);
+ c.save();c.translate(w*.70,h*.45);
  c.rotate(-.25+(reduced?0:Math.sin(phase)*.14));
- c.scale(2.55,2.55);
+ const unitScale=Math.min(3.25,Math.max(2.05,2.35*Math.min(w/620,h/320)));
+ c.scale(unitScale,unitScale);
  const amount=!reduced?lobbyPreviewClock:0;
  if(showMech)drawTopMech(c,'#d5bb77',false,Math.sin(amount*2.3)*1.7,0,Math.sin(amount*3)*.5,equippedPaint);
  else drawTopTank(c,'#6bcde0',false,amount*10,amount*10,0,.38,equippedPaint);
