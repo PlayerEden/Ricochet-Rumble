@@ -81,8 +81,10 @@ export function createFieldgridFloor(seed=451){
  return c;
 }
 export function makeBulletCanvas(){
- const c=document.createElement('canvas');c.width=c.height=40;
- const g=c.getContext('2d');g.translate(20,20);g.shadowColor='#9bddeb';g.shadowBlur=10;
- g.fillStyle='#f6ffff';g.beginPath();g.arc(0,0,6,0,Math.PI*2);g.fill();
+ const c=document.createElement('canvas');c.width=64;c.height=40;
+ const g=c.getContext('2d');g.translate(38,20);
+ g.strokeStyle='#9fe4ee';g.lineWidth=4;g.beginPath();g.moveTo(-22,0);g.lineTo(-3,0);g.stroke();
+ g.shadowColor='#9bddeb';g.shadowBlur=10;g.fillStyle='#f6ffff';
+ g.beginPath();g.arc(0,0,6,0,Math.PI*2);g.fill();
  return c;
 }
