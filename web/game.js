@@ -23,12 +23,18 @@ function openDossier(){setPanel(document.getElementById('dossier-template').inne
  if(mark)mark.textContent=OPERATOR_EMBLEMS[equippedEmblem].glyph;
  if(name)name.textContent=OPERATOR_EMBLEMS[equippedEmblem].label;
 }
+let hangarPreviewUnit='tank'; // Visual inspection only; actual match vehicle is unchanged.
 function drawHangarUnitPreview(){
  const canvas=document.getElementById('hangar-unit-preview');
  const paint=HANGAR_PAINTS[equippedPaint]?.label||'STANDARD';
  const label=document.getElementById('hangar-unit-label');
  const readout=document.getElementById('hangar-preview-paint');
- if(label)label.textContent=paint+' / ARMORED PLATFORM';
+ const unit=hangarPreviewUnit==='mech'?'mech':'tank';
+ const toggle=document.querySelector('.hangar-unit-toggle');
+ const unitLabel=document.getElementById('hangar-preview-unit-label');
+ if(label)label.textContent=paint+' / '+(unit==='mech'?'MECH PLATFORM':'ARMORED PLATFORM');
+ if(unitLabel)unitLabel.textContent=unit==='mech'?'MECH / PREVIEW':'TANK / PREVIEW';
+ if(toggle){toggle.textContent=unit==='mech'?'VIEW TANK':'VIEW MECH';toggle.setAttribute('aria-label','Preview '+(unit==='mech'?'tank':'mech')+' instead of '+unit);}
  if(readout)readout.textContent=paint+' PAINT';
  if(!canvas?.getContext)return;
  // Presentation-only: render the SAME art and paint renderer as gameplay.
@@ -53,10 +59,12 @@ function drawHangarUnitPreview(){
   c.save();c.translate(x,y);c.rotate(-.24);
   const scale=Math.max(1.45,Math.min(4.5,Math.min(width/130,height/75)));
   c.scale(scale,scale);
-  drawTopTank(c,'#6bcde0',false,0,0,0,0,equippedPaint);
+  if(unit==='mech')drawTopMech(c,'#d5bb77',false,0,0,0,equippedPaint);
+  else drawTopTank(c,'#6bcde0',false,0,0,0,0,equippedPaint);
   c.restore();
   canvas.dataset.paintId=equippedPaint;
-  canvas.setAttribute('aria-label',paint+' paint preview on Sector Rebound tank');
+  canvas.dataset.unit=unit;
+  canvas.setAttribute('aria-label',paint+' paint preview on Sector Rebound '+unit);
  }catch(error){
   console.warn?.('Optional Hangar vehicle preview unavailable',error);
  }
@@ -112,6 +120,7 @@ function rewardHangarTab(unlocks){
 }
 function openHangar(fromDossier=false,newUnlocks=[]){
  hangarReturnToDossier=!!fromDossier;
+ hangarPreviewUnit='tank';
  setPanel(document.getElementById('hangar-template').innerHTML);refreshHangar();
  const rewards=Array.isArray(newUnlocks)?newUnlocks.filter(s=>typeof s==='string').slice(0,5):[];
  showHangarTab(rewardHangarTab(rewards));
@@ -3309,7 +3318,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
  if(a==='toggle-sound'||a==='toggle-music'){togglePauseAudio(a==='toggle-sound'?'sound':'music',b);return;}
  if(!['solo','settings-play','practice','cqc','scored_ffa','scored_tdm','custom-play','duel','host','find','custom-preset-save','custom-preset-delete','custom-preset-load','ip-join'].includes(a))
   audioCue(['settings-back','help-back','dossier-back','backup-back','modes-back','custom-back','close','resume'].includes(a)?'ui-back':'ui-select');
- if(a==='lan-retry'){retryLanEndpoint();return;}else if(a==='lan-ready'){guestLanReady();return;}else if(a==='lan-start'){launchLanMatch();return;}else if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest?.('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
+ if(a==='lan-retry'){retryLanEndpoint();return;}else if(a==='lan-ready'){guestLanReady();return;}else if(a==='lan-start'){launchLanMatch();return;}else if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest?.('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-preview-unit'){hangarPreviewUnit=hangarPreviewUnit==='tank'?'mech':'tank';drawHangarUnitPreview()}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
    const ok=equipPaint(b.dataset.paintId);
    refreshHangar();const status=document.getElementById('hangar-status');
    if(!ok&&status)status.textContent=paintProgress(b.dataset.paintId).eligible?'COULD NOT SAVE PAINT · CURRENT PAINT KEPT':'LOCKED · COMPLETE DOSSIER MILESTONE FIRST';
