@@ -34,6 +34,10 @@ try {
   assert.equal(pixi.visuals,'production-path-art','actual mainline unit art contract must be used');
   assert.equal(pixi.bots,5,'normal scene must show representative combat workload');
   assert.equal(pixi.fxEnabled,true,'Pixi FX should initialize enabled');
+  assert.equal(pixi.artMode,'layered','advanced rig mode should be the starting visual');
+  assert.ok(pixi.artRigs>=8,'multiple layered unit rigs are present in rendered arena');
+  assert.ok(pixi.pixelDensity>=1&&pixi.pixelDensity<=1.75,'bounded high-DPI rendering is initialized');
+  assert.equal(pixi.zoom,.94,'combat camera initially selected');
   assert.ok(pixi.frames>=8,'actual requestAnimationFrame loop must run');
   const pixiCanvas=page.locator('#pixi-host canvas');
   assert.equal(await pixiCanvas.count(),1,'PixiJS creates a visible canvas');
@@ -53,6 +57,7 @@ try {
   const canvas=await page.evaluate(()=>window.__pixiProbe);
   assert.equal(canvas.engine,'canvas');
   assert.equal(await page.locator('#toggle-fx').isDisabled(),true,'GPU FX is explicitly unavailable in Canvas baseline');
+  assert.equal(await page.locator('#toggle-art').isDisabled(),true,'layered Pixi rig is exclusive to WebGL showcase');
   assert.ok(canvas.frames>=8,'Canvas loop should render');
   assert.ok(await page.locator('#canvas2d').isVisible(),'baseline Canvas is visible');
   const canvasShot=await page.screenshot({path:'qa-results/pixi-probe/canvas-'+width+'x'+height+'.png'});
@@ -82,6 +87,24 @@ try {
   await page.locator('#toggle-fx').click();
   await page.waitForFunction(()=>window.__pixiProbe?.fxEnabled===true&&window.__pixiProbe?.activeFxSprites>=15,null,{timeout:20000});
   await page.waitForTimeout(100);
+  // Art showcase uses the same frozen units and camera, only changes render design.
+  const layeredArt=await pixiCanvas.screenshot({path:'qa-results/pixi-probe/layered-ART-'+width+'x'+height+'.png'});
+  await page.locator('#toggle-art').click();
+  await page.waitForFunction(()=>window.__pixiProbe?.artMode==='classic'&&window.__pixiProbe?.artRigs===0,null,{timeout:20000});
+  const classicArt=await pixiCanvas.screenshot({path:'qa-results/pixi-probe/classic-ART-'+width+'x'+height+'.png'});
+  assert.equal(layeredArt.equals(classicArt),false,'layered art should visibly differ from classic using frozen combat state');
+  assert.equal(await page.locator('#toggle-art').getAttribute('aria-pressed'),'false');
+  await page.locator('#toggle-art').click();
+  await page.waitForFunction(()=>window.__pixiProbe?.artMode==='layered'&&window.__pixiProbe?.artRigs>=8,null,{timeout:20000});
+  await page.locator('#zoom-in').click();
+  await page.waitForFunction(()=>window.__pixiProbe?.zoom>1.25,null,{timeout:20000});
+  assert.ok((await pixiCanvas.screenshot({path:'qa-results/pixi-probe/close-DETAIL-'+width+'x'+height+'.png'})).byteLength>7000);
+  await page.locator('#zoom-out').click();
+  await page.locator('#zoom-out').click();
+  await page.waitForFunction(()=>window.__pixiProbe?.zoom<.70,null,{timeout:20000});
+  assert.ok((await pixiCanvas.screenshot({path:'qa-results/pixi-probe/wide-ARENA-'+width+'x'+height+'.png'})).byteLength>7000);
+  await page.locator('#zoom-in').click();
+  await page.waitForFunction(()=>Math.abs(window.__pixiProbe?.zoom-.94)<.002,null,{timeout:20000});
   assert.ok((await page.screenshot({path:'qa-results/pixi-probe/pixi-STRESS-'+width+'x'+height+'.png'})).byteLength>7000);
   await page.locator('#use-canvas').click();
   await page.waitForFunction(()=>window.__pixiProbe?.engine==='canvas'&&window.__pixiProbe?.frames>=8,null,{timeout:25000});
@@ -91,12 +114,12 @@ try {
   await page.waitForFunction(()=>window.__pixiProbe?.load==='match'&&window.__pixiProbe?.frames>=8,null,{timeout:25000});
   assert.equal((await page.evaluate(()=>window.__pixiProbe)).bots,5,'matching workload restored');
   assert.deepEqual(errors,[],'no runtime page exceptions');
-  results.push({viewport:width+'x'+height,backend:pixi.backend,pixiFrames:pixi.frames,canvasFrames:canvas.frames,fxOnOff:'PASS',fxEventShowcase:'PASS',
+  results.push({viewport:width+'x'+height,backend:pixi.backend,pixiFrames:pixi.frames,canvasFrames:canvas.frames,fxOnOff:'PASS',fxEventShowcase:'PASS',layeredArt:'PASS',cameraZoomPresets:'PASS',
    pixiRenderP95Ms:pixi.renderP95,canvasRenderP95Ms:canvas.renderP95,matchBots:5,stressBots:18,productionArt:true,controls:'PASS',
    note:'These are synthetic desktop SwiftShader figures, not phone FPS'});
   await page.close();
  }
- console.log('PIXI_FX_LAB_BROWSER_QA_PASS '+JSON.stringify({scenes:results.length,results}));
+ console.log('PIXI_ART_SCALE_LAB_BROWSER_QA_PASS '+JSON.stringify({scenes:results.length,results}));
  fs.writeFileSync('qa-results/pixi-probe/evidence.json',JSON.stringify({
   scope:'Isolated Pixi GPU visual-effects demo using FIELDGRID art, not production Sector Rebound',
   caveat:'Chromium CI with software SwiftShader does not establish Android GPU speed, heat or battery results',
