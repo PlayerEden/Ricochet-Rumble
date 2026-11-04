@@ -34,7 +34,7 @@ function drawHangarUnitPreview(){
  const unitLabel=document.getElementById('hangar-preview-unit-label');
  if(label)label.textContent=paint+' / '+(unit==='mech'?'MECH PLATFORM':'ARMORED PLATFORM');
  if(unitLabel)unitLabel.textContent=unit==='mech'?'MECH / PREVIEW':'TANK / PREVIEW';
- if(toggle){toggle.textContent=unit==='mech'?'VIEW TANK':'VIEW MECH';toggle.setAttribute('aria-label','Preview '+(unit==='mech'?'tank':'mech')+' instead of '+unit);}
+ if(toggle){toggle.textContent=unit==='mech'?'VIEW TANK':'VIEW MECH';toggle.setAttribute?.('aria-label','Preview '+(unit==='mech'?'tank':'mech')+' instead of '+unit);}
  if(readout)readout.textContent=paint+' PAINT';
  if(!canvas?.getContext)return;
  // Presentation-only: render the SAME art and paint renderer as gameplay.
