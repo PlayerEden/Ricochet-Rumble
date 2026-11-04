@@ -146,6 +146,9 @@ try{
  await teams.check();
  assert.equal(await page.locator('button[data-action="settings-play"]').isDisabled(),false,'one selected mode starts a match');
  await ffa.check();
+ // Advanced is now a focused subview. Return to the normal deployment
+ // screen before editing field parameters; gameplay rules are unchanged.
+ await advanced.locator('summary').click();
  await page.locator('#bot-count').selectOption('1');
  result.steps.push('zero-mode blocked; one/two selected modes enabled and persisted');
 
