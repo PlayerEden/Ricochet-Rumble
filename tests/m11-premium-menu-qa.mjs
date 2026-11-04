@@ -50,6 +50,24 @@ try{
     playHit:hittest(play),modeHit:hittest(mode),engine:window.__SRHybridMenu.backend};
   });
   assert.equal(g.engine,'webgl');
+  // M2: icons belong to genuine real-route buttons, not overlaid hit targets.
+  const iconAudit=await page.evaluate(()=>{
+    const icons=[...document.querySelectorAll('.home-utilities button .sr-ui-icon, .home-action-grid button .sr-ui-icon, .home-deploy .sr-ui-icon')];
+    return icons.map(svg=>{
+      const use=svg.querySelector('use');
+      const href=use?.getAttribute('href')||'';
+      return {href,pointer:getComputedStyle(svg).pointerEvents,
+        parentAction:svg.closest('button')?.dataset.action||'',
+        symbol:!!document.querySelector('symbol'+href)};
+    });
+  });
+  assert.equal(iconAudit.length,7,'Home uses a consistent set of seven original icons');
+  for(const item of iconAudit){
+    assert.ok(item.symbol,'SVG icon resolves to a locally bundled symbol');
+    assert.equal(item.pointer,'none','Icon must not intercept the real button hit area');
+    assert.ok(item.parentAction,'Icon is attached to an actual navigation action');
+  }
+
   assert.equal(await page.locator('.home-stage-title').count(),0,
     'no bottom-right unit caption in premium main menu');
   assert.equal(await page.locator('#home-unit-name').count(),0,
