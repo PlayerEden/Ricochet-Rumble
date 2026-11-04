@@ -98,6 +98,29 @@ try{
    assert.ok(b.rect.h>=31,'button '+b.action+' too short');
   }
   await page.screenshot({path:dir+'/hybrid-premium-'+w+'x'+h+'.png',animations:'disabled'});
+ // Mode identification is derived from real runtime rule fields, never from
+ // which menu button the player last pressed. Exercise the tricky variants.
+ const mapped=await page.evaluate(()=>{
+  const details=(cfg,session='solo',scored=null)=>hudModeDetails({config:cfg,scored},session).code;
+  return {
+   ffa:details({matchModeId:'scored_ffa',teamMode:'ffa',botCount:3},{},null),
+   tdm:details({matchModeId:'scored_tdm',teamMode:'teams',botCount:3}),
+   cqc:details({matchModeId:'cqc',teamMode:'ffa',botCount:3}),
+   ctf:details({matchModeId:'scored_tdm',teamMode:'teams',ctfExercise:true}),
+   bays:details({matchModeId:'scored_tdm',teamMode:'teams',forwardBayExercise:true}),
+   practice:details({matchModeId:'survival_ffa',teamMode:'ffa',botCount:0}),
+   daily:details({matchModeId:'survival_ffa',teamMode:'ffa',dailySector:true}),
+   survival:details({matchModeId:'survival_ffa',teamMode:'ffa',botCount:2}),
+   teamSurvival:details({matchModeId:'survival_teams',teamMode:'teams',botCount:2}),
+   custom:details({matchModeId:'scored_ffa',teamMode:'ffa',customMatch:true,botCount:2}),
+   lanFfa:details({matchModeId:'survival_ffa',teamMode:'ffa',botCount:1},'host'),
+   lanTdm:details({matchModeId:'scored_tdm',teamMode:'teams',botCount:2},'guest'),
+   lanCoop:details({matchModeId:'survival_ffa',teamMode:'coop',botCount:2},'host')
+  };
+ });
+ assert.deepEqual(mapped,{ffa:'FFA',tdm:'TDM',cqc:'CQC',ctf:'CTF',bays:'BAYS',practice:'PRACT',
+  daily:'DAILY',survival:'S-FFA',teamSurvival:'S-TEAM',custom:'C:FFA',lanFfa:'LAN:S-FFA',
+  lanTdm:'LAN:TDM',lanCoop:'LAN:CO-OP'});
   // UIV2-E: the real Hangar must show equipped paint on the actual tank art,
   // preserve all paint/insignia unlocks, and work even on 568x320 landscape.
   await page.locator('#menu button[data-action="hangar"]').click();
@@ -645,9 +668,30 @@ try{
   await page.waitForFunction(()=>window.__SRHybridMenu?.active,null,{timeout:15000});
   const reloaded=await page.evaluate(()=>({active:window.__SRHybridMenu.active,mounts:window.__SRHybridMenu.mounts}));
   assert.ok(reloaded.active&&reloaded.mounts>=2,'GPU re-created after returning home');
-  if(w===568||w===740||w===915){
+  // M5.1: every five-size real in-match HUD has an accurate readable mode,
+  // never overlapping lives, armor, enemies or the MENU hit target.
+  if([568,640,740,915,1280].includes(w)){
    await page.locator('#menu button[data-action="solo"]').click();
    await page.waitForFunction(()=>document.querySelector('#menu')?.classList.contains('hidden'),null,{timeout:15000});
+   const hud=await page.evaluate(()=>{
+    const r=el=>{const b=el.getBoundingClientRect();return {x:b.x,right:b.right,y:b.y,bottom:b.bottom,w:b.width,h:b.height};};
+    const chip=document.querySelector('#hud-mode-chip'),rail=document.querySelector('.scorestrip'),
+      lives=rail.querySelector('.blue-tag'),armor=document.querySelector('#round'),enemies=rail.querySelector('.pink-tag'),
+      menu=document.querySelector('#menu-button');
+    return {code:chip.textContent,actual:hudModeDetails().code,aria:chip.getAttribute('aria-label'),
+      chip:r(chip),rail:r(rail),lives:r(lives),armor:r(armor),enemies:r(enemies),menu:r(menu),
+      pointer:getComputedStyle(chip).pointerEvents};
+   });
+   assert.equal(hud.code,hud.actual,'visible HUD must come from real current match mode');
+   assert.match(hud.aria,/Current game mode: /);
+   assert.equal(hud.pointer,'none','match mode display must never steal gameplay touches');
+   assert.ok(hud.chip.w>=27&&hud.chip.h>=25&&hud.chip.x>=hud.rail.x-1&&hud.chip.right<=hud.lives.x+1,
+     'HUD mode must fit at '+w+'x'+h+': '+JSON.stringify(hud));
+   assert.ok(hud.lives.right<=hud.armor.x+1&&hud.armor.right<=hud.enemies.x+1,
+     'lives, armor and enemies must not overlap at '+w+'x'+h+': '+JSON.stringify(hud));
+   assert.ok(hud.enemies.right<=hud.rail.right+2&&hud.menu.right<=hud.rail.x+1,
+     'match rail must fit beside MENU at '+w+'x'+h+': '+JSON.stringify(hud));
+   await page.screenshot({path:dir+'/m5-1-live-mode-hud-'+w+'x'+h+'.png',animations:'disabled'});
    await page.locator('#menu-button').click();
    await page.waitForFunction(()=>!!document.querySelector('.pause-actions'),null,{timeout:15000});
    const pauseDetails=await page.evaluate(()=>{

@@ -482,6 +482,51 @@ function freshSectorSeed(previous=0){
  return s;
 }
 function soloModeLabel(config){return config?.matchModeId==='cqc'?'CLOSE QUARTERS':config?.matchModeId==='scored_ffa'?'SCORED FREE-FOR-ALL':config?.matchModeId==='scored_tdm'?'TEAM DEATHMATCH':MATCH_MODE_PRESETS[config?.matchModeId]?.label||'SURVIVAL';}
+
+// M5.1: actual runtime mode, not the menu selection or a fabricated title.
+// Returns a compact screenshot-friendly code plus its readable accessible name.
+// Custom and LAN have explicit prefixes; competitive FFA is distinct from Survival.
+function hudModeDetails(st=state,session=mode){
+ const cfg=st?.config||{};
+ let code='SURV',name='Survival';
+ if(session==='duel'){code='DUEL';name='Local Dual Operations';}
+ else if(cfg.ctfExercise){code='CTF';name='Capture the Flag (experimental)';}
+ else if(cfg.forwardBayExercise){code='BAYS';name='Forward Bays (experimental)';}
+ else if(cfg.dailySector){code='DAILY';name='Daily Sector';}
+ else if(session==='solo'&&cfg.botCount===0&&!st?.scored){code='PRACT';name='Practice, no bots';}
+ else if(cfg.matchModeId==='cqc'){code='CQC';name='Close Quarters';}
+ else if(cfg.matchModeId==='scored_tdm'||st?.scored?.mode==='teams'||cfg.teamMode==='tdm'){
+  code='TDM';name='Team Deathmatch';
+ }
+ else if(cfg.matchModeId==='scored_ffa'||st?.scored?.mode==='ffa'){
+  code='FFA';name='Scored Free-for-All';
+ }
+ else if(cfg.teamMode==='coop'){code='CO-OP';name='Cooperative vs Bots';}
+ else if(cfg.matchModeId==='survival_teams'||cfg.teamMode==='teams'){
+  code='S-TEAM';name='Team Survival';
+ }
+ else if(cfg.matchModeId==='survival_ffa'||cfg.teamMode==='ffa'){
+  code='S-FFA';name='Survival Free-for-All';
+ }
+ if(cfg.customMatch&&session==='solo'){
+  code='C:'+code;name='Custom Match · '+name;
+ }
+ if(session==='host'||session==='guest'){
+  code='LAN:'+code;name='Local Wi-Fi · '+name;
+ }
+ return {code,name};
+}
+function refreshHudModeChip(){
+ const chip=document.getElementById('hud-mode-chip');
+ if(!chip)return;
+ const info=hudModeDetails();
+ if(chip.textContent!==info.code)chip.textContent=info.code;
+ const label='Current game mode: '+info.name;
+ if(typeof chip.setAttribute==='function'){
+  if(typeof chip.getAttribute!=='function'||chip.getAttribute('aria-label')!==label)chip.setAttribute('aria-label',label);
+  if(typeof chip.getAttribute!=='function'||chip.getAttribute('title')!==info.name)chip.setAttribute('title',info.name);
+ }
+}
 function isScoredMatch(){return !!state?.scored&&!!SCORED_MATCH_RULES[state?.config?.matchModeId];}
 function isCqcMatch(){return state?.config?.matchModeId==='cqc'&&isScoredMatch();}
 function isCtfMatch(){return !!state?.ctf&&state.config?.ctfExercise===true;}
@@ -1108,7 +1153,7 @@ function inputFrom(keys,isLocal){const down=k=>menu.classList.contains('hidden')
 }
 function makeControl(isPlayer1){return isPlayer1?inputFrom(keys1,true):inputFrom(keys2,false)}
 function serializeState(){return {allyAim:alliedAimIntentIndices(1),tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,vehicleDropTimer:state.vehicleDropTimer,dropIndex:state.dropIndex,vehicleBeacon:state.vehicleBeacon?{...state.vehicleBeacon}:null,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,scored:state.scored,lanSeries:state.lanSeries,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,elapsedSeconds:state.elapsedSeconds,deaths:state.deaths.slice(),hostPaused:mode==='host'&&paused};}
-function refreshHUD(){const me=mode==='guest'&&!lanSpectating?1:0,other=me===0?1:0;
+function refreshHUD(){refreshHudModeChip();const me=mode==='guest'&&!lanSpectating?1:0,other=me===0?1:0;
  document.getElementById('score0').textContent=state.lives[me]??0;document.getElementById('score1').textContent=state.lives[other]??0;
  const botLives=mode==='solo'||(mode==='host'&&state.config?.lanHostSolo===true)?
   opposingCount(me):state.lives.slice(state.humanCount||2).filter(v=>v>0).length,

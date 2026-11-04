@@ -73,4 +73,10 @@ assert.ok(html.includes('id="insignia-detail-use"')&&html.includes('class="hanga
  'M5 authentic on-device insignia preview and decorative dock must exist');
 assert.ok(js.includes("e.target?.closest?.('button,summary')")&&css.includes('data-input-modality="pointer"'),
  'touch ring refinement must retain a keyboard-only focus path');
+assert.ok(html.includes('id="hud-mode-chip"')&&html.includes('class="hud-mode-chip"'),
+ 'visible mode badge must be part of the authentic in-match HUD');
+assert.ok(js.includes('function hudModeDetails(')&&js.includes('refreshHudModeChip();'),
+ 'badge must derive from actual state on every HUD refresh');
+assert.ok(css.includes('.scorestrip>.hud-mode-chip')&&css.includes('pointer-events:none'),
+ 'mode badge must fit the HUD and not steal player touches');
 console.log('UIV3_UI_CONTRACT_PASS — real controls, save UI, accessibility, audio and native parity');

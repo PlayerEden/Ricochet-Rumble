@@ -124,3 +124,8 @@ Deliver a **premium hybrid shell** around the existing 2D arcade game: atmospher
 - Touch/mouse input suppresses only the keyboard-focus halo; actual keyboard events reactivate focus-visible. Preserve selected paint/emblem checkmarks and real unlocked/locked states.
 - QA bug repair: `quick-play-live-flow-qa.mjs` previously expected literal `◇` / `△` `textContent` after M3 converted Dossier artwork to SVG. Assert the actual `<use href="#sr-mark-*">` identity instead; this was the sole M3 full-visual workflow failure, while eight other workflows passed.
 - Fresh current-head 9-workflow CI, screenshot artifacts and Android review must pass before merging this draft. Do not touch signing, owner APK, saved records, joystick/FIRE, game physics, camera, LAN protocol or player rewards. Physical two-phone test remains separate.
+
+
+### 2026-11-04 — M5.1 owner screenshot follow-up: mode HUD and visual truth
+
+[Detailed M5.1 plan](M5_1_HUD_TRUTH_AND_MOBILE_CLARITY_2026-11-04.md) establishes an incremental correction stage **before M6**. First draft commit exposes the actual live mode in a compact top scorestrip chip, including accurate competitive FFA/TDM/CQC, experimental CTF/BAYS, Survival variants, Practice, Daily, custom and LAN modes. It derives from live match state rather than navigation, follows Quick Play rotation and LAN joins, and requires five-viewport non-overlap QA. Later increments assess observed color-identity contradictions, factory Standard paint, bot ejection toast, radar audio rings, host scroll/status clarity and control coverage; do not alter approved joystick/FIRE/EXIT control geometry during this change. Original M5 visual and multiplayer safeguards remain in force.
