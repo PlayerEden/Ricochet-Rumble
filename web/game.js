@@ -143,7 +143,7 @@ function openHangar(fromDossier=false,newUnlocks=[]){
  hangarPreviewUnit='tank';
  setPanel(document.getElementById('hangar-template').innerHTML);
  // M5 procedural blueprint is a review-only alternative, never stored as a preference.
- const study=new URLSearchParams(window.location.search).get('hangarStudy');
+ const study=/(?:^|[?&])hangarStudy=blueprint(?:&|$)/.test(String(window.location?.search||''))?'blueprint':'warm';
  const dock=document.querySelector('.hangar-bay');
  if(dock)dock.dataset.hangarStudy=study==='blueprint'?'blueprint':'warm';
  refreshHangar();
