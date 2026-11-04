@@ -471,8 +471,10 @@ console.log('PASS v0.9.8.1: entry clearance, Android asset parity and offline he
  const fs=await import('node:fs');
  const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
  const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
- for(const metadata of ['VS BOTS','WI-FI · BETA','ARMORED RESPONSE','CHOOSE MODE'])
+ for(const metadata of ['VS BOTS','WI-FI · BETA','CHOOSE MODE'])
    assert.ok(html.includes(metadata),'missing purposeful action/context label: '+metadata);
+ assert.ok(!html.includes('ARMORED RESPONSE')&&!html.includes('id="home-unit-name"'),
+   'premium UI v2 must not revive the rejected bottom-right unit info block');
  assert.ok(css.includes('.scorestrip .middle.on-foot')&&css.includes('.interact-btn.busy'),'semantic HUD and bay-busy states must have authored styles');
  assert.ok(css.includes('max-width:760px')&&css.includes('max-height:390px'),'responsive phone-landscape thresholds retained');
 }
