@@ -71,10 +71,41 @@ try{
   await page.screenshot({path:dir+'/hybrid-premium-'+w+'x'+h+'.png',animations:'disabled'});
   await page.locator('#menu button[data-action="modes"]').click();
   assert.equal(await page.locator('.mode-screen').isVisible(),true,'current Choose Mode still works');
+  const modeInfo=await page.evaluate(()=>{
+   const p=document.querySelector('#panel'),screen=document.querySelector('.mode-screen');
+   const r=screen.getBoundingClientRect(),q=p.getBoundingClientRect();
+   return {cardCount:screen.querySelectorAll('.mode-grid button').length,
+    backPosition:getComputedStyle(screen.querySelector('.mode-back')).position,
+    panelBounds:{x:q.x,right:q.right,top:q.top,bottom:q.bottom},
+    screenWidth:r.width,scrollable:p.scrollHeight>p.clientHeight+3};
+  });
+  assert.equal(modeInfo.cardCount,4,'all four actual modes stay present');
+  assert.equal(modeInfo.backPosition,'static','Back must not cover experimental modes during scrolling');
+  assert.ok(modeInfo.panelBounds.x>=-1&&modeInfo.panelBounds.right<=w+1,'mode selection must not clip screen width');
+  await page.screenshot({path:dir+'/mode-quality-'+w+'x'+h+'.png',animations:'disabled'});
   await page.locator('#menu button[data-action="modes-back"]').click();
   await page.waitForFunction(()=>window.__SRHybridMenu?.active,null,{timeout:15000});
   const reloaded=await page.evaluate(()=>({active:window.__SRHybridMenu.active,mounts:window.__SRHybridMenu.mounts}));
   assert.ok(reloaded.active&&reloaded.mounts>=2,'GPU re-created after returning home');
+  if(w===568||w===740||w===915){
+   await page.locator('#menu button[data-action="solo"]').click();
+   await page.waitForFunction(()=>document.querySelector('#menu')?.classList.contains('hidden'),null,{timeout:15000});
+   await page.locator('#menu-button').click();
+   await page.waitForFunction(()=>!!document.querySelector('.pause-actions'),null,{timeout:15000});
+   const pauseDetails=await page.evaluate(()=>{
+    const x=document.querySelector('#panel').getBoundingClientRect();
+    const y=document.querySelector('.pause-actions').getBoundingClientRect();
+    return {bounds:{x:x.x,right:x.right,top:x.top,bottom:x.bottom},actions:{top:y.top,bottom:y.bottom},
+     labels:[...document.querySelectorAll('.pause-actions button')].map(b=>b.textContent.trim())};
+   });
+   assert.ok(pauseDetails.bounds.x>=0&&pauseDetails.bounds.right<=w+1&&pauseDetails.bounds.bottom<=h+1,
+    'pause screen must fit the viewport at '+w+'x'+h);
+   assert.ok(pauseDetails.labels.includes('RESUME MATCH')&&pauseDetails.labels.includes('MAIN MENU'),
+    'existing pause actions must remain');
+   await page.screenshot({path:dir+'/pause-quality-'+w+'x'+h+'.png',animations:'disabled'});
+   await page.locator('#menu button[data-action="resume"]').click();
+   await page.waitForFunction(()=>document.querySelector('#menu')?.classList.contains('hidden'),null,{timeout:15000});
+  }
   await context.close();
   cases.push({viewport:w+'x'+h,primaryHeight:Math.round(g.play.h),headingHeight:Math.round(g.title.h),
    menuWithoutScroll:true,allControlsClickable:true,pixiWebgl:true});
