@@ -4167,3 +4167,13 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  #menu .hangar-head .hangar-title p{display:none}
 }
 @media(prefers-reduced-motion:reduce){#menu .hangar-bay[data-m12-art] .m12-art-plate{animation:none!important;transition:none!important}}
+
+/* M12 visual QA: art comparison stays inside its own preview stage, never
+   crowds the established global BACK and Hangar heading at narrow landscape. */
+#menu #panel .hangar-bay .m12-art-cycle:not([hidden]){
+ position:absolute;z-index:3;right:clamp(4px,.8vw,10px);bottom:clamp(31px,5dvh,38px);
+ min-width:83px;min-height:44px;max-width:110px;
+ padding:5px 7px;white-space:nowrap;
+ background:#102e3ada;border:1px solid #a1bec0;
+ color:#f4e0ac;
+}

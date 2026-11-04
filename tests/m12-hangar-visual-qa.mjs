@@ -63,7 +63,7 @@ try{
    assert.ok(info.visiblePixels>150,'real '+unit+' render must stay present');
    assert.ok(info.stage.x>=-1&&info.stage.right<=w+1&&info.stage.bottom<=h+1,'stage out of viewport');
    assert.ok(info.control.x>=-1&&info.control.right<=w+1&&info.control.bottom<=h+1,'compare button clipped');
-   assert.ok(info.back.x>=-1&&info.back.right<=w+1&&info.back.bottom<=h+1,'Back button clipped');
+   assert.ok(info.back.x>=-1&&info.back.right<=w+1&&info.back.bottom<=h+1,'Back button clipped '+w+'x'+h+' '+JSON.stringify(info));
    assert.ok(info.control.right<=info.back.x+1 || info.back.right<=info.control.x+1,
       'compare control overlaps Back at '+w+'x'+h);
    assert.ok(info.control.h>=42,'button must be touchable');
