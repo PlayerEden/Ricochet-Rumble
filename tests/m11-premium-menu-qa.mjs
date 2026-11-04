@@ -296,13 +296,16 @@ try{
     return {columns:getComputedStyle(parent).gridTemplateColumns,
       field:{x:field.left,right:field.right,y:field.top,bottom:field.bottom},
       comfort:{x:comfort.left,right:comfort.right,y:comfort.top,bottom:comfort.bottom},
-      advancedTop:advanced.top,footerTop:footer.top};
+      advanced:{x:advanced.left,right:advanced.right,y:advanced.top,bottom:advanced.bottom},
+      footerTop:footer.top};
   });
-  assert.ok(missionColumns.field.right<=missionColumns.comfort.x+2&&
-    Math.abs(missionColumns.field.y-missionColumns.comfort.y)<=3&&
-    missionColumns.advancedTop>=Math.max(missionColumns.field.bottom,missionColumns.comfort.bottom)-2&&
-    missionColumns.advancedTop<missionColumns.footerTop,
-    'Field and Controls must be distinct side-by-side modules above Advanced/Start, not overlapping '+w+'x'+h+
+  assert.ok(missionColumns.field.x<=missionColumns.comfort.x+2&&
+    missionColumns.field.right>=missionColumns.advanced.right-2&&
+    Math.abs(missionColumns.comfort.y-missionColumns.advanced.y)<=3&&
+    missionColumns.comfort.right<=missionColumns.advanced.x+2&&
+    missionColumns.comfort.y>=missionColumns.field.bottom-2&&
+    Math.max(missionColumns.comfort.bottom,missionColumns.advanced.bottom)<=missionColumns.footerTop+2,
+    'Match Conditions must span the top, with Controls/Rules aligned below and Start unobstructed '+w+'x'+h+
     ': '+JSON.stringify(missionColumns));
   assert.deepEqual(missionLayout.actions.map(a=>a.action),['settings-back','settings-play'],
     'original Settings actions remain intact');
