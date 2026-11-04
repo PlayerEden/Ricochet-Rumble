@@ -56,6 +56,11 @@ jobs:
         working-directory: android
         run: |
           set -euo pipefail
+          # Test-only launcher branding generated inside isolated CI checkout.
+          # The real repository manifest remains literal Sector Rebound for production safeguards.
+          grep -F 'android:label="Sector Rebound"' app/src/main/AndroidManifest.xml
+          sed -i 's/android:label="Sector Rebound"/android:label="SR Hybrid Test"/' app/src/main/AndroidManifest.xml
+          grep -F 'android:label="SR Hybrid Test"' app/src/main/AndroidManifest.xml
           gradle --no-daemon :app:assembleDebug -PsrHybridLabPackage=true
       - name: Verify package, label, APK signer, offline Pixi bytes, and opt-in launch URL
         run: |
