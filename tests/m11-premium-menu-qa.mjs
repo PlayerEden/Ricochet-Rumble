@@ -151,6 +151,23 @@ try{
   await page.waitForFunction(()=>window.__SRHybridMenu?.active,null,{timeout:15000});
   await page.locator('#menu button[data-action="modes"]').click();
   assert.equal(await page.locator('.mode-screen').isVisible(),true,'current Choose Mode still works');
+  // UIV2-J: Mode Select now displays the same authentic tank/mech Canvas
+  // renderer as Home, while keeping the header Back action unobstructed.
+  await page.waitForFunction(()=>
+    ['tank','mech'].includes(document.querySelector('.mode-vehicle-preview')?.dataset.unit),
+    null,{timeout:6000});
+  const modeHero=await page.evaluate(()=>{
+    const hero=document.querySelector('.mode-vehicle-preview'),
+      back=document.querySelector('.mode-head .mode-back'),r=back.getBoundingClientRect(),
+      hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+    const canvas=hero.getContext('2d');
+    return {width:hero.width,height:hero.height,
+      pixel:canvas.getImageData(Math.floor(hero.width/2),Math.floor(hero.height/2),1,1).data[3],
+      backHit:hit?.closest('button')?.dataset.action};
+  });
+  assert.ok(modeHero.width>=100&&modeHero.height>=50&&modeHero.pixel>0,
+    'Mode Select renders real in-game vehicle presentation rather than an empty decoration');
+  assert.equal(modeHero.backHit,'modes-back','header Back remains an actual touch hit target');
   const modeInfo=await page.evaluate(()=>{
    const p=document.querySelector('#panel'),screen=document.querySelector('.mode-screen');
    const r=screen.getBoundingClientRect(),q=p.getBoundingClientRect();
