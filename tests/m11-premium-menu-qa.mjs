@@ -164,7 +164,85 @@ try{
   assert.equal(modeInfo.backPosition,'static','Back must not cover experimental modes during scrolling');
   assert.ok(modeInfo.panelBounds.x>=-1&&modeInfo.panelBounds.right<=w+1,'mode selection must not clip screen width');
   await page.screenshot({path:dir+'/mode-quality-'+w+'x'+h+'.png',animations:'disabled'});
-  await page.locator('#menu button[data-action="modes-back"]').click();
+  await page.locator('#menu button[data-action="settings"]').click();
+  assert.equal(await page.locator('.mission-setup-screen').isVisible(),true,
+    'Mission Setup opens from the original Settings action');
+  assert.equal(await page.locator('.mission-module').count(),2,'field and control modules are both rendered');
+  assert.equal(await page.locator('.mission-rules').count(),1,'existing advanced rules remain expandable');
+  const missionLayout=await page.evaluate(()=>{
+    const rect=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,w:r.width,h:r.height};};
+    const panel=document.querySelector('#panel'),head=panel.querySelector('.mission-setup-head'),
+      body=panel.querySelector('.mission-setup-body'),footer=panel.querySelector('.mission-setup-actions');
+    const actions=[...footer.querySelectorAll('button')].map(el=>{
+      const r=rect(el),hit=document.elementFromPoint((r.x+r.right)/2,(r.y+r.bottom)/2);
+      return {action:el.dataset.action,rect:r,hit:hit?.closest('button')?.dataset.action};
+    });
+    return {panel:rect(panel),head:rect(head),body:rect(body),footer:rect(footer),
+      actions,bodyScroll:body.scrollHeight-body.clientHeight,
+      fields:[...panel.querySelectorAll('#map-size,#bot-count')].map(el=>rect(el)),
+      prefCount:panel.querySelectorAll('input[id^="pref-"]').length,
+      playlistCount:panel.querySelectorAll('input[data-playlist-mode]').length};
+  });
+  assert.ok(missionLayout.panel.x>=-1&&missionLayout.panel.right<=w+1&&
+    missionLayout.panel.y>=-1&&missionLayout.panel.bottom<=h+1,
+    'Mission Setup must remain inside the phone viewport at '+w+'x'+h);
+  assert.ok(missionLayout.head.bottom<=missionLayout.body.y+1&&
+    missionLayout.body.bottom<=missionLayout.footer.y+1&&
+    missionLayout.footer.bottom<=h+1,
+    'scrollable setup content must not overlap the visible header or deploy footer');
+  assert.equal(missionLayout.prefCount,8,'all original comfort preferences are present');
+  assert.equal(missionLayout.playlistCount,5,'all original Quick Play modes are present');
+  assert.deepEqual(missionLayout.actions.map(a=>a.action),['settings-back','settings-play'],
+    'original Settings actions remain intact');
+  for(const item of missionLayout.actions){
+    assert.ok(item.rect.h>=43&&item.rect.w>=90&&item.rect.y>=0&&item.rect.bottom<=h+1,
+      'setup footer action is too small or clipped: '+item.action);
+    assert.equal(item.hit,item.action,'setup footer action hit target is obstructed');
+  }
+  for(const control of missionLayout.fields){
+    assert.ok(control.w>=90&&control.h>=43,'field selection must remain touch-sized');
+  }
+  await page.screenshot({path:dir+'/mission-setup-'+w+'x'+h+'.png',animations:'disabled'});
+  await page.locator('#map-size').selectOption('large');
+  await page.locator('#bot-count').selectOption('1');
+  await page.locator('.mission-rules summary').click();
+  assert.equal(await page.locator('#lives-choice').count(),1,'advanced survival rules preserved');
+  assert.equal(await page.locator('#bullet-cap').count(),1,'tank shell cap preserved');
+  assert.equal(await page.locator('#bot-skill').count(),1,'bot skill control preserved');
+  await page.locator('#lives-choice').selectOption('3');
+  await page.locator('#bot-skill').selectOption('spicy');
+  await page.locator('input[data-playlist-mode="survival_ffa"]').uncheck();
+  await page.locator('input[data-playlist-mode="survival_teams"]').uncheck();
+  assert.equal(await page.locator('#menu button[data-action="settings-play"]').isDisabled(),true,
+    'no modes selected must disable Start Match inside the redesigned briefing');
+  await page.locator('input[data-playlist-mode="cqc"]').check();
+  assert.equal(await page.locator('#menu button[data-action="settings-play"]').isDisabled(),false,
+    'enabling one existing playlist mode must restore Start Match');
+  assert.match(await page.locator('#playlist-status').textContent(),/1 SELECTED/);
+  const shakeBefore=await page.locator('#pref-shake').isChecked();
+  await page.locator('#pref-shake').setChecked(!shakeBefore);
+  await page.locator('.mission-setup-body').evaluate(el=>{el.scrollTop=el.scrollHeight;});
+  const footerAfterScroll=await page.locator('.mission-setup-actions').evaluate(el=>{
+    const b=el.getBoundingClientRect();
+    return {top:b.top,bottom:b.bottom,viewport:innerHeight};
+  });
+  assert.ok(footerAfterScroll.top>=0&&footerAfterScroll.bottom<=h+1,
+    'Start Match footer must remain in view after advancing to bottom of rules');
+  await page.screenshot({path:dir+'/mission-advanced-'+w+'x'+h+'.png',animations:'disabled'});
+  await page.locator('#menu button[data-action="settings-back"]').click();
+  await page.locator('#menu button[data-action="settings"]').click();
+  assert.equal(await page.locator('#map-size').inputValue(),'large',
+    'field size survives navigating back into Mission Setup');
+  assert.equal(await page.locator('#bot-count').inputValue(),'1',
+    'bot count survives navigation');
+  assert.equal(await page.locator('#pref-shake').isChecked(),!shakeBefore,
+    'existing comfort preference persistence is unchanged');
+  await page.locator('.mission-rules summary').click();
+  assert.equal(await page.locator('#lives-choice').inputValue(),'3');
+  assert.equal(await page.locator('#bot-skill').inputValue(),'spicy');
+  assert.equal(await page.locator('input[data-playlist-mode="cqc"]').isChecked(),true,
+    'opted-in mode remains saved after returning from Settings');
+  await page.locator('#menu button[data-action="settings-back"]').click();
   await page.waitForFunction(()=>window.__SRHybridMenu?.active,null,{timeout:15000});
   const reloaded=await page.evaluate(()=>({active:window.__SRHybridMenu.active,mounts:window.__SRHybridMenu.mounts}));
   assert.ok(reloaded.active&&reloaded.mounts>=2,'GPU re-created after returning home');
