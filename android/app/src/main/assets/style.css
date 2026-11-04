@@ -3872,3 +3872,47 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
     animation:none!important;transition:none!important;
   }
 }
+
+
+/* M2 / PREMIUM HYBRID — original built-in vector icons, no font or network dependency.
+   Existing data-action routes and all original labels remain authoritative. */
+#menu .sr-ui-icon{
+  display:block;flex:none;width:20px;height:20px;
+  fill:none;stroke:currentColor;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round;
+  pointer-events:none;overflow:visible;
+}
+#menu #panel .home-utilities button{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+}
+#menu .home-utilities .sr-nav-icon{
+  width:clamp(14px,1.45vw,19px);height:clamp(14px,1.45vw,19px);
+  color:#97cbd0;
+}
+#menu .home-deploy-symbol .sr-play-icon{
+  fill:currentColor;stroke:currentColor;
+  width:clamp(16px,2vw,22px);height:clamp(16px,2vw,22px);
+}
+#menu #panel .home-action-grid button{position:relative}
+#menu .home-action-grid .sr-home-icon{
+  position:absolute;right:clamp(8px,1.25vw,16px);
+  top:calc(50% - 10px);
+  width:20px;height:20px;color:#8dcbd0;opacity:.87;
+}
+#menu #panel .mode-grid .mode-icon .sr-ui-icon{
+  width:clamp(18px,3.6dvh,25px);
+  height:clamp(18px,3.6dvh,25px);
+  color:inherit;
+}
+@media(min-width:851px) and (orientation:landscape){
+  #menu #panel .home-action-grid button{padding-right:clamp(33px,3vw,43px)}
+}
+@media(max-width:850px) and (orientation:landscape){
+  #menu .home-action-grid .sr-home-icon{display:none}
+}
+@media(max-width:760px) and (orientation:landscape){
+  #menu .home-utilities .sr-nav-icon{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  #menu .sr-ui-icon{transition:none!important;animation:none!important}
+}
