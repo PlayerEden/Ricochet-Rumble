@@ -34,7 +34,7 @@ function drawHangarUnitPreview(){
  const toggle=document.querySelector('.hangar-unit-toggle');
  const unitLabel=document.getElementById('hangar-preview-unit-label');
  if(label)label.textContent=paint+' / '+(unit==='mech'?'MECH':'TANK')+' PREVIEW';
- if(unitLabel)unitLabel.textContent='DISPLAY ONLY · START IN TANK';
+ if(unitLabel)unitLabel.textContent='PREVIEW ONLY · COSMETIC';
  if(toggle){toggle.textContent=unit==='mech'?'VIEW TANK':'VIEW MECH';toggle.setAttribute?.('aria-label','Preview '+(unit==='mech'?'tank':'mech')+' instead of '+unit);}
  if(readout)readout.textContent='PAINT · '+paint;
  if(!canvas?.getContext)return;
