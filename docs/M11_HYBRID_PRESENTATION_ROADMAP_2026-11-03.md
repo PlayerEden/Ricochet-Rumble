@@ -43,3 +43,11 @@ The Pixi visual experiments #136–#139 reproduced the FIELDGRID style and produ
 
 ## Start state / evidence
 M11-A begins on `feature/m11-hybrid-menu-foundation-2026-11-03`, current `main` base `c198780293cae57f0387134f8ca074bea5b9e476`. Source, CI, browser/Android build proof and owner hardware evidence are tracked separately; do not mark them complete without verifiable runs.
+
+## M11-A update — Android packaging safeguard (same branch)
+
+The optional real-game hybrid stage has passed its dedicated [Chromium/WebGL browser regression #41758238260](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41758238260): menu GPU mounts and disposals, controls and real gameplay routes at four landscape sizes. Other fast and targeted LAN suites also passed at that checkpoint. This does not establish handset heat/FPS, quality acceptance or owner install-over.
+
+The source repository deliberately retains a tiny Canvas fallback bundle rather than treating an isolated renderer experiment as production. For **actual Android packaging**, the active full QA, owner-signed preview, manual publish and automatic disposable preview workflows now install the pinned Pixi dependency and **compile/sync the real offline bundle**. A shared byte-verification script `tools/verify-hybrid-menu-bundle.mjs` validates app marker, minimum byte size, exact Web/Android equality and exact APK inclusion. Android Gradle's `preBuild` fails if a stub is packaged, even if another unreviewed workflow bypasses these scripts.
+
+**Do not merge or ship** this branch until the new full Android build and embedded-bundle attestation are green. Debug and owner previews are not the same certificate. User input, local saves and the one owner-approved v0.9.80-main.1 APK have not changed. Future default activation and redesign belong in an independently reviewed M11-B phase.
