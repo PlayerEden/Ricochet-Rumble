@@ -33,6 +33,7 @@ try {
   assert.match(pixi.backend,/webgl/i,'must use actual WebGL renderer');
   assert.equal(pixi.visuals,'production-path-art','actual mainline unit art contract must be used');
   assert.equal(pixi.bots,5,'normal scene must show representative combat workload');
+  assert.equal(pixi.fxEnabled,true,'Pixi FX should initialize enabled');
   assert.ok(pixi.frames>=8,'actual requestAnimationFrame loop must run');
   const pixiCanvas=page.locator('#pixi-host canvas');
   assert.equal(await pixiCanvas.count(),1,'PixiJS creates a visible canvas');
@@ -43,12 +44,15 @@ try {
   pixi=await page.evaluate(()=>window.__pixiProbe);
   assert.ok(pixi.frames>frameBefore,'Pixi draw loop survives control interaction');
   assert.ok(pixi.shots>=1,'player control emitted a projectile');
+  const dimensions=await page.locator('#field').boundingBox();
+  assert.ok(dimensions?.height>=130,'compact landscape still leaves playable canvas');
   const pixiShot=await page.screenshot({path:'qa-results/pixi-probe/pixi-'+width+'x'+height+'.png'});
   assert.ok(pixiShot.byteLength>7000,'Pixi scene screenshot is not empty');
   await page.locator('#use-canvas').click();
   await page.waitForFunction(()=>window.__pixiProbe?.engine==='canvas'&&window.__pixiProbe?.frames>=8,null,{timeout:20000});
   const canvas=await page.evaluate(()=>window.__pixiProbe);
   assert.equal(canvas.engine,'canvas');
+  assert.equal(await page.locator('#toggle-fx').isDisabled(),true,'GPU FX is explicitly unavailable in Canvas baseline');
   assert.ok(canvas.frames>=8,'Canvas loop should render');
   assert.ok(await page.locator('#canvas2d').isVisible(),'baseline Canvas is visible');
   const canvasShot=await page.screenshot({path:'qa-results/pixi-probe/canvas-'+width+'x'+height+'.png'});
@@ -59,11 +63,24 @@ try {
   await page.locator('#use-pixi').click();
   await page.waitForFunction(()=>window.__pixiProbe?.engine==='pixi'&&window.__pixiProbe?.frames>=8,null,{timeout:20000});
   assert.equal((await page.evaluate(()=>window.__pixiProbe)).engine,'pixi','repeat switch remains stable');
+  assert.equal(await page.locator('#toggle-fx').isEnabled(),true,'Pixi FX toggle is active in WebGL mode');
   await page.locator('#use-stress').click();
   await page.waitForFunction(()=>window.__pixiProbe?.load==='stress'&&window.__pixiProbe?.frames>=8&&window.__pixiProbe?.shots>=25,null,{timeout:25000});
   const stress=await page.evaluate(()=>window.__pixiProbe);
   assert.equal(stress.bots,18,'stress contains expanded mixture of tanks, mechs, and pilots');
+  // Freeze one exact stress combat state before making paired VFX screenshots.
   await page.evaluate(()=>window.__pixiProbeFreeze(true));
+  await page.evaluate(()=>window.__pixiFxShowcase());
+  await page.waitForFunction(()=>window.__pixiProbe?.activeFxSprites>=15&&window.__pixiProbe?.fxEvents>=5,null,{timeout:20000});
+  assert.equal(await page.locator('#toggle-fx').getAttribute('aria-pressed'),'true');
+  const fxOnCanvas=await pixiCanvas.screenshot({path:'qa-results/pixi-probe/fx-ON-'+width+'x'+height+'.png'});
+  await page.locator('#toggle-fx').click();
+  await page.waitForFunction(()=>window.__pixiProbe?.fxEnabled===false&&window.__pixiProbe?.activeFxSprites===0,null,{timeout:20000});
+  const fxOffCanvas=await pixiCanvas.screenshot({path:'qa-results/pixi-probe/fx-OFF-'+width+'x'+height+'.png'});
+  assert.equal(fxOnCanvas.equals(fxOffCanvas),false,'Pixi FX ON/OFF should visually differ for identical frozen combat state');
+  assert.equal(await page.locator('#toggle-fx').getAttribute('aria-pressed'),'false');
+  await page.locator('#toggle-fx').click();
+  await page.waitForFunction(()=>window.__pixiProbe?.fxEnabled===true&&window.__pixiProbe?.activeFxSprites>=15,null,{timeout:20000});
   await page.waitForTimeout(100);
   assert.ok((await page.screenshot({path:'qa-results/pixi-probe/pixi-STRESS-'+width+'x'+height+'.png'})).byteLength>7000);
   await page.locator('#use-canvas').click();
@@ -74,14 +91,14 @@ try {
   await page.waitForFunction(()=>window.__pixiProbe?.load==='match'&&window.__pixiProbe?.frames>=8,null,{timeout:25000});
   assert.equal((await page.evaluate(()=>window.__pixiProbe)).bots,5,'matching workload restored');
   assert.deepEqual(errors,[],'no runtime page exceptions');
-  results.push({viewport:width+'x'+height,backend:pixi.backend,pixiFrames:pixi.frames,canvasFrames:canvas.frames,
+  results.push({viewport:width+'x'+height,backend:pixi.backend,pixiFrames:pixi.frames,canvasFrames:canvas.frames,fxOnOff:'PASS',fxEventShowcase:'PASS',
    pixiRenderP95Ms:pixi.renderP95,canvasRenderP95Ms:canvas.renderP95,matchBots:5,stressBots:18,productionArt:true,controls:'PASS',
    note:'These are synthetic desktop SwiftShader figures, not phone FPS'});
   await page.close();
  }
- console.log('PIXI_PROBE_BROWSER_QA_PASS '+JSON.stringify({scenes:results.length,results}));
+ console.log('PIXI_FX_LAB_BROWSER_QA_PASS '+JSON.stringify({scenes:results.length,results}));
  fs.writeFileSync('qa-results/pixi-probe/evidence.json',JSON.stringify({
-  scope:'Isolated renderer-only microarena, not production Sector Rebound',
+  scope:'Isolated Pixi GPU visual-effects demo using FIELDGRID art, not production Sector Rebound',
   caveat:'Chromium CI with software SwiftShader does not establish Android GPU speed, heat or battery results',
   results
  },null,2));
