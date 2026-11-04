@@ -73,7 +73,7 @@ try{
     ['dossier','.dossier-screen','dossier-back'],
     ['help','.help-screen','help-back'],
     ['modes','.mode-screen','modes-back'],
-    ['settings','.settings-page','settings-back']
+    ['settings','.settings-head','settings-back']
   ]){
    await page.locator('#menu button[data-action="'+open+'"]').click();
    assert.equal(await page.locator(selector).isVisible(),true,open+' still opens');
