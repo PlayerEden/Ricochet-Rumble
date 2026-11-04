@@ -61,12 +61,12 @@ try{
    if(name==='after'&&width===915&&height===412){
     // Real-time tank -> mech showcase, not a static design mockup.
     await page.waitForTimeout(8100);
-    const unit=(await page.locator('#home-unit-name').textContent()||'').trim();
-    if(unit!=='MECHANIZED RESPONSE')throw new Error('Showcase did not cycle into mech: '+unit);
+    const unit=await page.locator('#menu-preview').getAttribute('data-unit');
+    if(unit!=='mech')throw new Error('Actual Canvas showcase did not cycle into mech: '+unit);
     await shot('home-mech');
     await page.emulateMedia({reducedMotion:'reduce'});
     await page.waitForTimeout(200);
-    if((await page.locator('#home-unit-name').textContent()||'').trim()!=='ARMORED RESPONSE')
+    if((await page.locator('#menu-preview').getAttribute('data-unit'))!=='tank')
      throw new Error('Reduced-motion preview must hold stationary tank');
     await shot('home-reduced-motion');
     await page.emulateMedia({reducedMotion:'no-preference'});
