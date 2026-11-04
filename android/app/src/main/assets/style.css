@@ -1486,7 +1486,7 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
   flex:0 0 auto;
 }
 #menu #panel .home-action-grid button.home-modes{
-  background:linear-gradient(100deg,#263e4ceb,#19323eef);
+  background:linear-gradient(100deg,#3b454a 0%,#2b3339 100%);
   border-left:3px solid #89d5df;
 }
 #menu .home-action-grid strong{font:850 clamp(10px,1.3vw,14px)/1.08 system-ui,sans-serif;color:#e5f1f2}
