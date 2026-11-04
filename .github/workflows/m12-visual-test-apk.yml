@@ -1,0 +1,135 @@
+name: Sector Rebound M12 - isolated visual test APK and screenshots
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/m12-visual-test-apk.yml'
+      - 'web/**'
+      - 'android/**'
+      - 'hybrid-ui/**'
+      - 'tests/m12-*'
+      - 'docs/m12-art-studies/**'
+      - 'docs/M12_ASSET_MANIFEST_2026-11-04.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sr-m12-phone-visual-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  m12-visual-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Prepare offline Pixi build and fail-closed asset checks
+        run: |
+          set -euo pipefail
+          npm --prefix hybrid-ui install --ignore-scripts --no-audit --no-fund
+          npm --prefix hybrid-ui run build
+          node tools/verify-hybrid-menu-bundle.mjs
+          node --check tests/m12-hangar-visual-qa.mjs
+          node tests/m12-asset-manifest.mjs
+          node tests/smoke.mjs
+          for f in index.html style.css game.js; do
+            cmp "web/$f" "android/app/src/main/assets/$f"
+          done
+          for f in hangar-warm-empty-v1.svg hangar-blueprint-empty-v1.svg; do
+            cmp "web/assets/m12/$f" "android/app/src/main/assets/assets/m12/$f"
+          done
+      - name: Real browser five-size art comparison and game controls
+        run: |
+          set -euo pipefail
+          npm install --no-save --ignore-scripts --no-audit playwright-core@1.56.1
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          node tests/m12-hangar-visual-qa.mjs
+          test -s qa-results/m12/visual/report.json
+          for viewport in 568x320 640x360 740x360 915x412 1280x720; do
+            test -s "qa-results/m12/visual/hangar-warm-tank-$viewport.png"
+            test -s "qa-results/m12/visual/hangar-blueprint-mech-$viewport.png"
+            test -s "qa-results/m12/visual/hangar-original-tank-$viewport.png"
+          done
+      - name: Install Android API 36 SDK
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" --install "platforms;android-36" "build-tools;35.0.0"
+      - name: Package only the isolated M12 Visual Test debug app
+        working-directory: android
+        run: |
+          set -euo pipefail
+          grep -F 'android:label="Sector Rebound"' app/src/main/AndroidManifest.xml
+          sed -i 's/android:label="Sector Rebound"/android:label="SR M12 Visual"/' app/src/main/AndroidManifest.xml
+          grep -F 'android:label="SR M12 Visual"' app/src/main/AndroidManifest.xml
+          gradle --no-daemon :app:assembleDebug -PsrM12VisualLabPackage=true
+      - name: Verify isolated Android ID, embedded art, signer, native launch and hash
+        run: |
+          set -euo pipefail
+          apk="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$apk"
+          node tools/verify-hybrid-menu-bundle.mjs --apk="$apk"
+          aapt="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/aapt"
+          apksigner="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/apksigner"
+          "$apksigner" verify --min-sdk-version 26 --print-certs "$apk" > /tmp/sr-m12-cert.txt
+          line="$("$aapt" dump badging "$apk" | head -n 1)"
+          [[ "$line" == *"name='com.playereden.ricochetrumble.m12visual'"* ]]
+          "$aapt" dump badging "$apk" | grep -F "application-label:'SR M12 Visual'"
+          python3 - "$apk" <<'PY'
+          import sys, zipfile, pathlib, hashlib
+          with zipfile.ZipFile(sys.argv[1]) as z:
+              for f in ('hangar-warm-empty-v1.svg','hangar-blueprint-empty-v1.svg'):
+                  packaged=z.read('assets/assets/m12/'+f)
+                  source=pathlib.Path('web/assets/m12/'+f).read_bytes()
+                  assert packaged==source, f+' packaged art differs from verified source'
+                  print('M12_OFFLINE_ASSET_PASS',f,len(source),hashlib.sha256(source).hexdigest())
+              for f in ('index.html','game.js','style.css'):
+                  assert z.read('assets/'+f)==pathlib.Path('web/'+f).read_bytes(), f+' web/android bundle drift'
+              assert b'm12-art-cycle' in z.read('assets/index.html')
+              assert b'refreshM12HangarStudy' in z.read('assets/game.js')
+              dex=[n for n in z.namelist() if n.startswith('classes') and n.endswith('.dex')]
+              assert dex and any(b'm12Art=warm' in z.read(n) for n in dex), 'Missing dedicated M12 app launch URL'
+          PY
+          mkdir -p dist
+          cp "$apk" dist/SR-M12-Visual-Test.apk
+          hash="$(sha256sum dist/SR-M12-Visual-Test.apk | awk '{print $1}')"
+          {
+            echo "PR_HEAD=${{ github.event.pull_request.head.sha }}"
+            echo "WORKFLOW_SOURCE_SHA=$GITHUB_SHA"
+            echo "APP_ID=com.playereden.ricochetrumble.m12visual"
+            echo "LAUNCHER=SR M12 Visual"
+            echo "INITIAL_URL=file:///android_asset/index.html?hybridMenu=1&m12Art=warm"
+            echo "TEST_UI=Hangar ART button cycles WARM > BLUEPRINT > ORIGINAL"
+            echo "APK_SHA256=$hash"
+            echo "SIGNER=DISPOSABLE_CI_DEBUG"
+            echo "NO_OWNER_SAVED_DATA_ACCESS"
+            echo "CAN_COEXIST_WITH=Sector Rebound,SR Hybrid Test,owner preview"
+            echo "REAL_ANDROID_PHONE_VISUAL_QA=NOT_YET_PERFORMED"
+            echo "NOT_A_GOOGLE_PLAY_RELEASE"
+          } > dist/verification.txt
+          echo "M12_VISUAL_APK_VERIFIED $hash"
+      - name: Upload tested screenshots, app and verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: SR-M12-Visual-Test-APK-${{ github.run_id }}
+          path: |
+            dist/SR-M12-Visual-Test.apk
+            dist/verification.txt
+            qa-results/m12/visual/
+          retention-days: 21
+          if-no-files-found: error
