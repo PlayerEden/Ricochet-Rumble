@@ -33,6 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           npm --prefix hybrid-ui run build
+          node tools/verify-hybrid-menu-bundle.mjs
           test -s web/hybrid-menu-pixi.bundle.js
           test -s android/app/src/main/assets/hybrid-menu-pixi.bundle.js
           cmp web/hybrid-menu-pixi.bundle.js android/app/src/main/assets/hybrid-menu-pixi.bundle.js
