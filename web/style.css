@@ -3240,3 +3240,79 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
   #menu .mission-field-controls{margin-top:6px}
   #menu .mission-setup-body{overflow-y:auto}
 }
+
+
+/* UIV3-J3: LAN entry is a play choice, not a router setup form.
+   The left-hand stage is the exact in-game Canvas unit, not fake networking. */
+#menu .lan-entry-head{padding:clamp(7px,1.3dvh,11px) clamp(11px,1.8vw,18px)}
+#menu #panel .lan-entry-head h2{font-size:clamp(22px,3.8dvh,30px)}
+#menu .lan-entry-main{
+  display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);
+  gap:clamp(7px,1.1vw,12px);
+  padding:clamp(8px,1.3dvh,13px) clamp(11px,1.8vw,18px);
+  overflow:visible;min-height:0;flex:0 1 auto;
+}
+#menu .lan-entry-brief{
+  display:flex;align-items:center;justify-content:flex-start;
+  position:relative;overflow:hidden;min-width:0;min-height:125px;
+  padding:0;border:1px solid #49697566;border-radius:3px;
+  background:#0b222f;
+}
+#menu .lan-room-preview{
+  position:absolute;inset:0;display:block;width:100%;height:100%;
+  pointer-events:none;opacity:.55;
+}
+#menu .lan-entry-copy{
+  position:relative;z-index:1;display:flex;flex-direction:column;
+  align-items:flex-start;justify-content:center;gap:clamp(3px,.8dvh,7px);
+  width:100%;height:100%;min-width:0;
+  padding:clamp(9px,1.5dvh,14px);
+  background:linear-gradient(90deg,#081c26ed 0%,#09222bd4 59%,#09232c73 100%);
+}
+#menu .lan-entry-copy .lan-brief-serial{font-size:clamp(8px,.88vw,10px);letter-spacing:.045em}
+#menu .lan-entry-copy strong{font-size:clamp(12px,1.5vw,17px);color:#edf2ee;letter-spacing:.01em}
+#menu #panel .lan-entry-copy p{font-size:clamp(9px,1.08vw,11px);line-height:1.25;max-width:290px}
+#menu .lan-entry-local{font-size:clamp(8px,.8vw,9px);letter-spacing:.01em}
+#menu .lan-entry-choices{gap:7px;justify-content:center}
+#menu #panel .lan-entry-choices button{
+  flex-direction:row;align-items:center;gap:clamp(5px,.9vw,9px);
+  min-height:48px;padding:6px clamp(7px,1vw,11px);
+  border-radius:3px;border-color:#4c738082;box-shadow:none;
+  background:linear-gradient(90deg,#1c3743,#142e3b);
+}
+#menu #panel .lan-entry-choices button.lan-entry-host.primary{
+  min-height:clamp(55px,11dvh,70px);
+  background:linear-gradient(115deg,#f9cd7c,#e8a94b);
+  box-shadow:inset 0 1px 0 #fff2bf8c,0 2px 0 #785624;
+}
+#menu .lan-entry-symbol{
+  display:grid;place-items:center;flex:0 0 auto;
+  width:clamp(25px,4.6dvh,32px);height:clamp(25px,4.6dvh,32px);
+  color:#9bd8df;background:#0d2530;border:1px solid #57838a;
+  border-radius:3px;font:850 clamp(17px,3dvh,22px)/1 system-ui,sans-serif;
+}
+#menu .lan-entry-host .lan-entry-symbol{
+  color:#382611;background:#f5da9b8a;border-color:#7d5b2a;
+}
+#menu .lan-entry-action-copy{
+  display:flex;flex-direction:column;min-width:0;gap:2px;
+}
+#menu #panel .lan-entry-choices button strong{font-size:clamp(11px,1.25vw,14px);letter-spacing:.015em}
+#menu #panel .lan-entry-choices button small{font-size:clamp(8px,.87vw,10px);line-height:1.16;letter-spacing:0}
+#menu .lan-entry-join-options{gap:7px}
+#menu .lan-entry-footer{padding:clamp(5px,.8dvh,8px) clamp(11px,1.8vw,18px)}
+#menu #panel .lan-entry-footer button{min-width:85px;min-height:44px;border-radius:3px}
+@media(max-width:650px) and (orientation:landscape){
+  #menu .lan-entry-main{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:6px}
+  #menu .lan-entry-join-options .lan-entry-symbol{display:none}
+  #menu .lan-entry-copy{padding:8px}
+  #menu .lan-entry-copy strong{font-size:11px}
+  #menu .lan-entry-join-options button{padding:5px 6px}
+}
+@media(max-height:360px) and (orientation:landscape){
+  #menu .lan-entry-brief{min-height:115px}
+  #menu .lan-entry-main{padding:6px 10px}
+  #menu .lan-entry-copy .lan-entry-local{display:none}
+  #menu .lan-entry-head{padding:6px 10px}
+  #menu .lan-entry-footer{padding:4px 10px}
+}
