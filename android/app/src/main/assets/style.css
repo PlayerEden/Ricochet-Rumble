@@ -3916,3 +3916,57 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 @media(prefers-reduced-motion:reduce){
   #menu .sr-ui-icon{transition:none!important;animation:none!important}
 }
+
+
+/* M4 / FIELD EXERCISES — accurate, compact vector mode cards.
+   Open disclosure is a focused replacement view, not a scrolling web page. */
+#menu .bay-exercise-fold>summary{display:flex;align-items:center;gap:6px}
+#menu .bay-exercise-fold .bay-return-label{display:none}
+#menu .bay-exercise-fold[open] .bay-fold-label{display:none}
+#menu .bay-exercise-fold[open] .bay-return-label{display:inline}
+#menu #panel .bay-exercise-launch{
+  display:grid;grid-template-columns:clamp(29px,5.7dvh,37px) minmax(0,1fr) 13px;
+  align-items:center;gap:clamp(7px,1vw,12px);
+  min-height:58px;max-height:none;padding:7px 11px;
+  border:1px solid #52717b;border-left:3px solid #d9b374;
+  border-radius:3px;
+  background:linear-gradient(100deg,#203a45,#152e3a);
+  color:#e5f0ef;text-align:left;
+}
+#menu .bay-exercise-icon{
+  display:grid;place-items:center;min-width:0;height:33px;
+  border:1px solid #67858c;border-radius:3px;background:#112c38;
+  color:#d9b374;pointer-events:none;
+}
+#menu .bay-exercise-icon .sr-ui-icon{width:22px;height:22px}
+#menu .bay-exercise-copy{display:flex;flex-direction:column;gap:2px;min-width:0}
+#menu .bay-exercise-copy strong{
+  font:850 clamp(11px,1.22vw,15px)/1.1 system-ui,sans-serif;
+  letter-spacing:.015em;color:#eef4f1;
+}
+#menu .bay-exercise-copy small{
+  font:750 clamp(9px,.95vw,11px)/1.1 ui-monospace,monospace;
+  color:#a4c2c8;letter-spacing:.02em;
+}
+#menu .bay-exercise-arrow{font:900 21px/1 system-ui,sans-serif;color:#d9b374;text-align:right}
+#menu #panel .bay-exercise-launch:active{
+  background:linear-gradient(110deg,#2a4a55,#1c3541);
+}
+@media(max-height:355px) and (orientation:landscape){
+  #menu #panel .bay-exercise-launch{min-height:51px;padding:4px 8px;gap:6px}
+  #menu .bay-exercise-icon{height:29px}
+  #menu .bay-exercise-icon .sr-ui-icon{width:19px;height:19px}
+}
+
+/* M4 / HOST LOBBY — keep footer authoritative, make a legitimately scrollable
+   rules region obvious without changing LAN fields or native networking. */
+#menu .lan-lobby-body{
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:#78bfc9 #122d39;
+}
+#menu .lan-lobby-body::-webkit-scrollbar{width:6px}
+#menu .lan-lobby-body::-webkit-scrollbar-thumb{
+  background:#78bfc9;border-radius:3px;
+}
+#menu .lan-lobby-body::-webkit-scrollbar-track{background:#122d39}
