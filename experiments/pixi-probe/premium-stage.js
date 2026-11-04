@@ -12,7 +12,7 @@ const VERTEX=[
 'vTextureCoord=aPosition*(uOutputFrame.zw*uInputSize.zw);','}'
 ].join('\n');
 const FRAGMENT=[
-'in vec2 vTextureCoord;','out vec4 finalColor;','uniform sampler2D uTexture;',
+'precision highp float;','in vec2 vTextureCoord;','out vec4 finalColor;','uniform sampler2D uTexture;',
 'uniform vec4 uInputSize;','uniform float uTime;','uniform float uStrength;',
 'void main(void){','vec2 uv=vTextureCoord;',
 'float wave=sin(uv.y*56.0+uTime*2.4)*sin(uv.y*16.0-uTime*1.5);',
@@ -84,7 +84,7 @@ export class PremiumStage{
   this.comms.addChild(this.holo);this.stage.addChild(this.comms);
   this.shader=null;this.shaderOk=false;
   try{
-   this.shader=new Filter({glProgram:GlProgram.from({vertex:VERTEX,fragment:FRAGMENT}),
+   this.shader=Filter.from({gl:{fragment:FRAGMENT},
     resources:{fxUniforms:{uTime:{value:0,type:'f32'},uStrength:{value:1,type:'f32'}}}});
    this.holo.filters=[this.shader];this.shaderOk=true;
   }catch(error){console.warn('Premium GLSL hologram disabled',error);}
