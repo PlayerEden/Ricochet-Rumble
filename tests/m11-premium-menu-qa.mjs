@@ -144,12 +144,23 @@ try{
   const modeInfo=await page.evaluate(()=>{
    const p=document.querySelector('#panel'),screen=document.querySelector('.mode-screen');
    const r=screen.getBoundingClientRect(),q=p.getBoundingClientRect();
-   return {cardCount:screen.querySelectorAll('.mode-grid button').length,
+   const cards=[...screen.querySelectorAll('.mode-grid button')].map(el=>{
+    const r=el.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+    return {action:el.dataset.action,accent:getComputedStyle(el).getPropertyValue('--sr-mission-accent').trim(),
+      width:r.width,height:r.height,hit:hit?.closest('button')?.dataset.action};
+   });
+   return {cardCount:cards.length,cards,
     backPosition:getComputedStyle(screen.querySelector('.mode-back')).position,
     panelBounds:{x:q.x,right:q.right,top:q.top,bottom:q.bottom},
     screenWidth:r.width,scrollable:p.scrollHeight>p.clientHeight+3};
   });
   assert.equal(modeInfo.cardCount,4,'all four actual modes stay present');
+  assert.deepEqual(modeInfo.cards.map(c=>c.action),['cqc','scored_ffa','scored_tdm','custom'],
+    'existing game mode IDs and launch order remain unchanged');
+  assert.equal(new Set(modeInfo.cards.map(c=>c.accent)).size,4,
+    'core modes must have four distinct, intentional visual accents');
+  assert.ok(modeInfo.cards.every(c=>c.width>=80&&c.height>=44&&c.hit===c.action),
+    'core mode buttons retain tappable sizes and actual hit targets at '+w+'x'+h);
   assert.equal(modeInfo.backPosition,'static','Back must not cover experimental modes during scrolling');
   assert.ok(modeInfo.panelBounds.x>=-1&&modeInfo.panelBounds.right<=w+1,'mode selection must not clip screen width');
   await page.screenshot({path:dir+'/mode-quality-'+w+'x'+h+'.png',animations:'disabled'});
