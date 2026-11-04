@@ -2406,6 +2406,7 @@ function drawLobbyPreview(dt){
  const rect=preview.getBoundingClientRect?.();
  const w=Math.max(1,Math.round(rect?.width||preview.width));
  const h=Math.max(1,Math.round(rect?.height||preview.height));
+ const compactPreview=preview.classList?.contains('mode-vehicle-preview')||preview.classList?.contains('mission-live-preview');
  const dpr=Math.min(2,Math.max(1,Number(window.devicePixelRatio)||1));
  if(preview.width!==Math.round(w*dpr))preview.width=Math.round(w*dpr);
  if(preview.height!==Math.round(h*dpr))preview.height=Math.round(h*dpr);
@@ -2437,9 +2438,13 @@ function drawLobbyPreview(dt){
  c.beginPath();c.arc(w*.715,h*.51,Math.min(145,w*.22),.22,1.15);c.stroke();
  // Preserve the actual production tank/mech art, including player paint.
  const phase=reduced?0:lobbyPreviewClock*.6;
- c.save();c.translate(w*.71,h*.455);
+ c.save();c.translate(compactPreview?w*.5:w*.71,compactPreview?h*.5:h*.455);
  c.rotate(-.25+(reduced?0:Math.sin(phase)*.11));
- const unitScale=Math.min(3.25,Math.max(2.05,2.35*Math.min(w/620,h/320)));
+ // Header previews are smaller than the full garage: shrink the real sprite
+ // instead of cropping the tank/mech behind the Back button.
+ const unitScale=compactPreview?Math.max(.58,Math.min(1.25,Math.min(w/135,h/115)*1.45)):
+  Math.min(3.25,Math.max(2.05,2.35*Math.min(w/620,h/320)));
+ preview.dataset.previewScale=unitScale.toFixed(2);
  c.scale(unitScale,unitScale);
  const amount=reduced?0:lobbyPreviewClock;
  if(showMech)drawTopMech(c,'#d5bb77',false,Math.sin(amount*2.3)*1.7,0,Math.sin(amount*3)*.5,equippedPaint);
