@@ -2381,11 +2381,11 @@ function drawLobbyPreview(dt){
  c.fillStyle='#102a38';c.fillRect(w*.47,deckY,w*.50,Math.max(8,h*.035));
  c.fillStyle='#638d97';c.globalAlpha=.27;c.fillRect(w*.47,deckY,w*.50,2);
  c.globalAlpha=1;
- c.fillStyle='rgba(2,10,17,.47)';
+ c.fillStyle='rgba(2,10,17,.19)';
  c.beginPath();c.ellipse(w*.715,h*.565,w*.164,h*.12,-.12,0,Math.PI*2);c.fill();
- c.strokeStyle='rgba(117,179,185,.23)';c.lineWidth=Math.max(1,h*.002);
+ c.strokeStyle='rgba(117,179,185,.13)';c.lineWidth=Math.max(1,h*.002);
  c.beginPath();c.ellipse(w*.715,h*.51,Math.min(145,w*.22),Math.min(112,h*.38),0,0,Math.PI*2);c.stroke();
- c.strokeStyle='rgba(214,175,113,.23)';
+ c.strokeStyle='rgba(214,175,113,.14)';
  c.beginPath();c.arc(w*.715,h*.51,Math.min(145,w*.22),.22,1.15);c.stroke();
  // Preserve the actual production tank/mech art, including player paint.
  const phase=reduced?0:lobbyPreviewClock*.6;
