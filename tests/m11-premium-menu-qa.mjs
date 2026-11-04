@@ -187,7 +187,9 @@ try{
    const cards=[...screen.querySelectorAll('.mode-grid button')].map(el=>{
     const r=el.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
     return {action:el.dataset.action,accent:getComputedStyle(el).getPropertyValue('--sr-mission-accent').trim(),
-      width:r.width,height:r.height,hit:hit?.closest('button')?.dataset.action};
+      x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height,
+      hit:hit?.closest('button')?.dataset.action,hitTag:hit?.tagName,
+      hitClass:typeof hit?.className==='string'?hit.className:null};
    });
    return {cardCount:cards.length,cards,
     backPosition:getComputedStyle(screen.querySelector('.mode-back')).position,
@@ -200,7 +202,7 @@ try{
   assert.equal(new Set(modeInfo.cards.map(c=>c.accent)).size,4,
     'core modes must have four distinct, intentional visual accents');
   assert.ok(modeInfo.cards.every(c=>c.width>=80&&c.height>=44&&c.hit===c.action),
-    'core mode buttons retain tappable sizes and actual hit targets at '+w+'x'+h);
+    'core mode buttons retain tappable sizes and actual hit targets at '+w+'x'+h+': '+JSON.stringify(modeInfo.cards));
   assert.equal(modeInfo.backPosition,'static','Back must not cover experimental modes during scrolling');
   assert.ok(modeInfo.panelBounds.x>=-1&&modeInfo.panelBounds.right<=w+1,'mode selection must not clip screen width');
   const density=await page.evaluate(()=>{
@@ -245,6 +247,40 @@ try{
   await page.screenshot({path:dir+'/mode-density-return-'+w+'x'+h+'.png',animations:'disabled'});
 
   await page.screenshot({path:dir+'/mode-quality-'+w+'x'+h+'.png',animations:'disabled'});
+  // UIV3-J6: Custom Match retains original options and a pinned start action.
+  await page.locator('.mode-grid button[data-action="custom"]').click();
+  assert.equal(await page.locator('.custom-screen').isVisible(),true,
+    'Custom opens the existing real rule editor');
+  assert.equal(await page.locator('.custom-grid select').count(),4,
+    'first page has four core real inputs');
+  assert.equal(await page.locator('.custom-advanced-grid select').count(),4,
+    'advanced drawer contains all four additional real inputs');
+  assert.equal(await page.locator('.custom-advanced').getAttribute('open'),null,
+    'advanced settings should not crowd the first screen by default');
+  const customFooter=await page.evaluate(()=>{
+    const q=document.querySelector('.custom-actions'),r=q.getBoundingClientRect(),
+      el=q.querySelector('[data-action="custom-play"]'),b=el.getBoundingClientRect(),
+      hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2),
+      p=document.querySelector('#panel');
+    return {bottom:r.bottom,startHeight:b.height,startHit:hit?.closest('button')?.dataset.action,
+      panelOverflow:p.scrollHeight-p.clientHeight};
+  });
+  assert.ok(customFooter.bottom<=h+1&&customFooter.startHeight>=43&&
+    customFooter.startHit==='custom-play'&&customFooter.panelOverflow<=3,
+    'Custom Start must stay visible and hittable: '+w+'x'+h+' '+JSON.stringify(customFooter));
+  await page.screenshot({path:dir+'/custom-core-'+w+'x'+h+'.png',animations:'disabled'});
+  await page.locator('.custom-advanced>summary').click();
+  assert.equal(await page.locator('#custom-friendly').isVisible(),true,
+    'real friendly-fire selection remains available in advanced settings');
+  await page.screenshot({path:dir+'/custom-advanced-'+w+'x'+h+'.png',animations:'disabled'});
+  await page.locator('.custom-advanced>summary').click();
+  await page.locator('.custom-preset-fold>summary').click();
+  assert.equal(await page.locator('#custom-preset-name').isVisible(),true,
+    'preset save/restore controls remain present');
+  await page.screenshot({path:dir+'/custom-presets-'+w+'x'+h+'.png',animations:'disabled'});
+  await page.locator('.custom-actions button[data-action="custom-back"]').click();
+  assert.equal(await page.locator('.mode-screen').isVisible(),true,
+    'Custom Back returns to Modes');
   await page.locator('#menu button[data-action="modes-back"]').click();
   await page.waitForFunction(()=>window.__SRHybridMenu?.active,null,{timeout:15000});
   await page.locator('#menu button[data-action="settings"]').click();
@@ -527,6 +563,14 @@ try{
     'pause screen must fit the viewport at '+w+'x'+h);
    assert.ok(pauseDetails.labels.includes('RESUME MATCH')&&pauseDetails.labels.includes('MAIN MENU'),
     'existing pause actions must remain');
+   assert.equal(await page.locator('.pause-screen').isVisible(),true,
+     'new game-native pause composition renders');
+   const pauseHit=await page.evaluate(()=>[...document.querySelectorAll('.pause-screen button[data-action]')].map(el=>{
+     const r=el.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+     return {action:el.dataset.action,height:r.height,bottom:r.bottom,hit:hit?.closest('button')?.dataset.action};
+   }));
+   assert.ok(pauseHit.every(b=>b.height>=43&&b.bottom<=h+1&&b.hit===b.action),
+     'pause/audio controls must be usable in short landscape: '+JSON.stringify(pauseHit));
    await page.screenshot({path:dir+'/pause-quality-'+w+'x'+h+'.png',animations:'disabled'});
    await page.locator('#menu button[data-action="resume"]').click();
    await page.waitForFunction(()=>document.querySelector('#menu')?.classList.contains('hidden'),null,{timeout:15000});
