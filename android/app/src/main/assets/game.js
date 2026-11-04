@@ -3268,15 +3268,15 @@ function showLanGuestRecovery(kind){
 // UIV2-D presentation only. Keep the original action dispatch and native bridge.
 function lanEntryHTML(){
  return '<section class="lan-entry" aria-label="Local Wi-Fi play">'+
- '<header class="lan-entry-head"><div class="eyebrow">FIELDGRID / LOCAL OPERATIONS</div><h2>LOCAL <span>PLAY</span></h2><p>Two phones. One Wi-Fi network. Your rules.</p></header>'+
+ '<header class="lan-entry-head"><div class="eyebrow">LOCAL MATCH / ON-DEVICE</div><h2>LOCAL <span>PLAY</span></h2><p>Two phones. One Wi-Fi network.</p></header>'+
  '<div class="lan-entry-main">'+
- '<div class="lan-entry-brief"><span class="lan-brief-serial">01 / CONNECTION BRIEF</span><strong>SAME WI-FI NETWORK</strong><p>Connect both Android phones to the same network. One player hosts; the other discovers or enters the host address.</p><span class="lan-entry-local">LOCAL MATCHES / NO ONLINE MATCHMAKING</span></div>'+
+ '<div class="lan-entry-brief"><canvas id="menu-preview" class="lan-room-preview" width="300" height="190" aria-hidden="true"></canvas><div class="lan-entry-copy"><span class="lan-brief-serial">SAME WI-FI NETWORK</span><strong>ONE ROOM. TWO PLAYERS.</strong><p>Host a match here or join a room from another Android phone.</p><span class="lan-entry-local">NO INTERNET MATCHMAKING</span></div></div>'+
  '<div class="lan-entry-choices" role="group" aria-label="Choose local multiplayer connection method">'+
- '<button type="button" class="primary lan-entry-host" data-action="host"><strong>HOST GAME</strong><small>CREATE ROOM / CHOOSE MATCH RULES</small></button>'+
+ '<button type="button" class="primary lan-entry-host" data-action="host"><span class="lan-entry-symbol" aria-hidden="true">+</span><span class="lan-entry-action-copy"><strong>HOST GAME</strong><small>CREATE ROOM · CHOOSE MATCH RULES</small></span></button>'+
  '<div class="lan-entry-join-options">'+
- '<button type="button" data-action="find"><strong>FIND GAME</strong><small>DISCOVER ON THIS WI-FI</small></button>'+
- '<button type="button" data-action="manual"><strong>JOIN BY IP</strong><small>ENTER THE HOST ADDRESS</small></button></div></div></div>'+
- '<footer class="lan-entry-footer"><span>ANDROID LAN PREVIEW · SAME NETWORK ONLY</span><button type="button" data-action="help-back">BACK TO MENU</button></footer></section>';
+ '<button type="button" data-action="find"><span class="lan-entry-symbol" aria-hidden="true">◎</span><span class="lan-entry-action-copy"><strong>FIND GAME</strong><small>DISCOVER THIS WI-FI</small></span></button>'+
+ '<button type="button" data-action="manual"><span class="lan-entry-symbol" aria-hidden="true">↗</span><span class="lan-entry-action-copy"><strong>JOIN BY IP</strong><small>ENTER HOST ADDRESS</small></span></button></div></div></div>'+
+ '<footer class="lan-entry-footer"><span>ANDROID · SAME NETWORK ONLY</span><button type="button" data-action="help-back">← BACK</button></footer></section>';
 }
 function host(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}lanRetryEndpoint=null;newMatch('host');startLanLobby();window.AndroidBridge.hostGame()}
 function find(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}lanRetryEndpoint=null;newMatch('guest');setPanel('<section class="lan-utility lan-discover" aria-label="Find local Wi-Fi game">'+
