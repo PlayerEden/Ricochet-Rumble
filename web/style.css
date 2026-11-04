@@ -3067,3 +3067,8 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 @media(max-width:519px) and (orientation:landscape){
  #menu .mission-setup-body{overflow-y:auto}
 }
+
+
+/* UIV2-I audited density: the compact Choose Mode panel stays within the
+   720px design maximum, not the earlier 750px interim width. */
+#menu #panel:has(.mode-screen){width:min(720px,calc(100vw - 24px))}
