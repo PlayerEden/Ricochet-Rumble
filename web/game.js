@@ -148,7 +148,7 @@ let m12HangarStudy=M12_ART_PARAM;
 function refreshM12HangarStudy(){
  const stage=document.querySelector('.hangar-bay'),control=document.querySelector('.m12-art-cycle');
  if(!stage)return;
- if(!M12_ART_PARAM){stage.removeAttribute('data-m12-art');if(control)control.hidden=true;return;}
+ if(!M12_ART_PARAM){if(stage.removeAttribute)stage.removeAttribute('data-m12-art');else if(stage.dataset)delete stage.dataset.m12Art;if(control)control.hidden=true;return;}
  stage.dataset.m12Art=m12HangarStudy;
  if(control){
   control.hidden=false;control.textContent='ART: '+m12HangarStudy.toUpperCase();
