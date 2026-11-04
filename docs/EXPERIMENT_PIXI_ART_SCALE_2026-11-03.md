@@ -24,4 +24,13 @@ This is a small animation and art-direction *vertical slice*. It does **not** ye
 
 The experimental workflow checks three real Chromium landscape sizes, production-art baseline and layered Pixi art, FX switch, frozen-state screenshots for classic vs layered visual differences, zoom preset limits, normal/stress modes, touch controls and reset, plus separate Android packaging with its own app ID `com.playereden.ricochetrumble.pixiart` and label **SR Pixi Art**. It uses ephemeral CI debug signing, local bundled PixiJS files and **does not overwrite** Sector Rebound (`v0.9.80-main.1`) or the other two experiments.
 
-**CI result:** pending at creation, record verified run and artifact link after green. No performance win claimed without device measurement. M11 Dossier/Hangar remains the mainline next milestone; release safety unchanged.
+## Verified experimental checkpoint
+
+**Latest tested code commit:** `f43682505191552a54435bfaa2cdc4de9b562b15`.
+
+- [**Isolated Art & Camera Lab browser + Android CI — PASS**](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41748667143): all 3 Chromium landscapes (568×320, 740×360, 915×412) passed with Pixi WebGL, Canvas baseline, FX ON/OFF, 5-bot and 18-bot stress scenes, layered-vs-classic art A/B images on the exact same frozen scene, three zoom presets, controls and reset.
+- [**Production fast regression — PASS**](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41748626753).
+- Android Gradle build succeeded. APK package verified `com.playereden.ricochetrumble.pixiart`, label **SR Pixi Art**, with bundled asset parity. This debug build uses the ephemeral CI signing identity and has **no shared save/package identity** with Sector Rebound or the other experiments.
+- [**Download independent SR Pixi Art Android APK (GitHub artifact ZIP)**](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41748667143/artifacts/13284872204) · [**Download screenshots and browser evidence**](https://github.com/PlayerEden/Ricochet-Rumble/actions/runs/41748667143/artifacts/13284862083).
+
+**Not proven:** superior mobile FPS, thermal behavior, art-direction acceptance or worthwhile migration cost. Synthetic CI sample timing isn't phone hardware evidence. **Do not merge this experiment into `main`.** M11 remains the next mainline development milestone, and `v0.9.80-main.1` remains the one approved owner APK.
