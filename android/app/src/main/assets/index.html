@@ -144,19 +144,19 @@
 <template id="settings-template">
  <section class="mission-setup-screen" aria-label="Mission setup and match settings">
   <header class="settings-head mission-setup-head">
-   <div><div class="eyebrow">FIELDGRID / SOLO DEPLOYMENT</div><h2>MISSION <span>SETUP</span></h2><p>Configure your Quick Play deployment.</p></div>
-   <span class="mission-setup-tag">OFFLINE / LOCAL</span>
+   <div class="mission-title"><div class="eyebrow">QUICK PLAY / SOLO</div><h2>MISSION <span>SETUP</span></h2><p>Choose the arena. Then deploy.</p></div>
+   <canvas id="menu-preview" class="mission-live-preview" width="240" height="110" aria-hidden="true"></canvas>
   </header>
   <div class="mission-setup-body">
    <section class="mission-module mission-field" aria-label="Field parameters">
-    <div class="mission-module-heading"><span class="mission-index" aria-hidden="true">01</span><div><h3>FIELD PARAMETERS</h3><p>Choose your arena and opposition.</p></div></div>
+    <div class="mission-module-heading"><span class="mission-index" aria-hidden="true">01</span><div><h3>MATCH CONDITIONS</h3><p>Set your arena and opponents.</p></div></div>
     <div class="settings-grid settings-page mission-field-controls">
-     <label>FIELD SIZE<select id="map-size"><option value="small">SMALL</option><option value="standard">STANDARD</option><option value="large">LARGE</option></select></label>
-     <label>BOTS<select id="bot-count"><option value="0">0 · PRACTICE</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>
+     <label>ARENA SIZE<select id="map-size"><option value="small">SMALL</option><option value="standard">STANDARD</option><option value="large">LARGE</option></select></label>
+     <label>OPPONENTS<select id="bot-count"><option value="0">0 · PRACTICE</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>
     </div>
    </section>
    <section class="mission-module mission-comfort" aria-label="Controls and audio">
-    <details class="mission-comfort-details"><summary class="mission-module-heading"><span class="mission-index" aria-hidden="true">02</span><div><h3>CONTROLS &amp; FEEDBACK</h3><p>Adjust how combat feels.</p></div><span class="mission-comfort-chevron" aria-hidden="true">EDIT ›</span></summary>
+    <details class="mission-comfort-details"><summary class="mission-module-heading"><span class="mission-index" aria-hidden="true">02</span><div><h3>CONTROLS &amp; AUDIO</h3><p>Input, sound and feedback</p></div><span class="mission-comfort-chevron" aria-hidden="true">EDIT ›</span></summary>
     <div class="comfort-grid settings-comfort">
      <div class="mission-toggle-group" role="group" aria-label="Input controls">
       <span class="mission-group-name">INPUT</span>
@@ -175,7 +175,7 @@
     </details>
    </section>
    <details class="extra-rules mission-rules">
-    <summary><span class="mission-index" aria-hidden="true">03</span><span class="mission-rules-heading">PLAYLIST &amp; ADVANCED RULES <small>QUICK PLAY ROTATION / OPTIONAL</small></span><span class="mission-chevron" aria-hidden="true">⌄</span></summary>
+    <summary><span class="mission-index" aria-hidden="true">03</span><span class="mission-rules-heading">PLAYLIST &amp; RULES <small>MORE MATCH OPTIONS</small></span><span class="mission-chevron" aria-hidden="true">⌄</span></summary>
     <div class="mission-advanced-body">
      <div class="mission-subhead">QUICK PLAY ROTATION <small>ENABLED BY DEFAULT</small></div>
      <div class="settings-grid settings-page mission-playlist">
@@ -201,7 +201,7 @@
    </details>
   </div>
   <footer class="settings-actions mission-setup-actions">
-   <button type="button" data-action="settings-back">BACK</button>
+   <button type="button" data-action="settings-back">← BACK</button>
    <button type="button" class="primary" data-action="settings-play">START MATCH</button>
   </footer>
  </section>
