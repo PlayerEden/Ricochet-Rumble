@@ -3133,3 +3133,110 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
   #menu #panel .mode-head>.mode-back{min-width:68px;padding:4px 6px}
 }
 @media(prefers-reduced-motion:reduce){#menu .mode-screen{animation:none}}
+
+
+/* UIV3-J2: actual battle briefing, not another stacked settings dashboard.
+   Source-authored rotating Canvas unit gives the screen a real game subject.
+   Short-screen core never scrolls; optional focused subviews preserve inputs. */
+#menu .mission-setup-head{
+  position:relative;min-height:clamp(64px,13dvh,87px);
+  gap:clamp(6px,1.3vw,15px);
+  padding:clamp(6px,1.2dvh,9px) clamp(11px,1.6vw,17px);
+  background:linear-gradient(105deg,#192f3a,#0d202d 78%);
+}
+#menu .mission-setup-head .mission-title{min-width:0;flex:1 1 auto}
+#menu .mission-setup-head .eyebrow{color:#8fc6cf;letter-spacing:.07em}
+#menu #panel .mission-setup-head h2{
+  font-size:clamp(22px,4.1dvh,32px);line-height:1.02;margin:2px 0 0;
+}
+#menu .mission-setup-head .mission-live-preview{
+  flex:0 1 clamp(120px,22vw,218px);
+  width:clamp(120px,22vw,218px);
+  height:clamp(56px,11dvh,85px);
+  object-fit:contain;pointer-events:none;
+  mask-image:linear-gradient(90deg,transparent 0%,#000 11%,#000 94%,transparent);
+}
+#menu .mission-setup-body{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  align-content:start;gap:clamp(5px,.8dvh,8px);
+  padding:clamp(7px,1.2dvh,11px) clamp(10px,1.5vw,15px);
+}
+#menu .mission-module{box-shadow:none}
+#menu .mission-field{
+  grid-column:1/-1;
+  display:grid;grid-template-columns:minmax(140px,.75fr) minmax(0,1.25fr);
+  align-items:center;gap:clamp(6px,1vw,10px);
+  border:0;border-bottom:1px solid #54727b6e;
+  border-radius:0;background:transparent;
+  padding:3px 3px clamp(8px,1.2dvh,12px);
+}
+#menu .mission-field .mission-module-heading{
+  border:0;padding:0;align-items:center;
+}
+#menu .mission-field .mission-module-heading h3{
+  color:#eff5f3;font-size:clamp(12px,1.3vw,15px);letter-spacing:.045em;
+}
+#menu .mission-field .mission-index{display:none}
+#menu .mission-field-controls{margin:0;gap:clamp(5px,.8vw,8px)}
+#menu .mission-field-controls label{font-size:clamp(9px,.9vw,10px);letter-spacing:.04em}
+#menu #panel .mission-field-controls select{
+  background:#112a36;border:1px solid #5b7f8a;border-radius:3px;
+  color:#f2f6f1;font-weight:800;min-height:44px;height:44px;
+}
+#menu .mission-comfort,#menu .mission-rules{
+  position:relative;grid-column:auto;
+  background:linear-gradient(115deg,#1b3540,#132b36);
+  border:1px solid #466675aa;border-radius:3px;box-shadow:none;
+  align-self:stretch;
+}
+#menu .mission-comfort-details>summary,#menu #panel .mission-rules>summary{
+  min-height:52px;height:auto;padding:6px 9px;
+}
+#menu .mission-comfort-details>summary .mission-module-heading{border:0}
+#menu .mission-module-heading p{font-size:9px}
+#menu .mission-comfort .mission-index,#menu .mission-rules .mission-index{
+  display:none;
+}
+#menu .mission-comfort .mission-module-heading h3,#menu .mission-rules-heading{
+  font-size:clamp(10px,1.1vw,12px);letter-spacing:.02em;
+}
+#menu .mission-rules-heading small{letter-spacing:.01em}
+#menu .mission-comfort-chevron{font-size:clamp(9px,.95vw,10px)}
+#menu .mission-chevron{font-size:18px}
+#menu .mission-comfort-details[open]>summary{min-height:44px}
+#menu .mission-setup-screen:has(.mission-comfort-details[open]) .mission-comfort,
+#menu .mission-setup-screen:has(.mission-rules[open]) .mission-rules{
+  grid-column:1/-1;
+}
+#menu .mission-comfort-details .settings-comfort{border:0}
+#menu .mission-setup-actions{
+  grid-template-columns:clamp(91px,16vw,145px) minmax(0,1fr);
+  gap:7px;padding:clamp(5px,.9dvh,8px) clamp(10px,1.5vw,15px);
+  background:#102733;
+}
+#menu #panel .mission-setup-actions button{
+  border-radius:3px;min-height:44px;letter-spacing:.015em;
+}
+#menu #panel .mission-setup-actions button:not(.primary){
+  background:#1b333f;border-color:#506e7a;box-shadow:none;
+}
+@media(max-height:380px) and (orientation:landscape){
+  #menu .mission-setup-head{min-height:57px;padding:5px 10px}
+  #menu .mission-setup-head .mission-live-preview{height:52px;width:116px;flex-basis:116px}
+  #menu .mission-field{padding:2px 2px 6px;gap:5px}
+  #menu .mission-setup-body{padding:5px 9px;gap:5px}
+  #menu .mission-comfort-details>summary,#menu #panel .mission-rules>summary{
+    min-height:48px;padding:4px 6px;
+  }
+  #menu .mission-field .mission-module-heading p{display:none}
+  #menu .mission-setup-actions{padding:4px 9px}
+}
+@media(max-width:620px) and (orientation:landscape){
+  #menu .mission-field{grid-template-columns:minmax(125px,.64fr) minmax(0,1.36fr)}
+  #menu .mission-comfort .mission-module-heading h3,#menu .mission-rules-heading{font-size:10px}
+}
+@media(max-width:519px) and (orientation:landscape){
+  #menu .mission-field{display:block}
+  #menu .mission-field-controls{margin-top:6px}
+  #menu .mission-setup-body{overflow-y:auto}
+}
