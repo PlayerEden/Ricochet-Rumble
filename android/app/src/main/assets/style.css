@@ -2189,3 +2189,20 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
   font-size:10px;
  }
 }
+
+
+/* Width-driven Dossier footer contract: no implicit min-content overflow. */
+#menu .dossier-footer>div:first-child{
+ flex:1 1 auto;min-width:0;
+}
+#menu .dossier-backup-actions{
+ flex:0 1 43%;max-width:43%;min-width:0;
+}
+#menu #panel .dossier-backup-actions button{
+ flex:1 1 0;min-width:0;max-width:100%;
+ white-space:normal;overflow-wrap:break-word;
+}
+@media(max-width:650px) and (orientation:landscape){
+ #menu .dossier-backup-actions{flex:0 0 105px;max-width:105px}
+ #menu #panel .dossier-backup-actions button{min-width:0;width:100%;font-size:10px}
+}
