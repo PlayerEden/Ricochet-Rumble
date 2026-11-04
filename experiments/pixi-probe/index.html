@@ -1,43 +1,107 @@
 <!doctype html>
-<html lang="en">
-<head>
+<html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#101f2b">
-<title>Sector Rebound — Pixi Art and Scale Lab</title>
+<meta name="theme-color" content="#081923">
+<title>Sector Rebound — Premium Pixi Visual Slice</title>
 <link rel="stylesheet" href="style.css">
-</head>
-<body>
-<main id="app">
-  <div class="field" id="field" aria-label="Combat rendering comparison">
-    <canvas id="canvas2d" width="960" height="540" aria-label="Canvas renderer"></canvas>
-    <div id="pixi-host"></div>
-    <div class="match-hud">
-      <div class="score">CYAN <strong id="kills">0</strong> <span class="slash">/</span> CORAL <strong id="deaths">0</strong></div>
-      <span id="backend" class="backend">INITIALIZING</span>
+</head><body>
+<main id="app" class="front-open">
+ <div class="field" id="field" aria-label="Sector Rebound premium vertical slice">
+  <canvas id="canvas2d" width="960" height="540" aria-label="Canvas 2D baseline"></canvas>
+  <div id="pixi-host"></div>
+  <div class="match-hud" id="match-hud" aria-label="Combat HUD">
+   <div class="hud-left">
+    <div class="hud-mark">SR <span>•</span> 03</div>
+    <div class="score"><small>COMBAT SCORE</small><div>CYAN <strong id="kills">0</strong> <span class="slash">/</span> CORAL <strong id="deaths">0</strong></div></div>
+    <div class="hud-status">FIELDGRID // ACTIVE</div>
+   </div>
+   <div class="hud-right">
+    <span id="backend" class="backend">INITIALIZING</span>
+    <button type="button" id="pause-btn" aria-label="Pause prototype and open options">II &nbsp; PAUSE</button>
+   </div>
+  </div>
+  <div class="controls">
+   <div class="stick-shell" id="stick" role="group" aria-label="Move tank"><div class="knob" id="knob"></div></div>
+   <button type="button" class="fire" id="fire" aria-label="Drag to aim then release to fire">FIRE</button>
+  </div>
+  <button type="button" id="tools-toggle" aria-expanded="false" aria-controls="lab-tools">TEST TOOLS <span aria-hidden="true">+</span></button>
+
+  <div id="front-end" class="front-end" aria-label="Premium game menu">
+   <header class="brand-header">
+    <div class="brand-sigil"><b>SR</b><span>FIELDGRID</span></div>
+    <div class="menu-build">SYSTEM // VISUAL SLICE <span class="active-dot"></span> OFFLINE</div>
+   </header>
+   <section class="front-view" id="menu-screen" aria-labelledby="brand-name">
+    <div class="front-copy">
+     <div class="eyebrow"><span class="eyebrow-rule"></span> FIELD SYSTEMS / COMBAT DIVISION</div>
+     <h1 id="brand-name">SECTOR <em>REBOUND</em></h1>
+     <p class="front-sub">FIGHT THE ANGLE. OWN THE ARENA.</p>
+     <div class="front-actions">
+      <button type="button" id="go-deploy" class="primary-menu"><span class="btn-glyph">▶</span><span>DEPLOY TO ARENA<small>5-BOT FIELD EXERCISE</small></span><span class="btn-end">01</span></button>
+      <button type="button" id="go-hangar" class="secondary-menu"><span class="btn-glyph">◇</span><span>VEHICLE HANGAR<small>INSPECT THE ART DIRECTION</small></span><span class="btn-end">02</span></button>
+      <button type="button" id="go-settings" class="secondary-menu"><span class="btn-glyph">≡</span><span>VISUAL SETTINGS<small>SHADERS &amp; QUALITY PROFILES</small></span><span class="btn-end">03</span></button>
+     </div>
+     <p class="menu-note">EXPERIMENTAL PRESENTATION • NO ACCOUNT, SAVES, OR ONLINE MATCHES</p>
     </div>
-    <div class="controls">
-      <div class="stick-shell" id="stick" role="group" aria-label="Move tank"><div class="knob" id="knob"></div></div>
-      <button type="button" class="fire" id="fire" aria-label="Drag to aim then release to fire">FIRE</button>
+    <div class="hero-facts" aria-hidden="true"><span>MBT-07</span><strong>RECON/ARMORED</strong><small>HANGAR BAY 03</small></div>
+   </section>
+   <section class="front-view is-hidden" id="hangar-screen" aria-labelledby="hangar-title">
+    <div class="front-copy hangar-copy">
+     <div class="eyebrow"><span class="eyebrow-rule"></span> ASSET CONTROL / BAY 03</div>
+     <h2 id="hangar-title">VEHICLE <em>HANGAR</em></h2>
+     <p class="front-sub">MBT-07 // RICOCHET PLATFORM</p>
+     <div class="hangar-stats">
+      <div><span>ARMOR</span><i class="meter"><b style="width:82%"></b></i><strong>04</strong></div>
+      <div><span>MOBILITY</span><i class="meter"><b style="width:57%"></b></i><strong>03</strong></div>
+      <div><span>FIREPOWER</span><i class="meter"><b style="width:90%"></b></i><strong>05</strong></div>
+     </div>
+     <p class="hangar-note">Layered body construction, turret recoil, tread motion and cinematic hologram filters are concept art. No unlocks or gameplay changes are made here.</p>
+     <div class="front-actions hangar-actions">
+      <button type="button" id="hangar-deploy" class="primary-menu"><span>DEPLOY THIS PLATFORM</span><span class="btn-end">▶</span></button>
+      <button type="button" id="hangar-back" class="secondary-menu"><span>BACK TO OPERATIONS</span></button>
+     </div>
+    </div>
+    <div class="hero-facts" aria-hidden="true"><span>ASSET 001</span><strong>STANDARD ISSUE</strong><small>RENDERING TEST ONLY</small></div>
+   </section>
+   <section class="front-view is-hidden" id="settings-screen" aria-labelledby="settings-title">
+    <div class="front-copy">
+     <div class="eyebrow"><span class="eyebrow-rule"></span> DISPLAY SYSTEM / DIAGNOSTIC</div>
+     <h2 id="settings-title">VISUAL <em>SETTINGS</em></h2>
+     <p class="front-sub">COMPARE THE PREMIUM AND REDUCED PRESENTATIONS.</p>
+     <div class="quality-options">
+      <button type="button" id="quality-cinematic" class="quality-choice selected" aria-pressed="true">CINEMATIC <small>GLSL HOLOGRAM · AMBIENCE · FX</small></button>
+      <button type="button" id="quality-reduced" class="quality-choice" aria-pressed="false">REDUCED <small>DISABLE EXTRA SHADER &amp; AMBIENCE</small></button>
+     </div>
+     <p class="hangar-note">These are presentation presets, not a production graphics menu. Visual quality does not change the collision rules, map, or AI.</p>
+     <button type="button" id="settings-back" class="secondary-menu">BACK TO OPERATIONS</button>
+    </div>
+   </section>
+  </div>
+  <div id="pause-screen" class="pause-screen is-hidden" role="dialog" aria-modal="true" aria-label="Paused">
+    <div class="pause-panel"><div class="eyebrow">SIMULATION SUSPENDED</div><h2>PAUSED</h2>
+      <button type="button" id="resume-btn" class="primary-menu">RESUME EXERCISE</button>
+      <button type="button" id="return-menu" class="secondary-menu">RETURN TO MENU</button>
     </div>
   </div>
-  <footer>
-    <div class="modes" role="group" aria-label="Renderer choice">
-      <button id="use-pixi" type="button" class="selected">PIXI / WEBGL</button>
-      <button id="use-canvas" type="button">CANVAS 2D</button>
-      <button id="reset" type="button">RESET</button>
-      <button id="toggle-art" type="button" class="fx-active" aria-pressed="true" title="Switch between production-inspired rigged concept and classic artwork">LAYERED ART</button>
-      <button id="zoom-out" type="button" aria-label="Zoom out to show more arena">ZOOM −</button>
-      <button id="zoom-in" type="button" aria-label="Zoom in to inspect vehicle detail">ZOOM +</button>
-      <button id="toggle-fx" type="button" class="fx-active" aria-pressed="true" title="Toggle enhanced GPU effects without changing combat">FX ON</button>
-      <button id="demo-fx" type="button" aria-label="Demonstrate muzzle, bounce, impact and destruction effects">DEMO FX</button>
-      <button id="use-match" type="button" class="selected">MATCH LOAD</button>
-      <button id="use-stress" type="button">STRESS LOAD</button>
-    </div>
-    <div class="measure"><span id="fps">FPS —</span><span id="render-ms">CPU submit —</span><span id="shots">SHOTS —</span><span id="fx-count" aria-live="off">FX —</span><span id="zoom-value">ZOOM 0.94x · RIGGED</span></div>
-  </footer>
-  <div id="notice" role="status" aria-live="polite">Art & camera concept · layered body/turret/track animation · zoom from wide arena to close detail</div>
+ </div>
+ <footer id="lab-tools" aria-label="Experimental renderer controls">
+  <div class="lab-tools-title">RENDERER DIAGNOSTICS <span>EXPERIMENT ONLY</span></div>
+  <div class="modes" role="group" aria-label="Renderer and visual comparison">
+   <button id="use-pixi" type="button" class="selected">PIXI / WEBGL</button>
+   <button id="use-canvas" type="button">CANVAS 2D</button>
+   <button id="reset" type="button">RESET</button>
+   <button id="toggle-art" type="button" class="fx-active" aria-pressed="true">LAYERED ART</button>
+   <button id="zoom-out" type="button" aria-label="Zoom out to show more arena">ZOOM −</button>
+   <button id="zoom-in" type="button" aria-label="Zoom in to inspect vehicle detail">ZOOM +</button>
+   <button id="toggle-fx" type="button" class="fx-active" aria-pressed="true">FX ON</button>
+   <button id="demo-fx" type="button" aria-label="Preview visual effects">DEMO FX</button>
+   <button id="use-match" type="button" class="selected">MATCH LOAD</button>
+   <button id="use-stress" type="button">STRESS LOAD</button>
+  </div>
+  <div class="measure"><span id="fps">FPS —</span><span id="render-ms">CPU submit —</span><span id="shots">SHOTS —</span><span id="fx-count">FX —</span><span id="zoom-value">ZOOM 0.94× · RIGGED</span></div>
+ </footer>
+ <div id="notice" role="status" aria-live="polite">Offline premium visual showcase — not a released Sector Rebound build.</div>
 </main>
 <script defer src="bundle.js"></script>
-</body>
-</html>
+</body></html>
