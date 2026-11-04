@@ -3394,3 +3394,11 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 #menu #panel .dossier-backup-actions button{
   min-height:44px;border-radius:3px;
 }
+
+
+/* UIV3-J5 smallest landscape correction: a larger (44px) accessible Back
+   raises the Dossier header. Reclaim 12px from the record workspace rather
+   than clipping the backup/footer or allowing a scrollable main page. */
+@media(max-height:380px) and (orientation:landscape){
+  #menu .dossier-workspace{height:120px}
+}
