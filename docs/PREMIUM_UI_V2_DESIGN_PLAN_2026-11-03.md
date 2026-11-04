@@ -36,11 +36,18 @@ Real Android screenshots from two consecutive `SR Hybrid Test` builds proved the
 ### UIV2-D — LAN / social play (planned)
 - Present Host / Find / Join with network hierarchy and clear two-phone Wi-Fi explanation; leave socket/LAN/spectator state machine untouched.
 
-### UIV2-E — Hangar (maps to original M12) (planned)
-- Primary owned-unit preview based on actual equipped paint/insignia data, selected vs locked distinction, readable unlock conditions and back navigation. Pixi visual module optional/isolated; no saved cosmetics format edits.
+### UIV2-E — Hangar (maps to original M12) (implementation / QA in progress)
+- [x] Split Hangar into a purposeful vehicle bay and customization workbench, sharing FIELDGRID typography/colors with Home.
+- [x] Use the **actual Canvas tank renderer and real equipped paint**, repainting immediately after equip; keep selected/locked states, insignia, rewards and storage keys unchanged.
+- [x] Retain functional Paint/Insignia tabs, Dossier-return navigation and Solo-only scope.
+- [x] Capture browser screenshots and verify paint switching at 568×320, 640×360, 740×360, 915×412, and 1280×720.
+- [ ] Physical phone visual acceptance, especially small-label legibility. Do not merge until approved.
 
-### UIV2-F — Dossier (maps to original M11/M13) (planned)
-- Operator summary, key record tiles, mode history secondary, backup/restore utilities accessible and unchanged; preserve all record calculations and storage semantics.
+### UIV2-F — Dossier (maps to original M11/M13) (implementation / QA in progress)
+- [x] Replace long vertically stacked stat/table layout with a two-column **Operator Summary + Mode Record** screen.
+- [x] Preserve all six stats, five mode records, equipped insignia, status, Hangar, Back and Backup paths; keep data calculations and backup/restore formats unchanged.
+- [x] Pin the footer actions inside visible panel bounds and prevent Dossier content from overlapping them; verify actions by actual Chromium hit-test at phone sizes.
+- [ ] Owner phone acceptance for 568×320 and 740×360, including backup flow.
 
 ### UIV2-G — Pause / Results / Help (planned)
 - Compact dialog UI, consistent primary CTA, touch targets, no overlapping HUD or actions and owner acceptance on smallest phone.
@@ -54,3 +61,21 @@ Keep one **menu-only, opt-in Pixi v8/WebGL layer** with CPU/GPU lifecycle teardo
 Each step: targeted screen-specific real-browser screenshot QA plus existing fast, canonical gameplay/LAN, asset byte parity and Android debug build. If WebGL is unavailable, HTML/Canvas must remain navigable. Build a separate `com.playereden.ricochetrumble.hybridtest` APK for owner testing only after CI confirms exact bundled Pixi bytes, test label, debug signature and package separation. Do not merge PR #140 or alter the production/owner APK until phone acceptance.
 
 **Current source of truth:** draft PR #140. This design plan complements, rather than supersedes, `docs/M11_HYBRID_PRESENTATION_ROADMAP_2026-11-03.md`; later visual stages map onto that plan's Hangar, Dossier and optional combat experiment milestones.
+
+## UI-wide cohesion matrix and staged order
+
+| Screen | Identity / treatment | Data/behavior to preserve | Status |
+| --- | --- | --- | --- |
+| Home | Full-screen hangar showcase, warm single Quick Play CTA, quiet nav | Original Canvas vehicle, real button routing, optional Pixi | UIV2-A browser checked, owner reviewed |
+| Mode Select | Four distinctive mission cards + restrained practice/daily/experimental rail | Existing score targets, modes, daily seed and rules | UIV2-B next |
+| Match Settings | Deployment briefing: field/bots above organized rules and controls | Every existing checkbox, playlist, preferences and Start Match | UIV2-C next |
+| Local Wi-Fi | Host / Discover / Join screen with clear connection hierarchy | Existing LAN discovery, IP join and team flows | UIV2-D next |
+| Hangar | Real vehicle bay + paint/insignia workbench | `rr-hangar-paint-v1`, selected/locked states, unlock thresholds | UIV2-E implemented, phone acceptance pending |
+| Dossier | Readable operator summary + mode history with always-visible utility footer | `rr-dossier-v1`, backup/restore, record integrity | UIV2-F implemented, phone acceptance pending |
+| Pause & Results | Compact operational overlays with one primary action | Resume/New Field/Return, match stats, share paths where supported | UIV2-G pending |
+| Help, backup, profile utilities | Consistent compact content and safe navigation | All game help, restore safety and accessibility | UIV2-G pending |
+| In-match HUD | Functional control-first, no added GPU layer without proof | Controls, camera, lives, TDM/FFA, minimap, AI | Keep approved layout; later dedicated audit |
+
+**Shared style contract:** warm gold = primary commitment and key outcome; pale cyan = telemetry, selection or informational accents; subdued navy = surfaces; light text = essential content; tiny monospace = optional metadata only. Reduce generic full-width rectangles and avoid making every screen look like a dashboard. Respect reduced motion, WebGL failure, accessible focus and meaningful labels.
+
+**Release rules:** only draft PR #140 until targeted real-browser visual QA + existing fast/native/LAN regressions and a **separate test APK** pass. Actual Android owner acceptance is required to promote; no change to production `main`, owner signing, saves, or recommended APK.
