@@ -40,7 +40,7 @@ function drawHangarUnitPreview(){
  if(label)label.textContent=paint+' / '+(unit==='mech'?'MECH':'TANK')+' PREVIEW';
  if(unitLabel)unitLabel.textContent='PREVIEW ONLY · COSMETIC';
  if(toggle){toggle.textContent=unit==='mech'?'VIEW TANK':'VIEW MECH';toggle.setAttribute?.('aria-label','Preview '+(unit==='mech'?'tank':'mech')+' instead of '+unit);}
- if(readout)readout.textContent='PAINT · '+paint;
+ if(readout)readout.textContent=equippedPaint==='fieldgrid.standard'?'PAINT · FACTORY':'PAINT · '+paint;
  if(!canvas?.getContext)return;
  // Presentation-only: render the SAME art and paint renderer as gameplay.
  // A canvas context failure must never prevent equipping saved paint.
@@ -71,7 +71,7 @@ function drawHangarUnitPreview(){
   c.restore();
   canvas.dataset.paintId=equippedPaint;
   canvas.dataset.unit=unit;
-  canvas.setAttribute('aria-label',paint+' paint preview on Sector Rebound '+unit);
+  canvas.setAttribute('aria-label',(equippedPaint==='fieldgrid.standard'?'Standard factory color':' '+paint+' paint')+' preview on Sector Rebound '+unit);
  }catch(error){
   console.warn?.('Optional Hangar vehicle preview unavailable',error);
  }
@@ -86,7 +86,7 @@ function refreshHangar(){
   el.disabled=!unlock.eligible;
   if(typeof el.setAttribute==='function'){
    el.setAttribute('aria-pressed',String(selected));
-   el.setAttribute('aria-label',HANGAR_PAINTS[id]?.label+' · '+(unlock.eligible?'AVAILABLE':'LOCKED · '+unlock.current+' OF '+unlock.target+' '+unlock.metric.toUpperCase()));
+   el.setAttribute('aria-label',HANGAR_PAINTS[id]?.label+(id==='fieldgrid.standard'?' · FACTORY COLORS (cyan tank, gold mech)':'')+' · '+(unlock.eligible?'AVAILABLE':'LOCKED · '+unlock.current+' OF '+unlock.target+' '+unlock.metric.toUpperCase()));
   }
   const label=el.querySelector?.('small');
   if(label&&unlock.target)label.textContent=unlock.eligible?'UNLOCKED':unlock.current+' / '+unlock.target+' '+unlock.metric.toUpperCase();
@@ -922,7 +922,7 @@ function ejectPilot(i){const t=state.tanks[i],v=state.vehicles?.[t.vehicleId];if
  const exit=pilotExitSite(i,v.id)||[t.x,t.y];
  t.onFoot=true;t.vehicleId=null;Object.assign(t,{x:exit[0],y:exit[1],vx:0,vy:0,shield:EJECTION_SHIELD,powerType:null,powerTimer:0});
  if(i===0&&mode==='solo')clearFireAim(); // no vehicle AIM leaking into pilot FIRE drag
- t.ejectAnim=.62;if(i===0&&coachEnabled&&!coachPilotShown){coachPilotShown=true;coachTip('ON FOOT · FOLLOW THE VEHICLE ARROW · ENTER TO BOARD',4.4);}audioCue('eject',v.x,v.y);state.event=label(i)+' EJECTED · FIND COVER!';state.eventTimer=1.15;emitFx('eject',v.x,v.y,combatColor(i),-1,i);
+ t.ejectAnim=.62;if(i===0&&coachEnabled&&!coachPilotShown){coachPilotShown=true;coachTip('ON FOOT · FOLLOW THE VEHICLE ARROW · ENTER TO BOARD',4.4);}audioCue('eject',v.x,v.y);state.event=(i===(mode==='guest'?1:0)?'YOU EJECTED · FIND COVER!':(lanBotSeat(i)?label(i):'PLAYER '+(i+1))+' EJECTED · PILOT EXPOSED!');state.eventTimer=1.15;emitFx('eject',v.x,v.y,combatColor(i),-1,i);
 }
 // Forward Bay staging and scored respawns share a single team assignment.
 function teamForDeployment(i,config,humans){
@@ -1153,7 +1153,29 @@ function inputFrom(keys,isLocal){const down=k=>menu.classList.contains('hidden')
 }
 function makeControl(isPlayer1){return isPlayer1?inputFrom(keys1,true):inputFrom(keys2,false)}
 function serializeState(){return {allyAim:alliedAimIntentIndices(1),tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,vehicleDropTimer:state.vehicleDropTimer,dropIndex:state.dropIndex,vehicleBeacon:state.vehicleBeacon?{...state.vehicleBeacon}:null,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,scored:state.scored,lanSeries:state.lanSeries,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,elapsedSeconds:state.elapsedSeconds,deaths:state.deaths.slice(),hostPaused:mode==='host'&&paused};}
-function refreshHUD(){refreshHudModeChip();const me=mode==='guest'&&!lanSpectating?1:0,other=me===0?1:0;
+
+/* M5.1-B: the left rail is YOUR identity outside team-score modes.
+   FFA opponents have independent random colors, so their aggregate counter
+   must be neutral instead of implying every enemy is coral. A TDM/CTF score
+   rail, however, represents fixed CYAN vs CORAL teams, not a player. */
+function hudScoreAccentColors(st=state,session=mode,spectating=lanSpectating){
+ const config=st?.config||{};
+ if(st?.ctf||st?.scored?.mode==='teams'||config.teamMode==='tdm')
+  return {left:'#46d2f5',right:'#fc856e'};
+ if(session==='guest'&&spectating)return {left:'#bdd0d6',right:'#e3bb81'};
+ const me=session==='guest'?1:0;
+ const mine=combatColor(me,st);
+ if(config.teamMode==='ffa')return {left:mine,right:'#e3bb81'};
+ return {left:mine,right:teamOf(me,st)===0?'#fc856e':'#46d2f5'};
+}
+function refreshHudScoreAccents(){
+ const accents=hudScoreAccentColors();
+ const mine=document.querySelector('.game-hud .scorestrip .blue-tag');
+ const theirs=document.querySelector('.game-hud .scorestrip .pink-tag');
+ if(mine?.style)mine.style.color=accents.left;
+ if(theirs?.style)theirs.style.color=accents.right;
+}
+function refreshHUD(){refreshHudModeChip();refreshHudScoreAccents();const me=mode==='guest'&&!lanSpectating?1:0,other=me===0?1:0;
  document.getElementById('score0').textContent=state.lives[me]??0;document.getElementById('score1').textContent=state.lives[other]??0;
  const botLives=mode==='solo'||(mode==='host'&&state.config?.lanHostSolo===true)?
   opposingCount(me):state.lives.slice(state.humanCount||2).filter(v=>v>0).length,
@@ -3027,12 +3049,30 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  c.scale(mw/worldW,mh/worldH);c.fillStyle='#19313e';c.fillRect(0,0,worldW,worldH);
  c.fillStyle='#789ba7';for(const w of wallSet)c.fillRect(w.x,w.y,w.w,w.h);if(isPilotMatch()){for(const v of state.vehicles)if(v.occupant===-1&&v.armor>0){c.fillStyle=v.type==='mech'?'#d7a8ff':'#74e0a6';c.fillRect(v.x-28,v.y-28,56,56);}}
  if(state.vehicleBeacon?.ttl>0){c.strokeStyle='#fff6bf';c.lineWidth=19;c.beginPath();c.arc(state.vehicleBeacon.x,state.vehicleBeacon.y,55+Math.sin(visualClock*6)*15,0,Math.PI*2);c.stroke();}
- for(let i=0;i<state.tanks.length;i++){if(state.lives[i]<=0)continue;const t=state.tanks[i],me=mode==='guest'?1:0;if(i!==me&&Math.hypot(t.x-state.tanks[me].x,t.y-state.tanks[me].y)>400)continue;c.beginPath();c.arc(t.x,t.y,37,0,Math.PI*2);c.fillStyle=combatColor(i);c.fill()}
- // Nearby hostile gunfire briefly appears as a *rough* sound ring, not a permanent wallhack.
- const local=state.tanks[me];if(local)for(const fx of (state.fxEvents||[])){if(fx.kind!=='shot'||!(fx.ttl>0)||!Number.isInteger(fx.owner)||fx.owner<0||fx.owner>=state.tanks.length||friendly(fx.owner,me))continue;
-   if(Math.hypot(fx.x-local.x,fx.y-local.y)>1000)continue;
-   c.globalAlpha=.75*Math.min(1,fx.ttl/.4);c.strokeStyle='#ffd17c';c.lineWidth=22;c.beginPath();c.arc(fx.x,fx.y,80+(1.8-fx.ttl)*95,0,Math.PI*2);c.stroke();}
- c.globalAlpha=1;c.strokeStyle='#ffffff';c.lineWidth=9;c.strokeRect(camera.x,camera.y,viewW,viewH);c.restore();}
+ // Hostile nearby shots remain rough audio pings, not permanent enemy tracking.
+ // Collapse near-duplicate pulses, cap to two and paint them BEHIND actor markers.
+ const me=mode==='guest'&&!lanSpectating?1:0,local=state.tanks[me],radarPings=[];
+ if(local){
+  const events=state.fxEvents||[];
+  for(let n=events.length-1;n>=0&&radarPings.length<2;n--){
+   const fx=events[n];
+   if(fx.kind!=='shot'||!(fx.ttl>0)||!Number.isInteger(fx.owner)||fx.owner<0||fx.owner>=state.tanks.length||friendly(fx.owner,me))continue;
+   if(Math.hypot(fx.x-local.x,fx.y-local.y)>1000||radarPings.some(p=>Math.hypot(fx.x-p.x,fx.y-p.y)<220))continue;
+   radarPings.push(fx);
+  }
+ }
+ for(const fx of radarPings){
+  c.globalAlpha=.36*Math.min(1,fx.ttl/.55);c.strokeStyle='#ffd17c';c.lineWidth=12;
+  c.beginPath();c.arc(fx.x,fx.y,60+(1.8-fx.ttl)*65,0,Math.PI*2);c.stroke();
+ }
+ c.globalAlpha=1;
+ for(let i=0;i<state.tanks.length;i++){
+  if(state.lives[i]<=0)continue;
+  const t=state.tanks[i];
+  if(i!==me&&local&&Math.hypot(t.x-local.x,t.y-local.y)>400)continue;
+  c.beginPath();c.arc(t.x,t.y,37,0,Math.PI*2);c.fillStyle=combatColor(i);c.fill();
+ }
+ c.strokeStyle='#ffffff';c.lineWidth=9;c.strokeRect(camera.x,camera.y,viewW,viewH);c.restore();}
  if(state.eventTimer>0&&state.winner<0){
    // Events belong to the world and should not interrupt center-screen combat.
    // Enemy life losses are secondary information, not a blocking announcement.
@@ -3443,7 +3483,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
  if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';joinLanEndpoint(m[1],Number(m[2]));}});
 function showRestartConfirmation(){
  if(mode==='guest'||mode==='idle'||!paused)return;
- setPanel(state.config?.dailySector?'<div class="eyebrow">DAILY SECTOR / CONFIRM</div><h2>RESTART <span>ATTEMPT?</span></h2><p class="pause-hint">Your current attempt ends. The daily maze stays the same.</p><div class="pause-actions"><button class="primary" data-action="confirm-restart">RETRY SECTOR</button><button data-action="cancel-restart">KEEP CURRENT MATCH</button></div>':'<div class="eyebrow">FIELDGRID / CONFIRM</div><h2>START <span>NEW FIELD?</span></h2><p class="pause-hint">The current match will end. A fresh maze will replace it.</p><div class="pause-actions"><button class="primary" data-action="confirm-restart">START NEW FIELD</button><button data-action="cancel-restart">KEEP CURRENT MATCH</button></div>');
+ setPanel(state.config?.dailySector?'<div class="eyebrow">DAILY SECTOR / CONFIRM</div><h2>RESTART <span>ATTEMPT?</span></h2><p class="pause-hint">Your current attempt ends. The daily maze stays the same.</p><div class="pause-actions"><button class="primary" data-action="confirm-restart">RETRY SECTOR</button><button data-action="cancel-restart">KEEP CURRENT MATCH</button></div>':'<div class="eyebrow">FIELDGRID / CONFIRM</div><h2>START <span>NEW MATCH?</span></h2><p class="pause-hint">The current match will end. A fresh maze will replace it.</p><div class="pause-actions"><button class="primary" data-action="confirm-restart">START NEW MATCH</button><button data-action="cancel-restart">KEEP CURRENT MATCH</button></div>');
 }
 // UIV3-J6: one compact, game-native pause surface for all existing modes.
  // This is presentation only: host/guest pause authority and button handlers
@@ -3461,22 +3501,22 @@ function showPauseMenu(){
  if(mode==='solo'||mode==='duel'){
   paused=true;
   const daily=!!state.config?.dailySector;
-  setPanel(pausePanelHTML(daily?'DAILY SECTOR / PAUSED':'SOLO PLAY / PAUSED',
+  setPanel(pausePanelHTML(hudModeDetails().code+' · PAUSED',
     'SECTOR <span>PAUSED</span>',
     daily?'The daily maze stays fixed for this attempt.':'The match is frozen. Pick up where you left off.',
     '<button class="primary" data-action="resume">RESUME MATCH</button>'+
-    '<button data-action="restart">'+(daily?'RETRY SECTOR':'NEW FIELD')+'</button>'+
+    '<button data-action="restart">'+(daily?'RETRY SECTOR':'NEW MATCH')+'</button>'+
     '<button data-action="close">MAIN MENU</button>'));
  }else if(mode==='host'){
   paused=true;neutralizeGuestInput();
-  setPanel(pausePanelHTML('LOCAL MATCH / HOST PAUSED',
+  setPanel(pausePanelHTML(hudModeDetails().code+' · HOST PAUSED',
     'SECTOR <span>PAUSED</span>','Both players are paused.',
     '<button class="primary" data-action="resume">RESUME MATCH</button>'+
-    '<button data-action="restart">NEW FIELD</button>'+
+    '<button data-action="restart">NEW MATCH</button>'+
     '<button data-action="close">DISCONNECT</button>'));
  }else if(mode==='guest'){
   if(connected&&!lanSpectating)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}});
-  setPanel(pausePanelHTML('LOCAL MATCH / PLAYER MENU',
+  setPanel(pausePanelHTML(hudModeDetails().code+' · PLAYER MENU',
     'MATCH <span>MENU</span>',
     lanSpectating?'SPECTATING · READ ONLY. The host controls the match.':'The host controls rematches.',
     '<button class="primary" data-action="resume">BACK TO ARENA</button>'+

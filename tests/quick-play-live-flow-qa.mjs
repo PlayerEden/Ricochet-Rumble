@@ -167,9 +167,35 @@ try{
  const ready=await page.locator('#shell-slots .shell-slot.ready').count();
  assert.equal(ready,slots,'unused projectile slots start filled');
  assert.ok(['survival_ffa','survival_teams'].includes(before.mode),'supported mode shown');
+ const actualColor=await page.evaluate(()=>{
+  const st=window.__flowQA.state;
+  const seat=st.config.teamIds?.[0]??0;
+  const expected=st.config.teamMode==='ffa'?st.config.ffaColors[0]:(seat===0?'#46d2f5':'#fc856e');
+  const tmp=document.createElement('span');tmp.style.color=expected;document.body.appendChild(tmp);
+  const canonical=getComputedStyle(tmp).color;tmp.remove();
+  return {canonical,actual:getComputedStyle(document.querySelector('.scorestrip .blue-tag')).color};
+ });
+ assert.equal(actualColor.actual,actualColor.canonical,'YOU HUD color matches real match identity');
+ // Change only the disposable browser fixture: FFA remap must update on HUD refresh.
+ if(before.mode==='survival_ffa'){
+  const recolor=await page.evaluate(()=>{
+   const st=window.__flowQA.state,old=st.config.ffaColors[0];
+   st.config.ffaColors[0]=old==='#fc856e'?'#b69aff':'#fc856e';
+   window.__flowQA.refreshHUD();
+   const out={value:st.config.ffaColors[0],actual:getComputedStyle(document.querySelector('.scorestrip .blue-tag')).color};
+   st.config.ffaColors[0]=old;window.__flowQA.refreshHUD();
+   return out;
+  });
+  const expected=recolor.value==='#fc856e'?'rgb(252, 133, 110)':'rgb(182, 154, 255)';
+  assert.equal(recolor.actual,expected,'dynamic FFA HUD accent uses actual per-match shuffled identity');
+ }
+ result.steps.push('HUD personal FFA and team colors track actual runtime actor identity');
  assert.equal(await page.locator('#after-action').isVisible(),false,'no premature results');
  await page.locator('#menu-button').click();
- assert.equal(await page.locator('button[data-action="restart"]').isVisible(),true,'New Field available in pause');
+ assert.equal(await page.locator('button[data-action="restart"]').isVisible(),true,'Restart available in pause');
+ assert.equal((await page.locator('.pause-head .eyebrow').textContent()).trim(),
+   (before.mode==='survival_teams'?'S-TEAM':'S-FFA')+' · PAUSED','actual mode remains visible in pause');
+ assert.equal((await page.locator('button[data-action="restart"]').textContent()).trim(),'NEW MATCH');
  const pausedSeed=await page.evaluate(()=>window.__flowQA.state.mazeSeed);
  await page.locator('button[data-action="restart"]').click();
  assert.equal(await page.locator('button[data-action="confirm-restart"]').isVisible(),true,'restart requires explicit confirmation');
@@ -185,6 +211,7 @@ try{
   return {hits,state:{winner:qa.state.winner,ko:qa.state.kos[0],deaths:qa.state.deaths[0],final:qa.state.finalResult}};
  });
  assert.deepEqual(victory.hits,[true,true],'real two-hit pilot knockout');
+ assert.match(await page.locator('#arena').getAttribute('aria-label'),/Top-down/);
  assert.equal(victory.state.final.outcome,'victory');
  assert.equal(victory.state.ko,2,'actual kill counter');
  assert.equal(victory.state.deaths,0);

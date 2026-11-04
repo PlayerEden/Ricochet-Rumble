@@ -36,3 +36,12 @@ Keep the established premium FIELDGRID look and genuine Canvas tank/mech/pilot a
 4. **M6** -> complete pass across screenshots, Android performance/fallback, save/restore, unchanged physics, both LAN devices, release signing/version safety. Preserve draft PR and release rollback paths until accepted.
 
 This is a plan and a testable first increment, not a claim that all screenshot-review findings have already been fixed.
+
+
+## B1 / B2 narrow correction checkpoint — 2026-11-04
+- Live FFA/survival `YOU` HUD text accent now follows the actual local actor color; aggregate FFA enemy count is neutral amber, **not a false coral team**. Team Survival tracks the local team; TDM/CTF **CYAN/CORAL score columns remain fixed**, so the player side is never silently swapped. Guest spectator uses neutral host-view accents where appropriate.
+- The default STANDARD swatch is now split cyan/gold with **FACTORY COLORS** copy and an accessible description. The real tank/mech preview and stored `fieldgrid.standard` ID remain untouched; no unit palette or combat rendering changes.
+- Pause and LAN player menus identify the same live mode code as the top HUD. Non-daily restart CTA now says **NEW MATCH** with the existing confirmation and reset behavior unchanged. Daily **RETRY SECTOR** remains as-is.
+- Radar hostile-shot pulses are limited to two coarse non-duplicate rings, reduced in stroke and opacity, and rendered behind actor markers. They remain bound to actual nearby hostile shot events and clipped to the map; no tracking gameplay mechanic changes.
+- Ejection toast now says **YOU EJECTED · FIND COVER!** only for the local actor; opponent/AI ejections indicate their exposed pilot without ordering the player to hide.
+- Existing completed-match Dossier browser test already validates exactly-once finalize, persistence, earned VECTOR, and positive match counts. Full QA is still required before approving this follow-up; owner physical Android screenshots and separate two-device LAN validation remain gates.

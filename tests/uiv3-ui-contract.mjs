@@ -79,4 +79,13 @@ assert.ok(js.includes('function hudModeDetails(')&&js.includes('refreshHudModeCh
  'badge must derive from actual state on every HUD refresh');
 assert.ok(css.includes('.scorestrip>.hud-mode-chip')&&css.includes('pointer-events:none'),
  'mode badge must fit the HUD and not steal player touches');
+// M5.1-B: factory colors, actual HUD paint/score semantics, pause truth, radar restraint.
+assert.ok(html.includes('FACTORY COLORS')&&css.includes('linear-gradient(90deg,#6bcde0 0 49%,#d5bb77'),
+ 'native Standard swatch must honestly convey cyan tank and gold mech');
+assert.ok(js.includes('function hudScoreAccentColors(')&&js.includes('refreshHudScoreAccents();'),
+ 'personal HUD colors must reflect actual match identity');
+assert.ok(js.includes("hudModeDetails().code+' · PAUSED'")&&js.includes('NEW MATCH'),
+ 'Pause must use current mode and honest restart wording');
+assert.ok(js.includes('radarPings.length<2')&&js.includes('radarPings.some('),
+ 'radar hostile shot pings must be capped and de-duplicated behind actor markers');
 console.log('UIV3_UI_CONTRACT_PASS — real controls, save UI, accessibility, audio and native parity');

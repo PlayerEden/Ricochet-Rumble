@@ -138,6 +138,9 @@ try{
     hero:{x:h.x,right:h.right,y:h.y,bottom:h.bottom}};
   });
   assert.equal(hangar.paint,'fieldgrid.standard','Hangar preview starts with equipped paint');
+  assert.equal((await page.locator('[data-paint-id="fieldgrid.standard"] small').textContent()).trim(),
+    'FACTORY COLORS','factory cyan tank and gold mech are not a single cyan-only paint');
+  assert.ok((await page.locator('[data-paint-id="fieldgrid.standard"]').getAttribute('aria-label')).includes('gold mech'));
   assert.ok(hangar.visiblePixels>150,'Hangar must render actual tank image, not empty panel');
   assert.ok(hangar.previewWidth>=120,'Hangar canvas has readable pixel dimensions');
   assert.ok(hangar.panel.x>=0&&hangar.panel.right<=w+1&&hangar.panel.bottom<=h+1);
@@ -706,6 +709,9 @@ try{
     'existing pause actions must remain');
    assert.equal(await page.locator('.pause-screen').isVisible(),true,
      'new game-native pause composition renders');
+   assert.equal((await page.locator('.pause-head .eyebrow').textContent()).trim(),hud.code+' · PAUSED',
+     'Pause must reflect the current actual live match type, not generic Solo Play');
+   assert.ok(pauseDetails.labels.includes('NEW MATCH'),'honest restart button must say NEW MATCH');
    const pauseHit=await page.evaluate(()=>[...document.querySelectorAll('.pause-screen button[data-action]')].map(el=>{
      const r=el.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
      return {action:el.dataset.action,height:r.height,bottom:r.bottom,hit:hit?.closest('button')?.dataset.action};
