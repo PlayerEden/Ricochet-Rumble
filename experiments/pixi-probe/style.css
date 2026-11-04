@@ -118,3 +118,6 @@ h1 em,h2 em{display:block;font-style:normal;color:#8bdded;letter-spacing:.035em}
  .menu-build{display:none}
 }
 @media(prefers-reduced-motion:reduce){.primary-menu,.secondary-menu{transition:none}}
+
+/* The Pixi cinematic stage owns the background; menu DOM hides completely in combat. */
+.front-end.is-hidden{display:none!important}
