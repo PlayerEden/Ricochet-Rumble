@@ -4,6 +4,7 @@ import { Application, Graphics, Container, Sprite, Texture } from 'pixi.js';
 import { TEAM_COLORS, WORLD_WIDTH, WORLD_HEIGHT, WALLS, buildUnitArt, createFieldgridFloor, makeBulletCanvas } from './fieldgrid-art.js';
 import { PixiFxLab } from './pixi-fx.js';
 import { PixiArtShowcase } from './pixi-art-showcase.js';
+import { PremiumStage } from './premium-stage.js';
 
 const W=960,H=540,MAX_SHOTS=180,BASE_COLOR=0x101f2b;
 const walls=WALLS;
@@ -14,6 +15,7 @@ let load='match',camera={x:0,y:0,zoom:.94},effects=[];
 let fxEvents=[],fxSeq=0,fxEnabled=true;
 const zoomSteps=[.69,.94,1.27];
 let zoomIndex=1,artMode='layered';
+let view='menu',quality='cinematic',isPaused=false;
 const pixelDensity=Math.min(1.75,Math.max(1,window.devicePixelRatio||1));
 const unitSize=120;
 const $=(id)=>document.getElementById(id);
@@ -211,9 +213,15 @@ async function makePixi(){
  });
  const vfx=new PixiFxLab(world,WALLS);
  vfx.setEnabled(fxEnabled);
- return {app,world,units,bullets,fx,vfx,artShowcase};
+ const premium=new PremiumStage(app,art);
+ premium.setMode('menu');world.visible=false;
+ return {app,world,units,bullets,fx,vfx,artShowcase,premium};
 }
-function pixiFrame(){
+function pixiFrame(dt){
+ if(view!=='combat'){
+  pixi.world.visible=false;pixi.premium.update(dt);pixi.app.render();return;
+ }
+ pixi.world.visible=true;
  const units=[...scene.parked,scene.player,...scene.bots];
  for(let i=0;i<pixi.units.length;i++){
   const v=pixi.units[i],u=units[i];v.visible=!!u&&artMode==='classic';if(!u)continue;
@@ -258,7 +266,8 @@ function stats(dt,renderDuration){
  $('fps').textContent='FPS '+fps.toFixed(1);
  $('render-ms').textContent='CPU submit p95 '+percentile(renderSamples,.95).toFixed(2)+' ms';
  updateHud();
- window.__pixiProbe={ready:!!pixi,engine,frames:frame,fps,renderP95:percentile(renderSamples,.95),shots:scene.shots.length,kills:scene.kills,bots:scene.bots.length,load,fxEnabled,fxEvents:fxEvents.length,activeFxSprites:pixi?.vfx?.activeCount||0,artMode,zoom:camera.zoom,artRigs:pixi?.artShowcase?.active||0,pixelDensity,visuals:'production-path-art',backend:pixi?.app?.renderer?.name||'none'};
+ window.__pixiProbe={ready:!!pixi,engine,frames:frame,fps,renderP95:percentile(renderSamples,.95),shots:scene.shots.length,kills:scene.kills,bots:scene.bots.length,load,fxEnabled,fxEvents:fxEvents.length,activeFxSprites:pixi?.vfx?.activeCount||0,artMode,zoom:camera.zoom,artRigs:pixi?.artShowcase?.active||0,pixelDensity,visuals:'production-path-art',backend:pixi?.app?.renderer?.name||'none',view,quality,menuShaderActive:!!pixi?.premium?.status?.shader};
+ window.__pixiPremium={ready:!!pixi,view,quality,shader:!!pixi?.premium?.status?.shader,paused:isPaused};
 }
 function switchRenderer(next){
  if(next==='pixi'&&!pixi)return;
@@ -270,7 +279,7 @@ function switchRenderer(next){
  $('use-pixi').classList.toggle('selected',engine==='pixi');
  $('use-canvas').classList.toggle('selected',engine==='canvas');
  frameSamples=[];renderSamples=[];frame=0;prev=0;
- window.__pixiProbe={...(window.__pixiProbe||{}),ready:!!pixi,engine,frames:0,fps:0,renderP95:0,shots:scene.shots.length,kills:scene.kills,bots:scene.bots.length,load,fxEnabled,fxEvents:fxEvents.length,activeFxSprites:pixi?.vfx?.activeCount||0,artMode,zoom:camera.zoom,artRigs:pixi?.artShowcase?.active||0,pixelDensity,visuals:'production-path-art',backend:pixi?.app?.renderer?.name||'none'};
+ window.__pixiProbe={...(window.__pixiProbe||{}),ready:!!pixi,engine,frames:0,fps:0,renderP95:0,shots:scene.shots.length,kills:scene.kills,bots:scene.bots.length,load,fxEnabled,fxEvents:fxEvents.length,activeFxSprites:pixi?.vfx?.activeCount||0,artMode,zoom:camera.zoom,artRigs:pixi?.artShowcase?.active||0,pixelDensity,visuals:'production-path-art',backend:pixi?.app?.renderer?.name||'none',view,quality,menuShaderActive:!!pixi?.premium?.status?.shader};
 }
 function setFx(on){
  fxEnabled=!!on;
@@ -348,7 +357,7 @@ function loop(now){
  const dt=prev?clamp((now-prev)/1000,0,.04):.0167;
  prev=now;advance(dt);
  const t0=performance.now();
- if(engine==='pixi'&&pixi)pixiFrame();else canvasFrame();
+ if(engine==='pixi'&&pixi)pixiFrame(dt);else canvasFrame();
  const t1=performance.now();stats(dt,t1-t0);
  requestAnimationFrame(loop);
 }
