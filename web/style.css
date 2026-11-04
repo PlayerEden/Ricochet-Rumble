@@ -3048,3 +3048,22 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 #menu #panel .mission-toggle-group input[type="checkbox"]{
  width:20px;height:20px;min-width:20px;flex-basis:20px;
 }
+
+
+/* UIV2-I verified root cause: legacy <=700px media query switched Mission
+   Setup into one column, stacking controls over Advanced and causing clipping.
+   Restore side-by-side field/settings at supported 568px+ landscape sizes. */
+@media(min-width:520px) and (orientation:landscape){
+ #menu .mission-setup-body{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #menu .mission-setup-body>.mission-field{grid-column:1}
+ #menu .mission-setup-body>.mission-comfort{grid-column:2}
+ #menu .mission-setup-body>.mission-rules{grid-column:1/-1}
+ #menu .mission-setup-screen:has(.mission-comfort-details[open]) .mission-comfort{
+  grid-column:1/-1;
+ }
+}
+/* On unusually narrow landscape windows there is no safe 2-column field;
+   allow the advanced/detail content to scroll rather than mask controls. */
+@media(max-width:519px) and (orientation:landscape){
+ #menu .mission-setup-body{overflow-y:auto}
+}

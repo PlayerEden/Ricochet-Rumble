@@ -246,6 +246,23 @@ try{
   assert.equal(missionLayout.playlistCount,5,'all original Quick Play modes are present');
   assert.ok(missionLayout.bodyScroll<=3,
     'Default Mission Setup must fit without scrolling '+w+'x'+h+': '+missionLayout.bodyScroll);
+  const missionColumns=await page.evaluate(()=>{
+    const parent=document.querySelector('.mission-setup-body'),
+      field=document.querySelector('.mission-field').getBoundingClientRect(),
+      comfort=document.querySelector('.mission-comfort').getBoundingClientRect(),
+      advanced=document.querySelector('.mission-rules').getBoundingClientRect(),
+      footer=document.querySelector('.mission-setup-actions').getBoundingClientRect();
+    return {columns:getComputedStyle(parent).gridTemplateColumns,
+      field:{x:field.left,right:field.right,y:field.top,bottom:field.bottom},
+      comfort:{x:comfort.left,right:comfort.right,y:comfort.top,bottom:comfort.bottom},
+      advancedTop:advanced.top,footerTop:footer.top};
+  });
+  assert.ok(missionColumns.field.right<=missionColumns.comfort.x+2&&
+    Math.abs(missionColumns.field.y-missionColumns.comfort.y)<=3&&
+    missionColumns.advancedTop>=Math.max(missionColumns.field.bottom,missionColumns.comfort.bottom)-2&&
+    missionColumns.advancedTop<missionColumns.footerTop,
+    'Field and Controls must be distinct side-by-side modules above Advanced/Start, not overlapping '+w+'x'+h+
+    ': '+JSON.stringify(missionColumns));
   assert.deepEqual(missionLayout.actions.map(a=>a.action),['settings-back','settings-play'],
     'original Settings actions remain intact');
   for(const item of missionLayout.actions){
