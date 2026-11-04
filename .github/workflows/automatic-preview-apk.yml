@@ -23,6 +23,9 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -36,6 +39,11 @@ jobs:
           SDKMANAGER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
           test -n "$SDKMANAGER"
           "$SDKMANAGER" --install "platforms;android-36" "build-tools;35.0.0"
+      - name: Prepare tested offline Pixi bundle (no CDN in delivered APK)
+        run: |
+          npm --prefix hybrid-ui install --ignore-scripts --no-audit --no-fund
+          npm --prefix hybrid-ui run build
+          node tools/verify-hybrid-menu-bundle.mjs
       - name: Check game and source parity
         run: |
           set -euo pipefail
@@ -107,6 +115,8 @@ jobs:
             echo "DISPOSABLE_AOSP_TEST_KEY_NOT_FOR_PLAY"
           } > dist/verification.txt
           echo "VERIFIED_PREVIEW_APK code=$code cert=$actual; no local PC configuration"
+      - name: Prove native preview APK includes the actual compiled Pixi library
+        run: node tools/verify-hybrid-menu-bundle.mjs --apk=android/app/build/outputs/apk/debug/app-debug.apk
       - name: Upload installable preview APK for testing
         uses: actions/upload-artifact@v4
         with:
