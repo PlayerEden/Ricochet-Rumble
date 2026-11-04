@@ -32,10 +32,10 @@ function drawHangarUnitPreview(){
  const unit=hangarPreviewUnit==='mech'?'mech':'tank';
  const toggle=document.querySelector('.hangar-unit-toggle');
  const unitLabel=document.getElementById('hangar-preview-unit-label');
- if(label)label.textContent=paint+' / '+(unit==='mech'?'MECH PLATFORM':'ARMORED PLATFORM');
- if(unitLabel)unitLabel.textContent=unit==='mech'?'MECH / PREVIEW':'TANK / PREVIEW';
+ if(label)label.textContent=paint+' / '+(unit==='mech'?'MECH':'TANK')+' PREVIEW';
+ if(unitLabel)unitLabel.textContent='DISPLAY ONLY · START IN TANK';
  if(toggle){toggle.textContent=unit==='mech'?'VIEW TANK':'VIEW MECH';toggle.setAttribute?.('aria-label','Preview '+(unit==='mech'?'tank':'mech')+' instead of '+unit);}
- if(readout)readout.textContent=paint+' PAINT';
+ if(readout)readout.textContent='PAINT · '+paint;
  if(!canvas?.getContext)return;
  // Presentation-only: render the SAME art and paint renderer as gameplay.
  // A canvas context failure must never prevent equipping saved paint.
@@ -51,13 +51,15 @@ function drawHangarUnitPreview(){
   if(!c)return;
   c.setTransform(dpr,0,0,dpr,0,0);
   c.clearRect(0,0,width,height);
-  const x=width*.53,y=height*.52;
+  const x=width*.51,y=height*.525;
   c.fillStyle='rgba(2,12,19,.32)';
   c.beginPath();c.ellipse(x+4,y+20,width*.28,height*.105,-.22,0,Math.PI*2);c.fill();
   c.strokeStyle='rgba(124,194,201,.20)';c.lineWidth=1.3;
   c.beginPath();c.ellipse(x,y,Math.min(width*.32,height*.44),Math.min(width*.32,height*.44),0,0,Math.PI*2);c.stroke();
   c.save();c.translate(x,y);c.rotate(-.24);
-  const scale=Math.max(1.45,Math.min(4.5,Math.min(width/130,height/75)));
+  // Use conservative model bounds; never crop tracks or mech legs.
+  const scale=Math.max(.5,Math.min(3.15,width*.36/48,height*.255/48));
+  canvas.dataset.previewScale=scale.toFixed(3);
   c.scale(scale,scale);
   if(unit==='mech')drawTopMech(c,'#d5bb77',false,0,0,0,equippedPaint);
   else drawTopTank(c,'#6bcde0',false,0,0,0,0,equippedPaint);
