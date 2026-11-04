@@ -12,7 +12,7 @@ A critical technical distinction: **Canvas 2D is not a reason for an unpolished 
 
 - **Menu:** a full-screen cinematic hangar with FIELDGRID structural details, animated hero vehicle, arc/lighting accents, emblem, Sector Rebound branding, primary DEPLOY, HANGAR and VISUAL SETTINGS actions. No online/account/Play integration is implied.
 - **Hangar:** vehicle plate, read-only armor/mobility/firepower indicators, interactive deploy and back navigation. No cosmetic purchases, loadout saves or real game persistence.
-- **Quality profile:** CINEMATIC vs REDUCED. CINEMATIC enables a real Pixi v8 **GLSL WebGL filter** that subtly warps and scans an in-world holographic vehicle panel and keeps atmospheric glow. REDUCED disables the filter and extra ambient light. GPU filter is applied to a deliberately small region rather than every sprite for performance.
+- **Quality profile:** CINEMATIC vs REDUCED. CINEMATIC enables real Pixi v8 **GPU displacement and noise shader passes** that gently distort a self-contained holographic vehicle panel while retaining readable line art and atmospheric glow. REDUCED disables the filter and extra ambient light. GPU filter is applied to a deliberately small region rather than every sprite for performance.
 - **Combat HUD:** stronger typography, compact score and status panels, pause/resume/return flow, and a collapsed TEST TOOLS drawer that keeps the arena from being squeezed by a permanent diagnostics bar.
 - **Existing baseline comparisons:** Canvas 2D, original-inspired unit artwork vs layered Pixi rigs, match/stress load, 0.69/0.94/1.27 camera options, FX ON/OFF and demo effect still work via the diagnostics drawer.
 - **Offline Android:** PixiJS bundled in local `bundle.js`, no CDN or remote resources; unique debug app `com.playereden.ricochetrumble.pixipremium`, label **SR Pixi Premium**, ephemeral CI debugging signature. Can coexist with the original game and earlier experiments.
@@ -28,7 +28,7 @@ A critical technical distinction: **Canvas 2D is not a reason for an unpolished 
 ## What this does not prove
 
 - No full rebuild of Sector Rebound; no campaign, LAN, cosmetics, accounts, friend list, achievements, achievements APIs, Android native integration or production release.
-- No evidence of GPU speed/thermal/battery advantage until tested on physical phone. Software WebGL in CI isn't comparable to real Android GPUs.
+- No evidence of GPU speed/thermal/battery advantage until tested on physical phone. Browser QA now explicitly verifies retained cyan artwork in the hologram when the GPU filters are active; comparison images alone were insufficient. Software WebGL in CI isn't comparable to real Android GPUs.
 - No assertion that PixiJS is necessary for the menu and HUD. Any adoption decision should separate the **UI design ideas** (portable to production HTML/CSS) from the **WebGL-specific shader/visual techniques** (require GPU rendering infrastructure).
 - No permission to merge the experiment, change live saved data, owner signing identity, camera approvals or current game app.
 
