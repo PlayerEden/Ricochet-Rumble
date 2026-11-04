@@ -3785,3 +3785,90 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 @media(prefers-reduced-motion:reduce){
   #menu:has(.pause-screen):not(.hidden){backdrop-filter:none}
 }
+
+
+/* UIV3 M1 — PREMIUM HYBRID HANGAR (100% procedural, offline, no image assets).
+   The real drawTopTank/drawTopMech canvas remains the only unit artwork.
+   Every staging layer is decorative and cannot intercept touch input. */
+#menu .hangar-bay {
+  isolation:isolate;
+  background:
+    radial-gradient(ellipse at 50% 17%,rgba(255,185,88,.13) 0%,transparent 43%),
+    radial-gradient(ellipse at 53% 54%,rgba(101,172,180,.24) 0%,transparent 59%),
+    linear-gradient(180deg,#0b1b27 0%,#153341 47%,#081923 100%);
+}
+#menu .hangar-bay::before {
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:
+    /* Dock canopy light bar — understated warm tone, not a fake button. */
+    linear-gradient(90deg,transparent 0% 18%,rgba(245,186,91,.65) 22% 31%,transparent 37% 64%,rgba(245,186,91,.65) 70% 79%,transparent 85%) center 19% / 100% 3px no-repeat,
+    linear-gradient(180deg,transparent 0 21%,rgba(108,159,171,.21) 22%,transparent 23%) center / 100% 100% no-repeat,
+    repeating-linear-gradient(90deg,transparent 0 15%,rgba(129,174,181,.09) 15.2%,transparent 15.6%,transparent 31%) center / 100% 100%,
+    linear-gradient(0deg,rgba(5,13,21,.5),transparent 53%);
+}
+#menu .hangar-bay::after {
+  content:"";position:absolute;left:7%;right:7%;bottom:9%;height:27%;
+  z-index:0;pointer-events:none;opacity:.7;
+  clip-path:polygon(18% 0%,82% 0%,100% 100%,0% 100%);
+  background:
+    linear-gradient(180deg,transparent 0 18%,rgba(235,177,87,.38) 19%,transparent 22%) center / 100% 100%,
+    repeating-linear-gradient(90deg,transparent 0 19%,rgba(99,154,163,.15) 19.2%,transparent 19.6%,transparent 39%),
+    linear-gradient(180deg,rgba(54,91,100,.24),rgba(10,28,37,.82));
+}
+#menu #hangar-unit-preview {
+  z-index:1;pointer-events:none;
+}
+#menu .hangar-bay-caption,
+#menu .hangar-bay-foot {z-index:2}
+#menu .hangar-bay-caption{
+  background:linear-gradient(180deg,rgba(8,25,35,.91),rgba(8,25,35,.54) 80%,transparent);
+}
+#menu .hangar-bay-foot {
+  background:linear-gradient(90deg,rgba(8,25,35,.93),rgba(8,25,35,.8));
+}
+
+/* A cosmetic's equipped state, the open tab, and keyboard focus must be
+   visibly distinct. No second gold focus ring on a selected item. */
+#menu #panel .hangar-grid button,
+#menu #panel .emblem-grid button {
+  position:relative;
+  border:1px solid rgba(115,153,164,.55);
+  border-radius:3px;
+  box-shadow:inset 0 1px 0 rgba(203,235,231,.05);
+}
+#menu #panel .hangar-grid button.selected,
+#menu #panel .emblem-grid button.selected {
+  border-color:#8ba7a5;
+  background:linear-gradient(130deg,#2a4550,#1a333f);
+  box-shadow:inset 0 -3px 0 #deb16d;
+}
+#menu #panel .hangar-grid button.selected::after,
+#menu #panel .emblem-grid button.selected::after {
+  content:"✓";position:absolute;top:2px;right:5px;pointer-events:none;
+  color:#f6d28e;font:900 13px/1 system-ui,sans-serif;
+}
+#menu #panel .hangar-tabs button[aria-selected="true"] {
+  border:0;border-bottom:3px solid #e2b36d;
+  box-shadow:none;background:linear-gradient(180deg,#284653,#1a303b);
+  color:#f2f5ef;
+}
+#menu #panel .hangar-grid button:focus-visible,
+#menu #panel .emblem-grid button:focus-visible,
+#menu #panel .hangar-tabs button:focus-visible {
+  outline:2px solid #88d8e4;outline-offset:2px;
+}
+#menu #panel .hangar-grid button.selected:not(:focus-visible),
+#menu #panel .emblem-grid button.selected:not(:focus-visible){
+  outline:0;
+}
+@media(max-height:370px) and (orientation:landscape) {
+  #menu .hangar-bay::after{height:21%;bottom:9%}
+  #menu .hangar-bay::before{opacity:.78}
+  #menu #panel .hangar-grid button.selected::after,
+  #menu #panel .emblem-grid button.selected::after{top:1px;right:3px;font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+  #menu .hangar-bay,#menu .hangar-bay::before,#menu .hangar-bay::after {
+    animation:none!important;transition:none!important;
+  }
+}
