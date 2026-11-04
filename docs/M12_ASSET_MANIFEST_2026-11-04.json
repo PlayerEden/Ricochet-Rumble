@@ -3,8 +3,8 @@
   "project": "Sector Rebound",
   "program": "M12 asset and render efficiency",
   "baselineCommit": "b114dfa37af2f132e4d3c08d503afcb15c5dff19",
-  "runtimeAssetIntegration": "none",
-  "stage": "M12-A-baseline",
+  "runtimeAssetIntegration": "opt-in-only-m12visual-hangar",
+  "stage": "M12-C-visual-test",
   "allCategoriesOptIn": true,
   "defaultGameArtPreserved": true,
   "categories": [
@@ -13,16 +13,16 @@
       "priority": 1,
       "kind": "static-background",
       "instances": 2,
-      "format": "webp",
+      "format": "svg",
       "dimensions": [
         1024,
         576
       ],
       "maxCompressedBytesPerAsset": 163840,
       "decodedRGBABytesPerAsset": 2359296,
-      "content": "empty industrial bay, central safe area, no player sprites or UI",
+      "content": "empty industrial bay, central safe area, no player sprites or UI; current study is original offline SVG, not an optimized WebP production asset",
       "renderPath": "CSS Hangar decoration; real tank/mech remain Canvas",
-      "runtimeStatus": "concept-only",
+      "runtimeStatus": "opt-in-test",
       "requiresActualPerfGain": false
     },
     {

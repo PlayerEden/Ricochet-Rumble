@@ -30,6 +30,12 @@ def requestedPreviewName = providers.gradleProperty('srPreviewVersionName').orNu
 def previewPackageSwitch = providers.gradleProperty('srPreviewPackage').orNull
 // An isolated, self-contained phone demo. Never uses the production or owner preview ID.
 def hybridLabPackage = providers.gradleProperty('srHybridLabPackage').orNull
+// Non-upgradeable M12 art study package; isolated from both regular and Hybrid Test.
+def m12VisualLabPackage = providers.gradleProperty('srM12VisualLabPackage').orNull
+if (m12VisualLabPackage != null && m12VisualLabPackage != 'true')
+    throw new GradleException('srM12VisualLabPackage must be true when supplied')
+if (m12VisualLabPackage == 'true' && (hybridLabPackage != null || previewPackageSwitch != null))
+    throw new GradleException('M12 visual test package cannot be combined with owner preview or hybrid test')
 if (hybridLabPackage != null && hybridLabPackage != 'true')
     throw new GradleException('srHybridLabPackage must be true when supplied')
 if (hybridLabPackage == 'true' && previewPackageSwitch != null)
@@ -87,6 +93,7 @@ android {
             // CI QA without this flag retains the historical package and version.
             if (previewPackageSwitch == 'true') applicationIdSuffix '.preview'
             if (hybridLabPackage == 'true') applicationIdSuffix '.hybridtest'
+            if (m12VisualLabPackage == 'true') applicationIdSuffix '.m12visual'
             if (hasTestSigning) signingConfig signingConfigs.internalTest
         }
         release {
