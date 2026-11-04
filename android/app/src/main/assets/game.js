@@ -3354,10 +3354,44 @@ function showRestartConfirmation(){
  if(mode==='guest'||mode==='idle'||!paused)return;
  setPanel(state.config?.dailySector?'<div class="eyebrow">DAILY SECTOR / CONFIRM</div><h2>RESTART <span>ATTEMPT?</span></h2><p class="pause-hint">Your current attempt ends. The daily maze stays the same.</p><div class="pause-actions"><button class="primary" data-action="confirm-restart">RETRY SECTOR</button><button data-action="cancel-restart">KEEP CURRENT MATCH</button></div>':'<div class="eyebrow">FIELDGRID / CONFIRM</div><h2>START <span>NEW FIELD?</span></h2><p class="pause-hint">The current match will end. A fresh maze will replace it.</p><div class="pause-actions"><button class="primary" data-action="confirm-restart">START NEW FIELD</button><button data-action="cancel-restart">KEEP CURRENT MATCH</button></div>');
 }
-function showPauseMenu(){releaseControls();if(mode==='idle')return;
- if(mode==='solo'||mode==='duel'){paused=true;setPanel(state.config?.dailySector?'<div class="eyebrow">DAILY SECTOR / PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">The daily maze remains fixed for this attempt.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">RETRY SECTOR</button><button data-action="close">MAIN MENU</button></div>'+pauseAudioControls():'<div class="eyebrow">FIELDGRID / PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">The field is frozen. Continue or generate a fresh sector.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">NEW FIELD</button><button data-action="close">MAIN MENU</button></div>'+pauseAudioControls())}
- else if(mode==='host'){paused=true;neutralizeGuestInput();setPanel('<div class="eyebrow">FIELDGRID / HOST PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">Both players are paused.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">NEW FIELD</button><button data-action="close">DISCONNECT</button></div>'+pauseAudioControls())}
- else if(mode==='guest'){if(connected&&!lanSpectating)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}});setPanel('<div class="eyebrow">FIELDGRID / PLAYER MENU</div><h2>SECTOR <span>MENU</span></h2><p class="pause-hint">'+(lanSpectating?'SPECTATING · READ ONLY. The host controls the match.':'The host controls rematches.')+'</p><div class="pause-actions"><button class="primary" data-action="resume">BACK TO ARENA</button><button data-action="close">DISCONNECT</button></div>'+pauseAudioControls())}}
+// UIV3-J6: one compact, game-native pause surface for all existing modes.
+ // This is presentation only: host/guest pause authority and button handlers
+ // remain in their original flow.
+function pausePanelHTML(label,title,hint,buttons){
+ return '<section class="pause-screen" aria-label="In-match pause menu">'+
+  '<div class="pause-head"><span class="pause-symbol" aria-hidden="true">Ⅱ</span>'+
+  '<div class="pause-heading"><span class="eyebrow">'+label+'</span><h2>'+title+'</h2>'+
+  '<p class="pause-hint">'+hint+'</p></div></div>'+
+  '<div class="pause-actions">'+buttons+'</div>'+pauseAudioControls()+'</section>';
+}
+function showPauseMenu(){
+ releaseControls();
+ if(mode==='idle')return;
+ if(mode==='solo'||mode==='duel'){
+  paused=true;
+  const daily=!!state.config?.dailySector;
+  setPanel(pausePanelHTML(daily?'DAILY SECTOR / PAUSED':'SOLO PLAY / PAUSED',
+    'SECTOR <span>PAUSED</span>',
+    daily?'The daily maze stays fixed for this attempt.':'The match is frozen. Pick up where you left off.',
+    '<button class="primary" data-action="resume">RESUME MATCH</button>'+
+    '<button data-action="restart">'+(daily?'RETRY SECTOR':'NEW FIELD')+'</button>'+
+    '<button data-action="close">MAIN MENU</button>'));
+ }else if(mode==='host'){
+  paused=true;neutralizeGuestInput();
+  setPanel(pausePanelHTML('LOCAL MATCH / HOST PAUSED',
+    'SECTOR <span>PAUSED</span>','Both players are paused.',
+    '<button class="primary" data-action="resume">RESUME MATCH</button>'+
+    '<button data-action="restart">NEW FIELD</button>'+
+    '<button data-action="close">DISCONNECT</button>'));
+ }else if(mode==='guest'){
+  if(connected&&!lanSpectating)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}});
+  setPanel(pausePanelHTML('LOCAL MATCH / PLAYER MENU',
+    'MATCH <span>MENU</span>',
+    lanSpectating?'SPECTATING · READ ONLY. The host controls the match.':'The host controls rematches.',
+    '<button class="primary" data-action="resume">BACK TO ARENA</button>'+
+    '<button data-action="close">DISCONNECT</button>'));
+ }
+}
 document.getElementById('spectator-queue')?.addEventListener('click',()=>{
  guestJoinNextAction(lanGuestJoinNext==='queued'?'cancel':'join');
 });
