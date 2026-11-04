@@ -8,6 +8,22 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- M2 original lightweight game-native vector icon family. No network/fonts/extra assets. -->
+  <svg class="sr-ui-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none">
+   <defs>
+    <symbol id="sr-icon-play" viewBox="0 0 24 24"><path d="M8 5.5L19 12 8 18.5Z" stroke-linejoin="round"/></symbol>
+    <symbol id="sr-icon-hangar" viewBox="0 0 24 24"><rect x="3" y="6" width="3" height="12" rx="1"/><rect x="18" y="6" width="3" height="12" rx="1"/><path d="M7 7h10v10H7zM10 9h4v4h-4zM12 9V4"/></symbol>
+    <symbol id="sr-icon-dossier" viewBox="0 0 24 24"><path d="M12 2.8 20 6v5.4c0 5-2.8 8.2-8 10-5.2-1.8-8-5-8-10V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="sr-icon-help" viewBox="0 0 24 24"><path d="M12 5v15M12 6c-3-2-6-2-9-1v13c3-1 6-1 9 1M12 6c3-2 6-2 9-1v13c-3-1-6-1-9 1"/></symbol>
+    <symbol id="sr-icon-modes" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx=".8"/><rect x="14" y="3" width="7" height="7" rx=".8"/><rect x="3" y="14" width="7" height="7" rx=".8"/><rect x="14" y="14" width="7" height="7" rx=".8"/></symbol>
+    <symbol id="sr-icon-wifi" viewBox="0 0 24 24"><path d="M2 9c5.5-5 14.5-5 20 0M5 12.5c3.7-3.4 10.3-3.4 14 0M8.5 16c1.8-1.6 5.2-1.6 7 0"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="sr-icon-settings" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/><circle cx="8" cy="6" r="2.3" fill="#122b37"/><circle cx="16" cy="12" r="2.3" fill="#122b37"/><circle cx="10" cy="18" r="2.3" fill="#122b37"/></symbol>
+    <symbol id="sr-icon-cqc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></symbol>
+    <symbol id="sr-icon-ffa" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="sr-icon-tdm" viewBox="0 0 24 24"><path d="m7 4 4.5 4.5L7 13 2.5 8.5zM17 11l4.5 4.5L17 20l-4.5-4.5z"/><path d="M11 16l2-2"/></symbol>
+    <symbol id="sr-icon-custom" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/><rect x="6" y="3.5" width="4" height="5" rx="1" fill="#102936"/><rect x="14" y="9.5" width="4" height="5" rx="1" fill="#102936"/><rect x="9" y="15.5" width="4" height="5" rx="1" fill="#102936"/></symbol>
+   </defs>
+  </svg>
   <main class="game-screen" id="game-screen">
     <header class="game-hud" aria-label="Live match HUD">
       <span id="mode-label" class="hud-mode-hidden">FIELDGRID // OPERATIONS</span>
@@ -67,7 +83,7 @@
         <div class="home-screen">
           <header class="home-topbar">
             <div class="home-brand"><span class="home-brand-mark" aria-hidden="true">SR</span><div><span class="home-overline">FIELDGRID</span><h2>SECTOR <span>REBOUND</span></h2></div></div>
-            <div class="home-utilities"><button data-action="hangar" aria-label="Customize Solo paint and insignia">HANGAR</button><button data-action="dossier" aria-label="View local player dossier">DOSSIER</button><button data-action="help" aria-label="How to play Sector Rebound">HELP</button></div>
+            <div class="home-utilities"><button data-action="hangar" aria-label="Customize Solo paint and insignia"><svg class="sr-ui-icon sr-nav-icon" aria-hidden="true"><use href="#sr-icon-hangar"/></svg>HANGAR</button><button data-action="dossier" aria-label="View local player dossier"><svg class="sr-ui-icon sr-nav-icon" aria-hidden="true"><use href="#sr-icon-dossier"/></svg>DOSSIER</button><button data-action="help" aria-label="How to play Sector Rebound"><svg class="sr-ui-icon sr-nav-icon" aria-hidden="true"><use href="#sr-icon-help"/></svg>HELP</button></div>
           </header>
           <div class="home-content">
             <section class="home-showcase" aria-label="Tank preview">
@@ -87,11 +103,11 @@
               </div>
               <h3>DEPLOY <span>SOLO</span></h3>
               <p class="home-description">Rotating modes. A new maze every match.</p>
-              <button class="home-deploy primary" data-action="solo"><span class="home-deploy-symbol" aria-hidden="true">▶</span><strong>QUICK PLAY</strong><small>VS BOTS</small></button>
+              <button class="home-deploy primary" data-action="solo"><span class="home-deploy-symbol" aria-hidden="true"><svg class="sr-ui-icon sr-play-icon"><use href="#sr-icon-play"/></svg></span><strong>QUICK PLAY</strong><small>VS BOTS</small></button>
               <div class="home-action-grid">
-                <button data-action="modes" class="home-modes"><strong>CHOOSE MODE</strong><small>CQC · FFA · TDM · CUSTOM</small></button>
-                <button data-action="nearby"><strong>LOCAL PLAY</strong><small>WI-FI · BETA</small></button>
-                <button data-action="settings"><strong>SETTINGS</strong><small>PLAYLIST &amp; CONTROLS</small></button>
+                <button data-action="modes" class="home-modes"><svg class="sr-ui-icon sr-home-icon" aria-hidden="true"><use href="#sr-icon-modes"/></svg><strong>CHOOSE MODE</strong><small>CQC · FFA · TDM · CUSTOM</small></button>
+                <button data-action="nearby"><svg class="sr-ui-icon sr-home-icon" aria-hidden="true"><use href="#sr-icon-wifi"/></svg><strong>LOCAL PLAY</strong><small>WI-FI · BETA</small></button>
+                <button data-action="settings"><svg class="sr-ui-icon sr-home-icon" aria-hidden="true"><use href="#sr-icon-settings"/></svg><strong>SETTINGS</strong><small>PLAYLIST &amp; CONTROLS</small></button>
               </div>
             </section>
           </div>
@@ -109,10 +125,10 @@
    <button type="button" class="mode-back" data-action="modes-back" aria-label="Back to main menu">← BACK</button>
   </header>
   <div class="mode-grid" aria-label="Core field operations">
-   <button type="button" class="mode-mission mode-cqc" data-action="cqc"><span class="mode-icon" aria-hidden="true">⌖</span><span class="mode-copy"><span class="mode-serial">01 / CLOSE-RANGE</span><strong>CLOSE QUARTERS</strong><small>PILOTS ONLY · 10 KOs</small></span><span class="mode-arrow" aria-hidden="true">›</span></button>
-   <button type="button" class="mode-mission mode-ffa" data-action="scored_ffa"><span class="mode-icon" aria-hidden="true">◎</span><span class="mode-copy"><span class="mode-serial">02 / FREE ENGAGEMENT</span><strong>FREE-FOR-ALL</strong><small>VEHICLE COMBAT · 10 KOs</small></span><span class="mode-arrow" aria-hidden="true">›</span></button>
-   <button type="button" class="mode-mission mode-tdm" data-action="scored_tdm"><span class="mode-icon" aria-hidden="true">◆</span><span class="mode-copy"><span class="mode-serial">03 / TEAM OPERATION</span><strong>TEAM DEATHMATCH</strong><small>2 TEAMS · 15 KOs</small></span><span class="mode-arrow" aria-hidden="true">›</span></button>
-   <button type="button" class="mode-mission mode-custom" data-action="custom"><span class="mode-icon" aria-hidden="true">☷</span><span class="mode-copy"><span class="mode-serial">04 / COMMAND CONFIG</span><strong>CUSTOM MATCH</strong><small>YOUR RULES · YOUR ARENA</small></span><span class="mode-arrow" aria-hidden="true">›</span></button>
+   <button type="button" class="mode-mission mode-cqc" data-action="cqc"><span class="mode-icon" aria-hidden="true"><svg class="sr-ui-icon"><use href="#sr-icon-cqc"/></svg></span><span class="mode-copy"><span class="mode-serial">01 / CLOSE-RANGE</span><strong>CLOSE QUARTERS</strong><small>PILOTS ONLY · 10 KOs</small></span><span class="mode-arrow" aria-hidden="true">›</span></button>
+   <button type="button" class="mode-mission mode-ffa" data-action="scored_ffa"><span class="mode-icon" aria-hidden="true"><svg class="sr-ui-icon"><use href="#sr-icon-ffa"/></svg></span><span class="mode-copy"><span class="mode-serial">02 / FREE ENGAGEMENT</span><strong>FREE-FOR-ALL</strong><small>VEHICLE COMBAT · 10 KOs</small></span><span class="mode-arrow" aria-hidden="true">›</span></button>
+   <button type="button" class="mode-mission mode-tdm" data-action="scored_tdm"><span class="mode-icon" aria-hidden="true"><svg class="sr-ui-icon"><use href="#sr-icon-tdm"/></svg></span><span class="mode-copy"><span class="mode-serial">03 / TEAM OPERATION</span><strong>TEAM DEATHMATCH</strong><small>2 TEAMS · 15 KOs</small></span><span class="mode-arrow" aria-hidden="true">›</span></button>
+   <button type="button" class="mode-mission mode-custom" data-action="custom"><span class="mode-icon" aria-hidden="true"><svg class="sr-ui-icon"><use href="#sr-icon-custom"/></svg></span><span class="mode-copy"><span class="mode-serial">04 / COMMAND CONFIG</span><strong>CUSTOM MATCH</strong><small>YOUR RULES · YOUR ARENA</small></span><span class="mode-arrow" aria-hidden="true">›</span></button>
   </div>
   <div class="mode-secondary-actions">
    <button type="button" class="practice-launch" data-action="practice" aria-label="Start a solo practice field without bots or recorded progress"><strong>PRACTICE</strong><span>NO BOTS · NO RECORD</span></button>
