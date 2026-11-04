@@ -125,6 +125,8 @@ try{
     modeRows:document.querySelectorAll('.dossier-mode').length};
   });
   assert.equal(dossier.modeRows,5,'five mode record entries retained');
+  assert.ok(await page.locator('#panel').evaluate(el=>el.scrollHeight-el.clientHeight<=3),
+    'Dossier should be a compact, non-scrollable operator card');
   assert.ok(dossier.footer.bottom<=h+1&&dossier.footer.y>=0,'Dossier footer visible on phone');
   assert.ok(dossier.workspace.bottom<=dossier.footer.y+2,'Dossier stats cannot overlap footer');
   for(const item of dossier.buttons){
@@ -179,19 +181,28 @@ try{
     'Mode cards should be compact yet remain finger-sized');
   assert.ok(density.back.h>=43.5&&density.summary.h>=43.5,
     'Back and experimental disclosure remain full-size touch targets');
-  assert.equal(density.scrollHeader,'sticky',
-    'expanded exercises should not scroll the entire mode title away');
+  assert.equal(density.scrollHeader,'static',
+    'Mode Select must never scroll under a sticky header');
+  assert.ok(await page.locator('#panel').evaluate(el=>el.scrollHeight-el.clientHeight<=3),
+    'Core Mode Select must fit without any page scrolling at '+w+'x'+h);
   await page.locator('.bay-exercise-fold summary').click();
-  await page.locator('.bay-exercise-fold button[data-action="ctf"]').scrollIntoViewIfNeeded();
   const expMode=await page.evaluate(()=>{
-    const p=document.querySelector('#panel').getBoundingClientRect(),
+    const panel=document.querySelector('#panel'),p=panel.getBoundingClientRect(),
       h=document.querySelector('.mode-head').getBoundingClientRect(),
-      b=document.querySelector('.bay-exercise-fold button[data-action="ctf"]').getBoundingClientRect();
+      b=document.querySelector('.bay-exercise-fold button[data-action="ctf"]').getBoundingClientRect(),
+      back=panel.querySelector('.mode-back').getBoundingClientRect();
     return {headerVisible:h.top>=p.top-3&&h.bottom<=p.bottom+1,
-      exerciseVisible:b.top>=p.top-1&&b.bottom<=p.bottom+1};
+      exerciseVisible:b.top>=p.top-1&&b.bottom<=p.bottom+1,
+      backVisible:back.bottom<=p.bottom+1,
+      coreHidden:getComputedStyle(panel.querySelector('.mode-grid')).display==='none',
+      scroll:panel.scrollHeight-panel.clientHeight};
   });
-  assert.ok(expMode.headerVisible&&expMode.exerciseVisible,
-    'expanded field exercises are scroll-reachable without losing the heading');
+  assert.ok(expMode.headerVisible&&expMode.exerciseVisible&&expMode.backVisible&&
+    expMode.coreHidden&&expMode.scroll<=3,
+    'Field Exercises must replace core modes in-place with no scrolling '+w+'x'+h);
+  await page.locator('.bay-exercise-fold summary').click();
+  assert.ok(await page.locator('.mode-grid').isVisible(),
+    'closing experimental mode sheet restores all four core choices');
   await page.screenshot({path:dir+'/mode-density-expanded-'+w+'x'+h+'.png',animations:'disabled'});
 
   await page.screenshot({path:dir+'/mode-quality-'+w+'x'+h+'.png',animations:'disabled'});
@@ -225,6 +236,8 @@ try{
     'scrollable setup content must not overlap the visible header or deploy footer');
   assert.equal(missionLayout.prefCount,8,'all original comfort preferences are present');
   assert.equal(missionLayout.playlistCount,5,'all original Quick Play modes are present');
+  assert.ok(missionLayout.bodyScroll<=3,
+    'Default Mission Setup must fit without scrolling '+w+'x'+h+': '+missionLayout.bodyScroll);
   assert.deepEqual(missionLayout.actions.map(a=>a.action),['settings-back','settings-play'],
     'original Settings actions remain intact');
   for(const item of missionLayout.actions){
@@ -252,8 +265,10 @@ try{
   assert.equal(await page.locator('#menu button[data-action="settings-play"]').isDisabled(),false,
     'enabling one existing playlist mode must restore Start Match');
   assert.match(await page.locator('#playlist-status').textContent(),/1 SELECTED/);
+  await page.locator('.mission-rules summary').click();
   const shakeBefore=await page.locator('#pref-shake').isChecked();
   await page.locator('#pref-shake').setChecked(!shakeBefore);
+  await page.locator('.mission-rules summary').click();
   await page.locator('.mission-setup-body').evaluate(el=>{el.scrollTop=el.scrollHeight;});
   const footerAfterScroll=await page.locator('.mission-setup-actions').evaluate(el=>{
     const b=el.getBoundingClientRect();
@@ -309,6 +324,8 @@ try{
     assert.equal(item.hit,item.action,'Local Play action must remain tappable');
   }
   await page.screenshot({path:dir+'/lan-entry-'+w+'x'+h+'.png',animations:'disabled'});
+  assert.ok(await page.locator('#panel').evaluate(el=>el.scrollHeight-el.clientHeight<=3),
+    'Local Play intro must not be scrollable');
   await page.locator('.lan-entry button[data-action="host"]').click();
   assert.equal(await page.locator('.lan-lobby').isVisible(),true,'Host enters real LAN lobby');
   assert.equal(await page.locator('[data-lan-setting]').count(),9,'nine real LAN settings remain');

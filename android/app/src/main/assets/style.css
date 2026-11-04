@@ -2803,3 +2803,172 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  #menu #panel .mode-grid button.mode-mission{min-height:48px;padding:4px 7px}
  #menu .mode-grid .mode-icon{width:26px;height:26px}
 }
+
+
+/* UIV2-I — genuine game-menu fit: no scrolling of ordinary main pages.
+   Owner's 1536x674 Android captures showed sticky headers masking buttons
+   and large empty filler panels. Optional details remain separate/scrollable. */
+
+/* Mode Select: stay fully visible, including Back, at short phone heights.
+   Field Exercises is a secondary same-panel view, not a long accordion page. */
+#menu #panel:has(.mode-screen){
+ width:min(750px,calc(100vw - 24px));
+ max-height:calc(100dvh - 20px);
+ overflow:hidden;
+ padding:clamp(6px,1dvh,11px) clamp(10px,1.4vw,16px);
+}
+#menu .mode-screen{gap:4px}
+#menu .mode-head{position:static;z-index:auto;gap:1px;padding:0 0 3px}
+#menu .mode-head h2{font-size:clamp(21px,3.5dvh,28px)}
+#menu .mode-head p{font-size:10px}
+#menu #panel .mode-grid button.mode-mission{
+ min-height:clamp(44px,8.3dvh,56px);
+ padding:4px 8px;column-gap:6px;
+ grid-template-columns:clamp(25px,4.5dvh,31px) minmax(0,1fr) 8px;
+}
+#menu .mode-grid .mode-icon{
+ width:clamp(25px,4.5dvh,31px);height:clamp(25px,4.5dvh,31px);
+ font-size:clamp(15px,2.8dvh,19px);
+}
+#menu .mode-copy{gap:1px}
+#menu .mode-grid strong{font-size:clamp(11px,1.2vw,13px);line-height:1.05}
+#menu .mode-grid small{font-size:clamp(8px,.9vw,10px)}
+#menu .mode-grid{gap:4px}
+#menu #panel .mode-secondary-actions>button{
+ min-height:44px;max-height:44px;padding:4px 8px;
+}
+#menu .bay-exercise-fold{margin:0}
+#menu .bay-exercise-fold>summary{min-height:44px;padding:5px 9px}
+#menu #panel .bay-exercise-launch{
+ min-height:44px;max-height:50px;padding:5px 9px;margin:4px 0 0;
+}
+#menu #panel:has(.mode-screen) .mode-back{
+ min-height:44px;max-height:44px;position:static!important;box-shadow:none;
+}
+/* Switch views instead of adding two more rows below the mode picker. */
+#menu .mode-screen:has(.bay-exercise-fold[open]) :is(.mode-grid,.mode-secondary-actions){
+ display:none!important;
+}
+#menu .mode-screen:has(.bay-exercise-fold[open]) .bay-exercise-fold>summary{
+ border-color:#dcb770;background:#2a383a;color:#f5d9a5;
+}
+@media(max-height:410px) and (orientation:landscape){
+ #menu .mode-head p{display:none}
+ #menu .mode-serial{display:none}
+ #menu .mode-head h2{font-size:22px}
+ #menu #panel:has(.mode-screen){padding:6px 10px}
+ #menu .mode-screen{gap:3px}
+ #menu #panel .mode-grid button.mode-mission{min-height:44px;padding:3px 7px}
+}
+
+/* Mission Setup: two columns of toggle rows instead of two long vertical
+   checkbox lists. Normal field setup never needs to scroll. Advanced rules
+   become a focused optional pane and may scroll within their own details. */
+#menu #panel:has(.mission-setup-screen){
+ width:min(870px,calc(100vw - 24px));
+ height:auto;max-height:calc(100dvh - 18px);
+}
+#menu .mission-setup-screen{height:auto;max-height:calc(100dvh - 18px)}
+#menu .mission-setup-head{padding:clamp(6px,1.2dvh,10px) clamp(11px,1.5vw,16px)}
+#menu #panel .mission-setup-head h2{font-size:clamp(21px,3.6dvh,29px)}
+#menu .mission-setup-body{
+ flex:0 1 auto;gap:5px;
+ padding:clamp(5px,.8dvh,8px) clamp(9px,1.3vw,13px);
+ overflow-y:hidden;align-content:start;
+}
+#menu .mission-module{padding:clamp(5px,.8dvh,8px) clamp(6px,1vw,10px)}
+#menu .mission-module-heading{gap:6px;padding-bottom:4px}
+#menu .mission-index{width:24px;height:24px;font-size:10px}
+#menu .mission-module-heading h3{font-size:clamp(10px,1.1vw,12px)}
+#menu #panel .mission-module-heading p{font-size:9px;margin-top:2px}
+#menu .mission-field-controls{gap:5px;margin-top:5px}
+#menu .mission-field-controls label{font-size:9px}
+#menu #panel .mission-setup-screen select{margin-top:3px;height:42px;min-height:42px}
+#menu .mission-setup-screen .settings-comfort{gap:6px;margin:5px 0 0}
+#menu .mission-toggle-group{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:2px 4px;align-content:start;
+}
+#menu .mission-group-name{grid-column:1/-1;margin:0}
+#menu #panel .mission-toggle-group label{
+ min-height:38px;margin:0;padding:2px 1px;
+ font-size:clamp(9px,.95vw,11px);line-height:1.12;
+}
+#menu #panel .mission-toggle-group input[type="checkbox"]{
+ width:18px;height:18px;min-width:18px;flex-basis:18px;
+}
+#menu #panel .mission-rules>summary{min-height:44px;padding:4px 8px}
+#menu .mission-rules-heading{font-size:clamp(10px,1.1vw,12px);gap:1px}
+#menu .mission-setup-actions{gap:7px;padding:6px clamp(9px,1.3vw,13px)}
+#menu #panel .mission-setup-actions button{min-height:44px}
+/* Long optional rules use their own view. Don't push ordinary controls out
+   of sight or hide the primary deployment footer. */
+#menu .mission-setup-screen:has(.mission-rules[open]) .mission-setup-body{
+ flex:1 1 auto;overflow-y:auto;
+}
+#menu .mission-setup-screen:has(.mission-rules[open]) :is(.mission-field,.mission-comfort){
+ display:none!important;
+}
+#menu .mission-setup-screen:has(.mission-rules[open]){
+ height:min(525px,calc(100dvh - 18px));
+}
+@media(max-height:370px) and (orientation:landscape){
+ #menu .mission-setup-head{padding:5px 10px}
+ #menu .mission-setup-head p{display:none}
+ #menu .mission-setup-body{padding:4px 9px;gap:4px}
+ #menu .mission-module{padding:4px 6px}
+ #menu .mission-module-heading{padding-bottom:3px}
+ #menu .mission-module-heading p{display:none}
+ #menu .mission-index{width:21px;height:21px}
+ #menu .mission-setup-screen .settings-comfort{gap:4px;margin-top:3px}
+ #menu #panel .mission-toggle-group label{min-height:34px;gap:3px}
+ #menu .mission-toggle-group{gap:1px 3px}
+ #menu .mission-setup-actions{padding:4px 9px}
+}
+
+/* Compact Local Play intro: short purposeful panel, no blank half-screen.
+   Live host lobbies preserve their own full-height scrolling rules. */
+#menu #panel:has(.lan-entry){
+ width:min(850px,calc(100vw - 24px));
+ height:auto;max-height:calc(100dvh - 20px);
+}
+#menu .lan-entry{height:auto;min-height:0}
+#menu .lan-entry-main{
+ flex:0 0 auto;min-height:0;overflow:visible;
+ gap:clamp(8px,1.5vw,14px);
+ padding:clamp(12px,2.5dvh,22px) clamp(12px,2vw,22px);
+}
+#menu .lan-entry-brief{align-self:center;gap:5px}
+#menu .lan-entry-choices{gap:6px}
+#menu #panel .lan-entry-choices button.lan-entry-host{min-height:55px}
+#menu #panel .lan-entry-choices button{min-height:44px}
+#menu .lan-entry-footer{padding:6px clamp(12px,2vw,22px)}
+#menu #panel .lan-entry-footer button{min-height:44px}
+
+/* Dossier should feel like an operator card, not a huge empty spreadsheet.
+   Preserve all stats and fixed actions but stop stretching rows vertically. */
+#menu #panel:has(.dossier-screen){
+ width:min(1000px,calc(100vw - 24px));
+ height:auto;max-height:calc(100dvh - 20px);
+ overflow:hidden;
+}
+#menu .dossier-screen{height:auto}
+#menu .dossier-workspace{
+ flex:0 0 auto;
+ height:clamp(154px,31dvh,235px);
+}
+#menu .dossier-stats>div{justify-content:center}
+#menu #dossier-modes{overflow:hidden}
+@media(max-height:365px) and (orientation:landscape){
+ #menu .dossier-workspace{height:155px}
+ #menu .dossier-screen{gap:4px}
+ #menu #panel:has(.dossier-screen){padding:6px 10px}
+ #menu .dossier-footer{padding-top:3px}
+}
+
+/* Help main page is static; only explicitly expanded extra instructions or
+   privacy policy may scroll inside the guide. */
+#menu .help-screen:not(:has(details[open])) .help-scroll{
+ overflow-y:auto;
+}
+#menu .help-scroll .help-steps article{border-radius:3px}
