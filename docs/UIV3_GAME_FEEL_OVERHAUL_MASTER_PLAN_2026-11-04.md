@@ -108,3 +108,10 @@ Deliver a **premium hybrid shell** around the existing 2D arcade game: atmospher
 **Proof/hold:** fast UI contract and five-viewport Chromium interaction/screenshot test were expanded. A green older commit (M1 9/9) does **not** certify M2/M4. Keep PR #140 draft until all workflows for this final head complete and owner validates on Android. No generated background/insignia has been shipped, and the approved joystick/FIRE controls are untouched.
 
 **Next:** M3 insignia + actual Dossier identity concept evaluation (genuine four existing unlocks only), then M5 optional A/B artwork/optimization and M6 complete release audit.
+
+
+### M3 earned insignias and Dossier identity — draft code checkpoint (2026-11-04)
+- Four coherent original offline vector marks are now used by the existing FIELD, VECTOR, ACE and COMMAND Hangar buttons and by the equipped Dossier emblem. No generated or third-party art, fake identity, new progress system, ranks or currencies.
+- The preexisting IDs and eligibility remain exactly FIELD (free), VECTOR (3 recorded Solo matches), ACE (10 recorded operator KOs), COMMAND (12 recorded Solo wins). The `rr-hangar-paint-v1` key and schema, equip logic, save and restore logic, all six actual stats and five mode records are unchanged.
+- No-record Dossier wording now clearly prompts players to finish their first Solo match. A recorded fixture test verifies real unlock eligibility, COMMAND equip, matches/wins/KOs, and that the exact badge appears in Dossier.
+- Web/Android copies remain byte-for-byte identical. All nine current-head workflows and actual phone approval remain required. Draft PR #140 must not be merged or distributed as a certified owner build. M5 artwork A/B studies remain concept-only.

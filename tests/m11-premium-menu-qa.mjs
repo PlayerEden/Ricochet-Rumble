@@ -164,6 +164,20 @@ try{
   assert.match(await page.locator('#hangar-status').textContent(),/MOSS/);
   await page.locator('#menu button[data-hangar-tab="insignia"]').click();
   assert.equal(await page.locator('#hangar-insignia').isVisible(),true,'original insignia unlocks available');
+  // M3: four earned symbols share one offline icon family; original unlocks survive.
+  const marks=await page.evaluate(()=>[...document.querySelectorAll('.emblem-grid button')].map(button=>{
+    const icon=button.querySelector('.sr-mark-icon'),href=icon?.querySelector('use')?.getAttribute('href')||'';
+    return {id:button.dataset.emblemId,href,local:!!document.querySelector('symbol'+href),
+      pointer:icon?getComputedStyle(icon).pointerEvents:null,
+      locked:button.disabled,selected:button.classList.contains('selected'),
+      label:button.getAttribute('aria-label')};
+  }));
+  assert.deepEqual(marks.map(x=>x.id),['mark.field','mark.vector','mark.ace','mark.command']);
+  assert.deepEqual(marks.map(x=>x.href),['#sr-mark-field','#sr-mark-vector','#sr-mark-ace','#sr-mark-command']);
+  assert.ok(marks.every(x=>x.local&&x.pointer==='none'),'all original marks render offline and cannot intercept taps');
+  assert.deepEqual(marks.map(x=>x.locked),[false,true,true,true]);
+  assert.equal(marks.filter(x=>x.selected).length,1);
+  assert.ok(marks.slice(1).every(x=>x.label.includes('LOCKED')));
   await page.locator('#menu button[data-action="hangar-back"]').click();
   await page.waitForFunction(()=>window.__SRHybridMenu?.active,null,{timeout:15000});
   // UIV2-F: keep backup and Hangar utilities fully visible in the Dossier,
@@ -181,6 +195,9 @@ try{
     modeRows:document.querySelectorAll('.dossier-mode').length};
   });
   assert.equal(dossier.modeRows,5,'five mode record entries retained');
+  assert.equal(await page.locator('#dossier-emblem-mark use').getAttribute('href'),'#sr-mark-field');
+  assert.match(await page.locator('.dossier-emblem').getAttribute('aria-label'),/FIELD/);
+  assert.match(await page.locator('#dossier-intro').textContent(),/FINISH A SOLO MATCH/);
   assert.match(await page.locator('#dossier-record-note').textContent(),/FIRST MATCH AWAITS/,
     'empty dossier provides genuine first-match context, not invented stats');
   const dossierScroll=await page.locator('#panel').evaluate(el=>({
@@ -645,6 +662,31 @@ try{
   cases.push({viewport:w+'x'+h,primaryHeight:Math.round(g.play.h),headingHeight:Math.round(g.title.h),
    menuWithoutScroll:true,allControlsClickable:true,pixiWebgl:true});
  }
+ // M3 seeded real local record: mark eligibility and profile values follow saved matches/KOs/wins.
+ const earnedCtx=await browser.newContext({viewport:{width:740,height:360}});
+ const earnedPage=await earnedCtx.newPage();
+ earnedPage.on('pageerror',e=>issues.push(e.message));
+ await earnedPage.goto(origin+'/',{waitUntil:'load'});
+ await earnedPage.evaluate(()=>window.localStorage.setItem('rr-dossier-v1',JSON.stringify({
+  schemaVersion:1,matches:15,wins:12,losses:2,draws:1,kos:40,deaths:7,seconds:3600,
+  byMode:{scored_ffa:{matches:15,wins:12,losses:2,draws:1,kos:40,deaths:7,seconds:3600}},
+  recentKeys:[]})));
+ await earnedPage.reload({waitUntil:'load'});
+ await earnedPage.locator('#menu button[data-action="hangar"]').click();
+ await earnedPage.locator('#menu button[data-hangar-tab="insignia"]').click();
+ assert.equal(await earnedPage.locator('.emblem-grid button:disabled').count(),0);
+ await earnedPage.locator('.emblem-grid button[data-emblem-id="mark.command"]').click();
+ assert.equal(await earnedPage.locator('.emblem-grid button.selected').getAttribute('data-emblem-id'),'mark.command');
+ await earnedPage.locator('#menu button[data-action="hangar-back"]').click();
+ await earnedPage.locator('#menu button[data-action="dossier"]').click();
+ assert.equal(await earnedPage.locator('#dossier-matches').textContent(),'15');
+ assert.equal(await earnedPage.locator('#dossier-wins').textContent(),'12');
+ assert.equal(await earnedPage.locator('#dossier-kos').textContent(),'40');
+ assert.equal(await earnedPage.locator('#dossier-emblem-name').textContent(),'COMMAND');
+ assert.equal(await earnedPage.locator('#dossier-emblem-mark use').getAttribute('href'),'#sr-mark-command');
+ assert.match(await earnedPage.locator('#dossier-intro').textContent(),/RECORDED SOLO/);
+ await earnedPage.screenshot({path:dir+'/m3-earned-command-dossier-740x360.png',animations:'disabled'});
+ await earnedCtx.close();
  // Main-user default starts in Canvas mode yet MUST retain the same premium
  // HTML/CSS composition without fetching PixiJS or a CDN.
  const fallback=await browser.newPage({viewport:{width:740,height:360}});

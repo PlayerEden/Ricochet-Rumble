@@ -21,8 +21,12 @@ function dossierLines(){
 }
 function openDossier(){setPanel(document.getElementById('dossier-template').innerHTML);dossierLines();
  const mark=document.getElementById('dossier-emblem-mark'),name=document.getElementById('dossier-emblem-name');
- if(mark)mark.textContent=OPERATOR_EMBLEMS[equippedEmblem].glyph;
+ const markUse=mark?.querySelector('use');
+ if(markUse)markUse.setAttribute('href','#sr-mark-'+equippedEmblem.slice(5));
  if(name)name.textContent=OPERATOR_EMBLEMS[equippedEmblem].label;
+ mark?.closest('.dossier-emblem')?.setAttribute('aria-label','Equipped operator insignia: '+OPERATOR_EMBLEMS[equippedEmblem].label);
+ const intro=document.getElementById('dossier-intro');
+ if(intro)intro.textContent=(currentDossier()?.matches||0)>0?'YOUR RECORDED SOLO MATCH HISTORY':'FINISH A SOLO MATCH TO START YOUR RECORD';
 }
 let hangarPreviewUnit='tank'; // Visual inspection only; actual match vehicle is unchanged.
 function drawHangarUnitPreview(){

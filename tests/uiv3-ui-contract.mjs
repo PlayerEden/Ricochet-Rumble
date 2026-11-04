@@ -62,4 +62,11 @@ assert.ok(css.includes('#menu .mode-screen{animation:none;transform:none}'),
 assert.ok(css.includes('@media(prefers-reduced-motion:reduce)')&&
  css.includes('animation:none!important'),
  'reduced motion must disable UI reveal animation');
+// M3: original offline mark geometry is attached to authentic equip IDs.
+for(const name of ['field','vector','ace','command']){
+ assert.ok(html.includes('id="sr-mark-'+name+'"')&&html.includes('href="#sr-mark-'+name+'"'));
+ assert.ok(html.includes('data-emblem-id="mark.'+name+'"'));
+ assert.ok(js.includes("'mark."+name+"':{label:"));
+}
+assert.ok(html.includes('id="dossier-intro"')&&css.includes('#menu .sr-mark-icon'));
 console.log('UIV3_UI_CONTRACT_PASS — real controls, save UI, accessibility, audio and native parity');
