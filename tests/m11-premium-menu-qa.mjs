@@ -107,6 +107,10 @@ try{
   await page.locator('#menu button[data-action="hangar-preview-unit"]').click();
   assert.equal(await page.locator('#hangar-unit-preview').getAttribute('data-unit'),'mech',
     'Hangar must draw the actual game mech');
+  assert.match(await page.locator('#hangar-preview-unit-label').textContent(),/DISPLAY ONLY/,
+    'unit preview never claims to choose a spawn vehicle');
+  assert.ok(Number(await page.locator('#hangar-unit-preview').getAttribute('data-preview-scale'))<3.16,
+    'real sprite scales to fit the hangar stage');
   assert.equal(await page.locator('#hangar-unit-preview').getAttribute('data-paint-id'),'fieldgrid.standard',
     'Visual-only vehicle preview must not alter paint');
   await page.locator('#menu button[data-action="hangar-preview-unit"]').click();
@@ -135,6 +139,8 @@ try{
     modeRows:document.querySelectorAll('.dossier-mode').length};
   });
   assert.equal(dossier.modeRows,5,'five mode record entries retained');
+  assert.match(await page.locator('#dossier-record-note').textContent(),/FIRST MATCH AWAITS/,
+    'empty dossier provides genuine first-match context, not invented stats');
   const dossierScroll=await page.locator('#panel').evaluate(el=>({
     excess:el.scrollHeight-el.clientHeight,
     height:el.clientHeight,
@@ -445,7 +451,7 @@ try{
       return {action:el.dataset.action,rect:r,hit:hit?.closest('button')?.dataset.action};
     })};
   });
-  assert.deepEqual(entry.buttons.map(x=>x.action),['host','find','manual','help-back'],
+  assert.deepEqual(entry.buttons.map(x=>x.action),['help-back','host','find','manual'],
     'Local Play exposes exact original host/find/manual/back actions');
   assert.ok(entry.panel.x>=-1&&entry.panel.right<=w+1&&entry.panel.y>=-1&&entry.panel.bottom<=h+1,
     'Local Play bounds stay within '+w+'x'+h);
