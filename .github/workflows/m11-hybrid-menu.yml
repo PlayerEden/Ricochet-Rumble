@@ -1,0 +1,79 @@
+name: Sector Rebound M11-A - hybrid menu prototype and real-browser QA
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'hybrid-ui/**'
+      - 'web/**'
+      - 'android/app/src/main/assets/**'
+      - 'tests/m11-hybrid-menu-qa.mjs'
+      - 'tests/m11-premium-menu-qa.mjs'
+      - 'tests/uiv3-ui-contract.mjs'
+      - 'tests/smoke.mjs'
+      - 'tools/verify-hybrid-menu-bundle.mjs'
+      - '.github/workflows/m11-hybrid-menu.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sr-hybrid-m11-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hybrid-menu-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned PixiJS and bundler without lifecycle hooks
+        run: npm --prefix hybrid-ui install --ignore-scripts --no-audit --no-fund
+      - name: Produce local-only PixiJS bundle and byte-identical Android asset
+        run: |
+          set -euo pipefail
+          npm --prefix hybrid-ui run build
+          node tools/verify-hybrid-menu-bundle.mjs
+          test -s web/hybrid-menu-pixi.bundle.js
+          test -s android/app/src/main/assets/hybrid-menu-pixi.bundle.js
+          cmp web/hybrid-menu-pixi.bundle.js android/app/src/main/assets/hybrid-menu-pixi.bundle.js
+          for f in index.html style.css game.js; do
+            cmp "web/$f" "android/app/src/main/assets/$f"
+          done
+          node --check web/game.js
+          node --check web/hybrid-menu-pixi.bundle.js
+          node --check tests/m11-hybrid-menu-qa.mjs
+      - name: Install Chromium harness
+        run: npm install --no-save --ignore-scripts playwright-core@1.56.1
+      - name: Test real WebGL menu and Canvas fallback against production game UI
+        run: |
+          set -euo pipefail
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          node tests/m11-hybrid-menu-qa.mjs
+          node tests/m11-premium-menu-qa.mjs
+      - name: Assert JSON/screenshots from actual game interface
+        run: |
+          set -euo pipefail
+          test -s qa-results/m11-hybrid/qa.json
+          for viewport in 568x320 640x360 740x360 915x412; do
+            test -s "qa-results/m11-hybrid/hybrid-$viewport.png"
+            test -s "qa-results/m11-premium/hybrid-premium-$viewport.png"
+          done
+          test -s qa-results/m11-premium/hybrid-premium-1280x720.png
+          test -s qa-results/m11-premium/report.json
+      - name: Preserve evidence and inspectable build outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11-hybrid-menu-evidence-${{ github.run_id }}
+          path: |
+            qa-results/m11-hybrid/
+            qa-results/m11-premium/
+            web/hybrid-menu-pixi.bundle.js
+          retention-days: 14
+          if-no-files-found: warn

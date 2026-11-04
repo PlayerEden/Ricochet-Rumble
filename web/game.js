@@ -9,6 +9,7 @@ function dossierLines(){
  const info=currentDossier(),modes=window.SectorDossier?.MODE_LABELS||{};
  if(!info)return;
  for(const key of ['matches','wins','losses','draws','kos','deaths']){const el=document.getElementById('dossier-'+key);if(el)el.textContent=String(info[key]||0)}
+ const note=document.getElementById('dossier-record-note');if(note)note.textContent=(info.matches||0)>0?'SOLO HISTORY':'FIRST MATCH AWAITS';
  const time=document.getElementById('dossier-time');if(time)time.textContent=Math.floor((info.seconds||0)/60)+' MIN';
  const availability=document.getElementById('dossier-save-status');if(availability)availability.textContent=dossierStore?.status||'STORAGE NOT AVAILABLE';
  const list=document.getElementById('dossier-modes');if(list){list.replaceChildren();for(const [id,label] of Object.entries(modes)){
@@ -20,8 +21,60 @@ function dossierLines(){
 }
 function openDossier(){setPanel(document.getElementById('dossier-template').innerHTML);dossierLines();
  const mark=document.getElementById('dossier-emblem-mark'),name=document.getElementById('dossier-emblem-name');
- if(mark)mark.textContent=OPERATOR_EMBLEMS[equippedEmblem].glyph;
+ const markUse=mark?.querySelector('use');
+ if(markUse)markUse.setAttribute('href','#sr-mark-'+equippedEmblem.slice(5));
  if(name)name.textContent=OPERATOR_EMBLEMS[equippedEmblem].label;
+ mark?.closest('.dossier-emblem')?.setAttribute('aria-label','Equipped operator insignia: '+OPERATOR_EMBLEMS[equippedEmblem].label);
+ const intro=document.getElementById('dossier-intro');
+ if(intro)intro.textContent=(currentDossier()?.matches||0)>0?'YOUR RECORDED SOLO MATCH HISTORY':'FINISH A SOLO MATCH TO START YOUR RECORD';
+}
+let hangarPreviewUnit='tank'; // Visual inspection only; actual match vehicle is unchanged.
+function drawHangarUnitPreview(){
+ const canvas=document.getElementById('hangar-unit-preview');
+ const paint=HANGAR_PAINTS[equippedPaint]?.label||'STANDARD';
+ const label=document.getElementById('hangar-unit-label');
+ const readout=document.getElementById('hangar-preview-paint');
+ const unit=hangarPreviewUnit==='mech'?'mech':'tank';
+ const toggle=document.querySelector('.hangar-unit-toggle');
+ const unitLabel=document.getElementById('hangar-preview-unit-label');
+ if(label)label.textContent=paint+' / '+(unit==='mech'?'MECH':'TANK')+' PREVIEW';
+ if(unitLabel)unitLabel.textContent='PREVIEW ONLY · COSMETIC';
+ if(toggle){toggle.textContent=unit==='mech'?'VIEW TANK':'VIEW MECH';toggle.setAttribute?.('aria-label','Preview '+(unit==='mech'?'tank':'mech')+' instead of '+unit);}
+ if(readout)readout.textContent=equippedPaint==='fieldgrid.standard'?'PAINT · FACTORY':'PAINT · '+paint;
+ if(!canvas?.getContext)return;
+ // Presentation-only: render the SAME art and paint renderer as gameplay.
+ // A canvas context failure must never prevent equipping saved paint.
+ try{
+  const rect=canvas.getBoundingClientRect?.();
+  const width=Math.max(1,Math.round(rect?.width||400));
+  const height=Math.max(1,Math.round(rect?.height||240));
+  const dpr=Math.min(2,Math.max(1,Number(window.devicePixelRatio)||1));
+  const pw=Math.round(width*dpr),ph=Math.round(height*dpr);
+  if(canvas.width!==pw)canvas.width=pw;
+  if(canvas.height!==ph)canvas.height=ph;
+  const c=canvas.getContext('2d');
+  if(!c)return;
+  c.setTransform(dpr,0,0,dpr,0,0);
+  c.clearRect(0,0,width,height);
+  const x=width*.51,y=height*.525;
+  c.fillStyle='rgba(2,12,19,.32)';
+  c.beginPath();c.ellipse(x+4,y+20,width*.28,height*.105,-.22,0,Math.PI*2);c.fill();
+  c.strokeStyle='rgba(124,194,201,.20)';c.lineWidth=1.3;
+  c.beginPath();c.ellipse(x,y,Math.min(width*.32,height*.44),Math.min(width*.32,height*.44),0,0,Math.PI*2);c.stroke();
+  c.save();c.translate(x,y);c.rotate(-.24);
+  // Use conservative model bounds; never crop tracks or mech legs.
+  const scale=Math.max(.5,Math.min(3.15,width*.36/48,height*.255/48));
+  canvas.dataset.previewScale=scale.toFixed(3);
+  c.scale(scale,scale);
+  if(unit==='mech')drawTopMech(c,'#d5bb77',false,0,0,0,equippedPaint);
+  else drawTopTank(c,'#6bcde0',false,0,0,0,0,equippedPaint);
+  c.restore();
+  canvas.dataset.paintId=equippedPaint;
+  canvas.dataset.unit=unit;
+  canvas.setAttribute('aria-label',(equippedPaint==='fieldgrid.standard'?'Standard factory color':' '+paint+' paint')+' preview on Sector Rebound '+unit);
+ }catch(error){
+  console.warn?.('Optional Hangar vehicle preview unavailable',error);
+ }
 }
 function refreshHangar(){
  const status=document.getElementById('hangar-status');
@@ -33,13 +86,26 @@ function refreshHangar(){
   el.disabled=!unlock.eligible;
   if(typeof el.setAttribute==='function'){
    el.setAttribute('aria-pressed',String(selected));
-   el.setAttribute('aria-label',HANGAR_PAINTS[id]?.label+' · '+(unlock.eligible?'AVAILABLE':'LOCKED · '+unlock.current+' OF '+unlock.target+' '+unlock.metric.toUpperCase()));
+   el.setAttribute('aria-label',HANGAR_PAINTS[id]?.label+(id==='fieldgrid.standard'?' · FACTORY COLORS (cyan tank, gold mech)':'')+' · '+(unlock.eligible?'AVAILABLE':'LOCKED · '+unlock.current+' OF '+unlock.target+' '+unlock.metric.toUpperCase()));
   }
   const label=el.querySelector?.('small');
   if(label&&unlock.target)label.textContent=unlock.eligible?'UNLOCKED':unlock.current+' / '+unlock.target+' '+unlock.metric.toUpperCase();
  }
  const emblemStatus=document.getElementById('emblem-status');
- if(emblemStatus)emblemStatus.textContent='OPERATOR INSIGNIA · '+OPERATOR_EMBLEMS[equippedEmblem].glyph+' '+OPERATOR_EMBLEMS[equippedEmblem].label;
+ if(emblemStatus){emblemStatus.textContent='';emblemStatus.hidden=true;}
+ const detailIcon=document.getElementById('insignia-detail-use');
+ if(typeof detailIcon?.setAttribute==='function')detailIcon.setAttribute('href','#sr-mark-'+equippedEmblem.slice(5));
+ const detailName=document.getElementById('insignia-detail-name');
+ if(detailName)detailName.textContent=OPERATOR_EMBLEMS[equippedEmblem].label;
+ const nextProgress=document.getElementById('insignia-next-progress');
+ if(nextProgress){
+  const next=Object.entries(OPERATOR_EMBLEMS).find(([id,def])=>def.metric&&!emblemProgress(id).eligible);
+  if(!next)nextProgress.textContent='ALL FOUR INSIGNIAS EARNED';
+  else{
+   const [id,def]=next,progress=emblemProgress(id);
+   nextProgress.textContent='UNLOCK PROGRESS · '+def.label+' · '+progress.current+' / '+progress.target+' '+progress.metric.toUpperCase();
+  }
+ }
  for(const el of document.querySelectorAll('[data-action="equip-emblem"]')){
   const id=el.dataset.emblemId,def=OPERATOR_EMBLEMS[id],progress=emblemProgress(id),selected=id===equippedEmblem;
   el.classList.toggle('selected',selected);
@@ -50,6 +116,7 @@ function refreshHangar(){
   const small=el.querySelector?.('small');
   if(small)small.textContent=progress.target?(progress.eligible?'UNLOCKED':progress.current+' / '+progress.target+' '+progress.metric.toUpperCase()):'STANDARD ISSUE';
  }
+ drawHangarUnitPreview();
 }
 let hangarReturnToDossier=false;
 function showHangarTab(which){
@@ -73,7 +140,13 @@ function rewardHangarTab(unlocks){
 }
 function openHangar(fromDossier=false,newUnlocks=[]){
  hangarReturnToDossier=!!fromDossier;
- setPanel(document.getElementById('hangar-template').innerHTML);refreshHangar();
+ hangarPreviewUnit='tank';
+ setPanel(document.getElementById('hangar-template').innerHTML);
+ // M5 procedural blueprint is a review-only alternative, never stored as a preference.
+ const study=/(?:^|[?&])hangarStudy=blueprint(?:&|$)/.test(String(window.location?.search||''))?'blueprint':'warm';
+ const dock=document.querySelector('.hangar-bay');
+ if(dock)dock.dataset.hangarStudy=study==='blueprint'?'blueprint':'warm';
+ refreshHangar();
  const rewards=Array.isArray(newUnlocks)?newUnlocks.filter(s=>typeof s==='string').slice(0,5):[];
  showHangarTab(rewardHangarTab(rewards));
  if(rewards.length){
@@ -409,6 +482,51 @@ function freshSectorSeed(previous=0){
  return s;
 }
 function soloModeLabel(config){return config?.matchModeId==='cqc'?'CLOSE QUARTERS':config?.matchModeId==='scored_ffa'?'SCORED FREE-FOR-ALL':config?.matchModeId==='scored_tdm'?'TEAM DEATHMATCH':MATCH_MODE_PRESETS[config?.matchModeId]?.label||'SURVIVAL';}
+
+// M5.1: actual runtime mode, not the menu selection or a fabricated title.
+// Returns a compact screenshot-friendly code plus its readable accessible name.
+// Custom and LAN have explicit prefixes; competitive FFA is distinct from Survival.
+function hudModeDetails(st=state,session=mode){
+ const cfg=st?.config||{};
+ let code='SURV',name='Survival';
+ if(session==='duel'){code='DUEL';name='Local Dual Operations';}
+ else if(cfg.ctfExercise){code='CTF';name='Capture the Flag (experimental)';}
+ else if(cfg.forwardBayExercise){code='BAYS';name='Forward Bays (experimental)';}
+ else if(cfg.dailySector){code='DAILY';name='Daily Sector';}
+ else if(session==='solo'&&cfg.botCount===0&&!st?.scored){code='PRACTICE';name='Practice, no bots';}
+ else if(cfg.matchModeId==='cqc'){code='CQC';name='Close Quarters';}
+ else if(cfg.matchModeId==='scored_tdm'||st?.scored?.mode==='teams'||cfg.teamMode==='tdm'){
+  code='TDM';name='Team Deathmatch';
+ }
+ else if(cfg.matchModeId==='scored_ffa'||st?.scored?.mode==='ffa'){
+  code='FFA';name='Scored Free-for-All';
+ }
+ else if(cfg.teamMode==='coop'){code='CO-OP';name='Cooperative vs Bots';}
+ else if(cfg.matchModeId==='survival_teams'||cfg.teamMode==='teams'){
+  code='S-TEAM';name='Team Survival';
+ }
+ else if(cfg.matchModeId==='survival_ffa'||cfg.teamMode==='ffa'){
+  code='S-FFA';name='Survival Free-for-All';
+ }
+ if(cfg.customMatch&&session==='solo'){
+  code='C:'+code;name='Custom Match · '+name;
+ }
+ if(session==='host'||session==='guest'){
+  code='LAN:'+code;name='Local Wi-Fi · '+name;
+ }
+ return {code,name};
+}
+function refreshHudModeChip(){
+ const chip=document.getElementById('hud-mode-chip');
+ if(!chip)return;
+ const info=hudModeDetails();
+ if(chip.textContent!==info.code)chip.textContent=info.code;
+ const label='Current game mode: '+info.name;
+ if(typeof chip.setAttribute==='function'){
+  if(typeof chip.getAttribute!=='function'||chip.getAttribute('aria-label')!==label)chip.setAttribute('aria-label',label);
+  if(typeof chip.getAttribute!=='function'||chip.getAttribute('title')!==info.name)chip.setAttribute('title',info.name);
+ }
+}
 function isScoredMatch(){return !!state?.scored&&!!SCORED_MATCH_RULES[state?.config?.matchModeId];}
 function isCqcMatch(){return state?.config?.matchModeId==='cqc'&&isScoredMatch();}
 function isCtfMatch(){return !!state?.ctf&&state.config?.ctfExercise===true;}
@@ -804,7 +922,7 @@ function ejectPilot(i){const t=state.tanks[i],v=state.vehicles?.[t.vehicleId];if
  const exit=pilotExitSite(i,v.id)||[t.x,t.y];
  t.onFoot=true;t.vehicleId=null;Object.assign(t,{x:exit[0],y:exit[1],vx:0,vy:0,shield:EJECTION_SHIELD,powerType:null,powerTimer:0});
  if(i===0&&mode==='solo')clearFireAim(); // no vehicle AIM leaking into pilot FIRE drag
- t.ejectAnim=.62;if(i===0&&coachEnabled&&!coachPilotShown){coachPilotShown=true;coachTip('ON FOOT · FOLLOW THE VEHICLE ARROW · ENTER TO BOARD',4.4);}audioCue('eject',v.x,v.y);state.event=label(i)+' EJECTED · FIND COVER!';state.eventTimer=1.15;emitFx('eject',v.x,v.y,combatColor(i),-1,i);
+ t.ejectAnim=.62;if(i===0&&coachEnabled&&!coachPilotShown){coachPilotShown=true;coachTip('ON FOOT · FOLLOW THE VEHICLE ARROW · ENTER TO BOARD',4.4);}audioCue('eject',v.x,v.y);state.event=(i===(mode==='guest'?1:0)?'YOU EJECTED · FIND COVER!':(lanBotSeat(i)?label(i):'PLAYER '+(i+1))+' EJECTED · PILOT EXPOSED!');state.eventTimer=1.15;emitFx('eject',v.x,v.y,combatColor(i),-1,i);
 }
 // Forward Bay staging and scored respawns share a single team assignment.
 function teamForDeployment(i,config,humans){
@@ -1035,7 +1153,29 @@ function inputFrom(keys,isLocal){const down=k=>menu.classList.contains('hidden')
 }
 function makeControl(isPlayer1){return isPlayer1?inputFrom(keys1,true):inputFrom(keys2,false)}
 function serializeState(){return {allyAim:alliedAimIntentIndices(1),tanks:state.tanks.map(t=>({...t})),vehicles:(state.vehicles||[]).map(v=>({...v})),bullets:state.bullets.map(b=>({...b})),pickups:state.pickups.map(p=>({...p})),pickupTimer:state.pickupTimer,vehicleDropTimer:state.vehicleDropTimer,dropIndex:state.dropIndex,vehicleBeacon:state.vehicleBeacon?{...state.vehicleBeacon}:null,arenaId:state.arenaId,mazeSeed:state.mazeSeed,config:{...state.config},humanCount:state.humanCount,scored:state.scored,lanSeries:state.lanSeries,fxEvents:state.fxEvents.slice(),lives:state.lives.slice(),kos:state.kos.slice(),winner:state.winner,winnerTeam:state.winnerTeam,event:state.event,eventTimer:state.eventTimer,matchId:state.matchId,elapsedSeconds:state.elapsedSeconds,deaths:state.deaths.slice(),hostPaused:mode==='host'&&paused};}
-function refreshHUD(){const me=mode==='guest'&&!lanSpectating?1:0,other=me===0?1:0;
+
+/* M5.1-B: the left rail is YOUR identity outside team-score modes.
+   FFA opponents have independent random colors, so their aggregate counter
+   must be neutral instead of implying every enemy is coral. A TDM/CTF score
+   rail, however, represents fixed CYAN vs CORAL teams, not a player. */
+function hudScoreAccentColors(st=state,session=mode,spectating=lanSpectating){
+ const config=st?.config||{};
+ if(st?.ctf||st?.scored?.mode==='teams'||config.teamMode==='tdm')
+  return {left:'#46d2f5',right:'#fc856e'};
+ if(session==='guest'&&spectating)return {left:'#bdd0d6',right:'#e3bb81'};
+ const me=session==='guest'?1:0;
+ const mine=combatColor(me,st);
+ if(config.teamMode==='ffa')return {left:mine,right:'#e3bb81'};
+ return {left:mine,right:teamOf(me,st)===0?'#fc856e':'#46d2f5'};
+}
+function refreshHudScoreAccents(){
+ const accents=hudScoreAccentColors();
+ const mine=document.querySelector('.game-hud .scorestrip .blue-tag');
+ const theirs=document.querySelector('.game-hud .scorestrip .pink-tag');
+ if(mine?.style)mine.style.color=accents.left;
+ if(theirs?.style)theirs.style.color=accents.right;
+}
+function refreshHUD(){refreshHudModeChip();refreshHudScoreAccents();const me=mode==='guest'&&!lanSpectating?1:0,other=me===0?1:0;
  document.getElementById('score0').textContent=state.lives[me]??0;document.getElementById('score1').textContent=state.lives[other]??0;
  const botLives=mode==='solo'||(mode==='host'&&state.config?.lanHostSolo===true)?
   opposingCount(me):state.lives.slice(state.humanCount||2).filter(v=>v>0).length,
@@ -2349,36 +2489,59 @@ function drawLobbyPreview(dt){
  if(lobbyDrawClock<1/24)return;
  lobbyDrawClock=0;
  const showMech=!reduced&&Math.floor(lobbyPreviewClock/8)%2===1;
- const index=showMech?1:0;
- if(index!==lobbyLastUnit){
-  const type=document.getElementById('home-unit-type'),name=document.getElementById('home-unit-name');
-  if(type)type.textContent=showMech?'MECH / FIELD UNIT':'TANK / FIELD UNIT';
-  if(name)name.textContent=showMech?'MECHANIZED RESPONSE':'ARMORED RESPONSE';
-  lobbyLastUnit=index;
- }
- const c=preview.getContext('2d'),w=preview.width,h=preview.height;
+ lobbyLastUnit=showMech?1:0;
+ // Test and accessibility-neutral state for the actual vehicle showcase.
+ // No duplicate corner caption is displayed to players.
+ preview.dataset.unit=showMech?'mech':'tank';
+ // The main-menu canvas draws the game-authentic vehicle at native CSS dimensions
+ // and capped device pixel density. This changes no in-game combat artwork.
+ const rect=preview.getBoundingClientRect?.();
+ const w=Math.max(1,Math.round(rect?.width||preview.width));
+ const h=Math.max(1,Math.round(rect?.height||preview.height));
+ const compactPreview=preview.classList?.contains('mode-vehicle-preview')||preview.classList?.contains('mission-live-preview');
+ const dpr=Math.min(2,Math.max(1,Number(window.devicePixelRatio)||1));
+ if(preview.width!==Math.round(w*dpr))preview.width=Math.round(w*dpr);
+ if(preview.height!==Math.round(h*dpr))preview.height=Math.round(h*dpr);
+ const c=preview.getContext('2d');
+ c.setTransform(dpr,0,0,dpr,0,0);
  c.clearRect(0,0,w,h);
- c.fillStyle='#142f3d';c.fillRect(0,0,w,h);
- c.strokeStyle='#335766';c.lineWidth=2;
- for(let x=17;x<w;x+=78){c.beginPath();c.moveTo(x,0);c.lineTo(x,h);c.stroke()}
- for(let y=22;y<h;y+=78){c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke()}
- c.fillStyle='#203f4c';c.fillRect(0,h*.72,w,17);
- c.fillStyle='#779da7';c.fillRect(0,h*.72,w,3);
- // Subtle conveyor-like track below the unit, not a strobing UI animation.
- const phase=reduced?0:lobbyPreviewClock*.6;
- c.globalAlpha=.25;c.strokeStyle='#81bec7';c.lineWidth=1;
- c.beginPath();c.arc(w*.5,h*.43,109,0,Math.PI*2);c.stroke();
+ // Hangar floor: material and depth instead of a bright dashboard grid.
+ c.fillStyle='#0c202c';c.fillRect(0,0,w,h);
+ const light=c.createRadialGradient(w*.71,h*.48,8,w*.71,h*.48,Math.max(w*.49,h*.78));
+ light.addColorStop(0,'rgba(72,137,151,.24)');
+ light.addColorStop(.52,'rgba(42,90,104,.11)');
+ light.addColorStop(1,'rgba(5,17,26,0)');
+ c.fillStyle=light;c.fillRect(0,0,w,h);
+ c.lineWidth=1;
+ c.strokeStyle='rgba(110,158,170,.11)';
+ const cell=Math.max(55,Math.round(Math.min(w*.105,h*.30)));
+ for(let x=w*.42;x<w;x+=cell){c.beginPath();c.moveTo(x,0);c.lineTo(x,h);c.stroke();}
+ for(let y=cell*.4;y<h;y+=cell){c.beginPath();c.moveTo(w*.42,y);c.lineTo(w,y);c.stroke();}
+ // A single raised deck under the unit grounds the top-down art.
+ const deckY=h*.76;
+ c.fillStyle='#102a38';c.fillRect(w*.47,deckY,w*.50,Math.max(8,h*.035));
+ c.fillStyle='#638d97';c.globalAlpha=.27;c.fillRect(w*.47,deckY,w*.50,2);
  c.globalAlpha=1;
- c.save();c.translate(w*.51,h*.40);
- c.rotate(-.25+(reduced?0:Math.sin(phase)*.14));
- c.scale(2.55,2.55);
- const amount=!reduced?lobbyPreviewClock:0;
+ c.fillStyle='rgba(2,10,17,.19)';
+ c.beginPath();c.ellipse(w*.715,h*.565,w*.164,h*.12,-.12,0,Math.PI*2);c.fill();
+ c.strokeStyle='rgba(117,179,185,.13)';c.lineWidth=Math.max(1,h*.002);
+ c.beginPath();c.ellipse(w*.715,h*.51,Math.min(145,w*.22),Math.min(112,h*.38),0,0,Math.PI*2);c.stroke();
+ c.strokeStyle='rgba(214,175,113,.14)';
+ c.beginPath();c.arc(w*.715,h*.51,Math.min(145,w*.22),.22,1.15);c.stroke();
+ // Preserve the actual production tank/mech art, including player paint.
+ const phase=reduced?0:lobbyPreviewClock*.6;
+ c.save();c.translate(compactPreview?w*.5:w*.71,compactPreview?h*.5:h*.455);
+ c.rotate(-.25+(reduced?0:Math.sin(phase)*.11));
+ // Header previews are smaller than the full garage: shrink the real sprite
+ // instead of cropping the tank/mech behind the Back button.
+ const unitScale=compactPreview?Math.max(.58,Math.min(1.25,Math.min(w/135,h/115)*1.45)):
+  Math.min(3.25,Math.max(2.05,2.35*Math.min(w/620,h/320)));
+ preview.dataset.previewScale=unitScale.toFixed(2);
+ c.scale(unitScale,unitScale);
+ const amount=reduced?0:lobbyPreviewClock;
  if(showMech)drawTopMech(c,'#d5bb77',false,Math.sin(amount*2.3)*1.7,0,Math.sin(amount*3)*.5,equippedPaint);
  else drawTopTank(c,'#6bcde0',false,amount*10,amount*10,0,.38,equippedPaint);
  c.restore();
- c.fillStyle='#73c7d6';c.globalAlpha=.4;
- c.fillRect(w*.12,h*.26,55,2);c.fillRect(w*.77,h*.66,47,2);
- c.globalAlpha=1;
 }
 function drawTopPilot(c,paint,shooting=false,stride=0,recoil=0,bob=0,skinId='fieldgrid.standard',squadPaint=false){
  // v0.9.45 FIELDGRID P-03: compact overhead operator; no exposed legs.
@@ -2886,12 +3049,30 @@ for(const bump of bumpers){const glow=2.8*Math.sin(visualClock*4);c.beginPath();
  c.scale(mw/worldW,mh/worldH);c.fillStyle='#19313e';c.fillRect(0,0,worldW,worldH);
  c.fillStyle='#789ba7';for(const w of wallSet)c.fillRect(w.x,w.y,w.w,w.h);if(isPilotMatch()){for(const v of state.vehicles)if(v.occupant===-1&&v.armor>0){c.fillStyle=v.type==='mech'?'#d7a8ff':'#74e0a6';c.fillRect(v.x-28,v.y-28,56,56);}}
  if(state.vehicleBeacon?.ttl>0){c.strokeStyle='#fff6bf';c.lineWidth=19;c.beginPath();c.arc(state.vehicleBeacon.x,state.vehicleBeacon.y,55+Math.sin(visualClock*6)*15,0,Math.PI*2);c.stroke();}
- for(let i=0;i<state.tanks.length;i++){if(state.lives[i]<=0)continue;const t=state.tanks[i],me=mode==='guest'?1:0;if(i!==me&&Math.hypot(t.x-state.tanks[me].x,t.y-state.tanks[me].y)>400)continue;c.beginPath();c.arc(t.x,t.y,37,0,Math.PI*2);c.fillStyle=combatColor(i);c.fill()}
- // Nearby hostile gunfire briefly appears as a *rough* sound ring, not a permanent wallhack.
- const local=state.tanks[me];if(local)for(const fx of (state.fxEvents||[])){if(fx.kind!=='shot'||!(fx.ttl>0)||!Number.isInteger(fx.owner)||fx.owner<0||fx.owner>=state.tanks.length||friendly(fx.owner,me))continue;
-   if(Math.hypot(fx.x-local.x,fx.y-local.y)>1000)continue;
-   c.globalAlpha=.75*Math.min(1,fx.ttl/.4);c.strokeStyle='#ffd17c';c.lineWidth=22;c.beginPath();c.arc(fx.x,fx.y,80+(1.8-fx.ttl)*95,0,Math.PI*2);c.stroke();}
- c.globalAlpha=1;c.strokeStyle='#ffffff';c.lineWidth=9;c.strokeRect(camera.x,camera.y,viewW,viewH);c.restore();}
+ // Hostile nearby shots remain rough audio pings, not permanent enemy tracking.
+ // Collapse near-duplicate pulses, cap to two and paint them BEHIND actor markers.
+ const me=mode==='guest'&&!lanSpectating?1:0,local=state.tanks[me],radarPings=[];
+ if(local){
+  const events=state.fxEvents||[];
+  for(let n=events.length-1;n>=0&&radarPings.length<2;n--){
+   const fx=events[n];
+   if(fx.kind!=='shot'||!(fx.ttl>0)||!Number.isInteger(fx.owner)||fx.owner<0||fx.owner>=state.tanks.length||friendly(fx.owner,me))continue;
+   if(Math.hypot(fx.x-local.x,fx.y-local.y)>1000||radarPings.some(p=>Math.hypot(fx.x-p.x,fx.y-p.y)<220))continue;
+   radarPings.push(fx);
+  }
+ }
+ for(const fx of radarPings){
+  c.globalAlpha=.36*Math.min(1,fx.ttl/.55);c.strokeStyle='#ffd17c';c.lineWidth=12;
+  c.beginPath();c.arc(fx.x,fx.y,60+(1.8-fx.ttl)*65,0,Math.PI*2);c.stroke();
+ }
+ c.globalAlpha=1;
+ for(let i=0;i<state.tanks.length;i++){
+  if(state.lives[i]<=0)continue;
+  const t=state.tanks[i];
+  if(i!==me&&local&&Math.hypot(t.x-local.x,t.y-local.y)>400)continue;
+  c.beginPath();c.arc(t.x,t.y,37,0,Math.PI*2);c.fillStyle=combatColor(i);c.fill();
+ }
+ c.strokeStyle='#ffffff';c.lineWidth=9;c.strokeRect(camera.x,camera.y,viewW,viewH);c.restore();}
  if(state.eventTimer>0&&state.winner<0){
    // Events belong to the world and should not interrupt center-screen combat.
    // Enemy life losses are secondary information, not a blocking announcement.
@@ -3047,25 +3228,25 @@ function lanCanStart(){
 }
 function lanLobbyHTML(hostRole){
  const name=hostRole?'HOST MATCH':'JOINED MATCH';
- const controls=hostRole?'<div class="lan-grid">'+
- '<label>SIDES<select data-lan-setting="teamMode"><option value="ffa">FREE FOR ALL</option><option value="coop">CO-OP VS BOTS</option><option value="teams">OPPOSING TEAMS</option><option value="tdm">TEAM DEATHMATCH · SCORE</option></select></label>'+
+ const controls=hostRole?'<div class="lan-settings-guide"><strong>MATCH SETTINGS</strong><span>SCROLL FOR MORE RULES</span></div><div class="lan-grid">'+
+ '<label>MATCH TYPE<select data-lan-setting="teamMode"><option value="ffa">FREE FOR ALL</option><option value="coop">CO-OP VS BOTS</option><option value="teams">OPPOSING TEAMS</option><option value="tdm">TEAM DEATHMATCH · SCORE</option></select></label>'+
  '<label>HOST FACTION<select data-lan-setting="hostSide"><option value="cyan">CYAN · GUEST CORAL</option><option value="coral">CORAL · GUEST CYAN</option></select></label>'+
  '<label>KO TARGET<select data-lan-setting="scoreTarget"><option value="15">15 TEAM KOs</option><option value="30">30 TEAM KOs</option></select></label>'+
  '<label>MATCH SERIES<select data-lan-setting="rounds"><option value="1">SINGLE MATCH</option><option value="3">BEST OF 3</option></select></label>'+
- '<label>ADDITIONAL AI SLOTS<select data-lan-setting="botCount"><option value="0">0 · 1v1 NO BOTS</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>'+
+ '<label>ADDITIONAL AI SLOTS<select data-lan-setting="botCount"><option value="0">0 · 1v1 NO BOTS</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select><small id="lan-ai-note" class="lan-ai-note">HOST ONLY: PLAYER 2 BECOMES AI</small></label>'+
  '<label>MAZE<select data-lan-setting="mapSize"><option value="small">SMALL</option><option value="standard">STANDARD</option><option value="large">LARGE</option></select></label>'+
  '<label>PILOT LIVES<select data-lan-setting="startLives"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>'+
  '<label>BOT SKILL<select data-lan-setting="botSkill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>'+ 
  '<label>FRIENDLY FIRE<select data-lan-setting="friendlyFire"><option value="off">OFF · ALLIES PASS THROUGH</option><option value="on">ON · ALLIES SOLID</option></select></label>'+
  '</div>':'<div class="lan-summary"><strong id="lan-guest-rules">AWAITING HOST RULES</strong><span>Only the host can change the match setup.</span></div>';
  return '<section class="lan-lobby" aria-label="Local multiplayer waiting room">'+
- '<header class="lan-lobby-head"><div class="eyebrow">LOCAL WI-FI / PRIVATE MATCH</div><h2>'+name.replace(' ',' <span>')+'</span></h2><p>'+(hostRole?'Start a bot-filled match without waiting, or keep the room open for another phone.':'Join the host room and press READY when available.')+'</p></header>'+
- '<div class="lan-presence"><span>PLAYER 1 · HOST</span><strong id="lan-host-presence">CONNECTED</strong><span>PLAYER 2 · GUEST</span><strong id="lan-guest-presence">WAITING</strong></div>'+
+ '<header class="lan-lobby-head"><div class="eyebrow">LOCAL WI-FI / PRIVATE MATCH</div><h2>'+name.replace(' ',' <span>')+'</span></h2><p>'+(hostRole?'Start against bots now, or wait for another phone. Players joining mid-match wait for the next match.':'Join the host room and press READY when available.')+'</p></header>'+
+ '<div class="lan-lobby-body"><div class="lan-presence"><div class="lan-presence-slot"><span>PLAYER 1 · HOST</span><strong id="lan-host-presence">CONNECTED</strong></div><div class="lan-presence-slot"><span>PLAYER 2 · GUEST</span><strong id="lan-guest-presence">WAITING</strong></div></div>'+
  (hostRole?'<p class="lan-address">HOST ADDRESS · <span id="host-address">STARTING WI-FI ROOM...</span></p>':'')+
- controls+
- '<p id="lan-lobby-message" class="lan-lobby-message" role="status">WAITING FOR PLAYER TWO</p>'+
+ '<div class="lan-lobby-controls">'+controls+'</div></div>'+
+ '<footer class="lan-lobby-footer"><p id="lan-lobby-message" class="lan-lobby-message" role="status">WAITING FOR PLAYER TWO</p>'+
  '<div class="lan-lobby-actions">'+(hostRole?'<button class="primary" type="button" data-action="lan-start" disabled>START MATCH</button>':'<button class="primary" type="button" data-action="lan-ready" disabled>READY</button>')+
- '<button type="button" data-action="close">LEAVE MATCH</button></div></section>';
+ '<button type="button" data-action="close">LEAVE MATCH</button></div></footer></section>';
 }
 function refreshLanLobby(){
  if(!lanLobby||!document.getElementById('lan-lobby-message'))return;
@@ -3081,6 +3262,8 @@ function refreshLanLobby(){
  const livesLabel=document.querySelector('[data-lan-setting="startLives"]')?.closest?.('label');
  if(livesLabel)livesLabel.hidden=r.teamMode==='tdm';
  const botSelect=document.querySelector('[data-lan-setting="botCount"]');
+ const aiNote=document.getElementById('lan-ai-note');
+ if(aiNote)aiNote.textContent=connected?'GUEST CONNECTED · SELECT EXTRA AI ONLY':'HOST ONLY · PLAYER 2 ADDS ONE AI';
  if(botSelect?.options)for(const option of botSelect.options){
   const n=Number(option.value);const hostOnly=hostRole&&!connected;
   option.disabled=((r.teamMode==='tdm'||r.teamMode==='teams')&&n%2===1)||
@@ -3186,7 +3369,10 @@ function retryLanEndpoint(){
  const target=lanRetryEndpoint;
  // Native join starts a NEW socket generation. No old match/queue/input role survives.
  newMatch('guest');
- setPanel('<div class="eyebrow">LOCAL WI-FI / RETRY</div><h2>RECONNECTING</h2><p>Trying the last room address. The host may have a new address or port.</p><button data-action="close">CANCEL · MAIN MENU</button>');
+ setPanel('<section class="lan-utility lan-recovery" aria-label="Reconnecting to local game">'+
+  '<header class="lan-utility-head"><div class="eyebrow">FIELDGRID / LOCAL RECOVERY</div><h2>RECONNECTING</h2><p>Retrying the last room address.</p></header>'+
+  '<div class="lan-utility-body"><span class="lan-brief-serial">CONNECTION IN PROGRESS</span><p role="status" class="lan-recovery-message">The host may have a new address or port. Both phones must be on the same Wi-Fi.</p></div>'+
+  '<footer class="lan-utility-actions"><button type="button" data-action="close">CANCEL · MAIN MENU</button></footer></section>');
  return joinLanEndpoint(target.host,target.port);
 }
 function showLanGuestRecovery(kind){
@@ -3196,14 +3382,37 @@ function showLanGuestRecovery(kind){
  const detail=full?'This host already has a guest or spectator. Try again after they leave.':
   failed?'Could not reach the host. Check that both devices are on the same Wi-Fi.':
   'The host or network connection ended. You can reconnect to the last address.';
- setPanel('<div class="eyebrow">LOCAL WI-FI / RECOVERY</div><h2>'+title+'</h2><p>'+detail+'</p>'+
+ setPanel('<section class="lan-utility lan-recovery" aria-label="Local connection recovery">'+
+  '<header class="lan-utility-head"><div class="eyebrow">FIELDGRID / CONNECTION STATUS</div><h2>'+title+'</h2><p>LOCAL WI-FI / RECOVERY</p></header>'+
+  '<div class="lan-utility-body"><span class="lan-brief-serial">CONNECTION REPORT</span><p class="lan-recovery-message" role="status">'+detail+'</p>'+
+  '<p class="lan-utility-note">Retry this room, discover another, or enter a different host address.</p></div>'+
+  '<footer class="lan-utility-actions lan-recovery-actions">'+
   (lanRetryEndpoint?'<button class="primary" data-action="lan-retry">RETRY LAST ROOM</button>':'')+
-  '<button data-action="find">FIND NEARBY ROOMS</button><button data-action="manual">JOIN BY IP</button>'+
-  '<button data-action="close">MAIN MENU</button>');
+  '<button '+(lanRetryEndpoint?'':'class="primary" ')+'data-action="find">FIND NEARBY ROOMS</button>'+
+  '<button data-action="manual">JOIN BY IP</button><button data-action="close">MAIN MENU</button></footer></section>');
+}
+// UIV2-D presentation only. Keep the original action dispatch and native bridge.
+function lanEntryHTML(){
+ return '<section class="lan-entry" aria-label="Local Wi-Fi play">'+
+ '<header class="lan-entry-head"><div><div class="eyebrow">SECTOR REBOUND / SAME WI-FI</div><h2>LOCAL <span>PLAY</span></h2><p>Host or join on the same Wi-Fi network.</p></div><button type="button" class="lan-header-back" data-action="help-back">← BACK</button></header>'+
+ '<div class="lan-entry-main">'+
+ '<div class="lan-entry-brief"><canvas id="menu-preview" class="lan-room-preview" width="300" height="190" aria-hidden="true"></canvas><div class="lan-entry-copy"><span class="lan-brief-serial">SAME WI-FI NETWORK</span><strong>PLAY ON YOUR WI-FI.</strong><p>Host a match here or join a room from another Android phone.</p><span class="lan-entry-local">NO INTERNET MATCHMAKING</span></div></div>'+
+ '<div class="lan-entry-choices" role="group" aria-label="Choose local multiplayer connection method">'+
+ '<button type="button" class="primary lan-entry-host" data-action="host"><span class="lan-entry-symbol" aria-hidden="true">+</span><span class="lan-entry-action-copy"><strong>HOST GAME</strong><small>CREATE ROOM · CHOOSE MATCH RULES</small></span></button>'+
+ '<div class="lan-entry-join-options">'+
+ '<button type="button" data-action="find"><span class="lan-entry-symbol" aria-hidden="true">◎</span><span class="lan-entry-action-copy"><strong>FIND GAME</strong><small>DISCOVER THIS WI-FI</small></span></button>'+
+ '<button type="button" data-action="manual"><span class="lan-entry-symbol" aria-hidden="true">↗</span><span class="lan-entry-action-copy"><strong>JOIN BY IP</strong><small>ENTER HOST ADDRESS</small></span></button></div></div></div>'+
+ '<p class="lan-entry-footnote">LOCAL NETWORK · NO ONLINE MATCHMAKING</p></section>';
 }
 function host(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}lanRetryEndpoint=null;newMatch('host');startLanLobby();window.AndroidBridge.hostGame()}
-function find(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}lanRetryEndpoint=null;newMatch('guest');setPanel('<div class="eyebrow">NEARBY PLAY</div><h2>FIND A MATCH</h2><p id="find-status">Looking for games on the same Wi-Fi...</p><div id="rooms"></div><button data-action="manual">JOIN BY LOCAL IP</button><button data-action="close">BACK</button>');window.AndroidBridge.findGames()}
-function manual(){if(!bridgeReady()){notice('Manual LAN join requires the Android APK');return}lanRetryEndpoint=null;newMatch('guest');setPanel('<div class="eyebrow">FALLBACK</div><h2>JOIN BY ADDRESS</h2><p>Enter the IP:port shown on the host screen, such as 192.168.1.25:47321</p><input id="lan-address" placeholder="192.168.1.25:47321" inputmode="url" autocapitalize="off"><button data-action="ip-join">CONNECT</button><button data-action="find">FIND NEARBY</button>')}
+function find(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}lanRetryEndpoint=null;newMatch('guest');setPanel('<section class="lan-utility lan-discover" aria-label="Find local Wi-Fi game">'+
+ '<header class="lan-utility-head"><div class="eyebrow">FIELDGRID / LOCAL OPERATIONS</div><h2>FIND <span>GAME</span></h2><p>Discover a room hosted on your current Wi-Fi.</p></header>'+
+ '<div class="lan-utility-body"><span class="lan-brief-serial">02 / ROOM DISCOVERY</span><p id="find-status" role="status" aria-live="polite">Looking for games on the same Wi-Fi...</p><div id="rooms" aria-label="Discovered local rooms"></div><p class="lan-utility-note">No rooms listed? Keep both devices on the same Wi-Fi, or join using the host address.</p></div>'+
+ '<footer class="lan-utility-actions"><button type="button" class="primary" data-action="manual">JOIN BY LOCAL IP</button><button type="button" data-action="close">BACK TO MENU</button></footer></section>');window.AndroidBridge.findGames()}
+function manual(){if(!bridgeReady()){notice('Manual LAN join requires the Android APK');return}lanRetryEndpoint=null;newMatch('guest');setPanel('<section class="lan-utility lan-manual" aria-label="Join local game by address">'+
+ '<header class="lan-utility-head"><div class="eyebrow">FIELDGRID / LOCAL OPERATIONS</div><h2>JOIN <span>BY IP</span></h2><p>Use the address and port displayed on the host phone.</p></header>'+
+ '<div class="lan-utility-body"><span class="lan-brief-serial">03 / MANUAL CONNECTION</span><label class="lan-ip-label" for="lan-address">HOST ADDRESS / PORT<input type="text" id="lan-address" placeholder="192.168.1.25:47321" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false"></label><p class="lan-utility-note">Both Android phones must be connected to the same Wi-Fi. Example: 192.168.1.25:47321</p></div>'+
+ '<footer class="lan-utility-actions"><button type="button" class="primary" data-action="ip-join">CONNECT</button><button type="button" data-action="find">FIND NEARBY</button><button type="button" data-action="close">MAIN MENU</button></footer></section>')}
 function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;lanLobby=null;lanSpectating=false;lanSpectatePending=null;lanRoomFull=false;lanRetryEndpoint=null;
  lanHostJoinNext=null;lanHostJoinSeq=0;lanHostPromotedMatchId=0;
  lanGuestJoinNext='none';lanGuestQueueBoundary='match';lanGuestJoinSeq=0;lanGuestJoinPending=false;lanGuestPromotePending=null;
@@ -3214,6 +3423,14 @@ loadPrefs();
 dossierStore=window.SectorDossier?.createStore((()=>{try{return window.localStorage}catch(_){return null}})())||null;
 loadPaint(); // Dossier milestones must be available before restoring earned selections.
 
+// Physical touch/mouse should not leave a persistent keyboard-focus halo.
+ // Real keyboard input restores :focus-visible behavior without changing selection.
+menu.addEventListener('pointerdown',e=>{
+ if(e.target?.closest?.('button,summary'))menu.dataset.inputModality='pointer';
+});
+menu.addEventListener('keydown',e=>{
+ if(['Tab','ArrowLeft','ArrowRight','Home','End','Enter',' ','Spacebar'].includes(e.key))menu.dataset.inputModality='keyboard';
+});
 menu.addEventListener('keydown',e=>{
  const tab=e.target.closest?.('.hangar-tabs [role="tab"]');
  if(!tab||!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
@@ -3222,18 +3439,31 @@ menu.addEventListener('keydown',e=>{
  showHangarTab(next);
  document.querySelector('.hangar-tabs [data-hangar-tab="'+next+'"]')?.focus();
 });
+// UIV3-J7 — game-feel UI feedback. A real click, change or disclosure is the
+// only trigger: never use timeouts, hover cues, or a new AudioContext. The
+// central audioCue() function respects the existing SOUND FX preference.
+menu.addEventListener('click',e=>{
+ const disclosure=e.target?.closest?.('summary');
+ if(disclosure&&disclosure.closest?.(
+  '.custom-advanced,.custom-preset-fold,.bay-exercise-fold,.mission-comfort-details,.mission-rules,.help-more,.privacy-more,.help-more-controls,.extra-rules'
+ ))audioCue('ui-select');
+});
+menu.addEventListener('change',e=>{
+ if(e.target?.matches?.('select,input[type="checkbox"],input[type="range"]')&&!e.target.disabled)
+  audioCue('ui-select');
+});
 menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const a=b.dataset.action;
  if(a==='toggle-sound'||a==='toggle-music'){togglePauseAudio(a==='toggle-sound'?'sound':'music',b);return;}
  if(!['solo','settings-play','practice','cqc','scored_ffa','scored_tdm','custom-play','duel','host','find','custom-preset-save','custom-preset-delete','custom-preset-load','ip-join'].includes(a))
   audioCue(['settings-back','help-back','dossier-back','backup-back','modes-back','custom-back','close','resume'].includes(a)?'ui-back':'ui-select');
- if(a==='lan-retry'){retryLanEndpoint();return;}else if(a==='lan-ready'){guestLanReady();return;}else if(a==='lan-start'){launchLanMatch();return;}else if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest?.('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
+ if(a==='lan-retry'){retryLanEndpoint();return;}else if(a==='lan-ready'){guestLanReady();return;}else if(a==='lan-start'){launchLanMatch();return;}else if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest?.('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-preview-unit'){hangarPreviewUnit=hangarPreviewUnit==='tank'?'mech':'tank';drawHangarUnitPreview()}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
    const ok=equipPaint(b.dataset.paintId);
    refreshHangar();const status=document.getElementById('hangar-status');
    if(!ok&&status)status.textContent=paintProgress(b.dataset.paintId).eligible?'COULD NOT SAVE PAINT · CURRENT PAINT KEPT':'LOCKED · COMPLETE DOSSIER MILESTONE FIRST';
   }else if(a==='equip-emblem'){
    const ok=equipEmblem(b.dataset.emblemId);refreshHangar();
    const status=document.getElementById('emblem-status');
-   if(!ok&&status)status.textContent=emblemProgress(b.dataset.emblemId).eligible?'COULD NOT SAVE INSIGNIA':'INSIGNIA LOCKED · COMPLETE DOSSIER MILESTONE';
+   if(!ok&&status){status.hidden=false;status.textContent=emblemProgress(b.dataset.emblemId).eligible?'COULD NOT SAVE INSIGNIA':'INSIGNIA LOCKED · COMPLETE DOSSIER MILESTONE';}
   }else if(a==='dossier-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='backup'){openBackupScreen()}else if(a==='backup-back'){openDossier()}else if(['backup-export','backup-copy','backup-share','backup-preview','backup-restore'].includes(a)){doBackupAction(a)}else if(a==='help'){setPanel(document.getElementById('help-template').innerHTML)}else if(a==='help-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings'){savePrefs();setPanel(document.getElementById('settings-template').innerHTML);applyPrefsToUI()}else if(a==='settings-back'){savePrefs();panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='settings-play'){savePrefs();newMatch('solo')}else if(a==='solo')newMatch('solo');else if(a==='practice')newMatch('practice');else if(a==='daily')launchDailySector();else if(a==='forwardbay')launchForwardBayExercise();else if(a==='ctf')launchCtfExercise();else if(a==='cqc')newMatch('cqc');else if(a==='scored_ffa')newMatch('scored_ffa');else if(a==='scored_tdm')newMatch('scored_tdm');else if(a==='custom')openCustomScreen();else if(a==='custom-back'){openModes();}else if(a==='custom-play'){readCustomScreen();newMatch('custom');}
  else if(a==='custom-reset'){resetCustomDraft();refreshCustomUI();customPresetStatus('DEFAULT RULES RESTORED · SAVED PRESETS KEPT');}
  else if(a==='custom-preset-save'){
@@ -3250,17 +3480,51 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
   const outcome=deleteNamedCustomPreset(name);customPresetStatus(outcome.message);
   if(outcome.ok)refreshCustomPresetUI();
  }
- else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">LOCAL WI-FI / BETA</div><h2>PLAY <span>TOGETHER</span></h2><p>Two Android phones on the same Wi-Fi. One hosts, the other joins.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
+ else if(a==='nearby'){savePrefs();setPanel(lanEntryHTML())}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
  const s=document.getElementById('lan-address').value.trim(),m=s.match(/^([\da-fA-F:.]+):(\d{1,5})$/);
  if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';joinLanEndpoint(m[1],Number(m[2]));}});
 function showRestartConfirmation(){
  if(mode==='guest'||mode==='idle'||!paused)return;
- setPanel(state.config?.dailySector?'<div class="eyebrow">DAILY SECTOR / CONFIRM</div><h2>RESTART <span>ATTEMPT?</span></h2><p class="pause-hint">Your current attempt ends. The daily maze stays the same.</p><div class="pause-actions"><button class="primary" data-action="confirm-restart">RETRY SECTOR</button><button data-action="cancel-restart">KEEP CURRENT MATCH</button></div>':'<div class="eyebrow">FIELDGRID / CONFIRM</div><h2>START <span>NEW FIELD?</span></h2><p class="pause-hint">The current match will end. A fresh maze will replace it.</p><div class="pause-actions"><button class="primary" data-action="confirm-restart">START NEW FIELD</button><button data-action="cancel-restart">KEEP CURRENT MATCH</button></div>');
+ setPanel(state.config?.dailySector?'<div class="eyebrow">DAILY SECTOR / CONFIRM</div><h2>RESTART <span>ATTEMPT?</span></h2><p class="pause-hint">Your current attempt ends. The daily maze stays the same.</p><div class="pause-actions"><button class="primary" data-action="confirm-restart">RETRY SECTOR</button><button data-action="cancel-restart">KEEP CURRENT MATCH</button></div>':'<div class="eyebrow">FIELDGRID / CONFIRM</div><h2>START <span>NEW MATCH?</span></h2><p class="pause-hint">The current match will end. A fresh maze will replace it.</p><div class="pause-actions"><button class="primary" data-action="confirm-restart">START NEW MATCH</button><button data-action="cancel-restart">KEEP CURRENT MATCH</button></div>');
 }
-function showPauseMenu(){releaseControls();if(mode==='idle')return;
- if(mode==='solo'||mode==='duel'){paused=true;setPanel(state.config?.dailySector?'<div class="eyebrow">DAILY SECTOR / PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">The daily maze remains fixed for this attempt.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">RETRY SECTOR</button><button data-action="close">MAIN MENU</button></div>'+pauseAudioControls():'<div class="eyebrow">FIELDGRID / PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">The field is frozen. Continue or generate a fresh sector.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">NEW FIELD</button><button data-action="close">MAIN MENU</button></div>'+pauseAudioControls())}
- else if(mode==='host'){paused=true;neutralizeGuestInput();setPanel('<div class="eyebrow">FIELDGRID / HOST PAUSED</div><h2>SECTOR <span>PAUSED</span></h2><p class="pause-hint">Both players are paused.</p><div class="pause-actions"><button class="primary" data-action="resume">RESUME MATCH</button><button data-action="restart">NEW FIELD</button><button data-action="close">DISCONNECT</button></div>'+pauseAudioControls())}
- else if(mode==='guest'){if(connected&&!lanSpectating)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}});setPanel('<div class="eyebrow">FIELDGRID / PLAYER MENU</div><h2>SECTOR <span>MENU</span></h2><p class="pause-hint">'+(lanSpectating?'SPECTATING · READ ONLY. The host controls the match.':'The host controls rematches.')+'</p><div class="pause-actions"><button class="primary" data-action="resume">BACK TO ARENA</button><button data-action="close">DISCONNECT</button></div>'+pauseAudioControls())}}
+// UIV3-J6: one compact, game-native pause surface for all existing modes.
+ // This is presentation only: host/guest pause authority and button handlers
+ // remain in their original flow.
+function pausePanelHTML(label,title,hint,buttons){
+ return '<section class="pause-screen" aria-label="In-match pause menu">'+
+  '<div class="pause-head"><span class="pause-symbol" aria-hidden="true">Ⅱ</span>'+
+  '<div class="pause-heading"><span class="eyebrow">'+label+'</span><h2>'+title+'</h2>'+
+  '<p class="pause-hint">'+hint+'</p></div></div>'+
+  '<div class="pause-actions">'+buttons+'</div>'+pauseAudioControls()+'</section>';
+}
+function showPauseMenu(){
+ releaseControls();
+ if(mode==='idle')return;
+ if(mode==='solo'||mode==='duel'){
+  paused=true;
+  const daily=!!state.config?.dailySector;
+  setPanel(pausePanelHTML(hudModeDetails().code+' · PAUSED',
+    'SECTOR <span>PAUSED</span>',
+    daily?'The daily maze stays fixed for this attempt.':'The match is frozen. Pick up where you left off.',
+    '<button class="primary" data-action="resume">RESUME MATCH</button>'+
+    '<button data-action="restart">'+(daily?'RETRY SECTOR':'NEW MATCH')+'</button>'+
+    '<button data-action="close">MAIN MENU</button>'));
+ }else if(mode==='host'){
+  paused=true;neutralizeGuestInput();
+  setPanel(pausePanelHTML(hudModeDetails().code+' · HOST PAUSED',
+    'SECTOR <span>PAUSED</span>','Both players are paused.',
+    '<button class="primary" data-action="resume">RESUME MATCH</button>'+
+    '<button data-action="restart">NEW MATCH</button>'+
+    '<button data-action="close">DISCONNECT</button>'));
+ }else if(mode==='guest'){
+  if(connected&&!lanSpectating)nativePacket({type:'input',input:{moveX:0,moveY:0,fire:false}});
+  setPanel(pausePanelHTML(hudModeDetails().code+' · PLAYER MENU',
+    'MATCH <span>MENU</span>',
+    lanSpectating?'SPECTATING · READ ONLY. The host controls the match.':'The host controls rematches.',
+    '<button class="primary" data-action="resume">BACK TO ARENA</button>'+
+    '<button data-action="close">DISCONNECT</button>'));
+ }
+}
 document.getElementById('spectator-queue')?.addEventListener('click',()=>{
  guestJoinNextAction(lanGuestJoinNext==='queued'?'cancel':'join');
 });
@@ -3464,7 +3728,10 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
   if(mode==='host'){
    connected=false;paused=true;neutralizeGuestInput();releaseControls();
    lanHostJoinNext=null;lanHostJoinSeq=0;
-   setPanel('<h2>ROOM OFFLINE</h2><p>Android stopped LAN hosting in the background. The old room is closed; opening a new one resets the match.</p><button class="primary" data-action="host">OPEN NEW ROOM</button><button data-action="close">MAIN MENU</button>');
+   setPanel('<section class="lan-utility lan-recovery" aria-label="Offline host room">'+
+    '<header class="lan-utility-head"><div class="eyebrow">FIELDGRID / LOCAL RECOVERY</div><h2>ROOM <span>OFFLINE</span></h2><p>HOST ROOM CLOSED</p></header>'+
+    '<div class="lan-utility-body"><span class="lan-brief-serial">HOST STATUS</span><p class="lan-recovery-message" role="status">Android stopped LAN hosting in the background. The old room is closed; opening a new one resets the match.</p></div>'+
+    '<footer class="lan-utility-actions"><button class="primary" data-action="host">OPEN NEW ROOM</button><button data-action="close">MAIN MENU</button></footer></section>');
    notice('HOST OFFLINE · REOPEN THE ROOM',2500);
   }break;
  case 'disconnected':
@@ -3488,4 +3755,18 @@ window.RR={openMenu(){if(lanLobby?.active&&['host','guest'].includes(mode)){stop
   showLanGuestRecovery(roomWasFull?'full':'lost');break;
  case 'error':notice(msg.message||'Network error');if(mode==='guest'&&!connected)showLanGuestRecovery('failed');break;}}};
 resizeArenaCanvas();refreshHUD();requestAnimationFrame(loop);
+// M11-A is opt-in while staged. No new requests, GPU contexts or dependencies
+// in the ordinary owner preview. A local, offline Pixi bundle is built and
+// checked by hybrid-ui/ before this flag may be enabled by default.
+if(/(?:\?|&)hybridMenu=1(?:&|$)/.test(String(window.location?.search||''))){
+ // Test-only read-only resolver, not exposed in ordinary Canvas/Android play.
+ window.__SRModeHudTest=hudModeDetails;
+ const optionalScript=document.createElement('script');
+ optionalScript.src='hybrid-menu-pixi.bundle.js';
+ optionalScript.async=true;
+ optionalScript.onerror=()=>{
+  window.__SRHybridMenu={build:'loader',active:false,backend:'canvas',reason:'optional local Pixi bundle unavailable'};
+ };
+ document.head.appendChild(optionalScript);
+}
 })();

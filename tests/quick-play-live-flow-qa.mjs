@@ -19,7 +19,7 @@ const instrumented=game.replace(closing,`
 window.__flowQA={
  get state(){return state}, get mode(){return mode},
  get playlist(){return selectedPlaylistIds.slice()}, unlocksFromResult,
- freeze(){paused=true}, unfreeze(){paused=false}, get aim(){return {...fireAim}}, get control(){return makeControl(true)}, registerHit, ejectPilot, refreshHUD, tryCqcRespawn, resetAll,
+ freeze(){paused=true}, unfreeze(){paused=false}, get aim(){return {...fireAim}}, get control(){return makeControl(true)}, registerHit, ejectPilot, refreshHUD, opposingCount, tryCqcRespawn, resetAll,
  expire(seconds=180){paused=false;step(seconds);paused=true;}
 };
 })();`);
@@ -88,7 +88,8 @@ try{
  assert.equal(await page.locator('button[data-emblem-id="mark.vector"]').isDisabled(),true,'VECTOR locked until three Solo matches');
  assert.equal(await page.locator('button[data-emblem-id="mark.ace"]').isDisabled(),true,'ACE locked until ten recorded KOs');
  assert.equal(await page.locator('button[data-emblem-id="mark.command"]').isDisabled(),true,'COMMAND locked until twelve wins');
- assert.ok((await page.locator('#emblem-status').textContent()).includes('FIELD'));
+ assert.equal(await page.locator('#emblem-status').isVisible(),false,'insignia is shown in one real detail card');
+ assert.equal((await page.locator('#insignia-detail-name').textContent()).trim(),'FIELD');
  await page.locator('button[data-hangar-tab="insignia"]').click();
  assert.equal(await page.locator('#hangar-insignia').isVisible(),true,'insignia reached with one tap');
  assert.equal(await page.locator('#hangar-paints').isVisible(),false,'paint hidden while customizing insignia');
@@ -106,11 +107,23 @@ try{
  for(const [vw,vh] of [[740,360],[915,412],[1280,720]]){
   await page.setViewportSize({width:vw,height:vh});
   const layout=await page.evaluate(()=>{
-   const p=document.querySelector('#panel').getBoundingClientRect(), buttons=[...document.querySelectorAll('.hangar-grid button')].map(e=>e.getBoundingClientRect());
-   return {panel:{x:p.x,right:p.right,y:p.y,bottom:p.bottom},swatches:buttons.map(x=>({x:x.x,right:x.right,width:x.width,height:x.height}))};
+   const panel=document.querySelector('#panel').getBoundingClientRect();
+   const buttons=[...document.querySelectorAll('.hangar-grid button')];
+   const rect=el=>{const x=el.getBoundingClientRect();return {x:x.x,right:x.right,width:x.width,height:x.height};};
+   return {panel:{x:panel.x,right:panel.right,y:panel.y,bottom:panel.bottom},swatches:buttons.map(rect)};
   });
   assert.ok(layout.panel.x>=0&&layout.panel.right<=vw+1,'Hangar stays within landscape width '+vw);
-  assert.ok(layout.swatches.every(b=>b.width>=45&&b.height>=64&&b.x>=0&&b.right<=vw+1),'paint swatches reachable and sized '+vw);
+  assert.ok(layout.swatches.length===6&&layout.swatches.every(b=>b.width>=45&&b.height>=44&&b.x>=0&&b.right<=vw+1),
+   'all six paint tiles retain usable 44px touch height and horizontal reachability at '+vw);
+  // Ensure a bottom-row paint button is actually reachable when the workbench
+  // scrolls. Height alone cannot prove it remains usable.
+  const bottomSwatch=page.locator('button[data-paint-id="fieldgrid.oxide"]');
+  await bottomSwatch.scrollIntoViewIfNeeded();
+  const reachable=await bottomSwatch.evaluate(el=>{
+   const r=el.getBoundingClientRect(),p=document.querySelector('#panel').getBoundingClientRect();
+   return r.top>=p.top-1&&r.bottom<=p.bottom+1&&r.left>=p.left-1&&r.right<=p.right+1;
+  });
+  assert.ok(reachable,'bottom-row paint swatch stays visible inside Hangar at '+vw);
  }
  await page.setViewportSize({width:915,height:412});
  await page.locator('#menu button[data-action="hangar-back"]').click();
@@ -134,6 +147,9 @@ try{
  await teams.check();
  assert.equal(await page.locator('button[data-action="settings-play"]').isDisabled(),false,'one selected mode starts a match');
  await ffa.check();
+ // Advanced is now a focused subview. Return to the normal deployment
+ // screen before editing field parameters; gameplay rules are unchanged.
+ await advanced.locator('summary').click();
  await page.locator('#bot-count').selectOption('1');
  result.steps.push('zero-mode blocked; one/two selected modes enabled and persisted');
 
@@ -152,9 +168,35 @@ try{
  const ready=await page.locator('#shell-slots .shell-slot.ready').count();
  assert.equal(ready,slots,'unused projectile slots start filled');
  assert.ok(['survival_ffa','survival_teams'].includes(before.mode),'supported mode shown');
+ const actualColor=await page.evaluate(()=>{
+  const st=window.__flowQA.state;
+  const seat=st.config.teamIds?.[0]??0;
+  const expected=st.config.teamMode==='ffa'?st.config.ffaColors[0]:(seat===0?'#46d2f5':'#fc856e');
+  const tmp=document.createElement('span');tmp.style.color=expected;document.body.appendChild(tmp);
+  const canonical=getComputedStyle(tmp).color;tmp.remove();
+  return {canonical,actual:getComputedStyle(document.querySelector('.scorestrip .blue-tag')).color};
+ });
+ assert.equal(actualColor.actual,actualColor.canonical,'YOU HUD color matches real match identity');
+ // Change only the disposable browser fixture: FFA remap must update on HUD refresh.
+ if(before.mode==='survival_ffa'){
+  const recolor=await page.evaluate(()=>{
+   const st=window.__flowQA.state,old=st.config.ffaColors[0];
+   st.config.ffaColors[0]=old==='#fc856e'?'#b69aff':'#fc856e';
+   window.__flowQA.refreshHUD();
+   const out={value:st.config.ffaColors[0],actual:getComputedStyle(document.querySelector('.scorestrip .blue-tag')).color};
+   st.config.ffaColors[0]=old;window.__flowQA.refreshHUD();
+   return out;
+  });
+  const expected=recolor.value==='#fc856e'?'rgb(252, 133, 110)':'rgb(182, 154, 255)';
+  assert.equal(recolor.actual,expected,'dynamic FFA HUD accent uses actual per-match shuffled identity');
+ }
+ result.steps.push('HUD personal FFA and team colors track actual runtime actor identity');
  assert.equal(await page.locator('#after-action').isVisible(),false,'no premature results');
  await page.locator('#menu-button').click();
- assert.equal(await page.locator('button[data-action="restart"]').isVisible(),true,'New Field available in pause');
+ assert.equal(await page.locator('button[data-action="restart"]').isVisible(),true,'Restart available in pause');
+ assert.equal((await page.locator('.pause-head .eyebrow').textContent()).trim(),
+   (before.mode==='survival_teams'?'S-TEAM':'S-FFA')+' · PAUSED','actual mode remains visible in pause');
+ assert.equal((await page.locator('button[data-action="restart"]').textContent()).trim(),'NEW MATCH');
  const pausedSeed=await page.evaluate(()=>window.__flowQA.state.mazeSeed);
  await page.locator('button[data-action="restart"]').click();
  assert.equal(await page.locator('button[data-action="confirm-restart"]').isVisible(),true,'restart requires explicit confirmation');
@@ -170,6 +212,7 @@ try{
   return {hits,state:{winner:qa.state.winner,ko:qa.state.kos[0],deaths:qa.state.deaths[0],final:qa.state.finalResult}};
  });
  assert.deepEqual(victory.hits,[true,true],'real two-hit pilot knockout');
+ assert.match(await page.locator('#arena').getAttribute('aria-label'),/Top-down/);
  assert.equal(victory.state.final.outcome,'victory');
  assert.equal(victory.state.ko,2,'actual kill counter');
  assert.equal(victory.state.deaths,0);
@@ -490,8 +533,14 @@ try{
  await page.locator('#custom-size').selectOption('large');
  await page.locator('#custom-bots').selectOption('1');
  await page.locator('#custom-skill').selectOption('spicy');
+ // The Advanced Rules drawer is part of the actual player flow. Don't try to
+ // interact with hidden controls without opening the section first.
+ assert.equal(await page.locator('.custom-advanced').getAttribute('open'),null);
+ await page.locator('.custom-advanced > summary').click();
+ assert.equal(await page.locator('#custom-lives').isVisible(),true);
  await page.locator('#custom-lives').selectOption('3');
  await page.locator('#custom-shells').selectOption('1');
+ await page.locator('.custom-advanced > summary').click();
  assert.ok((await page.locator('#custom-preview').textContent()).includes('3 COMBATANTS'));
  const customSaved=await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-custom-v1')));
  assert.equal(customSaved.version,1);
@@ -608,7 +657,7 @@ try{
   assert.equal(await page.locator('#dossier-matches').textContent(),String(afterDossier.matches));
   assert.equal(await page.locator('#dossier-draws').textContent(),String(afterDossier.draws));
   assert.equal(await page.locator('#dossier-eligibility').count(),0,'nonfunctional future milestones are no longer shown next to real Dossier rewards');
-   assert.equal(await page.locator('#dossier-emblem-mark').textContent(),'◇','default identity visible in Dossier');
+   assert.equal(await page.locator('#dossier-emblem-mark use').getAttribute('href'),'#sr-mark-field','default original vector insignia visible in Dossier');
   const geometry=await page.locator('#panel').evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth}));
   assert.ok(geometry.scrollWidth<=geometry.width+3,'dossier has no horizontal overflow at '+vw);
   const back=await page.locator('button[data-action="dossier-back"]').boundingBox();
@@ -634,7 +683,7 @@ try{
  assert.equal(operatorChoice.equipped,'fieldgrid.moss','selecting emblem keeps previous tank paint');
  await page.locator('button[data-action="hangar-back"]').click();
  assert.equal(await page.locator('.dossier-screen').isVisible(),true,'Hangar Back returns to originating Dossier, no home-menu detour');
- assert.equal(await page.locator('#dossier-emblem-mark').textContent(),'△','Dossier shows equipped VECTOR');
+ assert.equal(await page.locator('#dossier-emblem-mark use').getAttribute('href'),'#sr-mark-vector','Dossier shows equipped VECTOR artwork');
  assert.equal(await page.locator('#dossier-emblem-name').textContent(),'VECTOR');
  result.steps.push('completed Solo match -> saved Dossier -> earned insignia -> persistent Hangar equip -> Dossier identity');
 
@@ -711,6 +760,47 @@ try{
  assert.equal((await bonusPage.evaluate(()=>JSON.parse(localStorage.getItem('rr-dossier-v1')))).matches,5,'reward navigation cannot duplicate results');
  await bonusContext.close();
  result.steps.push('real 5-match reward -> result button -> Hangar equip -> Home; no double score');
+
+ // M5.1-C: one actual Host Match setup vs its OWN deployed HUD.
+ // The second human seat is replaced by exactly one AI ONLY while no guest is connected.
+ // Separate S-FFA screenshots are not evidence of a Host Match count bug.
+ const hostContext=await browser.newContext({viewport:{width:915,height:412}});
+ const hostPage=await hostContext.newPage();
+ hostPage.on('pageerror',e=>{throw e});
+ await hostPage.goto(base,{waitUntil:'load'});
+ await hostPage.waitForFunction(()=>!!window.__flowQA);
+ await hostPage.evaluate(()=>{
+  window.AndroidBridge={hostGame(){},stopNetwork(){},findGames(){},joinGame(){},sendPacket(){}};
+ });
+ for(const extra of [0,1]){
+  await hostPage.locator('#menu button[data-action="nearby"]').click();
+  await hostPage.locator('.lan-entry button[data-action="host"]').click();
+  assert.equal(await hostPage.locator('.lan-presence-slot').count(),2);
+  assert.match(await hostPage.locator('#lan-ai-note').textContent(),/PLAYER 2 ADDS ONE AI/);
+  await hostPage.locator('[data-lan-setting="botCount"]').selectOption(String(extra));
+  const displayed=await hostPage.locator('[data-lan-setting="botCount"] option:checked').textContent();
+  assert.match(displayed,new RegExp('^'+(extra+1)+' AI OPPONENT'));
+  await hostPage.locator('.lan-lobby-actions [data-action="lan-start"]').click();
+  await hostPage.waitForFunction(()=>document.querySelector('#menu')?.classList.contains('hidden'));
+  const count=await hostPage.evaluate(()=>{
+   const s=window.__flowQA.state;
+   return {extras:s.config.botCount,reserved:s.config.lanHostSolo,humanSeats:s.humanCount,total:s.tanks.length,
+    actual:window.__flowQA.opposingCount(0),hud:document.getElementById('score1').textContent,
+    title:document.getElementById('player1-label').textContent,
+    mode:document.getElementById('hud-mode-chip').textContent};
+  });
+  assert.deepEqual({extras:count.extras,reserved:count.reserved,humanSeats:count.humanSeats,total:count.total},
+   {extras:extra,reserved:true,humanSeats:2,total:extra+2});
+  assert.equal(count.actual,extra+1,'host-alone real bot opponents include reserved guest seat');
+  assert.equal(count.hud,String(count.actual),'HUD count must match actors in that SAME host match');
+  assert.equal(count.title,'ENEMIES LEFT');
+  assert.equal(count.mode,'LAN:S-FFA');
+  await hostPage.locator('#menu-button').click();
+  await hostPage.locator('#menu button[data-action="close"]').click();
+  await hostPage.waitForFunction(()=>!!document.querySelector('#menu .home-screen'));
+ }
+ await hostContext.close();
+ result.steps.push('actual host-only LAN setup: 0/1 extra AI maps to exactly 1/2 opponents and the same-match HUD');
 
  console.log('PASS live Chromium Quick Play: '+JSON.stringify(result));
 }finally{

@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+import {fileURLToPath} from 'node:url';
+const base=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
+const src=path.join(base,'web/hybrid-menu-pixi.bundle.js');
+const dest=path.join(base,'android/app/src/main/assets/hybrid-menu-pixi.bundle.js');
+const bytes=fs.readFileSync(src);
+assert.ok(bytes.length>150000,'Expected real bundled PixiJS, not a fallback placeholder');
+assert.ok(bytes.includes(Buffer.from('SR_HYBRID_PIXI_V1')),'Bundle must contain app-specific initialization marker');
+fs.copyFileSync(src,dest);
+assert.ok(fs.readFileSync(dest).equals(bytes),'Android assets must exactly equal web bundle');
+console.log('HYBRID_MENU_ASSETS_IDENTICAL '+bytes.length);

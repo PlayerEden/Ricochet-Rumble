@@ -31,6 +31,26 @@ try{
    const info=await page.evaluate(({stage,opts})=>{
     const round=x=>Math.round(x*10)/10;
     const rect=el=>{const r=el.getBoundingClientRect();return {left:round(r.left),top:round(r.top),right:round(r.right),bottom:round(r.bottom),width:round(r.width),height:round(r.height)};};
+    // Match painted/hit-testable bounds, not un-clipped DOM coordinates.
+    // Controls inside a scrollable Settings module can lie behind the fixed
+    // Start/Back footer in raw geometry but are not painted outside the scroller.
+    // Separate premium browser tests scroll to and click those controls.
+    const paintRect=el=>{
+     const r=el.getBoundingClientRect();
+     let left=r.left,right=r.right,top=r.top,bottom=r.bottom;
+     for(let p=el.parentElement;p;p=p.parentElement){
+      const s=getComputedStyle(p),clip=p.getBoundingClientRect();
+      if(/^(auto|scroll|hidden|clip)$/.test(s.overflowX)){
+       left=Math.max(left,clip.left);right=Math.min(right,clip.right);
+      }
+      if(/^(auto|scroll|hidden|clip)$/.test(s.overflowY)){
+       top=Math.max(top,clip.top);bottom=Math.min(bottom,clip.bottom);
+      }
+     }
+     right=Math.max(left,right);bottom=Math.max(top,bottom);
+     return {left:round(left),top:round(top),right:round(right),bottom:round(bottom),
+      width:round(right-left),height:round(bottom-top)};
+    };
     const visible=el=>{
      // Native closed DETAILS contents and their controls are not actionable.
      // A hidden ancestor must never be misreported as an overlapping button.
@@ -42,7 +62,7 @@ try{
     const menuOpen=overlay&&!overlay.classList.contains('hidden');
     const scope=opts.gameplay?document.querySelector('.game-screen'):panel;
     const elems=[...scope.querySelectorAll('button,select,input,textarea,summary')].filter(visible);
-    const bounds=elems.map((el,i)=>({id:el.id||el.dataset.action||el.getAttribute('aria-label')||el.textContent.trim().slice(0,28)||'control-'+i,tag:el.tagName,rect:rect(el),scrollW:el.scrollWidth,clientW:el.clientWidth}));
+    const bounds=elems.map((el,i)=>({id:el.id||el.dataset.action||el.getAttribute('aria-label')||el.textContent.trim().slice(0,28)||'control-'+i,tag:el.tagName,rect:rect(el),paintRect:paintRect(el),scrollW:el.scrollWidth,clientW:el.clientWidth}));
     const panelRect=rect(panel);
     const homeScroller=document.querySelector('.home-actions');
     const homeScroll=homeScroller?{usable:/auto|scroll/.test(getComputedStyle(homeScroller).overflowY),canScroll:homeScroller.scrollHeight>homeScroller.clientHeight+2,range:homeScroller.scrollHeight-homeScroller.clientHeight}:null;
@@ -97,9 +117,9 @@ try{
       issues.push({level:'fail',type:'after-action-card-clipped',rect:r});
    }
    for(let i=0;i<info.elements.length;i++){
-    const a=info.elements[i],ra=a.rect;
+    const a=info.elements[i],ra=a.paintRect;
     for(let j=i+1;j<info.elements.length;j++){
-     const b=info.elements[j],rb=b.rect;
+     const b=info.elements[j],rb=b.paintRect;
      if(!['BUTTON','SELECT','TEXTAREA','INPUT'].includes(a.tag)||!['BUTTON','SELECT','TEXTAREA','INPUT'].includes(b.tag))continue;
      const overlap=intersect(ra,rb);
      if(overlap>Math.min(ra.width*ra.height,rb.width*rb.height)*.08)
@@ -205,3 +225,7 @@ report.totals={scenes:report.scenes.length,fail:report.issues.filter(x=>x.level=
 fs.writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2)+'\n');
 console.log('LAYOUT_DIAGNOSTIC '+JSON.stringify(report.totals));
 console.log('LAYOUT_FINDINGS '+JSON.stringify(report.issues.slice(0,65)));
+if(report.totals.fail>0){
+ console.error('LAYOUT_DIAGNOSTIC_GATE_FAIL '+report.totals.fail+' visible geometry failures');
+ process.exitCode=1;
+}

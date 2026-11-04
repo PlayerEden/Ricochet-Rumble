@@ -2,6 +2,9 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
+// Keep every existing headless gameplay test while running the small UI safety
+// contract first on the same exact PR head.
+import './uiv3-ui-contract.mjs';
 const handlers={},nodes=new Map();
 // Simulate Android WebView local preferences and controls when exercising settings.
 const savedStorage=new Map();let acceptancePlaylistInputs=null,acceptancePlayButtons=null;
@@ -39,7 +42,7 @@ assert.equal(menuHtml.includes('data-action="pilot"'),false);
 assert.equal(menuHtml.includes('data-action="solo"'),true);
 assert.equal(menuHtml.includes('data-action="nearby"'),true);
 assert.equal(menuHtml.includes('data-action="duel"'),false);
-assert.ok(menuHtml.includes('PILOT LIVES'));assert.ok(menuHtml.includes('FIELD SIZE'));assert.equal(menuHtml.includes('arena-choice'),false,'No map picker');
+assert.ok(menuHtml.includes('PILOT LIVES'));assert.ok(menuHtml.includes('ARENA SIZE'),'Match setup keeps the genuine map-size selector under its updated label');assert.equal(menuHtml.includes('arena-choice'),false,'No map picker');
 node('lives-choice').value='2';node('map-size').value='standard';
 click('solo');runFrames(8);assert.ok(['SOLO SURVIVAL','TEAM SURVIVAL'].includes(node('mode-label').textContent));
 assert.equal(st().config.pilotMode,true);assert.equal(st().lives[0],2);
@@ -434,7 +437,7 @@ const live=st().tanks[1];live.x=vacant.x;live.y=vacant.y;live.vx=live.vy=0;
 lone.x=vacant.x-37;lone.y=vacant.y;lone.vx=lone.vy=0;
 win.__test.tankMove(lone,{moveX:1,moveY:0},.13,0);
 assert.ok(lone.x<=vacant.x-37+1,'living occupied actors still block vehicles');
-assert.ok(menuHtml.includes('data-action="modes"')&&menuHtml.includes('PLAYLIST &amp; ADVANCED RULES'),'streamlined menu still leads to selectable modes and full rules');
+assert.ok(menuHtml.includes('data-action="modes"')&&menuHtml.includes('PLAYLIST &amp; RULES'),'streamlined menu still leads to selectable modes and full rules');
 console.log('PASS v0.9.8: vacant vehicle is passable and non-cover; occupied actors block; UI hierarchy present.');
 
 // v0.9.8.1 entry-clearance regression. Empty deployments never block movement,
@@ -471,8 +474,10 @@ console.log('PASS v0.9.8.1: entry clearance, Android asset parity and offline he
  const fs=await import('node:fs');
  const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
  const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
- for(const metadata of ['VS BOTS','WI-FI · BETA','ARMORED RESPONSE','CHOOSE MODE'])
+ for(const metadata of ['VS BOTS','WI-FI · BETA','CHOOSE MODE'])
    assert.ok(html.includes(metadata),'missing purposeful action/context label: '+metadata);
+ assert.ok(!html.includes('ARMORED RESPONSE')&&!html.includes('id="home-unit-name"'),
+   'premium UI v2 must not revive the rejected bottom-right unit info block');
  assert.ok(css.includes('.scorestrip .middle.on-foot')&&css.includes('.interact-btn.busy'),'semantic HUD and bay-busy states must have authored styles');
  assert.ok(css.includes('max-width:760px')&&css.includes('max-height:390px'),'responsive phone-landscape thresholds retained');
 }
@@ -1042,7 +1047,9 @@ console.log('PASS v0.9.15: after-action stats, result transitions, replay/menu a
  const css=fs.readFileSync(new URL('../web/style.css',import.meta.url),'utf8');
  assert.ok(html.includes('id="field-coach"')&&css.includes('.field-coach.hidden'),'optional coach has an explicit hidden state');
  assert.ok(!html.includes('NO ACCOUNT REQUIRED')&&!html.includes('V0.9.20 · LOCAL'),'home must not show redundant account or build wording');
- assert.ok(html.includes('id="home-unit-name"')&&html.includes('id="pref-music"'),'rotating vehicle presentation and music preference exist');
+ const menuSource=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
+ assert.ok(html.includes('id="menu-preview"')&&menuSource.includes('Math.floor(lobbyPreviewClock/8)')&&html.includes('id="pref-music"'),
+  'real rotating tank/mech Canvas showcase and music preference remain, without rejected corner caption');
  assert.ok(html.includes('id="menu-preview"')&&html.includes('class="home-screen"'),'home menu uses the in-game tank lobby stage');
  assert.ok(html.includes('data-action="solo"')&&html.includes('data-action="nearby"')&&html.includes('data-action="settings"')&&html.includes('data-action="help"'),'all entry actions retained');
  assert.equal(html,fs.readFileSync(new URL('../android/app/src/main/assets/index.html',import.meta.url),'utf8'),'Android and web menus must remain identical');

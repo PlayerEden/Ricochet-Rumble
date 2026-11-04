@@ -35,6 +35,7 @@ try{
   await page.locator('#menu button[data-action="settings"]').click();
   await page.locator('#map-size').selectOption('large');
   await page.locator('#bot-count').selectOption('1');
+  await page.locator('.mission-comfort-details summary').click();
   await page.locator('#pref-leftHanded').check();
   await page.locator('#menu button[data-action="settings-back"]').click();
   // Configure and save a real Custom Match preset through the game UI.
@@ -78,7 +79,8 @@ try{
   const vector=page.locator('#menu button[data-action="equip-emblem"][data-emblem-id="mark.vector"]');
   assert.equal(await vector.isDisabled(),false,'3 saved matches unlock real insignia');
   await vector.click();
-  assert.match(await page.locator('#emblem-status').innerText(),/VECTOR/);
+  assert.equal((await page.locator('#insignia-detail-name').innerText()).trim(),'VECTOR');
+  assert.equal(await page.locator('#emblem-status').isVisible(),false,'duplicate success stripe hidden; real emblem is still equipped');
   await page.locator('#menu button[data-action="hangar-back"]').click();
   const before=await raw(page);
   for(const k of keys)assert.ok(before[k]&&JSON.parse(before[k]),k+' has valid persisted JSON');
@@ -112,7 +114,8 @@ try{
   await page.locator('#menu button[data-action="hangar"]').click();
   assert.match(await page.locator('#hangar-status').innerText(),/EQUIPPED · DUNE/);
   await page.locator('#menu button[data-action="hangar-tab"][data-hangar-tab="insignia"]').click();
-  assert.match(await page.locator('#emblem-status').innerText(),/VECTOR/);
+  assert.equal((await page.locator('#insignia-detail-name').innerText()).trim(),'VECTOR');
+  assert.equal(await page.locator('#emblem-status').isVisible(),false,'duplicate success stripe hidden; real emblem is still equipped');
   await page.locator('#menu button[data-action="hangar-back"]').click();
   await page.locator('#menu button[data-action="modes"]').click();
   await page.locator('#menu button[data-action="custom"]').click();

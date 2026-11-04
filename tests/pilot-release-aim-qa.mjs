@@ -102,12 +102,14 @@ try{
   await page.goto('http://127.0.0.1:'+server.address().port,{waitUntil:'load'});
   await page.waitForFunction(()=>!!window.__pilotReleaseQA);
   await page.locator('button[data-action="settings"]').click();
+  await page.locator('.mission-comfort-details summary').click();
   const option=page.locator('#pref-releaseFire');
   assert.equal(await option.isChecked(),true,'release shooting defaults ON');
   await option.uncheck();
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-options-v06')).comfort.releaseFire),false);
   await page.reload();
   await page.locator('button[data-action="settings"]').click();
+  await page.locator('.mission-comfort-details summary').click();
   assert.equal(await page.locator('#pref-releaseFire').isChecked(),false,'classic control setting persists');
   await option.check();
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('rr-options-v06')).comfort.releaseFire),true);

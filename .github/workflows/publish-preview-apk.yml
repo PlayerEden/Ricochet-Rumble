@@ -22,6 +22,9 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -29,6 +32,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
+      - name: Build verified offline Pixi before creating preview archive
+        run: |
+          npm --prefix hybrid-ui install --ignore-scripts --no-audit --no-fund
+          npm --prefix hybrid-ui run build
+          node tools/verify-hybrid-menu-bundle.mjs
       - name: Validate unique tag and matching Android version
         env:
           TAG: ${{ inputs.tag }}
@@ -66,6 +74,8 @@ jobs:
       - name: Build debug APK
         working-directory: android
         run: gradle --no-daemon :app:assembleDebug
+      - name: Verify real Pixi graphics bytes in release APK, reject placeholder
+        run: node tools/verify-hybrid-menu-bundle.mjs --apk=android/app/build/outputs/apk/debug/app-debug.apk
       - name: Create permanent GitHub prerelease (never clobber)
         env:
           GH_TOKEN: ${{ github.token }}
