@@ -2,6 +2,7 @@
 // Shared motion/ballistics for both renderers. No account, saves, LAN or online requests.
 import { Application, Graphics, Container, Sprite, Texture } from 'pixi.js';
 import { TEAM_COLORS, WORLD_WIDTH, WORLD_HEIGHT, WALLS, buildUnitArt, createFieldgridFloor, makeBulletCanvas } from './fieldgrid-art.js';
+import { PixiFxLab } from './pixi-fx.js';
 
 const W=960,H=540,MAX_SHOTS=180,BASE_COLOR=0x101f2b;
 const walls=WALLS;
@@ -9,6 +10,7 @@ const colors={cyan:TEAM_COLORS[0],coral:TEAM_COLORS[1]};
 const baseBotPositions=[[1210,168,'tank'],[1220,515,'mech'],[850,790,'pilot'],[1020,305,'tank'],[520,805,'mech'],[570,200,'pilot'],[1090,805,'tank'],[1130,645,'mech'],[920,110,'pilot'],[1200,335,'tank'],[615,615,'mech'],[910,520,'pilot'],[280,760,'tank'],[300,175,'pilot'],[780,410,'mech'],[1320,755,'tank'],[1280,880,'pilot'],[570,360,'mech']];
 let floorCanvas=null,art=null,bulletArt=null,unitTextures=null,projectileTexture=null;
 let load='match',camera={x:0,y:0,zoom:.73},effects=[];
+let fxEvents=[],fxSeq=0,fxEnabled=true;
 const unitSize=120;
 const $=(id)=>document.getElementById(id);
 const root=$('field'),normal=$('canvas2d'),ctx=normal.getContext('2d',{alpha:false});
@@ -26,13 +28,28 @@ function reset(){
   parked:[{x:395,y:175,a:.32,dir:.32,team:0,type:'mech',hp:3},{x:280,y:595,a:-.65,dir:-.65,team:0,type:'tank',hp:3}],
   shots:[],kills:0,deaths:0
  };
- effects=[];time=0;renderSamples=[];frameSamples=[];frame=0;
+ effects=[];fxEvents=[];fxSeq=0;time=0;renderSamples=[];frameSamples=[];frame=0;
  camera.x=0;camera.y=0;camera.zoom=.73;
  if(load==='stress')for(let i=0;i<80;i++){
   const a=i*2.39996,spd=130+(i%5)*37;
   scene.shots.push({x:400+(i*71)%770,y:100+(i*43)%690,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,team:i%2,bounces:0,life:2.9+(i%5)*.2,active:true});
  }
  updateHud();
+}
+// Visual-only VFX event stream; gameplay remains renderer-independent.
+function emitFx(kind,x,y,team,angle=0){
+ const life=kind==='death'?.9:kind==='muzzle'?.18:kind==='damage'?.26:kind==='bounce'?.35:.48;
+ fxEvents.push({kind,x,y,team,angle,seed:++fxSeq,age:0,life});
+ if(fxEvents.length>96)fxEvents.splice(0,fxEvents.length-96);
+}
+function showcaseFx(){
+ if(!scene)return;
+ const p=scene.player;
+ emitFx('muzzle',p.x+36,p.y,p.team,p.a);
+ emitFx('bounce',p.x+100,p.y-28,1,1.4);
+ emitFx('hit',p.x+135,p.y+21,1,-.1);
+ emitFx('damage',p.x+10,p.y-15,0,.1);
+ emitFx('death',p.x+180,p.y+65,1,0);
 }
 function addFx(x,y,team){
  for(let i=0;i<8;i++){
@@ -52,7 +69,8 @@ function moveUnit(u,dx,dy){
 function shoot(u){
  if(u.hp<=0||u.cool>0||scene.shots.length>=MAX_SHOTS)return;
  const dx=Math.cos(u.a),dy=Math.sin(u.a);
- scene.shots.push({x:u.x+dx*32,y:u.y+dy*32,vx:dx*345,vy:dy*345,team:u.team,bounces:0,life:3.6,active:true});
+ scene.shots.push({x:u.x+dx*32,y:u.y+dy*32,vx:dx*345,vy:dy*345,team:u.team,kind:u.type||'tank',bounces:0,life:3.6,active:true});
+ emitFx('muzzle',u.x+dx*39,u.y+dy*39,u.team,u.a);
  u.cool=u.team===0?.29:(load==='stress'?.55:.78);
 }
 function intersectBullet(b){
@@ -72,11 +90,15 @@ function bounceBullet(b,oldX,oldY){
  b.x=oldX;b.y=oldY;b.bounces++;
  if(b.bounces>3)b.life=0;
  addFx(b.x,b.y,b.team);
+ emitFx('bounce',b.x,b.y,b.team,Math.atan2(b.vy,b.vx));
 }
 function hitUnit(b,u){
  if(u.hp<=0||u.team===b.team||Math.hypot(b.x-u.x,b.y-u.y)>R+4)return false;
  u.hp--;b.life=0;addFx(b.x,b.y,b.team);
+ emitFx('hit',b.x,b.y,b.team,Math.atan2(b.vy,b.vx));
+ emitFx('damage',u.x,u.y,u.team,u.a);
  if(u.hp<=0){
+  emitFx('death',u.x,u.y,u.team,u.a);
   if(u.team===0){scene.deaths++;u.x=175;u.y=448;u.hp=4;}
   else {scene.kills++;u.x=u.x>850?1200:775;u.y=u.y<480?170:700;u.hp=3;}
  }
@@ -89,6 +111,7 @@ function advance(dt){
  const arrows={x:Number(keyboard.has('d')||keyboard.has('arrowright'))-Number(keyboard.has('a')||keyboard.has('arrowleft')),y:Number(keyboard.has('s')||keyboard.has('arrowdown'))-Number(keyboard.has('w')||keyboard.has('arrowup'))};
  const direction=(arrows.x||arrows.y)?norm(arrows.x,arrows.y):move;
  moveUnit(p,direction.x*160*dt,direction.y*160*dt);
+ p.engineSpeed=Math.hypot(direction.x,direction.y)*160;
  if(direction.x||direction.y)p.dir=Math.atan2(direction.y,direction.x);
  if(aim)p.a=Math.atan2(aim.y,aim.x);
  else p.a=p.dir;
@@ -101,6 +124,7 @@ function advance(dt){
   u.dir=u.a;
   const desiredMove=Math.sin(time*.63+i*1.4)*.65;
   moveUnit(u,Math.cos(u.a)*desiredMove*55*dt,Math.sin(u.a)*desiredMove*55*dt);
+  u.engineSpeed=Math.abs(desiredMove)*55;
   if(Math.abs(angle)<.22&&Math.hypot(u.x-p.x,u.y-p.y)<1000)shoot(u);
  });
  for(const b of scene.shots){
@@ -118,6 +142,8 @@ function advance(dt){
  if(load==='stress'&&scene.shots.length<75&&Math.floor(time*10)%2===0){const i=Math.floor(time*30)%scene.bots.length,u=scene.bots[i];u.cool=0;shoot(u);}
  for(const fx of effects){fx.x+=fx.vx*dt;fx.y+=fx.vy*dt;fx.life-=dt;}
  effects=effects.filter(fx=>fx.life>0);
+ for(const ev of fxEvents)ev.age+=dt;
+ fxEvents=fxEvents.filter(ev=>ev.age<ev.life);
  const zoom=.73,viewW=W/zoom,viewH=H/zoom;
  camera.zoom=zoom;camera.x=clamp(p.x-viewW/2,0,WORLD_WIDTH-viewW);
  camera.y=clamp(p.y-viewH/2,0,WORLD_HEIGHT-viewH);
