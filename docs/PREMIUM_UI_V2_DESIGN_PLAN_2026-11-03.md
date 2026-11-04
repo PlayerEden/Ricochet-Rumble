@@ -39,8 +39,14 @@ Real Android screenshots from two consecutive `SR Hybrid Test` builds proved the
 - [ ] Pass dedicated real Chromium browser QA at 568×320, 640×360, 740×360, 915×412 and 1280×720, including touch hit tests, scrolling, playlist invalid/valid toggles, rule changes and persistence after Back/Reopen.
 - [ ] Pass full regression/Android bundling and receive physical phone approval before making this production.
 
-### UIV2-D — LAN / social play (planned)
-- Present Host / Find / Join with network hierarchy and clear two-phone Wi-Fi explanation; leave socket/LAN/spectator state machine untouched.
+### UIV2-D — LAN / social play (implemented in draft; QA and phone acceptance gate)
+- [x] Replace the original flat Local Play panel with a single-primary-action host briefing and clear Find Game / Join by IP alternatives. No cloud matchmaking is implied.
+- [x] Present native-discovered rooms, manual IP:port input and a readable local-network explanation in consistent FIELDGRID screens; preserve the original handlers, room ID and socket arguments.
+- [x] Preserve the nine host match rule selectors, host/guest presence, host address, guest Ready, Start, leave actions, and rule summary. Give the live lobby its own scrollable middle area and always-visible status/action footer.
+- [x] Keep every LAN network transport call, authority validation, spectator flow, reconnect protocol and match setup rule unchanged.
+- [x] Keep web and Android game/CSS assets byte-identical.
+- [ ] Pass real-browser five-size LAN UI QA (host, discovery and IP join with mock native bridge), full gameplay/LAN, Android and visual workflows.
+- [ ] Owner on-device visual review before merging or recommending an APK.
 
 ### UIV2-E — Hangar (maps to original M12) (implementation / QA in progress)
 - [x] Split Hangar into a purposeful vehicle bay and customization workbench, sharing FIELDGRID typography/colors with Home.
@@ -75,7 +81,7 @@ Each step: targeted screen-specific real-browser screenshot QA plus existing fas
 | Home | Full-screen hangar showcase, warm single Quick Play CTA, quiet nav | Original Canvas vehicle, real button routing, optional Pixi | UIV2-A browser checked, owner reviewed |
 | Mode Select | Four distinctive mission cards + restrained practice/daily/experimental rail | Existing score targets, modes, daily seed and rules | UIV2-B implemented; automated QA passed |
 | Match Settings | Deployment briefing: field/bots, grouped controls/audio, expandable playlist/rules and persistent launch footer | Every existing checkbox, playlist, preferences and Start Match | UIV2-C implemented in draft; full QA/phone review pending |
-| Local Wi-Fi | Host / Discover / Join screen with clear connection hierarchy | Existing LAN discovery, IP join and team flows | UIV2-D next |
+| Local Wi-Fi | Host / Discover / Join with clear same-network guidance, cohesive lobby and sticky Ready/Start footer | Existing LAN discovery, native join, team rules, spectator and retry flows | UIV2-D implemented on draft; QA/phone gate pending |
 | Hangar | Real vehicle bay + paint/insignia workbench | `rr-hangar-paint-v1`, selected/locked states, unlock thresholds | UIV2-E implemented, phone acceptance pending |
 | Dossier | Readable operator summary + mode history with always-visible utility footer | `rr-dossier-v1`, backup/restore, record integrity | UIV2-F implemented, phone acceptance pending |
 | Pause & Results | Compact operational overlays with one primary action | Resume/New Field/Return, match stats, share paths where supported | UIV2-G pending |
@@ -89,3 +95,7 @@ Each step: targeted screen-specific real-browser screenshot QA plus existing fas
 ## UIV2-C implementation checkpoint (draft PR #140)
 
 Changes are intentionally limited to the original Settings template, its CSS presentation, browser-level QA and this design log. Web and Android package assets are edited in lockstep. The new `mission-setup-screen` makes a distinctly designed deployment briefing while keeping `map-size`, `bot-count`, `lives-choice`, `bullet-cap`, `bot-skill`, all original `pref-*` IDs and `data-playlist-mode` IDs intact. Native storage and match rules remain handled by the untouched game logic. The previous test gate was fully green before UIV2-C changes; the new test gate must be evaluated independently. Do not merge or issue a recommended APK until it passes and the owner reviews a physical phone preview.
+
+## UIV2-D checkpoint and test boundary
+
+Local Wi-Fi remains native-Android only: Chromium QA uses a small stub bridge for *presentation and original click dispatch verification*, not as evidence of real two-phone connectivity. Network packet formats, host authority, spectator queue, match-rule sanitization and Android socket code are unchanged. Changes are limited to markup returned by existing LAN screens, one presentation helper, CSS and the browser regression script. A successful visual test does not replace an actual two-phone Wi-Fi playtest before release.

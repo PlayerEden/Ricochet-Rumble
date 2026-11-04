@@ -246,6 +246,84 @@ try{
     'opted-in mode remains saved after returning from Settings');
   await page.locator('#menu button[data-action="settings-back"]').click();
   await page.waitForFunction(()=>window.__SRHybridMenu?.active,null,{timeout:15000});
+  // UIV2-D — visual-only Android LAN UX: fake the native bridge ONLY inside
+  // this browser page; no network traffic or gameplay protocol is simulated.
+  await page.evaluate(()=>{
+    window.__lanUiCalls=[];
+    window.AndroidBridge={
+      stopNetwork(){window.__lanUiCalls.push(['stop']);},
+      hostGame(){window.__lanUiCalls.push(['host']);},
+      findGames(){window.__lanUiCalls.push(['find']);},
+      joinGame(host,port){window.__lanUiCalls.push(['join',host,port]);}
+    };
+  });
+  await page.locator('#menu button[data-action="nearby"]').click();
+  assert.equal(await page.locator('.lan-entry').isVisible(),true,'Local Play entry is visible');
+  const entry=await page.evaluate(()=>{
+    const panel=document.querySelector('#panel'),main=panel.querySelector('.lan-entry-main'),
+      buttons=[...panel.querySelectorAll('.lan-entry button[data-action]')];
+    const rect=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,w:r.width,h:r.height};};
+    return {panel:rect(panel),main:rect(main),buttons:buttons.map(el=>{
+      const r=rect(el),hit=document.elementFromPoint((r.x+r.right)/2,(r.y+r.bottom)/2);
+      return {action:el.dataset.action,rect:r,hit:hit?.closest('button')?.dataset.action};
+    })};
+  });
+  assert.deepEqual(entry.buttons.map(x=>x.action),['host','find','manual','help-back'],
+    'Local Play exposes exact original host/find/manual/back actions');
+  assert.ok(entry.panel.x>=-1&&entry.panel.right<=w+1&&entry.panel.y>=-1&&entry.panel.bottom<=h+1,
+    'Local Play bounds stay within '+w+'x'+h);
+  for(const item of entry.buttons){
+    assert.ok(item.rect.h>=40&&item.rect.w>=80&&item.rect.x>=0&&item.rect.right<=w+1&&item.rect.bottom<=h+1,
+      'Local Play action clipped: '+item.action+' at '+w+'x'+h);
+    assert.equal(item.hit,item.action,'Local Play action must remain tappable');
+  }
+  await page.screenshot({path:dir+'/lan-entry-'+w+'x'+h+'.png',animations:'disabled'});
+  await page.locator('.lan-entry button[data-action="host"]').click();
+  assert.equal(await page.locator('.lan-lobby').isVisible(),true,'Host enters real LAN lobby');
+  assert.equal(await page.locator('[data-lan-setting]').count(),9,'nine real LAN settings remain');
+  const hostFooter=async()=>await page.locator('.lan-lobby-footer').evaluate(el=>{
+    const r=el.getBoundingClientRect(),p=document.querySelector('#panel').getBoundingClientRect();
+    return {top:r.top,bottom:r.bottom,panelBottom:p.bottom};
+  });
+  await page.locator('.lan-lobby-body').evaluate(el=>{el.scrollTop=el.scrollHeight;});
+  const footer=await hostFooter();
+  assert.ok(footer.top>=0&&footer.bottom<=h+1&&footer.bottom<=footer.panelBottom+1,
+    'host Ready/Start footer must remain visible after scrolling');
+  assert.equal(await page.locator('[data-action="lan-start"]').count(),1,
+    'real host Start Match action remains intact');
+  assert.equal(await page.locator('[data-action="close"]').count(),1,
+    'real Leave Match action remains intact');
+  await page.screenshot({path:dir+'/lan-host-'+w+'x'+h+'.png',animations:'disabled'});
+  await page.locator('[data-lan-setting="teamMode"]').selectOption('tdm');
+  assert.equal(await page.locator('[data-lan-setting="rounds"]').isVisible(),true,
+    'TDM host match series selector remains accessible');
+  await page.locator('.lan-lobby-actions button[data-action="close"]').click();
+  await page.locator('#menu button[data-action="nearby"]').click();
+  await page.locator('.lan-entry button[data-action="find"]').click();
+  assert.equal(await page.locator('.lan-discover').isVisible(),true);
+  await page.evaluate(()=>window.RR.nativeMessage(JSON.stringify({
+    type:'found',host:'192.168.1.88',port:47321,name:'TEST ROOM'})));
+  assert.equal(await page.locator('#rooms button').count(),1,
+    'native-found room appears in original dynamic discovery list');
+  await page.screenshot({path:dir+'/lan-discovery-'+w+'x'+h+'.png',animations:'disabled'});
+  await page.locator('#rooms button').click();
+  assert.equal((await page.evaluate(()=>window.__lanUiCalls)).some(x=>x[0]==='join'&&x[1]==='192.168.1.88'&&x[2]===47321),true,
+    'discovered room still dispatches host/port to native joinGame');
+  await page.locator('.lan-discover button[data-action="manual"]').click();
+  assert.equal(await page.locator('.lan-manual').isVisible(),true);
+  const beforeInvalid=(await page.evaluate(()=>window.__lanUiCalls)).length;
+  await page.locator('#lan-address').fill('invalid');
+  await page.locator('.lan-manual button[data-action="ip-join"]').click();
+  assert.equal((await page.evaluate(()=>window.__lanUiCalls)).length,beforeInvalid,
+    'malformed IP:port cannot trigger native joinGame');
+  await page.locator('#lan-address').fill('192.168.1.25:47321');
+  await page.locator('.lan-manual button[data-action="ip-join"]').click();
+  assert.equal((await page.evaluate(()=>window.__lanUiCalls)).some(x=>x[0]==='join'&&x[1]==='192.168.1.25'&&x[2]===47321),true,
+    'valid manual address retains native join endpoint');
+  await page.screenshot({path:dir+'/lan-manual-'+w+'x'+h+'.png',animations:'disabled'});
+  await page.locator('.lan-manual button[data-action="close"]').click();
+  await page.evaluate(()=>{delete window.AndroidBridge;});
+  await page.waitForFunction(()=>window.__SRHybridMenu?.active,null,{timeout:15000});
   const reloaded=await page.evaluate(()=>({active:window.__SRHybridMenu.active,mounts:window.__SRHybridMenu.mounts}));
   assert.ok(reloaded.active&&reloaded.mounts>=2,'GPU re-created after returning home');
   if(w===568||w===740||w===915){

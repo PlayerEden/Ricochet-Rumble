@@ -3117,12 +3117,12 @@ function lanLobbyHTML(hostRole){
  '</div>':'<div class="lan-summary"><strong id="lan-guest-rules">AWAITING HOST RULES</strong><span>Only the host can change the match setup.</span></div>';
  return '<section class="lan-lobby" aria-label="Local multiplayer waiting room">'+
  '<header class="lan-lobby-head"><div class="eyebrow">LOCAL WI-FI / PRIVATE MATCH</div><h2>'+name.replace(' ',' <span>')+'</span></h2><p>'+(hostRole?'Start a bot-filled match without waiting, or keep the room open for another phone.':'Join the host room and press READY when available.')+'</p></header>'+
- '<div class="lan-presence"><span>PLAYER 1 · HOST</span><strong id="lan-host-presence">CONNECTED</strong><span>PLAYER 2 · GUEST</span><strong id="lan-guest-presence">WAITING</strong></div>'+
+ '<div class="lan-lobby-body"><div class="lan-presence"><span>PLAYER 1 · HOST</span><strong id="lan-host-presence">CONNECTED</strong><span>PLAYER 2 · GUEST</span><strong id="lan-guest-presence">WAITING</strong></div>'+
  (hostRole?'<p class="lan-address">HOST ADDRESS · <span id="host-address">STARTING WI-FI ROOM...</span></p>':'')+
- controls+
- '<p id="lan-lobby-message" class="lan-lobby-message" role="status">WAITING FOR PLAYER TWO</p>'+
+ '<div class="lan-lobby-controls">'+controls+'</div></div>'+
+ '<footer class="lan-lobby-footer"><p id="lan-lobby-message" class="lan-lobby-message" role="status">WAITING FOR PLAYER TWO</p>'+
  '<div class="lan-lobby-actions">'+(hostRole?'<button class="primary" type="button" data-action="lan-start" disabled>START MATCH</button>':'<button class="primary" type="button" data-action="lan-ready" disabled>READY</button>')+
- '<button type="button" data-action="close">LEAVE MATCH</button></div></section>';
+ '<button type="button" data-action="close">LEAVE MATCH</button></div></footer></section>';
 }
 function refreshLanLobby(){
  if(!lanLobby||!document.getElementById('lan-lobby-message'))return;
@@ -3258,9 +3258,28 @@ function showLanGuestRecovery(kind){
   '<button data-action="find">FIND NEARBY ROOMS</button><button data-action="manual">JOIN BY IP</button>'+
   '<button data-action="close">MAIN MENU</button>');
 }
+// UIV2-D presentation only. Keep the original action dispatch and native bridge.
+function lanEntryHTML(){
+ return '<section class="lan-entry" aria-label="Local Wi-Fi play">'+
+ '<header class="lan-entry-head"><div class="eyebrow">FIELDGRID / LOCAL OPERATIONS</div><h2>LOCAL <span>PLAY</span></h2><p>Two phones. One Wi-Fi network. Your rules.</p></header>'+
+ '<div class="lan-entry-main">'+
+ '<div class="lan-entry-brief"><span class="lan-brief-serial">01 / CONNECTION BRIEF</span><strong>SAME WI-FI NETWORK</strong><p>Connect both Android phones to the same network. One player hosts; the other discovers or enters the host address.</p><span class="lan-entry-local">LOCAL MATCHES / NO ONLINE MATCHMAKING</span></div>'+
+ '<div class="lan-entry-choices" role="group" aria-label="Choose local multiplayer connection method">'+
+ '<button type="button" class="primary lan-entry-host" data-action="host"><strong>HOST GAME</strong><small>CREATE ROOM / CHOOSE MATCH RULES</small></button>'+
+ '<div class="lan-entry-join-options">'+
+ '<button type="button" data-action="find"><strong>FIND GAME</strong><small>DISCOVER ON THIS WI-FI</small></button>'+
+ '<button type="button" data-action="manual"><strong>JOIN BY IP</strong><small>ENTER THE HOST ADDRESS</small></button></div></div></div>'+
+ '<footer class="lan-entry-footer"><span>ANDROID LAN PREVIEW · SAME NETWORK ONLY</span><button type="button" data-action="help-back">BACK TO MENU</button></footer></section>';
+}
 function host(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}lanRetryEndpoint=null;newMatch('host');startLanLobby();window.AndroidBridge.hostGame()}
-function find(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}lanRetryEndpoint=null;newMatch('guest');setPanel('<div class="eyebrow">NEARBY PLAY</div><h2>FIND A MATCH</h2><p id="find-status">Looking for games on the same Wi-Fi...</p><div id="rooms"></div><button data-action="manual">JOIN BY LOCAL IP</button><button data-action="close">BACK</button>');window.AndroidBridge.findGames()}
-function manual(){if(!bridgeReady()){notice('Manual LAN join requires the Android APK');return}lanRetryEndpoint=null;newMatch('guest');setPanel('<div class="eyebrow">FALLBACK</div><h2>JOIN BY ADDRESS</h2><p>Enter the IP:port shown on the host screen, such as 192.168.1.25:47321</p><input id="lan-address" placeholder="192.168.1.25:47321" inputmode="url" autocapitalize="off"><button data-action="ip-join">CONNECT</button><button data-action="find">FIND NEARBY</button>')}
+function find(){if(!bridgeReady()){notice('Nearby mode requires the Android APK');return}lanRetryEndpoint=null;newMatch('guest');setPanel('<section class="lan-utility lan-discover" aria-label="Find local Wi-Fi game">'+
+ '<header class="lan-utility-head"><div class="eyebrow">FIELDGRID / LOCAL OPERATIONS</div><h2>FIND <span>GAME</span></h2><p>Discover a room hosted on your current Wi-Fi.</p></header>'+
+ '<div class="lan-utility-body"><span class="lan-brief-serial">02 / ROOM DISCOVERY</span><p id="find-status" role="status" aria-live="polite">Looking for games on the same Wi-Fi...</p><div id="rooms" aria-label="Discovered local rooms"></div><p class="lan-utility-note">No rooms listed? Keep both devices on the same Wi-Fi, or join using the host address.</p></div>'+
+ '<footer class="lan-utility-actions"><button type="button" class="primary" data-action="manual">JOIN BY LOCAL IP</button><button type="button" data-action="close">BACK TO MENU</button></footer></section>');window.AndroidBridge.findGames()}
+function manual(){if(!bridgeReady()){notice('Manual LAN join requires the Android APK');return}lanRetryEndpoint=null;newMatch('guest');setPanel('<section class="lan-utility lan-manual" aria-label="Join local game by address">'+
+ '<header class="lan-utility-head"><div class="eyebrow">FIELDGRID / LOCAL OPERATIONS</div><h2>JOIN <span>BY IP</span></h2><p>Use the address and port displayed on the host phone.</p></header>'+
+ '<div class="lan-utility-body"><span class="lan-brief-serial">03 / MANUAL CONNECTION</span><label class="lan-ip-label" for="lan-address">HOST ADDRESS / PORT<input type="text" id="lan-address" placeholder="192.168.1.25:47321" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false"></label><p class="lan-utility-note">Both Android phones must be connected to the same Wi-Fi. Example: 192.168.1.25:47321</p></div>'+
+ '<footer class="lan-utility-actions"><button type="button" class="primary" data-action="ip-join">CONNECT</button><button type="button" data-action="find">FIND NEARBY</button><button type="button" data-action="close">MAIN MENU</button></footer></section>')}
 function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;lanLobby=null;lanSpectating=false;lanSpectatePending=null;lanRoomFull=false;lanRetryEndpoint=null;
  lanHostJoinNext=null;lanHostJoinSeq=0;lanHostPromotedMatchId=0;
  lanGuestJoinNext='none';lanGuestQueueBoundary='match';lanGuestJoinSeq=0;lanGuestJoinPending=false;lanGuestPromotePending=null;
@@ -3307,7 +3326,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
   const outcome=deleteNamedCustomPreset(name);customPresetStatus(outcome.message);
   if(outcome.ok)refreshCustomPresetUI();
  }
- else if(a==='nearby'){savePrefs();setPanel('<div class="eyebrow">LOCAL WI-FI / BETA</div><h2>PLAY <span>TOGETHER</span></h2><p>Two Android phones on the same Wi-Fi. One hosts, the other joins.</p><button class="primary" data-action="host">HOST GAME</button><button data-action="find">FIND GAME</button><button data-action="manual">JOIN BY IP</button><button data-action="help-back">◀ BACK</button>')}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
+ else if(a==='nearby'){savePrefs();setPanel(lanEntryHTML())}else if(a==='duel')newMatch('duel');else if(a==='host')host();else if(a==='find')find();else if(a==='manual')manual();else if(a==='close')stop();else if(a==='ip-join'){
  const s=document.getElementById('lan-address').value.trim(),m=s.match(/^([\da-fA-F:.]+):(\d{1,5})$/);
  if(!m||+m[2]>65535||+m[2]<1){notice('Please enter a valid address and port');return}document.getElementById('mode-label').textContent='CONNECTING';joinLanEndpoint(m[1],Number(m[2]));}});
 function showRestartConfirmation(){
