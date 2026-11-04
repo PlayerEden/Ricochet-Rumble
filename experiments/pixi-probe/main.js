@@ -309,6 +309,55 @@ function setZoom(idx){
  $('zoom-value').textContent='ZOOM '+camera.zoom.toFixed(2)+'x · '+(artMode==='layered'?'RIGGED':'CLASSIC');
  if(window.__pixiProbe)window.__pixiProbe.zoom=camera.zoom;
 }
+function setView(next){
+ view=next;
+ const combat=next==='combat';
+ $('app').classList.toggle('front-open',!combat);
+ $('app').classList.remove('tools-open');
+ $('tools-toggle').setAttribute('aria-expanded','false');
+ $('front-end').classList.toggle('is-hidden',combat);
+ for(const name of ['menu','hangar','settings'])$(name+'-screen').classList.toggle('is-hidden',next!==name);
+ $('pause-screen').classList.add('is-hidden');
+ isPaused=false;paused=!combat;move={x:0,y:0};aim=null;
+ if(pixi){pixi.world.visible=combat;pixi.premium.setMode(next);}
+ if(combat)$('notice').textContent='VISUAL SLICE / TEST TOOLS for render comparisons';
+ window.__pixiPremium={ready:!!pixi,view,quality,shader:!!pixi?.premium?.status?.shader,paused:isPaused};
+}
+function setPause(next){
+ if(view!=='combat')return;
+ isPaused=!!next;paused=isPaused;move={x:0,y:0};
+ $('pause-screen').classList.toggle('is-hidden',!isPaused);
+ if(isPaused)$('app').classList.remove('tools-open');
+ if(window.__pixiPremium)window.__pixiPremium.paused=isPaused;
+}
+function setQuality(next){
+ quality=next==='reduced'?'reduced':'cinematic';
+ if(pixi)pixi.premium.setQuality(quality);
+ setFx(quality==='cinematic');
+ $('quality-cinematic').classList.toggle('selected',quality==='cinematic');
+ $('quality-reduced').classList.toggle('selected',quality==='reduced');
+ $('quality-cinematic').setAttribute('aria-pressed',String(quality==='cinematic'));
+ $('quality-reduced').setAttribute('aria-pressed',String(quality==='reduced'));
+ if(window.__pixiPremium){window.__pixiPremium.quality=quality;window.__pixiPremium.shader=!!pixi?.premium?.status?.shader;}
+}
+function bindPremiumControls(){
+ $('go-deploy').addEventListener('click',()=>{setLoad('match');if(pixi)switchRenderer('pixi');setView('combat');});
+ $('go-hangar').addEventListener('click',()=>setView('hangar'));
+ $('go-settings').addEventListener('click',()=>setView('settings'));
+ $('hangar-deploy').addEventListener('click',()=>{setLoad('match');if(pixi)switchRenderer('pixi');setView('combat');});
+ $('hangar-back').addEventListener('click',()=>setView('menu'));
+ $('settings-back').addEventListener('click',()=>setView('menu'));
+ $('quality-cinematic').addEventListener('click',()=>setQuality('cinematic'));
+ $('quality-reduced').addEventListener('click',()=>setQuality('reduced'));
+ $('pause-btn').addEventListener('click',()=>setPause(true));
+ $('resume-btn').addEventListener('click',()=>setPause(false));
+ $('return-menu').addEventListener('click',()=>{if(pixi)switchRenderer('pixi');setView('menu');});
+ $('tools-toggle').addEventListener('click',()=>{
+  const open=!$('app').classList.contains('tools-open');
+  $('app').classList.toggle('tools-open',open);
+  $('tools-toggle').setAttribute('aria-expanded',String(open));
+ });
+}
 function bindStick(){
  const el=$('stick'),knob=$('knob');
  let pointerId=null;
@@ -337,7 +386,7 @@ function bindFire(){
 }
 function setLoad(next){load=next;$('use-match').classList.toggle('selected',load==='match');$('use-stress').classList.toggle('selected',load==='stress');reset();}
 function bindControls(){
- bindStick();bindFire();
+ bindStick();bindFire();bindPremiumControls();
  $('use-pixi').addEventListener('click',()=>switchRenderer('pixi'));
  $('use-canvas').addEventListener('click',()=>switchRenderer('canvas'));
  $('reset').addEventListener('click',()=>reset());
@@ -350,7 +399,7 @@ function bindControls(){
  $('zoom-in').addEventListener('click',()=>setZoom(zoomIndex+1));
  window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault();keyboard.add(k);});
  window.addEventListener('keyup',e=>keyboard.delete(e.key.toLowerCase()));
- document.addEventListener('visibilitychange',()=>{paused=document.hidden;prev=0;});
+ document.addEventListener('visibilitychange',()=>{paused=document.hidden||isPaused||view!=='combat';prev=0;});
 }
 function loop(now){
  if(!running)return;
@@ -372,6 +421,7 @@ async function start(){
   switchRenderer('pixi');
   setFx(true);
   setArt('layered');setZoom(1);
+  setQuality('cinematic');setView('menu');
   $('notice').textContent='FIELDGRID game art & tiled arena • SAME animated units in both renderers • benchmark only';
  }catch(error){
   console.error('Pixi backend unavailable:',error);
