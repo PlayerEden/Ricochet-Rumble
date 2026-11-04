@@ -19,3 +19,8 @@ footer{flex:0 0 auto;display:flex;justify-content:space-between;align-items:cent
 .measure{display:flex;flex-wrap:wrap;gap:7px 14px;justify-content:end;font-size:clamp(9px,1.1vw,12px);font-variant-numeric:tabular-nums;color:#d5e8ec}
 #notice{padding:3px 9px 5px;text-align:center;background:#08151e;color:#a2c2ce;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:690px){footer{padding-top:5px;padding-bottom:5px}.modes button{min-height:34px;padding:0 7px}.measure{gap:3px 7px}.controls{bottom:calc(var(--safe-bottom) + 12px)}}
+
+/* Match-like Fieldgrid fidelity probe: preserve game field space on short screens. */
+.modes{flex-wrap:wrap;gap:5px}.modes button{padding:0 8px}
+@media(max-height:410px){footer{gap:6px}.modes button{font-size:10px;min-height:34px;padding:0 7px}.measure{font-size:10px;gap:3px 8px}}
+@media(max-width:720px){footer{flex-wrap:wrap;justify-content:center}.modes{justify-content:center}.measure{width:100%;justify-content:center}#notice{display:none}}
