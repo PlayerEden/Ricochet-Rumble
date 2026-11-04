@@ -2350,6 +2350,9 @@ function drawLobbyPreview(dt){
  lobbyDrawClock=0;
  const showMech=!reduced&&Math.floor(lobbyPreviewClock/8)%2===1;
  lobbyLastUnit=showMech?1:0;
+ // Test and accessibility-neutral state for the actual vehicle showcase.
+ // No duplicate corner caption is displayed to players.
+ preview.dataset.unit=showMech?'mech':'tank';
  // The main-menu canvas draws the game-authentic vehicle at native CSS dimensions
  // and capped device pixel density. This changes no in-game combat artwork.
  const rect=preview.getBoundingClientRect?.();
