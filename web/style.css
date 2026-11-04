@@ -3316,3 +3316,81 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
   #menu .lan-entry-head{padding:6px 10px}
   #menu .lan-entry-footer{padding:4px 10px}
 }
+
+
+/* UIV3-J4: actual hangar unit stage and functional vehicle preview switch.
+   Button changes rendered tank/mech only; does not select a match vehicle. */
+#menu .hangar-bay{
+  border:1px solid #55717d85;border-radius:3px;
+  background:
+    radial-gradient(ellipse at 54% 49%,#3b68765c 0%,#17303e5e 40%,transparent 75%),
+    linear-gradient(155deg,#0c1d29,#112e3d 52%,#071923);
+}
+#menu .hangar-bay::before{
+  background:linear-gradient(180deg,transparent 65%,#60848b18 65.5%,transparent 66%),
+    repeating-linear-gradient(90deg,transparent 0,transparent 55px,#a1b9ba0b 56px,transparent 57px);
+}
+#menu .hangar-bay-caption strong{font-size:clamp(11px,1.3vw,15px);letter-spacing:.018em}
+#menu .hangar-bay-foot{gap:5px;padding:clamp(4px,.7dvh,6px) clamp(6px,.9vw,10px)}
+#menu #panel .hangar-unit-toggle{
+  flex:0 0 auto;width:auto;min-width:85px;min-height:44px;margin:0;
+  border-radius:3px;background:#244350;border:1px solid #7da0a6;
+  color:#e2f3ef;box-shadow:none;padding:4px 8px;
+  font:800 clamp(9px,.92vw,11px)/1.1 system-ui,sans-serif;
+}
+#menu #panel .hangar-unit-toggle:focus-visible{
+  outline:2px solid #f5cf8a;outline-offset:2px;
+}
+#menu #panel .hangar-tabs button{
+  background:transparent;border:0;border-bottom:2px solid transparent;
+  border-radius:0;min-height:44px;
+}
+#menu #panel .hangar-tabs button[aria-selected="true"]{
+  background:#29475473;border-bottom-color:#d4ac6e;color:#f5f5f0;
+}
+#menu #panel .hangar-grid button,#menu #panel .emblem-grid button{
+  border-radius:3px;background:linear-gradient(145deg,#233946,#132b36);
+}
+#menu #panel .hangar-grid button.selected,#menu #panel .emblem-grid button.selected{
+  border-color:#e1b86e;box-shadow:inset 0 -3px 0 #d1a65960;
+}
+#menu #panel .screen-back{min-height:44px}
+@media(max-width:670px) and (orientation:landscape){
+  #menu #hangar-preview-unit-label{display:none}
+  #menu .hangar-bay-foot{justify-content:space-between}
+  #menu #panel .hangar-unit-toggle{min-width:71px;padding:4px 5px}
+  #menu .hangar-bay-foot #hangar-preview-paint{font-size:8px}
+}
+
+/* UIV3-J5: player-record visual hierarchy — no artificial currencies,
+   rankings, or empty-upgrade UI. Every displayed value is existing data. */
+#menu .dossier-overview{
+  background:linear-gradient(145deg,#152e3b,#102632);
+  border:0;border-bottom:1px solid #5d819052;border-radius:2px;
+}
+#menu .dossier-columns>section{
+  background:linear-gradient(130deg,#162f3b,#122936);
+  border:0;border-bottom:1px solid #5d819052;border-radius:2px;
+}
+#menu .dossier-stats>div{
+  border:0;border-bottom:1px solid #42606b86;
+  border-radius:1px;background:#0e26328a;padding:clamp(3px,.6dvh,7px);
+}
+#menu .dossier-stats>div:nth-child(2){
+  background:linear-gradient(135deg,#51432b7d,#28383b7d);
+  border-bottom:2px solid #dfb46f;
+}
+#menu .dossier-stats>div:nth-child(5){
+  background:linear-gradient(135deg,#20414a9e,#1a343d90);
+  border-bottom:2px solid #8ed0ce;
+}
+#menu .dossier-stats>div:nth-child(2) strong{color:#f4d08e}
+#menu .dossier-stats>div:nth-child(5) strong{color:#a8e0d9}
+#menu .dossier-stats small{
+  font-family:system-ui,sans-serif;letter-spacing:.02em;
+}
+#menu .dossier-mode{border-top:1px solid #49707b45}
+#menu .dossier-mode strong{font-variant-numeric:tabular-nums}
+#menu #panel .dossier-backup-actions button{
+  min-height:44px;border-radius:3px;
+}
