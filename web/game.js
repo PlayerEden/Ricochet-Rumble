@@ -2367,9 +2367,9 @@ function drawLobbyPreview(dt){
  // Subtle conveyor-like track below the unit, not a strobing UI animation.
  const phase=reduced?0:lobbyPreviewClock*.6;
  c.globalAlpha=.25;c.strokeStyle='#81bec7';c.lineWidth=1;
- c.beginPath();c.arc(w*.5,h*.43,109,0,Math.PI*2);c.stroke();
+ c.beginPath();c.arc(w*.67,h*.43,109,0,Math.PI*2);c.stroke();
  c.globalAlpha=1;
- c.save();c.translate(w*.51,h*.40);
+ c.save();c.translate(w*.68,h*.40);
  c.rotate(-.25+(reduced?0:Math.sin(phase)*.14));
  c.scale(2.55,2.55);
  const amount=!reduced?lobbyPreviewClock:0;
