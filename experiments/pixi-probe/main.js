@@ -272,6 +272,7 @@ function loop(now){
 }
 async function start(){
  reset();art=buildUnitArt();floorCanvas=createFieldgridFloor();bulletArt=makeBulletCanvas();bindControls();
+ window.__pixiProbeFreeze=(freeze)=>{paused=!!freeze;};
  try{
   pixi=await makePixi();
   switchRenderer('pixi');
