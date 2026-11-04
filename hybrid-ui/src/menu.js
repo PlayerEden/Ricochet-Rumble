@@ -47,34 +47,36 @@ function displacementTexture(){
  x.putImageData(im,0,0);return Texture.from(c);
 }
 function addScene(scene){
- // All textures and geometry are authored; no CDN/fonts/AI art.
- const geometry=new Graphics();
- geometry.roundRect(20,24,580,267,7).stroke({color:0x6ea7b6,width:1,alpha:.22});
- geometry.moveTo(29,30).lineTo(128,30).stroke({color:0xe5bc77,width:2,alpha:.67});
- geometry.moveTo(510,279).lineTo(596,279).stroke({color:0x70d9e6,width:2,alpha:.65});
- // Faint projected light under the authentic Canvas game unit.
- glow=new Graphics().circle(0,0,72).fill({color:0x63d8e7,alpha:.055});
- glow.position.set(324,137);
- geometry.ellipse(324,236,155,29).stroke({color:0x78d4e0,width:1,alpha:.25});
- geometry.ellipse(324,239,174,35).stroke({color:0xcba76c,width:1,alpha:.17});
- for(let i=0;i<8;i++){
-  const x=54+i*74;
-  geometry.rect(x,285,24,2).fill({color:i%3===0?0xe2c18b:0x6ac9d7,alpha:.27});
+ // M11 visual review: no giant diagnostic hologram overlapping the hero.
+ const details=new Graphics();
+ details.arc(430,153,102,-2.7,-1.05).stroke({color:0x78cfd7,width:1.1,alpha:.19});
+ details.arc(430,153,102,.18,1.35).stroke({color:0xd2b37a,width:1.25,alpha:.22});
+ details.arc(430,153,125,-2.15,-1.15).stroke({color:0x6da9b5,width:1,alpha:.12});
+ details.moveTo(335,235).lineTo(530,235).stroke({color:0x76aeba,width:1,alpha:.18});
+ details.moveTo(372,239).lineTo(488,239).stroke({color:0xd4b67f,width:1,alpha:.26});
+ details.moveTo(315,225).lineTo(332,225).stroke({color:0x83d6df,width:2,alpha:.28});
+ details.moveTo(531,225).lineTo(547,225).stroke({color:0x83d6df,width:2,alpha:.28});
+ for(let i=0;i<7;i++){
+  const x=320+i*32;
+  details.rect(x,244,15,1).fill({color:i%3===0?0xd8bb8d:0x62929f,alpha:.27});
  }
- scene.addChild(geometry,glow);
- // Important: tiny shader target, not the entire phone's pixel area.
+ scene.addChild(details);
+ glow=new Graphics().circle(0,0,75).fill({color:0x54bed0,alpha:.035});
+ glow.position.set(430,153);scene.addChild(glow);
+ // A much smaller GPU-filtered readout sits below the hero silhouette.
  const housing=new Graphics();
- housing.roundRect(449,43,146,103,5).fill({color:0x0b2433,alpha:.84});
- housing.roundRect(449,43,146,103,5).stroke({color:0x70adbd,width:1,alpha:.64});
+ housing.roundRect(507,194,102,61,5).fill({color:0x102b3a,alpha:.55});
+ housing.roundRect(507,194,102,61,5).stroke({color:0x81a4b1,width:1,alpha:.32});
+ housing.moveTo(516,200).lineTo(547,200).stroke({color:0xdbbe87,width:1,alpha:.48});
  scene.addChild(housing);
- visor=new Sprite(holoTexture());visor.position.set(458,52);visor.width=128;visor.height=85;
- scene.addChild(visor);
+ visor=new Sprite(holoTexture());visor.position.set(514,202);visor.width=87;visor.height=45;
+ visor.alpha=.43;scene.addChild(visor);
  try{
   map=new Sprite(displacementTexture());
-  map.position.set(458,52);map.width=128;map.height=85;map.renderable=false;
+  map.position.set(514,202);map.width=87;map.height=45;map.renderable=false;
   scene.addChild(map);
-  displace=new DisplacementFilter({sprite:map,scale:{x:2.0,y:.9}});
-  noise=new NoiseFilter({noise:.023,seed:.2});
+  displace=new DisplacementFilter({sprite:map,scale:{x:1.0,y:.55}});
+  noise=new NoiseFilter({noise:.018,seed:.2});
   visor.filters=[displace,noise];
  }catch(error){info.reason='GPU filter unavailable: '+String(error).slice(0,80);visor.filters=null;}
 }
@@ -85,8 +87,8 @@ function run(now){
  if(now-renderPrev>=1000/FPS || reduced()){
   renderPrev=now;time+=dt;
   if(glow)glow.alpha=.82+.14*Math.sin(time*1.1);
-  if(displace){displace.scale.x=1.7+Math.sin(time*1.8)*.9;displace.scale.y=.8+Math.cos(time*1.2)*.35;}
-  if(map)map.position.y=52+Math.sin(time*.9)*1.5;
+  if(displace){displace.scale.x=1.1+Math.sin(time*1.8)*.36;displace.scale.y=.5+Math.cos(time*1.2)*.2;}
+  if(map)map.position.y=202+Math.sin(time*.9)*.8;
   if(noise)noise.seed=(1+Math.sin(time*.54))*.5;
   app.render();info.frames++;
  }
