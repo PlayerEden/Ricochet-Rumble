@@ -26,5 +26,15 @@ assert.ok(css.includes('#menu .hangar-bay[data-hangar-study="warm"]')&&css.inclu
 assert.ok(js.includes('const tile=132')&&js.includes('for(const w of wallSet)'),'M12-A does not mutate arena rendering');
 for(const id of ["'fieldgrid.standard'","'fieldgrid.moss'","'mark.field'","'mark.vector'"])
  assert.ok(js.includes(id),'real cosmetic ID '+id);
+// The first two empty industrial bay studies are review-only SVG source,
+// not loaded from a player screen or packaged into the Android app.
+for(const variant of ['warm','blueprint']){
+ const svg=read('docs/m12-art-studies/hangar-'+variant+'-empty-v1.svg');
+ assert.match(svg,/<svg\b[^>]*width="1024"[^>]*height="576"/);
+ assert.ok(svg.length<15000,'concept SVG is compact');
+ assert.ok(!/<(?:script|text|image|foreignObject)\b/i.test(svg),'empty stage contains no UI, text or embedded image');
+ assert.ok(!/\b(?:https?:)?\/\/[^"']+/.test(svg.replace('http://www.w3.org/2000/svg','')),
+   'no external image/font/CDN dependencies in asset concept');
+}
 console.log('M12_ASSET_CONTRACT_PASS '+JSON.stringify({stage:m.stage,categories:ids,
  maxBatchCompressedKiB:Math.round(m.categories.filter(a=>a.priority<=3).reduce((n,a)=>n+a.instances*a.maxCompressedBytesPerAsset,0)/1024)}));
