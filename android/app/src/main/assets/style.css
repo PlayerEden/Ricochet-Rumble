@@ -1265,3 +1265,257 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 #panel:has(.home-screen) .home-stage{box-shadow:inset 0 0 35px #05141cb0}
 @media(max-height:360px){.home-stage-signal{font-size:8px;padding:2px 5px}}
 @media(prefers-reduced-motion:reduce){.hybrid-menu-pixi{transition:none}}
+
+
+/* M11-B CINEMATIC FIELDGRID / REAL GAME MENU
+   One shared ambient showcase behind the actual functional menu; no duplicate
+   navigation, new gameplay state, remote assets or changes to the amber CTA.
+   The existing Canvas unit remains primary; Pixi enhancement is opt-in. */
+#menu:has(.home-screen){
+  background:#040f18f4;
+  padding:clamp(5px,1.2dvh,12px) clamp(6px,1.4vw,16px);
+}
+#menu #panel:has(.home-screen){
+  width:min(1500px,100%);
+  max-width:1500px;
+  height:calc(100dvh - clamp(10px,2.4dvh,24px));
+  max-height:calc(100dvh - clamp(10px,2.4dvh,24px));
+  border:1px solid #365969;
+  border-radius:7px;
+  background:#0a1c29;
+}
+#menu .home-screen{
+  position:relative;
+  isolation:isolate;
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr);
+  background:#0a1b28;
+}
+#menu .home-topbar{
+  position:relative;
+  z-index:5;
+  min-height:clamp(42px,9dvh,60px);
+  padding:clamp(6px,1.3dvh,12px) clamp(16px,2.2vw,34px);
+  border-bottom:1px solid #24414e87;
+  background:linear-gradient(90deg,#061722ef,#081b27a8 52%,#081b27c7 100%);
+}
+#menu .home-brand{gap:10px}
+#menu .home-brand-mark{
+  display:grid;
+  flex:0 0 auto;
+  width:clamp(27px,5.8dvh,37px);
+  border-radius:2px;
+  border:1px solid #b8f5fb;
+  background:#80dce8;
+  color:#082532;
+  box-shadow:0 0 0 1px #2e879a36;
+}
+#menu .home-brand h2{display:none}
+#menu .home-overline{display:block;font:850 clamp(9px,1.2vw,13px)/1 monospace;letter-spacing:.18em;color:#8fd8e5}
+#menu .home-utilities{gap:clamp(5px,1vw,12px)}
+#menu #panel .home-utilities button{
+  min-height:clamp(32px,7.6dvh,43px);
+  padding:6px clamp(8px,1.25vw,17px);
+  background:#102b39d9;
+  color:#d9eaf0;
+  border:1px solid #537887;
+  border-radius:3px;
+  font:850 clamp(9px,1.18vw,13px)/1 system-ui,sans-serif;
+  letter-spacing:.035em;
+}
+#menu #panel .home-utilities button:focus-visible,
+#menu #panel .home-action-grid button:focus-visible,
+#menu #panel .home-deploy:focus-visible{
+  outline:2px solid #ffdf9e;outline-offset:2px;
+}
+#menu .home-content{
+  position:relative;
+  display:block;
+  min-height:0;
+  overflow:hidden;
+  background:#0a1a27;
+}
+#menu .home-showcase{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  display:block;
+  min-height:0;
+  pointer-events:none;
+  border:0;
+  background:#0a1a27;
+}
+#menu .home-stage{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  background:linear-gradient(90deg,#071621,#102938 68%,#071c2a);
+  box-shadow:none;
+}
+#menu .home-stage #menu-preview{
+  position:absolute;
+  top:0;
+  bottom:auto;
+  left:17%;
+  right:auto;
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:fill;
+  pointer-events:none;
+}
+#menu .home-stage .hybrid-menu-pixi{
+  position:absolute;
+  top:0;
+  left:17%;
+  right:auto;
+  bottom:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+}
+#menu .home-stage:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:2;
+  pointer-events:none;
+  background:linear-gradient(90deg,#061621fa 0%,#061621ed 27%,#061621b8 40%,#06162142 60%,transparent 86%);
+}
+#menu .home-stage:after{
+  z-index:2;
+  background:linear-gradient(0deg,#05121bdc 0%,transparent 25%,transparent 84%,#06162159 100%);
+}
+#menu .home-stage-signal{
+  z-index:3;
+  top:clamp(9px,2dvh,17px);
+  left:auto;
+  right:clamp(10px,2vw,26px);
+  padding:5px 8px;
+  background:#071b28c9;
+  border-left:2px solid #e3be81;
+  font-size:clamp(8px,.95vw,11px);
+  color:#bed8e3;
+}
+#menu .home-stage-title{
+  z-index:3;
+  left:auto;
+  right:clamp(13px,2.3vw,32px);
+  bottom:clamp(9px,2.1dvh,20px);
+  text-align:right;
+  align-items:flex-end;
+  max-width:46%;
+}
+#menu .home-stage-title strong{
+  color:#eac78e;
+  font:900 clamp(14px,3.3dvh,24px)/1 'sans-serif-condensed',Roboto,Arial,sans-serif;
+  text-shadow:0 2px 12px #061621;
+  letter-spacing:.045em;
+}
+#menu .home-stage-label{font:750 clamp(8px,.95vw,11px)/1.2 monospace;color:#afcbd4}
+#menu #panel .home-showcase-caption{display:none}
+#menu .home-content .home-actions{
+  position:relative;
+  z-index:4;
+  width:min(49%,480px);
+  min-width:0;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:stretch;
+  gap:clamp(4px,.75dvh,9px);
+  padding:clamp(8px,1.5dvh,18px) clamp(11px,2.45vw,36px);
+  background:transparent;
+  box-shadow:none;
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-width:none;
+}
+#menu .home-actions::-webkit-scrollbar{display:none}
+#menu .premium-menu-intro{display:flex;flex-direction:column;gap:clamp(4px,.8dvh,9px);min-width:0;flex:0 0 auto}
+#menu .premium-menu-eyebrow{
+  display:flex;align-items:center;gap:9px;
+  font:850 clamp(8px,1.12vw,11px)/1.15 monospace;
+  letter-spacing:.12em;color:#dfbf84;
+  white-space:nowrap;
+}
+#menu .premium-menu-eyebrow span{width:clamp(14px,2.5vw,28px);height:2px;background:#dab97f}
+#menu .premium-menu-title{
+  margin:0;
+  font:950 clamp(29px,5.6vw,70px)/.91 system-ui,Roboto,Arial,sans-serif;
+  letter-spacing:.045em;
+  color:#f0f7f3;
+  text-shadow:0 3px 18px #000a;
+  white-space:nowrap;
+}
+#menu .premium-menu-title span{display:block;color:#8dddec;letter-spacing:.015em}
+#menu .premium-menu-motto{
+  margin:0;
+  font:800 clamp(9px,1.3vw,15px)/1.2 system-ui,sans-serif;
+  letter-spacing:.025em;color:#abc8d4;
+  white-space:nowrap;
+}
+#menu #panel .home-actions h3{
+  margin:clamp(2px,.65dvh,7px) 0 0;
+  font:850 clamp(9px,1.14vw,12px)/1.1 monospace;
+  letter-spacing:.16em;color:#e7c28a;
+}
+#menu .home-actions h3 span{color:#93dce2}
+#menu #panel .home-description{font:600 clamp(9px,1.1vw,12px)/1.2 system-ui,sans-serif;color:#a9c1c9;max-width:100%}
+#menu #panel .home-deploy{
+  min-height:clamp(44px,10.5dvh,57px);
+  margin:clamp(2px,.4dvh,4px) 0 0;
+  border-radius:4px;
+  font-size:clamp(17px,2.35vw,25px);
+  gap:9px;
+  padding:7px clamp(9px,1.4vw,16px);
+  flex:0 0 auto;
+}
+#menu #panel .home-deploy small{font-size:clamp(8px,.95vw,11px)}
+#menu .home-action-grid{gap:clamp(4px,.55vw,8px)}
+#menu #panel .home-action-grid button{
+  min-height:clamp(38px,8.8dvh,50px);
+  padding:5px clamp(7px,1vw,12px);
+  border-radius:4px;
+  background:linear-gradient(100deg,#203846eb,#142b39ec);
+  border:1px solid #567886;
+  box-shadow:inset 2px 0 0 #75bdd047;
+  flex:0 0 auto;
+}
+#menu #panel .home-action-grid button.home-modes{
+  background:linear-gradient(100deg,#263e4ceb,#19323eef);
+  border-left:3px solid #89d5df;
+}
+#menu .home-action-grid strong{font:850 clamp(10px,1.3vw,14px)/1.08 system-ui,sans-serif;color:#e5f1f2}
+#menu .home-action-grid small{font:750 clamp(8px,.9vw,10px)/1.05 monospace;color:#adc4cb}
+@media(max-height:370px) and (orientation:landscape){
+  #menu .home-topbar{min-height:36px;padding:4px 10px}
+  #menu .home-content .home-actions{width:53%;gap:3px;padding:5px 12px;justify-content:center}
+  #menu .premium-menu-title{font-size:clamp(27px,5.35vw,39px)}
+  #menu .premium-menu-intro{gap:2px}
+  #menu .premium-menu-eyebrow{font-size:8px}
+  #menu .premium-menu-motto{font-size:9px}
+  #menu #panel .home-actions h3{font-size:9px;margin-top:1px}
+  #menu #panel .home-description{display:none}
+  #menu #panel .home-deploy{min-height:44px;font-size:17px;padding:6px 9px}
+  #menu #panel .home-action-grid button{min-height:38px;padding:4px 6px}
+  #menu .home-action-grid small{font-size:8px}
+  #menu .home-stage-title{bottom:8px;right:10px}
+  #menu .home-stage-signal{top:7px;right:8px}
+}
+@media(max-width:610px) and (orientation:landscape){
+  #menu .home-content .home-actions{width:54%;padding-left:10px;padding-right:7px}
+  #menu .premium-menu-title{font-size:clamp(27px,5.1vw,35px)}
+  #menu .home-brand-mark{width:28px}
+  #menu .home-utilities{gap:4px}
+  #menu #panel .home-utilities button{padding:4px 5px;font-size:9px;min-height:33px}
+  #menu .home-stage-title strong{font-size:13px}
+  #menu .home-stage-title{max-width:42%}
+  #menu .home-stage-signal{font-size:7px}
+}
+@media(prefers-reduced-motion:reduce){
+  #menu .home-content .home-actions{scroll-behavior:auto}
+}
