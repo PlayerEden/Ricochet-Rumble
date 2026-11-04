@@ -3,17 +3,24 @@
 import { Application, Graphics, Container, Sprite, Texture } from 'pixi.js';
 import { TEAM_COLORS, WORLD_WIDTH, WORLD_HEIGHT, WALLS, buildUnitArt, createFieldgridFloor, makeBulletCanvas } from './fieldgrid-art.js';
 import { PixiFxLab } from './pixi-fx.js';
+import { PixiArtShowcase } from './pixi-art-showcase.js';
 
 const W=960,H=540,MAX_SHOTS=180,BASE_COLOR=0x101f2b;
 const walls=WALLS;
 const colors={cyan:TEAM_COLORS[0],coral:TEAM_COLORS[1]};
 const baseBotPositions=[[1210,168,'tank'],[1220,515,'mech'],[850,790,'pilot'],[1020,305,'tank'],[520,805,'mech'],[570,200,'pilot'],[1090,805,'tank'],[1130,645,'mech'],[920,110,'pilot'],[1200,335,'tank'],[615,615,'mech'],[910,520,'pilot'],[280,760,'tank'],[300,175,'pilot'],[780,410,'mech'],[1320,755,'tank'],[1280,880,'pilot'],[570,360,'mech']];
 let floorCanvas=null,art=null,bulletArt=null,unitTextures=null,projectileTexture=null;
-let load='match',camera={x:0,y:0,zoom:.73},effects=[];
+let load='match',camera={x:0,y:0,zoom:.94},effects=[];
 let fxEvents=[],fxSeq=0,fxEnabled=true;
+const zoomSteps=[.69,.94,1.27];
+let zoomIndex=1,artMode='layered';
+const pixelDensity=Math.min(1.75,Math.max(1,window.devicePixelRatio||1));
 const unitSize=120;
 const $=(id)=>document.getElementById(id);
-const root=$('field'),normal=$('canvas2d'),ctx=normal.getContext('2d',{alpha:false});
+const root=$('field'),normal=$('canvas2d');
+normal.width=Math.round(W*pixelDensity);normal.height=Math.round(H*pixelDensity);
+const ctx=normal.getContext('2d',{alpha:false});
+ctx.setTransform(pixelDensity,0,0,pixelDensity,0,0);
 let scene=null, pixi=null, engine='pixi',time=0,prev=0,frame=0;
 let move={x:0,y:0},aim=null,keyboard=new Set(),paused=false;
 let renderSamples=[],frameSamples=[],running=true;
@@ -29,7 +36,7 @@ function reset(){
   shots:[],kills:0,deaths:0
  };
  effects=[];fxEvents=[];fxSeq=0;time=0;renderSamples=[];frameSamples=[];frame=0;
- camera.x=0;camera.y=0;camera.zoom=.73;
+ camera.x=0;camera.y=0;camera.zoom=zoomSteps[zoomIndex];
  if(load==='stress')for(let i=0;i<80;i++){
   const a=i*2.39996,spd=130+(i%5)*37;
   scene.shots.push({x:400+(i*71)%770,y:100+(i*43)%690,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,team:i%2,bounces:0,life:2.9+(i%5)*.2,active:true});
@@ -70,6 +77,7 @@ function shoot(u){
  if(u.hp<=0||u.cool>0||scene.shots.length>=MAX_SHOTS)return;
  const dx=Math.cos(u.a),dy=Math.sin(u.a);
  scene.shots.push({x:u.x+dx*32,y:u.y+dy*32,vx:dx*345,vy:dy*345,team:u.team,kind:u.type||'tank',bounces:0,life:3.6,active:true});
+ u.recoil=1;
  emitFx('muzzle',u.x+dx*39,u.y+dy*39,u.team,u.a);
  u.cool=u.team===0?.29:(load==='stress'?.55:.78);
 }
@@ -94,7 +102,7 @@ function bounceBullet(b,oldX,oldY){
 }
 function hitUnit(b,u){
  if(u.hp<=0||u.team===b.team||Math.hypot(b.x-u.x,b.y-u.y)>R+4)return false;
- u.hp--;b.life=0;addFx(b.x,b.y,b.team);
+ u.hp--;u.hitFlash=1;b.life=0;addFx(b.x,b.y,b.team);
  emitFx('hit',b.x,b.y,b.team,Math.atan2(b.vy,b.vx));
  emitFx('damage',u.x,u.y,u.team,u.a);
  if(u.hp<=0){
@@ -116,12 +124,17 @@ function advance(dt){
  if(aim)p.a=Math.atan2(aim.y,aim.x);
  else p.a=p.dir;
  p.cool=Math.max(0,p.cool-dt);
+ p.recoil=Math.max(0,(p.recoil||0)-dt*5);
+ p.hitFlash=Math.max(0,(p.hitFlash||0)-dt*4);
  scene.bots.forEach((u,i)=>{
   u.cool=Math.max(0,u.cool-dt);
+  u.recoil=Math.max(0,(u.recoil||0)-dt*5);
+  u.hitFlash=Math.max(0,(u.hitFlash||0)-dt*4);
   const desired=Math.atan2(p.y-u.y,p.x-u.x);
   const angle=Math.atan2(Math.sin(desired-u.a),Math.cos(desired-u.a));
   u.a+=clamp(angle,-.72*dt,.72*dt);
-  u.dir=u.a;
+  const chassisAngle=Math.atan2(Math.sin(u.a-u.dir),Math.cos(u.a-u.dir));
+  u.dir+=clamp(chassisAngle,-.34*dt,.34*dt);
   const desiredMove=Math.sin(time*.63+i*1.4)*.65;
   moveUnit(u,Math.cos(u.a)*desiredMove*55*dt,Math.sin(u.a)*desiredMove*55*dt);
   u.engineSpeed=Math.abs(desiredMove)*55;
@@ -144,9 +157,9 @@ function advance(dt){
  effects=effects.filter(fx=>fx.life>0);
  for(const ev of fxEvents)ev.age+=dt;
  fxEvents=fxEvents.filter(ev=>ev.age<ev.life);
- const zoom=.73,viewW=W/zoom,viewH=H/zoom;
- camera.zoom=zoom;camera.x=clamp(p.x-viewW/2,0,WORLD_WIDTH-viewW);
- camera.y=clamp(p.y-viewH/2,0,WORLD_HEIGHT-viewH);
+ const zoom=zoomSteps[zoomIndex],viewW=W/zoom,viewH=H/zoom;
+ camera.zoom=zoom;camera.x=clamp(p.x-viewW/2,0,Math.max(0,WORLD_WIDTH-viewW));
+ camera.y=clamp(p.y-viewH/2,0,Math.max(0,WORLD_HEIGHT-viewH));
  if(keyboard.has(' '))shoot(p);
 }
 // The baseline and Pixi now draw the SAME exact production art textures.
@@ -175,7 +188,7 @@ function canvasFrame(){
 }
 async function makePixi(){
  const app=new Application();
- await app.init({width:W,height:H,preference:'webgl',backgroundColor:BASE_COLOR,antialias:false,resolution:1,autoStart:false});
+ await app.init({width:W,height:H,preference:'webgl',backgroundColor:BASE_COLOR,antialias:false,resolution:pixelDensity,autoStart:false});
  $('pixi-host').appendChild(app.canvas);
  app.canvas.style.width='100%';app.canvas.style.height='100%';
  unitTextures=Object.fromEntries(Object.entries(art).map(([id,c])=>[id,Texture.from(c)]));
@@ -186,6 +199,8 @@ async function makePixi(){
   const sprite=new Sprite(unitTextures['0-tank-0']);sprite.anchor.set(.5);
   sprite.visible=false;world.addChild(sprite);return sprite;
  });
+ const artShowcase=new PixiArtShowcase(world);
+ artShowcase.setEnabled(artMode==='layered');
  const bullets=Array.from({length:MAX_SHOTS},()=>{
   const sprite=new Sprite(projectileTexture);
   sprite.anchor.set(38/64,.5);sprite.visible=false;world.addChild(sprite);return sprite;
@@ -196,12 +211,12 @@ async function makePixi(){
  });
  const vfx=new PixiFxLab(world,WALLS);
  vfx.setEnabled(fxEnabled);
- return {app,world,units,bullets,fx,vfx};
+ return {app,world,units,bullets,fx,vfx,artShowcase};
 }
 function pixiFrame(){
  const units=[...scene.parked,scene.player,...scene.bots];
  for(let i=0;i<pixi.units.length;i++){
-  const v=pixi.units[i],u=units[i];v.visible=!!u;if(!u)continue;
+  const v=pixi.units[i],u=units[i];v.visible=!!u&&artMode==='classic';if(!u)continue;
   v.texture=unitTextures[textureKey(u)];v.position.set(u.x,u.y);v.rotation=u.a;
   v.alpha=i<scene.parked.length?.58:1;
  }
@@ -215,6 +230,7 @@ function pixiFrame(){
   v.position.set(fx.x,fx.y);v.scale.set(fx.size/4);v.alpha=Math.max(0,fx.life/fx.maxLife);
   v.tint=fx.team===0?0x60dfff:0xffb06e;
  }
+ pixi.artShowcase.render(units,time);
  pixi.vfx.render(time,fxEvents,scene.shots,[scene.player,...scene.bots]);
  pixi.world.scale.set(camera.zoom);
  pixi.world.position.set(-camera.x*camera.zoom,-camera.y*camera.zoom);
