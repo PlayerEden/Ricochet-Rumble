@@ -24,3 +24,12 @@ footer{flex:0 0 auto;display:flex;justify-content:space-between;align-items:cent
 .modes{flex-wrap:wrap;gap:5px}.modes button{padding:0 8px}
 @media(max-height:410px){footer{gap:6px}.modes button{font-size:10px;min-height:34px;padding:0 7px}.measure{font-size:10px;gap:3px 8px}}
 @media(max-width:720px){footer{flex-wrap:wrap;justify-content:center}.modes{justify-content:center}.measure{width:100%;justify-content:center}#notice{display:none}}
+
+/* Pixi-only visual ceiling lab. Keep FX affordances recognizable at phone size. */
+#toggle-fx.fx-active{background:#d8bb76;border-color:#ffda99;color:#17242c}
+#toggle-fx:not(.fx-active){background:#38434a;color:#e5eced;border-color:#77878c}
+#toggle-fx:disabled{opacity:.5;cursor:not-allowed}
+#demo-fx{border-color:#8aa7ad;color:#f6e1ae}
+.modes button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+@media(max-height:410px){#notice{display:none}.modes{gap:4px}.modes button{min-height:35px;font-size:10px;padding:0 6px}.measure{font-size:10px}}
+@media(max-width:720px){.modes{max-width:100%;justify-content:center}.modes button{font-size:10px;padding:0 6px}.measure{gap:3px 10px}}
