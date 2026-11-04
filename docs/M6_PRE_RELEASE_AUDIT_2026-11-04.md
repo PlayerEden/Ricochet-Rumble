@@ -30,3 +30,9 @@ Required before promoting a build: Actions run `head_sha` equals the **exact bra
 4. Avoid redesigning already accepted menus or retuning the approved camera/AI without evidence.
 
 **Decision:** Draft development may continue. **PR merge: NO-GO** until current-head CI and owner approval. **Public Play release: NO-GO** until full QA, physical LAN acceptance, and signing/compatibility gates. Do not touch `main` or the documented owner-compatible APK; revert regressions with reviewable commits, never force-push.
+
+
+## CI diagnostic follow-up on exact head `3f6b92b`
+- GitHub eventually synchronized PR head with the branch, and all **nine current-head workflows started**, resolving the prior run-discovery blocker for that commit.
+- Canonical gameplay/LAN workflow failed in `tests/one-phone-local-relaunch-qa.mjs` because two older assertions still read the deliberately hidden duplicate `#emblem-status` stripe after VECTOR equip. The live selected `#insignia-detail-name` is the correct UI and saved marker; both assertions now use that element and explicitly confirm the redundant status is hidden. No save record, data migration or gameplay engine change was needed.
+- Remaining current-head QA is still required after this test-only correction. Do not promote on an old successful run.
