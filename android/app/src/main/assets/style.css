@@ -1749,3 +1749,152 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  #menu .mode-grid strong{font-size:11px}
  #menu .mode-grid small{font-size:8px}
 }
+
+
+/* M12-A / PREMIUM UI V2 — OWNER ART DIRECTION DECISION
+   The hero vehicle is the SINGLE focal unit. The fake tank schematic and
+   bottom-right vehicle-caption were deleted, not relocated.
+   Existing accessible HTML actions are retained; graphics stay optional. */
+#menu #panel:has(.home-screen){
+ border-color:#415966;
+ border-radius:7px;
+ background:#081821;
+ box-shadow:0 18px 68px #020b12bd,inset 0 1px 0 #83b8be18;
+}
+#menu .home-topbar{
+ min-height:clamp(42px,9dvh,57px);
+ background:linear-gradient(90deg,#081b27f5,#0a202bdf);
+ border-bottom:1px solid #7799a326;
+}
+#menu .home-topbar:after{
+ content:"";position:absolute;bottom:-1px;left:clamp(15px,2.3vw,34px);
+ width:clamp(36px,5vw,65px);height:1px;background:#dfb77f;opacity:.72;
+}
+#menu .home-brand-mark{
+ border-radius:3px;
+ border-color:#8fe4e5;
+ background:#8bdee4;
+ color:#0b2730;
+ box-shadow:0 0 0 2px #0b222b;
+}
+#menu #panel .home-utilities button{
+ min-height:clamp(33px,8dvh,44px);
+ padding:5px clamp(9px,1.2vw,17px);
+ border:0;
+ border-bottom:1px solid #66838f69;
+ border-radius:1px;
+ background:transparent;
+ color:#c3d5dc;
+ box-shadow:none;
+ font-weight:750;
+ transition:background .15s,color .15s;
+}
+#menu #panel .home-utilities button:active{
+ background:#1d384590;color:#f4faf8;
+}
+#menu .home-content{
+ background:radial-gradient(ellipse at 72% 45%,#183d4870 0%,#08182100 52%),#081821;
+}
+#menu .home-stage{
+ background:#0a1c28;
+ box-shadow:none;
+}
+#menu .home-stage:before{
+ background:linear-gradient(90deg,#071723fc 0%,#071723f4 24%,#071723d1 36%,#0717235c 52%,#07172306 79%);
+}
+#menu .home-stage:after{
+ background:linear-gradient(0deg,#06121d9c 0%,#06121d00 21%,#06121d00 83%,#0716225c 100%);
+}
+#menu .home-stage-title{display:none!important}
+#menu .home-stage-signal{
+ position:absolute;
+ width:1px;height:1px;
+ padding:0;margin:0;overflow:hidden;
+ border:0;
+ clip-path:inset(50%);white-space:nowrap;
+}
+#menu .home-content .home-actions{
+ width:min(46%,470px);
+ padding-left:clamp(13px,2.7vw,39px);
+ padding-right:clamp(12px,1.7vw,24px);
+ gap:clamp(4px,.8dvh,8px);
+}
+#menu .premium-menu-eyebrow{
+ color:#d8b980;
+ letter-spacing:.145em;
+ opacity:.95;
+}
+#menu .premium-menu-title{
+ color:#f3f6f5;
+ font-size:clamp(29px,5.5vw,69px);
+ letter-spacing:.006em;
+ line-height:.925;
+ text-shadow:0 2px 18px #03111acc;
+}
+#menu .premium-menu-title span{color:#f0c27b;letter-spacing:.005em}
+#menu .premium-menu-motto{color:#acbec5;font-weight:700;letter-spacing:.02em}
+#menu #panel .home-actions h3{
+ color:#dfbc83;
+ letter-spacing:.16em;
+ font-size:clamp(9px,1vw,11px);
+ margin-top:clamp(2px,.6dvh,6px);
+}
+#menu #panel .home-deploy{
+ position:relative;
+ min-height:clamp(44px,10dvh,57px);
+ border-radius:4px;
+ background:linear-gradient(110deg,#ffd486 0%,#f5bb61 58%,#e5a946 100%);
+ border-color:#ffd797;
+ box-shadow:inset 0 1px 0 #fff8d2bf,0 3px 0 #98682c;
+ text-align:left;
+ color:#251e12;
+ letter-spacing:.015em;
+}
+#menu #panel .home-deploy:after{
+ content:"";position:absolute;right:0;top:0;bottom:0;width:4px;
+ background:#ecc07e78;
+ pointer-events:none;
+}
+#menu .home-deploy-symbol{
+ border-right:1px solid #71511e45;
+ padding-right:clamp(7px,1.5vw,16px);
+ font-size:.85em;
+}
+#menu .home-action-grid{gap:clamp(5px,1vw,11px)}
+#menu #panel .home-action-grid button{
+ border:0;
+ border-bottom:1px solid #60778291;
+ border-radius:2px;
+ background:linear-gradient(90deg,#1a303abd,#11263382);
+ box-shadow:inset 2px 0 0 #8dc6ce37;
+ padding-inline:clamp(10px,1.2vw,15px);
+ transition:background .15s,border-color .15s;
+}
+#menu #panel .home-action-grid button.home-modes{
+ background:linear-gradient(90deg,#2d3e46c7,#182e3c90);
+ border:0;
+ border-bottom:1px solid #7fa2ad9c;
+ box-shadow:inset 3px 0 0 #9cd6df;
+}
+#menu #panel .home-action-grid button:active{
+ background:#284550;
+ border-bottom-color:#d9cfac;
+}
+#menu .home-action-grid strong{font-weight:760}
+#menu .home-action-grid small{color:#a6bec8}
+@media(max-height:370px) and (orientation:landscape){
+ #menu .home-content .home-actions{width:53%;padding-left:11px;padding-right:9px;gap:3px}
+ #menu .premium-menu-title{font-size:clamp(27px,5.25vw,41px)}
+ #menu .premium-menu-intro{gap:2px}
+ #menu .home-action-grid{gap:4px}
+ #menu #panel .home-action-grid button{min-height:38px}
+}
+@media(max-width:610px) and (orientation:landscape){
+ #menu .home-content .home-actions{width:54%}
+ #menu .premium-menu-title{font-size:clamp(27px,5.25vw,37px)}
+ #menu #panel .home-utilities button{padding-inline:6px}
+}
+@media(prefers-reduced-motion:reduce){
+ #menu #panel .home-utilities button,
+ #menu #panel .home-action-grid button{transition:none}
+}
