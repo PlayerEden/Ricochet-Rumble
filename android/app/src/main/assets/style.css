@@ -3414,3 +3414,25 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
   #menu .mission-setup-screen:has(.mission-comfort-details[open]) .mission-comfort,
   #menu .mission-setup-screen:has(.mission-rules[open]) .mission-rules{grid-column:1/-1}
 }
+
+
+/* UIV3-J5 visual screenshot correction: at 568px the footer formerly stacked
+   two 44px utility buttons and left an empty lower-left quadrant. Keep both
+   actions side by side, restore room for the authentic mode record. */
+@media(max-width:650px) and (orientation:landscape){
+  #menu .dossier-footer{
+    display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.55fr);
+    gap:clamp(5px,.85vw,9px);align-items:center;
+  }
+  #menu .dossier-backup-actions{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:6px;max-width:none;width:100%;min-width:0;
+  }
+  #menu #panel .dossier-backup-actions button{
+    width:100%;min-width:0;min-height:44px;padding:4px 5px;
+    font-size:clamp(9px,1vw,11px);white-space:normal;
+  }
+}
+@media(max-height:380px) and (orientation:landscape){
+  #menu .dossier-workspace{height:140px}
+}
