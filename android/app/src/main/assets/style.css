@@ -1898,3 +1898,265 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  #menu #panel .home-utilities button,
  #menu #panel .home-action-grid button{transition:none}
 }
+
+
+/* PREMIUM UI V2 / SHARED SURFACES — consistent with owner-approved Home.
+   Design-only. All game state, reward gates, actions and storage stay intact. */
+#menu{
+ --sr-ui-bg:#091923;
+ --sr-ui-surface:#142a35;
+ --sr-ui-surface-2:#1c3440;
+ --sr-ui-edge:#55727c;
+ --sr-ui-gold:#eab96d;
+ --sr-ui-cyan:#8ad6de;
+ --sr-ui-muted:#a9c2ca;
+ --sr-ui-white:#eff6f5;
+}
+#menu #panel:has(.hangar-screen,.dossier-screen){
+ width:min(1160px,calc(100vw - 22px));
+ height:min(650px,calc(100dvh - 18px));
+ max-height:calc(100dvh - 18px);
+ overflow:hidden;
+ min-height:0;
+ padding:clamp(8px,1.5dvh,15px) clamp(10px,1.75vw,20px);
+ border:1px solid #4c6770;
+ border-radius:7px;
+ background:linear-gradient(136deg,#152832 0%,#0e202b 72%);
+ box-shadow:0 20px 60px #030c14b5,inset 0 1px 0 #b7d1d017;
+}
+#menu .hangar-screen,#menu .dossier-screen{
+ height:100%;min-height:0;min-width:0;
+ display:flex;flex-direction:column;
+ color:var(--sr-ui-white);
+ gap:clamp(5px,.9dvh,9px);
+}
+#menu .hangar-head,#menu .dossier-head{
+ flex:0 0 auto;
+ padding:0 0 clamp(5px,.8dvh,8px);
+ border-bottom:1px solid #7a999942;
+}
+#menu .hangar-head h2,#menu .dossier-head h2{
+ font:900 clamp(19px,4.4dvh,30px)/1 system-ui,Arial,sans-serif;
+ letter-spacing:.018em;
+ color:var(--sr-ui-white);
+}
+#menu .hangar-head h2 span,#menu .dossier-head h2 span{color:var(--sr-ui-gold)}
+#menu .hangar-head .eyebrow,#menu .dossier-head .eyebrow{
+ font:800 clamp(9px,1.1vw,11px)/1.1 ui-monospace,monospace;
+ color:var(--sr-ui-cyan);letter-spacing:.12em;
+}
+#menu #panel .screen-back{
+ min-height:36px;min-width:76px;
+ background:#263944bb;border:1px solid #718b94a0;
+ border-radius:4px;color:#e3eded;
+ box-shadow:none;padding:6px 11px;
+ font:800 clamp(10px,1.2vw,13px)/1.1 system-ui,sans-serif;
+}
+#menu #panel .screen-back:focus-visible,
+#menu #panel .hangar-tabs button:focus-visible,
+#menu #panel .hangar-grid button:focus-visible,
+#menu #panel .emblem-grid button:focus-visible,
+#menu #panel .dossier-backup-actions button:focus-visible{
+ outline:2px solid #ffdf9b;outline-offset:2px;
+}
+
+/* Hangar = equipment showroom, NOT a grid masquerading as a hangar. */
+#menu .hangar-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);gap:clamp(7px,1.25vw,16px)}
+#menu .hangar-bay{
+ position:relative;min-width:0;min-height:0;
+ overflow:hidden;border:1px solid #3d66707d;border-radius:5px;
+ background:radial-gradient(ellipse at 57% 45%,#25516188 0%,#112e3d85 42%,#081b27 100%);
+ display:flex;flex-direction:column;
+}
+#menu .hangar-bay::before{
+ content:"";position:absolute;inset:0;pointer-events:none;
+ background:repeating-linear-gradient(90deg,transparent 0,transparent 64px,#97bdc00b 65px,transparent 66px);
+}
+#menu .hangar-bay-caption,#menu .hangar-bay-foot{
+ position:relative;z-index:1;
+ display:flex;align-items:center;justify-content:space-between;gap:6px;
+ padding:clamp(7px,1.2dvh,13px) clamp(9px,1.2vw,15px);
+}
+#menu .hangar-bay-caption{flex-direction:column;align-items:flex-start;gap:3px}
+#menu .hangar-bay-caption strong{
+ font:800 clamp(12px,1.4vw,16px)/1.1 system-ui,sans-serif;letter-spacing:.04em;color:#f0e9d5;
+}
+#menu .sr-kicker{font:750 clamp(8px,.9vw,10px)/1.1 ui-monospace,monospace;color:var(--sr-ui-cyan);letter-spacing:.095em}
+#menu .hangar-bay-foot{
+ margin-top:auto;font:750 clamp(8px,.9vw,10px)/1.2 ui-monospace,monospace;
+ letter-spacing:.055em;color:#adcbd1;background:#0a1e29ad;
+}
+#menu #hangar-preview-paint{color:var(--sr-ui-gold)}
+#menu #hangar-unit-preview{
+ position:absolute;left:0;top:0;width:100%;height:100%;object-fit:fill;
+ pointer-events:none;
+}
+#menu .hangar-customize{
+ display:flex;flex-direction:column;gap:clamp(4px,.9dvh,8px);
+ min-height:0;overflow-y:auto;overflow-x:hidden;
+ scrollbar-width:thin;scrollbar-color:#617984 #142732;
+ padding-right:2px;
+}
+#menu .hangar-tabs{
+ flex:0 0 auto;gap:4px;
+ padding:2px 2px 0;
+ border-bottom:1px solid #77949a39;
+}
+#menu #panel .hangar-tabs button{
+ min-height:clamp(33px,7.5dvh,42px);
+ background:transparent;border:0;border-bottom:2px solid transparent;
+ border-radius:0;box-shadow:none;color:#a9bdc6;
+ font:800 clamp(11px,1.3vw,14px)/1.1 system-ui,sans-serif;
+}
+#menu #panel .hangar-tabs button.active{
+ background:#203b4775;color:#eff8f6;
+ border-bottom-color:#88d6de;box-shadow:none;
+}
+#menu .hangar-pane{flex:1;min-height:0;gap:4px}
+#menu .hangar-subhead{
+ margin:0 0 1px;font:750 clamp(8px,.95vw,10px)/1.1 ui-monospace,monospace;
+ color:#acc5cd;letter-spacing:.14em;
+}
+#menu .hangar-grid,#menu .emblem-grid{gap:clamp(4px,.75vw,8px)}
+#menu .hangar-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+#menu .emblem-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+#menu #panel .hangar-grid button,#menu #panel .emblem-grid button{
+ min-height:clamp(48px,10.2dvh,75px);
+ padding:5px 4px;gap:3px;
+ border:1px solid #55717b80;border-radius:4px;
+ background:linear-gradient(120deg,#223744,#182d39);
+ box-shadow:none;
+}
+#menu #panel .hangar-grid button.selected,#menu #panel .emblem-grid button.selected{
+ background:linear-gradient(120deg,#2b4550,#213744);
+ border-color:#8ed5d9;box-shadow:inset 0 0 0 1px #72d4d441;
+}
+#menu .hangar-grid strong,#menu .emblem-grid strong{
+ font:800 clamp(10px,1.15vw,13px)/1 system-ui,sans-serif;
+ letter-spacing:.012em;color:#ebf4f1;
+}
+#menu .hangar-grid small,#menu .emblem-grid small{font-size:clamp(8px,.9vw,10px);color:#aabfc5;line-height:1.05}
+#menu .paint-swatch{width:clamp(25px,3vw,39px);height:clamp(14px,2.25dvh,22px);border-radius:3px}
+#menu .emblem-symbol{font-size:clamp(17px,3.1dvh,24px);line-height:1}
+#menu .hangar-grid button.locked,#menu .emblem-grid button.locked{opacity:.56;border-style:solid}
+#menu .hangar-equipped{
+ flex:0 0 auto;margin:3px 0 0;padding:5px 8px;
+ border-left:3px solid var(--sr-ui-gold);background:#b8995f18;
+ color:#ecdfc2;font:800 clamp(9px,1vw,11px)/1.2 ui-monospace,monospace;
+ letter-spacing:.035em;
+}
+#menu .hangar-note{
+ flex:0 0 auto;margin:0;font:600 clamp(9px,1vw,11px)/1.2 system-ui,sans-serif;
+ color:var(--sr-ui-muted);
+}
+
+/* Dossier = legible operator record, with actions visible without scrolling. */
+#menu .dossier-head .dossier-identity-row{align-items:center;gap:8px}
+#menu .dossier-head .dossier-emblem{
+ padding:5px 9px;border-radius:4px;background:#26404a8c;
+ border:1px solid #68858b78;
+}
+#menu .dossier-workspace{
+ flex:1;min-height:0;
+ display:grid;grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);
+ gap:clamp(6px,1vw,13px);
+}
+#menu .dossier-overview,#menu .dossier-columns>section{
+ min-width:0;min-height:0;
+ border:1px solid #49687480;border-radius:5px;
+ background:linear-gradient(135deg,#1d313c8c,#172933ad);
+ padding:clamp(7px,1.1dvh,12px);
+}
+#menu .dossier-overview{display:flex;flex-direction:column;gap:clamp(5px,1dvh,9px)}
+#menu .dossier-section-tag{
+ display:flex;align-items:center;justify-content:space-between;gap:6px;
+ color:var(--sr-ui-gold);
+ font:800 clamp(9px,1vw,11px)/1.1 ui-monospace,monospace;
+ letter-spacing:.055em;
+}
+#menu .dossier-section-tag span{color:#aac8ce;font-size:clamp(8px,.9vw,10px)}
+#menu .dossier-stats{
+ flex:1;min-height:0;display:grid;
+ grid-template-columns:repeat(3,minmax(0,1fr));
+ grid-template-rows:repeat(2,minmax(0,1fr));
+ gap:clamp(4px,.7vw,7px);
+}
+#menu .dossier-stats>div{
+ min-height:0;min-width:0;
+ padding:clamp(4px,.7dvh,8px) clamp(5px,.7vw,9px);
+ border:0;border-left:2px solid #7aacb572;
+ border-radius:2px;background:#0f2633ad;
+ display:flex;flex-direction:column;justify-content:center;gap:2px;
+}
+#menu .dossier-stats>div:nth-child(2),#menu .dossier-stats>div:nth-child(5){border-left-color:#e5b96e}
+#menu .dossier-stats small{font:760 clamp(8px,.9vw,10px)/1.1 ui-monospace,monospace;color:#9cb9c3}
+#menu .dossier-stats strong{font:900 clamp(18px,4.25dvh,32px)/1 system-ui,sans-serif;color:#f3f7f3}
+#menu .dossier-columns{min-width:0;min-height:0;display:block}
+#menu .dossier-columns>section{height:100%;display:flex;flex-direction:column}
+#menu .dossier-columns h3{
+ margin:0 0 5px;font:850 clamp(11px,1.2vw,13px)/1.1 system-ui,sans-serif;
+ color:var(--sr-ui-gold);
+}
+#menu #dossier-modes{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin}
+#menu .dossier-mode{
+ display:flex;justify-content:space-between;align-items:center;gap:10px;
+ padding:clamp(3px,.6dvh,6px) 1px;
+ border-top:1px solid #56717b52;
+ font:630 clamp(9px,1.05vw,12px)/1.15 system-ui,sans-serif;
+ color:#d9e6e5;
+}
+#menu .dossier-mode strong{font:730 clamp(8px,.95vw,11px)/1.1 ui-monospace,monospace;color:#bbd1d6;white-space:nowrap}
+#menu .dossier-footer{
+ flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+ gap:clamp(6px,1vw,14px);
+ border-top:1px solid #6b8b9148;
+ padding:clamp(5px,.9dvh,8px) 1px 0;
+}
+#menu .dossier-footer strong{font-size:clamp(11px,1.3vw,14px);color:#e0eddb}
+#menu .dossier-footer span{font-size:clamp(9px,1vw,11px)}
+#menu .dossier-footer p{margin:1px 0 0;font:700 clamp(8px,.9vw,10px)/1 ui-monospace,monospace}
+#menu .dossier-backup-actions{display:flex;gap:6px;min-width:0}
+#menu #panel .dossier-backup-actions button{
+ min-width:clamp(80px,12vw,145px);
+ min-height:clamp(35px,8dvh,44px);
+ padding:5px clamp(6px,1vw,12px);
+ border:1px solid #6d8691a3;border-radius:4px;
+ background:#233844;
+ font:820 clamp(10px,1.15vw,13px)/1.1 system-ui,sans-serif;
+ color:#e9f3f1;box-shadow:none;
+}
+#menu .dossier-note{
+ flex:0 0 auto;margin:0;color:#9eb8c3;
+ font:600 clamp(8px,.95vw,10px)/1.15 system-ui,sans-serif;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+@media(max-height:380px) and (orientation:landscape){
+ #menu .hangar-screen,#menu .dossier-screen{gap:5px}
+ #menu .hangar-head,#menu .dossier-head{padding-bottom:4px}
+ #menu .hangar-head h2,#menu .dossier-head h2{font-size:20px}
+ #menu .hangar-bay-caption{padding:6px 8px}
+ #menu .hangar-bay-foot{padding:5px 8px}
+ #menu #panel .hangar-grid button,#menu #panel .emblem-grid button{min-height:47px;padding:3px;gap:2px}
+ #menu .hangar-grid strong,#menu .emblem-grid strong{font-size:10px}
+ #menu .hangar-customize{gap:3px}
+ #menu .dossier-overview,#menu .dossier-columns>section{padding:6px}
+ #menu .dossier-overview{gap:4px}
+ #menu .dossier-mode{padding:3px 0}
+ #menu .dossier-note{font-size:8px}
+}
+@media(max-width:650px) and (orientation:landscape){
+ #menu .hangar-body{grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr)}
+ #menu .hangar-bay-caption strong{font-size:11px}
+ #menu .hangar-bay-foot{font-size:8px}
+ #menu .dossier-workspace{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}
+ #menu .dossier-identity-row .dossier-emblem{padding:3px 6px}
+ #menu #panel .dossier-backup-actions button{min-width:78px;font-size:10px}
+}
+@media(max-width:520px),(orientation:portrait){
+ #menu #panel:has(.hangar-screen,.dossier-screen){height:auto;overflow-y:auto}
+ #menu .hangar-body,#menu .dossier-workspace{display:flex;flex-direction:column;min-height:auto}
+ #menu .hangar-bay{min-height:180px}
+ #menu .hangar-customize{overflow:visible}
+ #menu .dossier-overview{min-height:180px}
+ #menu .dossier-columns>section{min-height:190px}
+}
