@@ -90,4 +90,10 @@ Deliver a **premium hybrid shell** around the existing 2D arcade game: atmospher
 4. All generated assets are **concept only until owner approval**; no text embedded into production background images; no external runtime fetch, no trademark/copyright copies, verify commercial terms and optimize size.
 5. Keep web and Android assets identical. No \`main\` merge or "production-ready" claim on green CI alone. Explicit real-phone acceptance is required.
 
-**Immediate implementation:** M1 (procedural decorative Hangar environment + unambiguous equipped/tab/focus state) as a small reversible code change, then targeted CI. Do not conflate visual concept experiment with working Android features.
+**M1 code checkpoint:** Implemented in draft PR #140 — procedural background-only dock, non-interactive decorative layers, clear equipped cosmetic check, active tab underline, cyan keyboard focus, and corrected “PREVIEW ONLY · COSMETIC” language. The real unit drawing, saves, controls and action IDs remain unchanged. Five-size screenshot, full Android and actual-phone approval remain mandatory before marking the stage fully accepted.
+
+**Editable design reference:** [Sector Rebound — Premium Hybrid UI Art Lab (Figma)](https://www.figma.com/design/XB6lVNjfGPFr7xoiirm30j) contains an editable Hangar composition plus the palette/interaction-state reference. Its blocky vehicle is labeled as a *placeholder reference only*; production uses authentic Canvas artwork.
+
+**Creative asset standards:** [Premium Hybrid Art Lab Brief](PREMIUM_HYBRID_ART_LAB_BRIEF_2026-11-04.md) describes two background-only Hangar concepts and the original FIELD/VECTOR/ACE/COMMAND insignia family. Generated assets remain out of the app until approved.
+
+**Next implementation after M1 visual QA:** M2 (game-native navigation/icon consistency) and M4 (Host and Experimental Modes clarity). Do not conflate visual concept experiments with working Android features.
