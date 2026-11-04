@@ -88,4 +88,11 @@ assert.ok(js.includes("hudModeDetails().code+' · PAUSED'")&&js.includes('NEW MA
  'Pause must use current mode and honest restart wording');
 assert.ok(js.includes('radarPings.length<2')&&js.includes('radarPings.some('),
  'radar hostile shot pings must be capped and de-duplicated behind actor markers');
+// M5.1-C: the authentic LAN room has distinct player slots and explains reserved-seat AI.
+assert.ok(js.includes('class="lan-presence-slot"')&&css.includes('#menu .lan-lobby .lan-presence-slot'),
+ 'Host and Guest must have separate compact readable status cards');
+assert.ok(js.includes('id="lan-ai-note"')&&js.includes('PLAYER 2 ADDS ONE AI'),
+ 'Host-only reserved guest bot cannot appear as an unexplained extra opponent');
+assert.ok(css.includes('scrollbar-gutter:stable')&&css.includes('lan-settings-guide'),
+ 'scrollable nine-rule region must remain visually discoverable');
 console.log('UIV3_UI_CONTRACT_PASS — real controls, save UI, accessibility, audio and native parity');

@@ -3228,12 +3228,12 @@ function lanCanStart(){
 }
 function lanLobbyHTML(hostRole){
  const name=hostRole?'HOST MATCH':'JOINED MATCH';
- const controls=hostRole?'<div class="lan-grid">'+
+ const controls=hostRole?'<div class="lan-settings-guide"><strong>MATCH SETTINGS</strong><span>SCROLL FOR MORE RULES</span></div><div class="lan-grid">'+
  '<label>MATCH TYPE<select data-lan-setting="teamMode"><option value="ffa">FREE FOR ALL</option><option value="coop">CO-OP VS BOTS</option><option value="teams">OPPOSING TEAMS</option><option value="tdm">TEAM DEATHMATCH · SCORE</option></select></label>'+
  '<label>HOST FACTION<select data-lan-setting="hostSide"><option value="cyan">CYAN · GUEST CORAL</option><option value="coral">CORAL · GUEST CYAN</option></select></label>'+
  '<label>KO TARGET<select data-lan-setting="scoreTarget"><option value="15">15 TEAM KOs</option><option value="30">30 TEAM KOs</option></select></label>'+
  '<label>MATCH SERIES<select data-lan-setting="rounds"><option value="1">SINGLE MATCH</option><option value="3">BEST OF 3</option></select></label>'+
- '<label>ADDITIONAL AI SLOTS<select data-lan-setting="botCount"><option value="0">0 · 1v1 NO BOTS</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select></label>'+
+ '<label>ADDITIONAL AI SLOTS<select data-lan-setting="botCount"><option value="0">0 · 1v1 NO BOTS</option><option value="1">1 BOT</option><option value="2">2 BOTS</option><option value="3">3 BOTS</option><option value="4">4 BOTS</option></select><small id="lan-ai-note" class="lan-ai-note">HOST ONLY: PLAYER 2 BECOMES AI</small></label>'+
  '<label>MAZE<select data-lan-setting="mapSize"><option value="small">SMALL</option><option value="standard">STANDARD</option><option value="large">LARGE</option></select></label>'+
  '<label>PILOT LIVES<select data-lan-setting="startLives"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>'+
  '<label>BOT SKILL<select data-lan-setting="botSkill"><option value="casual">RELAXED</option><option value="normal">STANDARD</option><option value="spicy">CHALLENGE</option></select></label>'+ 
@@ -3241,7 +3241,7 @@ function lanLobbyHTML(hostRole){
  '</div>':'<div class="lan-summary"><strong id="lan-guest-rules">AWAITING HOST RULES</strong><span>Only the host can change the match setup.</span></div>';
  return '<section class="lan-lobby" aria-label="Local multiplayer waiting room">'+
  '<header class="lan-lobby-head"><div class="eyebrow">LOCAL WI-FI / PRIVATE MATCH</div><h2>'+name.replace(' ',' <span>')+'</span></h2><p>'+(hostRole?'Start against bots now, or wait for another phone. Players joining mid-match wait for the next match.':'Join the host room and press READY when available.')+'</p></header>'+
- '<div class="lan-lobby-body"><div class="lan-presence"><span>PLAYER 1 · HOST</span><strong id="lan-host-presence">CONNECTED</strong><span>PLAYER 2 · GUEST</span><strong id="lan-guest-presence">WAITING</strong></div>'+
+ '<div class="lan-lobby-body"><div class="lan-presence"><div class="lan-presence-slot"><span>PLAYER 1 · HOST</span><strong id="lan-host-presence">CONNECTED</strong></div><div class="lan-presence-slot"><span>PLAYER 2 · GUEST</span><strong id="lan-guest-presence">WAITING</strong></div></div>'+
  (hostRole?'<p class="lan-address">HOST ADDRESS · <span id="host-address">STARTING WI-FI ROOM...</span></p>':'')+
  '<div class="lan-lobby-controls">'+controls+'</div></div>'+
  '<footer class="lan-lobby-footer"><p id="lan-lobby-message" class="lan-lobby-message" role="status">WAITING FOR PLAYER TWO</p>'+
@@ -3262,6 +3262,8 @@ function refreshLanLobby(){
  const livesLabel=document.querySelector('[data-lan-setting="startLives"]')?.closest?.('label');
  if(livesLabel)livesLabel.hidden=r.teamMode==='tdm';
  const botSelect=document.querySelector('[data-lan-setting="botCount"]');
+ const aiNote=document.getElementById('lan-ai-note');
+ if(aiNote)aiNote.textContent=connected?'GUEST CONNECTED · SELECT EXTRA AI ONLY':'HOST ONLY · PLAYER 2 ADDS ONE AI';
  if(botSelect?.options)for(const option of botSelect.options){
   const n=Number(option.value);const hostOnly=hostRole&&!connected;
   option.disabled=((r.teamMode==='tdm'||r.teamMode==='teams')&&n%2===1)||

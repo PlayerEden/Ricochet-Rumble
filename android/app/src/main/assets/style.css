@@ -4082,3 +4082,41 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  .game-hud .scorestrip>.hud-mode-chip{font-size:9px;min-width:34px;padding:4px 4px}
  .game-hud .scorestrip .middle{font-size:9px!important;padding-left:2px;padding-right:2px}
 }
+
+
+/* M5.1-C: distinct human-seat status cards + honest host-only AI explanation.
+   The same nine LAN selectors remain authoritative and scroll inside existing lobby body. */
+#menu .lan-lobby .lan-presence{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:clamp(5px,.9vw,10px);
+ padding:clamp(5px,.8dvh,7px);background:linear-gradient(100deg,#15313d,#193440);
+}
+#menu .lan-lobby .lan-presence-slot{
+ display:flex;align-items:center;justify-content:space-between;gap:clamp(5px,.85vw,10px);
+ min-width:0;min-height:clamp(27px,5dvh,37px);padding:5px clamp(6px,.85vw,11px);
+ border:1px solid #4e7985;border-radius:3px;background:#1b3e4a;
+}
+#menu .lan-lobby .lan-presence-slot span{
+ min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#menu .lan-lobby .lan-presence-slot strong{
+ flex:0 0 auto;color:#a7dfd3;white-space:nowrap;
+}
+#menu .lan-settings-guide{
+ display:flex;align-items:center;justify-content:space-between;gap:8px;
+ margin:0 0 7px;padding:2px 0 5px;border-bottom:1px solid #60879466;
+ font:750 clamp(9px,.95vw,11px)/1.2 ui-monospace,monospace;color:#b4d4db;
+ letter-spacing:.04em;
+}
+#menu .lan-settings-guide strong{color:#d6eceb}
+#menu .lan-settings-guide span{color:#a8c8cd;text-align:right;white-space:nowrap}
+#menu #panel .lan-lobby .lan-grid .lan-ai-note{
+ display:block;margin-top:2px;color:#e6c18a;
+ font:750 clamp(8px,.9vw,10px)/1.15 ui-monospace,monospace;
+ letter-spacing:0;overflow-wrap:anywhere;
+}
+#menu .lan-lobby-body{scrollbar-gutter:stable;scroll-padding-bottom:12px}
+@media(max-width:740px) and (orientation:landscape){
+ #menu .lan-lobby .lan-presence-slot{flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-height:34px}
+ #menu .lan-lobby .lan-presence-slot span,#menu .lan-lobby .lan-presence-slot strong{font-size:9px}
+ #menu .lan-settings-guide{font-size:9px}
+}

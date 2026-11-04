@@ -19,7 +19,7 @@ const instrumented=game.replace(closing,`
 window.__flowQA={
  get state(){return state}, get mode(){return mode},
  get playlist(){return selectedPlaylistIds.slice()}, unlocksFromResult,
- freeze(){paused=true}, unfreeze(){paused=false}, get aim(){return {...fireAim}}, get control(){return makeControl(true)}, registerHit, ejectPilot, refreshHUD, tryCqcRespawn, resetAll,
+ freeze(){paused=true}, unfreeze(){paused=false}, get aim(){return {...fireAim}}, get control(){return makeControl(true)}, registerHit, ejectPilot, refreshHUD, opposingCount, tryCqcRespawn, resetAll,
  expire(seconds=180){paused=false;step(seconds);paused=true;}
 };
 })();`);
@@ -759,6 +759,47 @@ try{
  assert.equal((await bonusPage.evaluate(()=>JSON.parse(localStorage.getItem('rr-dossier-v1')))).matches,5,'reward navigation cannot duplicate results');
  await bonusContext.close();
  result.steps.push('real 5-match reward -> result button -> Hangar equip -> Home; no double score');
+
+ // M5.1-C: one actual Host Match setup vs its OWN deployed HUD.
+ // The second human seat is replaced by exactly one AI ONLY while no guest is connected.
+ // Separate S-FFA screenshots are not evidence of a Host Match count bug.
+ const hostContext=await browser.newContext({viewport:{width:915,height:412}});
+ const hostPage=await hostContext.newPage();
+ hostPage.on('pageerror',e=>{throw e});
+ await hostPage.goto(base,{waitUntil:'load'});
+ await hostPage.waitForFunction(()=>!!window.__flowQA);
+ await hostPage.evaluate(()=>{
+  window.AndroidBridge={hostGame(){},stopNetwork(){},findGames(){},joinGame(){},sendPacket(){}};
+ });
+ for(const extra of [0,1]){
+  await hostPage.locator('#menu button[data-action="nearby"]').click();
+  await hostPage.locator('.lan-entry button[data-action="host"]').click();
+  assert.equal(await hostPage.locator('.lan-presence-slot').count(),2);
+  assert.match(await hostPage.locator('#lan-ai-note').textContent(),/PLAYER 2 ADDS ONE AI/);
+  await hostPage.locator('[data-lan-setting="botCount"]').selectOption(String(extra));
+  const displayed=await hostPage.locator('[data-lan-setting="botCount"] option:checked').textContent();
+  assert.match(displayed,new RegExp('^'+(extra+1)+' AI OPPONENT'));
+  await hostPage.locator('.lan-lobby-actions [data-action="lan-start"]').click();
+  await hostPage.waitForFunction(()=>document.querySelector('#menu')?.classList.contains('hidden'));
+  const count=await hostPage.evaluate(()=>{
+   const s=window.__flowQA.state;
+   return {extras:s.config.botCount,reserved:s.config.lanHostSolo,humanSeats:s.humanCount,total:s.tanks.length,
+    actual:window.__flowQA.opposingCount(0),hud:document.getElementById('score1').textContent,
+    title:document.getElementById('player1-label').textContent,
+    mode:document.getElementById('hud-mode-chip').textContent};
+  });
+  assert.deepEqual({extras:count.extras,reserved:count.reserved,humanSeats:count.humanSeats,total:count.total},
+   {extras:extra,reserved:true,humanSeats:2,total:extra+2});
+  assert.equal(count.actual,extra+1,'host-alone real bot opponents include reserved guest seat');
+  assert.equal(count.hud,String(count.actual),'HUD count must match actors in that SAME host match');
+  assert.equal(count.title,'ENEMIES LEFT');
+  assert.equal(count.mode,'LAN:S-FFA');
+  await hostPage.locator('#menu-button').click();
+  await hostPage.locator('#menu button[data-action="close"]').click();
+  await hostPage.waitForFunction(()=>!!document.querySelector('#menu .home-screen'));
+ }
+ await hostContext.close();
+ result.steps.push('actual host-only LAN setup: 0/1 extra AI maps to exactly 1/2 opponents and the same-match HUD');
 
  console.log('PASS live Chromium Quick Play: '+JSON.stringify(result));
 }finally{

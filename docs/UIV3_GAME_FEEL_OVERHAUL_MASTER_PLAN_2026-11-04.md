@@ -132,3 +132,6 @@ Deliver a **premium hybrid shell** around the existing 2D arcade game: atmospher
 
 
 **M5.1 B1/B2 checkpoint (2026-11-04):** M5.1 plan expands from the live HUD code to honest actor/team score accent colors, two-tone Standard factory swatch, precise mode text on Pause, de-duplicated radar sound rings behind player markers, and correct ejection messages. Save schema, existing cosmetics IDs, touchscreen geometry and LAN authority are unchanged. Review completed-match Dossier coverage and all current-head CI before green-lighting M6 or merging PR #140.
+
+
+**M5.1-C Host-room usability/QA:** Split host/guest status into distinct cards, explain the reserved AI guest slot and guide scrolling for nine original rules. Add an actual live-browser same-match host-only zero/one additional-bot test comparing opponents and HUD totals. Preserve all LAN protocols, controls, existing saved data and draft PR release gates.

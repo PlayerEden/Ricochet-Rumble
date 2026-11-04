@@ -577,6 +577,27 @@ try{
   await page.locator('.lan-entry button[data-action="host"]').click();
   assert.equal(await page.locator('.lan-lobby').isVisible(),true,'Host enters real LAN lobby');
   assert.equal(await page.locator('[data-lan-setting]').count(),9,'nine real LAN settings remain');
+  assert.equal(await page.locator('.lan-presence-slot').count(),2,
+    'host and guest show as two separate status cards');
+  const presence=await page.evaluate(()=>{
+    const cards=[...document.querySelectorAll('.lan-presence-slot')];
+    return cards.map(el=>{
+      const a=el.getBoundingClientRect(),label=el.querySelector('span').getBoundingClientRect(),
+        status=el.querySelector('strong').getBoundingClientRect();
+      return {x:a.x,right:a.right,top:a.top,bottom:a.bottom,
+        labelRight:label.right,statusLeft:status.left,txt:el.textContent.trim()};
+    });
+  });
+  assert.ok(presence[0].right<=presence[1].x+1,'two LAN players must have an actual visual divider');
+  assert.ok(presence.every(x=>x.labelRight<=x.right+1&&x.statusLeft>=x.x-1),
+    'player role/status text must stay inside their own card at '+w+'x'+h);
+  assert.match(presence[0].txt,/PLAYER 1.*HOST.*HOSTING/);
+  assert.match(presence[1].txt,/PLAYER 2.*GUEST.*WAITING/);
+  assert.match((await page.locator('#lan-ai-note').textContent()),/PLAYER 2 ADDS ONE AI/,
+    'host-only reserved guest seat must be explained');
+  assert.match(await page.locator('.lan-settings-guide').textContent(),/SCROLL FOR MORE RULES/);
+  const botCountLabel=await page.locator('[data-lan-setting="botCount"] option:checked').textContent();
+  assert.equal(botCountLabel.trim(),'1 AI OPPONENT','host-only default zero extras means one real opponent');
   assert.equal(await page.locator('[data-lan-setting="teamMode"]').evaluate(el=>
     el.closest('label')?.textContent.includes('MATCH TYPE')),true,
     'Host match type must be a player-friendly label');
@@ -588,6 +609,15 @@ try{
     return {top:r.top,bottom:r.bottom,panelBottom:p.bottom};
   });
   await page.locator('.lan-lobby-body').evaluate(el=>{el.scrollTop=el.scrollHeight;});
+  const scrollCheck=await page.locator('.lan-lobby-body').evaluate(el=>{
+    const body=el.getBoundingClientRect();
+    const last=[...el.querySelectorAll('.lan-grid label')].filter(x=>getComputedStyle(x).display!=='none').at(-1);
+    const end=last.getBoundingClientRect();
+    const footer=document.querySelector('.lan-lobby-footer').getBoundingClientRect();
+    return {bodyBottom:body.bottom,lastBottom:end.bottom,footerTop:footer.top,scrollable:el.scrollHeight>el.clientHeight+2};
+  });
+  assert.ok(scrollCheck.lastBottom<=scrollCheck.bodyBottom+2&&scrollCheck.bodyBottom<=scrollCheck.footerTop+2,
+    'last visible LAN rule must be fully reachable without passing behind footer at '+w+'x'+h);
   const footer=await hostFooter();
   assert.ok(footer.top>=0&&footer.bottom<=h+1&&footer.bottom<=footer.panelBottom+1,
     'host Ready/Start footer must remain visible after scrolling');

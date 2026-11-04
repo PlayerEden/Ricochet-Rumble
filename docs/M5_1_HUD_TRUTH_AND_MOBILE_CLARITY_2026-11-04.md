@@ -45,3 +45,11 @@ This is a plan and a testable first increment, not a claim that all screenshot-r
 - Radar hostile-shot pulses are limited to two coarse non-duplicate rings, reduced in stroke and opacity, and rendered behind actor markers. They remain bound to actual nearby hostile shot events and clipped to the map; no tracking gameplay mechanic changes.
 - Ejection toast now says **YOU EJECTED · FIND COVER!** only for the local actor; opponent/AI ejections indicate their exposed pilot without ordering the player to hide.
 - Existing completed-match Dossier browser test already validates exactly-once finalize, persistence, earned VECTOR, and positive match counts. Full QA is still required before approving this follow-up; owner physical Android screenshots and separate two-device LAN validation remain gates.
+
+## M5.1-C — Host Match clarity + same-match opponent-count proof
+
+- Split LAN Host/Guest presence into **two clearly bordered status cells**, preserving original `lan-host-presence` and `lan-guest-presence` IDs and all existing readiness messages.
+- Add lightweight **MATCH SETTINGS / SCROLL FOR MORE RULES** heading inside the existing scrollable area, preserve footer actions and all nine original host selectors. Expose a contextual note beneath Additional AI Slots: without a connected guest, the reserved second player seat becomes one AI. Once connected, the setting is additional bots only.
+- Prove in real Chromium **within the exact same match**: with 0 additional slots, host alone fields exactly 1 AI opponent and HUD shows 1; with 1 additional slot, the match fields exactly 2 and HUD shows 2. Both use true runtime `opposingCount(0)`, `state.humanCount=2`, `lanHostSolo=true`, and the `LAN:S-FFA` mode chip. The previously compared S-FFA screenshot was a separate Solo game, not direct evidence of a Host Match defect.
+- Explicitly confirm roles cannot visually run into one another, 9 settings stay accessible, scroll reaches final setting above pinned Start/Leave footer at phone landscape widths, and no gameplay, packet, control, bot-team, or save semantics change.
+- **Gate remains open:** full current-head CI, real Android QA, and two-device phone acceptance are needed before release/merging PR #140.
