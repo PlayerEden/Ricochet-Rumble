@@ -27,6 +27,33 @@ try {
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:'+server.address().port+'/index.html',{waitUntil:'load'});
+  await page.waitForFunction(()=>window.__pixiPremium?.ready&&window.__pixiPremium?.view==='menu'&&window.__pixiProbe?.frames>=8,null,{timeout:30000});
+  assert.equal(await page.locator('#go-deploy').isVisible(),true,'primary deploy action visible');
+  assert.equal(await page.locator('#menu-screen').isVisible(),true,'cinematic front-end visible at launch');
+  assert.equal((await page.evaluate(()=>window.__pixiPremium)).shader,true,'actual WebGL hologram shader enabled on launch');
+  const menuShot=await page.screenshot({path:'qa-results/pixi-probe/premium-MENU-'+width+'x'+height+'.png'});
+  assert.ok(menuShot.byteLength>8000,'premium menu screenshot populated');
+  await page.locator('#go-hangar').click();
+  await page.waitForFunction(()=>window.__pixiPremium?.view==='hangar',null,{timeout:15000});
+  assert.equal(await page.locator('#hangar-screen').isVisible(),true);
+  assert.ok((await page.screenshot({path:'qa-results/pixi-probe/premium-HANGAR-'+width+'x'+height+'.png'})).byteLength>8000);
+  await page.locator('#hangar-back').click();
+  await page.locator('#go-settings').click();
+  await page.waitForFunction(()=>window.__pixiPremium?.view==='settings',null,{timeout:15000});
+  await page.locator('#quality-reduced').click();
+  await page.waitForFunction(()=>window.__pixiPremium?.quality==='reduced'&&window.__pixiPremium?.shader===false,null,{timeout:15000});
+  assert.equal(await page.locator('#quality-reduced').getAttribute('aria-pressed'),'true');
+  const reducedShot=await page.locator('#pixi-host canvas').screenshot({path:'qa-results/pixi-probe/menu-REDUCED-'+width+'x'+height+'.png'});
+  await page.locator('#quality-cinematic').click();
+  await page.waitForFunction(()=>window.__pixiPremium?.quality==='cinematic'&&window.__pixiPremium?.shader===true,null,{timeout:15000});
+  const premiumShot=await page.locator('#pixi-host canvas').screenshot({path:'qa-results/pixi-probe/menu-SHADER-'+width+'x'+height+'.png'});
+  assert.equal(premiumShot.equals(reducedShot),false,'GLSL shader and atmospheric layers change the Pixi render');
+  await page.locator('#settings-back').click();
+  await page.locator('#go-deploy').click();
+  await page.waitForFunction(()=>window.__pixiPremium?.view==='combat'&&window.__pixiProbe?.engine==='pixi'&&window.__pixiProbe?.frames>=8,null,{timeout:20000});
+  assert.equal(await page.locator('#front-end').isVisible(),false,'main menu removed from combat');
+  assert.equal(await page.locator('#match-hud').isVisible(),true,'tactical combat overlay visible');
+
   await page.waitForFunction(()=>window.__pixiProbe?.ready&&window.__pixiProbe?.engine==='pixi'&&window.__pixiProbe?.frames>=8,null,{timeout:30000});
   let pixi=await page.evaluate(()=>window.__pixiProbe);
   assert.equal(pixi.engine,'pixi','Pixi renderer should start successfully');
@@ -51,6 +78,8 @@ try {
   const dimensions=await page.locator('#field').boundingBox();
   assert.ok(dimensions?.height>=130,'compact landscape still leaves playable canvas');
   const pixiShot=await page.screenshot({path:'qa-results/pixi-probe/pixi-'+width+'x'+height+'.png'});
+  await page.locator('#tools-toggle').click();
+  assert.equal(await page.locator('#lab-tools').isVisible(),true,'diagnostics available but initially collapsed');
   assert.ok(pixiShot.byteLength>7000,'Pixi scene screenshot is not empty');
   await page.locator('#use-canvas').click();
   await page.waitForFunction(()=>window.__pixiProbe?.engine==='canvas'&&window.__pixiProbe?.frames>=8,null,{timeout:20000});
@@ -113,13 +142,21 @@ try {
   await page.locator('#use-match').click();
   await page.waitForFunction(()=>window.__pixiProbe?.load==='match'&&window.__pixiProbe?.frames>=8,null,{timeout:25000});
   assert.equal((await page.evaluate(()=>window.__pixiProbe)).bots,5,'matching workload restored');
+  await page.locator('#pause-btn').click();
+  await page.waitForFunction(()=>window.__pixiPremium?.paused===true,null,{timeout:15000});
+  assert.equal(await page.locator('#resume-btn').isVisible(),true,'in-match pause options usable');
+  await page.locator('#resume-btn').click();
+  await page.waitForFunction(()=>window.__pixiPremium?.paused===false,null,{timeout:15000});
+  await page.locator('#pause-btn').click();
+  await page.locator('#return-menu').click();
+  await page.waitForFunction(()=>window.__pixiPremium?.view==='menu',null,{timeout:15000});
   assert.deepEqual(errors,[],'no runtime page exceptions');
-  results.push({viewport:width+'x'+height,backend:pixi.backend,pixiFrames:pixi.frames,canvasFrames:canvas.frames,fxOnOff:'PASS',fxEventShowcase:'PASS',layeredArt:'PASS',cameraZoomPresets:'PASS',
+  results.push({viewport:width+'x'+height,backend:pixi.backend,pixiFrames:pixi.frames,canvasFrames:canvas.frames,fxOnOff:'PASS',fxEventShowcase:'PASS',layeredArt:'PASS',cameraZoomPresets:'PASS',premiumMainMenu:'PASS',premiumHangar:'PASS',shaderQuality:'PASS',combatHUD:'PASS',pauseFlow:'PASS',
    pixiRenderP95Ms:pixi.renderP95,canvasRenderP95Ms:canvas.renderP95,matchBots:5,stressBots:18,productionArt:true,controls:'PASS',
    note:'These are synthetic desktop SwiftShader figures, not phone FPS'});
   await page.close();
  }
- console.log('PIXI_ART_SCALE_LAB_BROWSER_QA_PASS '+JSON.stringify({scenes:results.length,results}));
+ console.log('PIXI_PREMIUM_VERTICAL_SLICE_QA_PASS '+JSON.stringify({scenes:results.length,results}));
  fs.writeFileSync('qa-results/pixi-probe/evidence.json',JSON.stringify({
   scope:'Isolated Pixi GPU visual-effects demo using FIELDGRID art, not production Sector Rebound',
   caveat:'Chromium CI with software SwiftShader does not establish Android GPU speed, heat or battery results',
