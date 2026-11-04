@@ -1,0 +1,15 @@
+{
+  "name": "sector-rebound-hybrid-menu",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Optional offline PixiJS menu presentation; combat remains Canvas 2D",
+  "scripts": {
+    "build": "esbuild src/menu.js --bundle --minify --format=iife --target=es2020 --outfile=../web/hybrid-menu-pixi.bundle.js && node scripts/sync.mjs"
+  },
+  "dependencies": {
+    "pixi.js": "8.18.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  }
+}
