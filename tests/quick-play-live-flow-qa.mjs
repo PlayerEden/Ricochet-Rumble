@@ -629,7 +629,7 @@ try{
   assert.equal(await page.locator('#dossier-matches').textContent(),String(afterDossier.matches));
   assert.equal(await page.locator('#dossier-draws').textContent(),String(afterDossier.draws));
   assert.equal(await page.locator('#dossier-eligibility').count(),0,'nonfunctional future milestones are no longer shown next to real Dossier rewards');
-   assert.equal(await page.locator('#dossier-emblem-mark').textContent(),'◇','default identity visible in Dossier');
+   assert.equal(await page.locator('#dossier-emblem-mark use').getAttribute('href'),'#sr-mark-field','default original vector insignia visible in Dossier');
   const geometry=await page.locator('#panel').evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth}));
   assert.ok(geometry.scrollWidth<=geometry.width+3,'dossier has no horizontal overflow at '+vw);
   const back=await page.locator('button[data-action="dossier-back"]').boundingBox();
@@ -655,7 +655,7 @@ try{
  assert.equal(operatorChoice.equipped,'fieldgrid.moss','selecting emblem keeps previous tank paint');
  await page.locator('button[data-action="hangar-back"]').click();
  assert.equal(await page.locator('.dossier-screen').isVisible(),true,'Hangar Back returns to originating Dossier, no home-menu detour');
- assert.equal(await page.locator('#dossier-emblem-mark').textContent(),'△','Dossier shows equipped VECTOR');
+ assert.equal(await page.locator('#dossier-emblem-mark use').getAttribute('href'),'#sr-mark-vector','Dossier shows equipped VECTOR artwork');
  assert.equal(await page.locator('#dossier-emblem-name').textContent(),'VECTOR');
  result.steps.push('completed Solo match -> saved Dossier -> earned insignia -> persistent Hangar equip -> Dossier identity');
 

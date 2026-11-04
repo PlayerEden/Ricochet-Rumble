@@ -149,6 +149,10 @@ try{
   await page.locator('#menu button[data-action="hangar-preview-unit"]').click();
   assert.equal(await page.locator('#hangar-unit-preview').getAttribute('data-unit'),'mech',
     'Hangar must draw the actual game mech');
+  assert.equal(await page.locator('.hangar-bay').getAttribute('data-hangar-study'),'warm','procedural default dock is warm');
+  assert.equal(await page.locator('#menu').getAttribute('data-input-modality'),'pointer','click uses pointer focus mode');
+  assert.equal(await page.locator('.hangar-unit-toggle').evaluate(el=>getComputedStyle(el).outlineStyle),'none',
+    'tapping the preview toggle must not leave a misleading selection ring');
   assert.match(await page.locator('#hangar-preview-unit-label').textContent(),/PREVIEW ONLY/,
     'unit preview never claims to choose a spawn vehicle');
   assert.ok(Number(await page.locator('#hangar-unit-preview').getAttribute('data-preview-scale'))<3.16,
@@ -178,6 +182,16 @@ try{
   assert.deepEqual(marks.map(x=>x.locked),[false,true,true,true]);
   assert.equal(marks.filter(x=>x.selected).length,1);
   assert.ok(marks.slice(1).every(x=>x.label.includes('LOCKED')));
+  assert.equal(await page.locator('#emblem-status').textContent(),'EQUIPPED · FIELD');
+  assert.equal(await page.locator('#insignia-detail-use').getAttribute('href'),'#sr-mark-field');
+  assert.equal(await page.locator('#insignia-detail-name').textContent(),'FIELD');
+  assert.match(await page.locator('#insignia-next-progress').textContent(),/VECTOR · 0 \/ 3 MATCHES/);
+  assert.equal(await page.locator('.hangar-architecture').evaluate(el=>getComputedStyle(el).pointerEvents),'none');
+  if(h>360){
+   assert.equal(await page.locator('.insignia-detail').isVisible(),true,'insignia status is visible on medium phones');
+   const box=await page.locator('.insignia-detail').boundingBox();
+   assert.ok(box&&box.y+box.height<=h+2,'earned badge panel cannot overflow '+w+'x'+h);
+  }
   await page.locator('#menu button[data-action="hangar-back"]').click();
   await page.waitForFunction(()=>window.__SRHybridMenu?.active,null,{timeout:15000});
   // UIV2-F: keep backup and Hangar utilities fully visible in the Dossier,
@@ -677,6 +691,8 @@ try{
  assert.equal(await earnedPage.locator('.emblem-grid button:disabled').count(),0);
  await earnedPage.locator('.emblem-grid button[data-emblem-id="mark.command"]').click();
  assert.equal(await earnedPage.locator('.emblem-grid button.selected').getAttribute('data-emblem-id'),'mark.command');
+ assert.equal(await earnedPage.locator('#insignia-detail-use').getAttribute('href'),'#sr-mark-command');
+ assert.match(await earnedPage.locator('#insignia-next-progress').textContent(),/ALL FOUR INSIGNIAS EARNED/);
  await earnedPage.locator('#menu button[data-action="hangar-back"]').click();
  await earnedPage.locator('#menu button[data-action="dossier"]').click();
  assert.equal(await earnedPage.locator('#dossier-matches').textContent(),'15');
@@ -687,6 +703,15 @@ try{
  assert.match(await earnedPage.locator('#dossier-intro').textContent(),/RECORDED SOLO/);
  await earnedPage.screenshot({path:dir+'/m3-earned-command-dossier-740x360.png',animations:'disabled'});
  await earnedCtx.close();
+ // M5 visual comparison: second procedural background is opt-in, never a shipped image.
+ const studyPage=await browser.newPage({viewport:{width:915,height:412}});
+ studyPage.on('pageerror',e=>issues.push(e.message));
+ await studyPage.goto(origin+'/?hangarStudy=blueprint',{waitUntil:'load'});
+ await studyPage.locator('#menu button[data-action="hangar"]').click();
+ assert.equal(await studyPage.locator('.hangar-bay').getAttribute('data-hangar-study'),'blueprint');
+ assert.equal(await studyPage.locator('#hangar-unit-preview').getAttribute('data-unit'),'tank');
+ await studyPage.screenshot({path:dir+'/m5-blueprint-hangar-915x412.png',animations:'disabled'});
+ await studyPage.close();
  // Main-user default starts in Canvas mode yet MUST retain the same premium
  // HTML/CSS composition without fetching PixiJS or a CDN.
  const fallback=await browser.newPage({viewport:{width:740,height:360}});

@@ -3986,3 +3986,78 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 #menu .dossier-emblem .dossier-emblem-copy strong{font:850 clamp(10px,1.06vw,13px)/1 system-ui,sans-serif;color:#f3eee2}
 #menu #dossier-intro{max-width:34ch;line-height:1.1}
 @media(max-height:380px) and (orientation:landscape){#menu .dossier-emblem .dossier-emblem-copy small{display:none}#menu .dossier-emblem #dossier-emblem-mark{width:25px;height:25px}#menu .emblem-grid .emblem-symbol{width:28px;height:24px}#menu .emblem-grid .emblem-symbol .sr-mark-icon{width:22px;height:22px}}
+
+
+/* M5 — reversible, CSS-only industrial Hangar background studies; actual Canvas units remain on top.
+   Warm dock is test preview default; ?hangarStudy=blueprint is a QA-only A/B, never a saved setting.
+   No image downloads, noninteractive decorative architecture, no game/sprite changes. */
+#menu .hangar-bay[data-hangar-study="warm"]{
+ background:
+  radial-gradient(ellipse at 50% 37%,rgba(102,195,203,.23),transparent 62%),
+  linear-gradient(180deg,#111f2b 0%,#1b3842 51%,#071824 100%);
+}
+#menu .hangar-architecture{
+ position:absolute;z-index:0;inset:12% 7% 10%;
+ border-left:clamp(3px,.8vw,8px) solid rgba(89,143,155,.45);
+ border-right:clamp(3px,.8vw,8px) solid rgba(89,143,155,.45);
+ pointer-events:none;opacity:.88;
+ background:
+  linear-gradient(180deg,rgba(255,196,105,.19),transparent 11%) top center/100% 25% no-repeat,
+  linear-gradient(90deg,rgba(11,30,40,.6),transparent 24%,transparent 76%,rgba(11,30,40,.6)),
+  repeating-linear-gradient(90deg,transparent 0 23%,rgba(120,166,169,.12) 23.2% 23.6%,transparent 24% 48%);
+ box-shadow:inset 0 0 38px #06131f;
+}
+#menu .hangar-bay[data-hangar-study="warm"]::before{
+ background:
+  linear-gradient(90deg,transparent 0 15%,rgba(241,184,104,.7) 20% 28%,transparent 33% 67%,rgba(241,184,104,.7) 72% 80%,transparent 85%) center 15%/100% 3px no-repeat,
+  linear-gradient(90deg,transparent 0 10%,rgba(137,195,200,.33) 11%,transparent 12% 88%,rgba(137,195,200,.33) 89%,transparent 90%),
+  linear-gradient(180deg,#142b3754,transparent 33%,#06192466);
+}
+#menu .hangar-bay[data-hangar-study="blueprint"]{
+ background:
+  radial-gradient(ellipse at 48% 42%,rgba(76,147,180,.22),transparent 64%),
+  linear-gradient(180deg,#0b202f,#103244 53%,#061722);
+}
+#menu .hangar-bay[data-hangar-study="blueprint"]::before{
+ background:
+  linear-gradient(90deg,transparent 0 10%,rgba(106,209,226,.22) 11%,transparent 12% 88%,rgba(106,209,226,.22) 89%,transparent 90%),
+  repeating-linear-gradient(90deg,transparent 0 20%,rgba(106,207,225,.07) 20.1% 20.3%,transparent 20.4% 40%),
+  repeating-linear-gradient(0deg,transparent 0 21%,rgba(106,207,225,.09) 21.2% 21.4%,transparent 21.6% 42%);
+}
+#menu .hangar-bay[data-hangar-study="blueprint"]::after{opacity:.55;background:
+ linear-gradient(180deg,rgba(104,210,224,.28),transparent 18%),
+ repeating-linear-gradient(90deg,transparent 0 19%,rgba(91,191,210,.21) 19.2% 19.5%,transparent 20% 39%),
+ linear-gradient(180deg,#17405170,#082333bb);
+}
+#menu .hangar-bay[data-hangar-study="blueprint"] .hangar-architecture{
+ border-color:#4c9aa688;box-shadow:inset 0 0 22px #183f547d;opacity:.76;
+}
+#menu .hangar-architecture,.hangar-bay::before,.hangar-bay::after{pointer-events:none}
+#menu #panel .emblem-grid button.locked:disabled{opacity:.82;color:#b7c9cd;background:linear-gradient(120deg,#1b333f,#162b36)}
+#menu #panel .emblem-grid button.locked:disabled small{color:#aec2c7}
+#menu .emblem-grid button.locked .emblem-symbol{opacity:.88}
+#menu .insignia-detail{
+ flex:0 0 auto;display:flex;align-items:center;gap:clamp(9px,1.25vw,15px);
+ min-height:clamp(60px,13dvh,94px);padding:clamp(7px,1.2dvh,10px) clamp(9px,1.3vw,14px);
+ border:1px solid #5475828c;border-left:3px solid #d9b374;
+ border-radius:3px;background:linear-gradient(105deg,#213b47,#112a36);
+}
+#menu .insignia-detail-mark{display:grid;place-items:center;flex:0 0 auto;
+ width:clamp(42px,8.4dvh,64px);height:clamp(42px,8.4dvh,64px);
+ background:linear-gradient(145deg,#294c58,#182d3a);border:1px solid #b99b68;border-radius:3px;color:#f2d494}
+#menu .insignia-detail-mark .sr-mark-icon{width:75%;height:75%}
+#menu .insignia-detail-copy{display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0}
+#menu .insignia-detail-copy small{font:800 clamp(8px,.86vw,10px)/1.1 ui-monospace,monospace;letter-spacing:.06em;color:#abd0d3}
+#menu .insignia-detail-copy strong{font:850 clamp(13px,1.45vw,18px)/1.1 system-ui,sans-serif;color:#f0f5ee}
+#menu .insignia-detail-copy span{font:750 clamp(9px,.95vw,11px)/1.15 system-ui,sans-serif;color:#d4c19d;overflow-wrap:anywhere}
+@media(max-height:360px) and (orientation:landscape){#menu .insignia-detail{min-height:50px;padding:4px 7px;gap:7px}
+ #menu .insignia-detail-mark{width:36px;height:36px}
+ #menu .insignia-detail-copy{gap:1px}
+ #menu .insignia-detail-copy strong{font-size:12px}
+ #menu .insignia-detail-copy span{font-size:9px}
+}
+@media(max-height:330px) and (orientation:landscape){#menu .insignia-detail{display:none}}
+/* Maintain keyboard navigation; suppress only a stale pointer-driven focus halo. */
+#menu[data-input-modality="pointer"] #panel :is(button,summary,select,input):focus-visible{
+ outline:none;outline-offset:0;
+}

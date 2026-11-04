@@ -45,3 +45,7 @@
 - M4 host/modes UX corrections.
 - M5 approved art only; no generated art in game beforehand.
 - M6 latest-commit Android regression and owner phone approval before merge.
+
+
+## M5 CSS-only A/B implementation
+Owner's five real screenshots motivated warm dock (default) and blueprint dock (review query only) as reversible **procedural** backgrounds. No generated images, dependency, texture, source-code replacement or external rights issues. M5 still permits future background-only art studies, but user approval and APK/contrast/byte-size tests are required before external/generated art can ship. The four existing original SVG insignias are already implemented and remain unchanged.

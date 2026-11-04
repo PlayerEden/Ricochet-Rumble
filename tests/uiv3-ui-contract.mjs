@@ -69,4 +69,8 @@ for(const name of ['field','vector','ace','command']){
  assert.ok(js.includes("'mark."+name+"':{label:"));
 }
 assert.ok(html.includes('id="dossier-intro"')&&css.includes('#menu .sr-mark-icon'));
+assert.ok(html.includes('id="insignia-detail-use"')&&html.includes('class="hangar-architecture"'),
+ 'M5 authentic on-device insignia preview and decorative dock must exist');
+assert.ok(js.includes("e.target?.closest?.('button,summary')")&&css.includes('data-input-modality="pointer"'),
+ 'touch ring refinement must retain a keyboard-only focus path');
 console.log('UIV3_UI_CONTRACT_PASS — real controls, save UI, accessibility, audio and native parity');

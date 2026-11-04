@@ -273,6 +273,7 @@
   <div class="hangar-body">
    <section class="hangar-bay" aria-label="Equipped unit preview">
     <div class="hangar-bay-caption"><div class="hangar-preview-title"><span class="sr-kicker">UNIT PREVIEW · COSMETICS</span><strong id="hangar-unit-label">STANDARD / TANK PREVIEW</strong></div><button type="button" class="hangar-unit-toggle" data-action="hangar-preview-unit" aria-label="Preview mech instead of tank">VIEW MECH</button></div>
+    <div class="hangar-architecture" aria-hidden="true"></div>
     <canvas id="hangar-unit-preview" width="400" height="240" aria-label="Equipped paint on Sector Rebound tank"></canvas>
     <div class="hangar-bay-foot"><span id="hangar-preview-unit-label">PREVIEW ONLY · COSMETIC</span><span id="hangar-preview-paint">PAINT · STANDARD</span></div>
    </section>
@@ -299,7 +300,11 @@
    <button type="button" data-action="equip-emblem" data-emblem-id="mark.ace" disabled><span class="emblem-symbol" aria-hidden="true"><svg class="sr-mark-icon" viewBox="0 0 32 32"><use href="#sr-mark-ace"/></svg></span><strong>ACE</strong><small>0 / 10 KOS</small></button>
    <button type="button" data-action="equip-emblem" data-emblem-id="mark.command" disabled><span class="emblem-symbol" aria-hidden="true"><svg class="sr-mark-icon" viewBox="0 0 32 32"><use href="#sr-mark-command"/></svg></span><strong>COMMAND</strong><small>0 / 12 WINS</small></button>
   </div>
-  <p class="hangar-equipped" id="emblem-status" role="status">OPERATOR INSIGNIA · ◇ FIELD</p>
+  <p class="hangar-equipped" id="emblem-status" role="status">EQUIPPED · FIELD</p>
+  <div class="insignia-detail" aria-label="Equipped insignia and next actual unlock">
+    <div class="insignia-detail-mark" aria-hidden="true"><svg class="sr-mark-icon" viewBox="0 0 32 32"><use id="insignia-detail-use" href="#sr-mark-field"/></svg></div>
+    <div class="insignia-detail-copy"><small>CURRENT INSIGNIA</small><strong id="insignia-detail-name">FIELD</strong><span id="insignia-next-progress">NEXT UNLOCK · VECTOR · 0 / 3 MATCHES</span></div>
+  </div>
   </div>
   <p class="hangar-note">Cosmetic only · Unlock more by completing Solo matches.</p>
    </div>

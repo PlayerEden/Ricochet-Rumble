@@ -92,7 +92,20 @@ function refreshHangar(){
   if(label&&unlock.target)label.textContent=unlock.eligible?'UNLOCKED':unlock.current+' / '+unlock.target+' '+unlock.metric.toUpperCase();
  }
  const emblemStatus=document.getElementById('emblem-status');
- if(emblemStatus)emblemStatus.textContent='OPERATOR INSIGNIA · '+OPERATOR_EMBLEMS[equippedEmblem].glyph+' '+OPERATOR_EMBLEMS[equippedEmblem].label;
+ if(emblemStatus)emblemStatus.textContent='EQUIPPED · '+OPERATOR_EMBLEMS[equippedEmblem].label;
+ const detailIcon=document.getElementById('insignia-detail-use');
+ if(detailIcon)detailIcon.setAttribute('href','#sr-mark-'+equippedEmblem.slice(5));
+ const detailName=document.getElementById('insignia-detail-name');
+ if(detailName)detailName.textContent=OPERATOR_EMBLEMS[equippedEmblem].label;
+ const nextProgress=document.getElementById('insignia-next-progress');
+ if(nextProgress){
+  const next=Object.entries(OPERATOR_EMBLEMS).find(([id,def])=>def.metric&&!emblemProgress(id).eligible);
+  if(!next)nextProgress.textContent='ALL FOUR INSIGNIAS EARNED';
+  else{
+   const [id,def]=next,progress=emblemProgress(id);
+   nextProgress.textContent='NEXT UNLOCK · '+def.label+' · '+progress.current+' / '+progress.target+' '+progress.metric.toUpperCase();
+  }
+ }
  for(const el of document.querySelectorAll('[data-action="equip-emblem"]')){
   const id=el.dataset.emblemId,def=OPERATOR_EMBLEMS[id],progress=emblemProgress(id),selected=id===equippedEmblem;
   el.classList.toggle('selected',selected);
@@ -128,7 +141,12 @@ function rewardHangarTab(unlocks){
 function openHangar(fromDossier=false,newUnlocks=[]){
  hangarReturnToDossier=!!fromDossier;
  hangarPreviewUnit='tank';
- setPanel(document.getElementById('hangar-template').innerHTML);refreshHangar();
+ setPanel(document.getElementById('hangar-template').innerHTML);
+ // M5 procedural blueprint is a review-only alternative, never stored as a preference.
+ const study=new URLSearchParams(window.location.search).get('hangarStudy');
+ const dock=document.querySelector('.hangar-bay');
+ if(dock)dock.dataset.hangarStudy=study==='blueprint'?'blueprint':'warm';
+ refreshHangar();
  const rewards=Array.isArray(newUnlocks)?newUnlocks.filter(s=>typeof s==='string').slice(0,5):[];
  showHangarTab(rewardHangarTab(rewards));
  if(rewards.length){
@@ -3318,6 +3336,14 @@ loadPrefs();
 dossierStore=window.SectorDossier?.createStore((()=>{try{return window.localStorage}catch(_){return null}})())||null;
 loadPaint(); // Dossier milestones must be available before restoring earned selections.
 
+// Physical touch/mouse should not leave a persistent keyboard-focus halo.
+ // Real keyboard input restores :focus-visible behavior without changing selection.
+menu.addEventListener('pointerdown',e=>{
+ if(e.target?.closest?.('button,summary'))menu.dataset.inputModality='pointer';
+});
+menu.addEventListener('keydown',e=>{
+ if(['Tab','ArrowLeft','ArrowRight','Home','End','Enter',' ','Spacebar'].includes(e.key))menu.dataset.inputModality='keyboard';
+});
 menu.addEventListener('keydown',e=>{
  const tab=e.target.closest?.('.hangar-tabs [role="tab"]');
  if(!tab||!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
