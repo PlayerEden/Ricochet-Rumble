@@ -4065,7 +4065,7 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 /* M5.1: real compact match mode in the existing top score rail.
    Does not consume battlefield area, intercept touches or alter match logic. */
 .game-hud .scorestrip>.hud-mode-chip{
- flex:0 0 auto;min-height:29px;min-width:0;
+ flex:0 0 auto;min-height:29px;min-width:34px;text-align:center;
  padding:5px clamp(4px,.65vw,9px);
  border-color:#d7ae6f99;border-bottom-color:#e9be78;
  background:#20313bbd;color:#f5d191;
@@ -4079,6 +4079,6 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 }
 @media(max-width:620px) and (orientation:landscape){
  .game-hud .scorestrip{gap:2px}
- .game-hud .scorestrip>.hud-mode-chip{font-size:8px;padding:4px 2px}
+ .game-hud .scorestrip>.hud-mode-chip{font-size:9px;min-width:34px;padding:4px 4px}
  .game-hud .scorestrip .middle{font-size:9px!important;padding-left:2px;padding-right:2px}
 }
