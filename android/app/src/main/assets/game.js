@@ -3122,7 +3122,7 @@ function lanCanStart(){
 function lanLobbyHTML(hostRole){
  const name=hostRole?'HOST MATCH':'JOINED MATCH';
  const controls=hostRole?'<div class="lan-grid">'+
- '<label>SIDES<select data-lan-setting="teamMode"><option value="ffa">FREE FOR ALL</option><option value="coop">CO-OP VS BOTS</option><option value="teams">OPPOSING TEAMS</option><option value="tdm">TEAM DEATHMATCH · SCORE</option></select></label>'+
+ '<label>MATCH TYPE<select data-lan-setting="teamMode"><option value="ffa">FREE FOR ALL</option><option value="coop">CO-OP VS BOTS</option><option value="teams">OPPOSING TEAMS</option><option value="tdm">TEAM DEATHMATCH · SCORE</option></select></label>'+
  '<label>HOST FACTION<select data-lan-setting="hostSide"><option value="cyan">CYAN · GUEST CORAL</option><option value="coral">CORAL · GUEST CYAN</option></select></label>'+
  '<label>KO TARGET<select data-lan-setting="scoreTarget"><option value="15">15 TEAM KOs</option><option value="30">30 TEAM KOs</option></select></label>'+
  '<label>MATCH SERIES<select data-lan-setting="rounds"><option value="1">SINGLE MATCH</option><option value="3">BEST OF 3</option></select></label>'+
@@ -3133,7 +3133,7 @@ function lanLobbyHTML(hostRole){
  '<label>FRIENDLY FIRE<select data-lan-setting="friendlyFire"><option value="off">OFF · ALLIES PASS THROUGH</option><option value="on">ON · ALLIES SOLID</option></select></label>'+
  '</div>':'<div class="lan-summary"><strong id="lan-guest-rules">AWAITING HOST RULES</strong><span>Only the host can change the match setup.</span></div>';
  return '<section class="lan-lobby" aria-label="Local multiplayer waiting room">'+
- '<header class="lan-lobby-head"><div class="eyebrow">LOCAL WI-FI / PRIVATE MATCH</div><h2>'+name.replace(' ',' <span>')+'</span></h2><p>'+(hostRole?'Start a bot-filled match without waiting, or keep the room open for another phone.':'Join the host room and press READY when available.')+'</p></header>'+
+ '<header class="lan-lobby-head"><div class="eyebrow">LOCAL WI-FI / PRIVATE MATCH</div><h2>'+name.replace(' ',' <span>')+'</span></h2><p>'+(hostRole?'Start against bots now, or wait for another phone. Players joining mid-match wait for the next match.':'Join the host room and press READY when available.')+'</p></header>'+
  '<div class="lan-lobby-body"><div class="lan-presence"><span>PLAYER 1 · HOST</span><strong id="lan-host-presence">CONNECTED</strong><span>PLAYER 2 · GUEST</span><strong id="lan-guest-presence">WAITING</strong></div>'+
  (hostRole?'<p class="lan-address">HOST ADDRESS · <span id="host-address">STARTING WI-FI ROOM...</span></p>':'')+
  '<div class="lan-lobby-controls">'+controls+'</div></div>'+
