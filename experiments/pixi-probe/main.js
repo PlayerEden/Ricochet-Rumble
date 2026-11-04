@@ -1,40 +1,48 @@
 // Sector Rebound renderer probe: isolated deterministic mini-arena, NOT game.js.
 // Shared motion/ballistics for both renderers. No account, saves, LAN or online requests.
-import { Application, Graphics, Container } from 'pixi.js';
+import { Application, Graphics, Container, Sprite, Texture } from 'pixi.js';
+import { TEAM_COLORS, WORLD_WIDTH, WORLD_HEIGHT, WALLS, buildUnitArt, createFieldgridFloor, makeBulletCanvas } from './fieldgrid-art.js';
 
-const W=960,H=540,MAX_SHOTS=90,BASE_COLOR=0x0d2734;
-const walls=[
- {x:0,y:0,w:960,h:22},{x:0,y:518,w:960,h:22},
- {x:0,y:0,w:22,h:540},{x:938,y:0,w:22,h:540},
- {x:226,y:85,w:22,h:165},{x:226,y:317,w:22,h:139},
- {x:474,y:25,w:22,h:132},{x:474,y:229,w:22,h:108},
- {x:474,y:414,w:22,h:103},
- {x:683,y:83,w:22,h:167},{x:683,y:320,w:22,h:137},
- {x:280,y:259,w:154,h:20},{x:548,y:260,w:94,h:20}
-];
-const colors={cyan:'#76dce6',coral:'#ed947a',wall:'#567789',trim:'#98b6c3'};
+const W=960,H=540,MAX_SHOTS=180,BASE_COLOR=0x101f2b;
+const walls=WALLS;
+const colors={cyan:TEAM_COLORS[0],coral:TEAM_COLORS[1]};
+const baseBotPositions=[[1210,168,'tank'],[1220,515,'mech'],[850,790,'pilot'],[1020,305,'tank'],[520,805,'mech'],[570,200,'pilot'],[1090,805,'tank'],[1130,645,'mech'],[920,110,'pilot'],[1200,335,'tank'],[615,615,'mech'],[910,520,'pilot'],[280,760,'tank'],[300,175,'pilot'],[780,410,'mech'],[1320,755,'tank'],[1280,880,'pilot'],[570,360,'mech']];
+let floorCanvas=null,art=null,bulletArt=null,unitTextures=null,projectileTexture=null;
+let load='match',camera={x:0,y:0,zoom:.73},effects=[];
+const unitSize=120;
 const $=(id)=>document.getElementById(id);
 const root=$('field'),normal=$('canvas2d'),ctx=normal.getContext('2d',{alpha:false});
-let scene=null, pixi=null, graphics=null, engine='pixi',time=0,elapsed=0,prev=0,frame=0;
-let move={x:0,y:0},aim=null,keyboard=new Set(),paused=false,waiting=false;
+let scene=null, pixi=null, engine='pixi',time=0,prev=0,frame=0;
+let move={x:0,y:0},aim=null,keyboard=new Set(),paused=false;
 let renderSamples=[],frameSamples=[],running=true;
 const R=19;
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 const norm=(x,y)=>{const mag=Math.hypot(x,y);return mag<.02?{x:0,y:0}:{x:x/mag,y:y/mag}};
 function reset(){
+ const n=load==='stress'?18:5;
  scene={
-  player:{x:112,y:273,a:0,dir:0,team:0,hp:4,cool:.1},
-  bots:[
-   {x:816,y:144,a:Math.PI,dir:Math.PI,team:1,hp:3,cool:.9},
-   {x:814,y:401,a:Math.PI,dir:Math.PI,team:1,hp:3,cool:1.3},
-   {x:575,y:188,a:Math.PI,dir:Math.PI,team:1,hp:3,cool:1.7}
-  ],shots:[],kills:0,deaths:0
+  player:{x:175,y:448,a:0,dir:0,team:0,type:'tank',hp:4,cool:.1},
+  bots:baseBotPositions.slice(0,n).map((v,i)=>({x:v[0],y:v[1],a:Math.PI,dir:Math.PI,team:1,type:v[2],hp:3,cool:.7+i*.11})),
+  parked:[{x:395,y:175,a:.32,dir:.32,team:0,type:'mech',hp:3},{x:280,y:595,a:-.65,dir:-.65,team:0,type:'tank',hp:3}],
+  shots:[],kills:0,deaths:0
  };
- time=0;renderSamples=[];frameSamples=[];
+ effects=[];time=0;renderSamples=[];frameSamples=[];frame=0;
+ camera.x=0;camera.y=0;camera.zoom=.73;
+ if(load==='stress')for(let i=0;i<80;i++){
+  const a=i*2.39996,spd=130+(i%5)*37;
+  scene.shots.push({x:400+(i*71)%770,y:100+(i*43)%690,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,team:i%2,bounces:0,life:2.9+(i%5)*.2,active:true});
+ }
  updateHud();
 }
+function addFx(x,y,team){
+ for(let i=0;i<8;i++){
+  const theta=(i/8)*Math.PI*2+time*.3;
+  effects.push({x,y,vx:Math.cos(theta)*(42+i*9),vy:Math.sin(theta)*(42+i*9),life:.4+i*.018,maxLife:.56,size:i%3===0?4:2,team});
+ }
+ if(effects.length>230)effects.splice(0,effects.length-230);
+}
 function occupied(x,y,r=R){
- if(x<24+r||x>W-24-r||y<24+r||y>H-24-r)return true;
+ if(x<24+r||x>WORLD_WIDTH-24-r||y<24+r||y>WORLD_HEIGHT-24-r)return true;
  return walls.some(w=>x+r>w.x&&x-r<w.x+w.w&&y+r>w.y&&y-r<w.y+w.h);
 }
 function moveUnit(u,dx,dy){
@@ -45,7 +53,7 @@ function shoot(u){
  if(u.hp<=0||u.cool>0||scene.shots.length>=MAX_SHOTS)return;
  const dx=Math.cos(u.a),dy=Math.sin(u.a);
  scene.shots.push({x:u.x+dx*32,y:u.y+dy*32,vx:dx*345,vy:dy*345,team:u.team,bounces:0,life:3.6,active:true});
- u.cool=u.team===0?.29:.78;
+ u.cool=u.team===0?.29:(load==='stress'?.55:.78);
 }
 function intersectBullet(b){
  for(const w of walls){
@@ -63,13 +71,14 @@ function bounceBullet(b,oldX,oldY){
  if(!fromSide&&!fromTop){b.vx*=-1;b.vy*=-1;}
  b.x=oldX;b.y=oldY;b.bounces++;
  if(b.bounces>3)b.life=0;
+ addFx(b.x,b.y,b.team);
 }
 function hitUnit(b,u){
  if(u.hp<=0||u.team===b.team||Math.hypot(b.x-u.x,b.y-u.y)>R+4)return false;
- u.hp--;b.life=0;
+ u.hp--;b.life=0;addFx(b.x,b.y,b.team);
  if(u.hp<=0){
-  if(u.team===0){scene.deaths++;u.x=112;u.y=273;u.hp=4;}
-  else {scene.kills++;u.x=u.x>600?825:600;u.y=u.y<270?140:405;u.hp=3;}
+  if(u.team===0){scene.deaths++;u.x=175;u.y=448;u.hp=4;}
+  else {scene.kills++;u.x=u.x>850?1200:775;u.y=u.y<480?170:700;u.hp=3;}
  }
  updateHud();return true;
 }
@@ -92,7 +101,7 @@ function advance(dt){
   u.dir=u.a;
   const desiredMove=Math.sin(time*.63+i*1.4)*.65;
   moveUnit(u,Math.cos(u.a)*desiredMove*55*dt,Math.sin(u.a)*desiredMove*55*dt);
-  if(Math.abs(angle)<.22&&Math.hypot(u.x-p.x,u.y-p.y)<850)shoot(u);
+  if(Math.abs(angle)<.22&&Math.hypot(u.x-p.x,u.y-p.y)<1000)shoot(u);
  });
  for(const b of scene.shots){
   if(b.life<=0)continue;
@@ -106,6 +115,12 @@ function advance(dt){
   }
  }
  scene.shots=scene.shots.filter(b=>b.life>0);
+ if(load==='stress'&&scene.shots.length<75&&Math.floor(time*10)%2===0){const i=Math.floor(time*30)%scene.bots.length,u=scene.bots[i];u.cool=0;shoot(u);}
+ for(const fx of effects){fx.x+=fx.vx*dt;fx.y+=fx.vy*dt;fx.life-=dt;}
+ effects=effects.filter(fx=>fx.life>0);
+ const zoom=.73,viewW=W/zoom,viewH=H/zoom;
+ camera.zoom=zoom;camera.x=clamp(p.x-viewW/2,0,WORLD_WIDTH-viewW);
+ camera.y=clamp(p.y-viewH/2,0,WORLD_HEIGHT-viewH);
  if(keyboard.has(' '))shoot(p);
 }
 function paintTank(c,u){
