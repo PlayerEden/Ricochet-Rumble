@@ -133,6 +133,7 @@
   <header class="mode-head">
    <div class="mode-header-copy"><div class="eyebrow">SOLO PLAY</div><h2>CHOOSE <span>MODE</span></h2><p>Every match generates a new arena.</p></div>
    <canvas id="menu-preview" class="mode-vehicle-preview" width="240" height="110" aria-hidden="true"></canvas>
+   <button type="button" class="m12-mode-art-cycle" data-action="m12-mode-art-next" aria-label="Compare Mode Select artwork with original" aria-pressed="true" hidden>ART: STUDY</button>
    <button type="button" class="mode-back" data-action="modes-back" aria-label="Back to main menu">← BACK</button>
   </header>
   <div class="mode-grid" aria-label="Core field operations">
@@ -278,8 +279,10 @@
   <div class="hangar-body">
    <section class="hangar-bay" aria-label="Equipped unit preview">
     <div class="hangar-bay-caption"><div class="hangar-preview-title"><span class="sr-kicker">UNIT PREVIEW · COSMETICS</span><strong id="hangar-unit-label">STANDARD / TANK PREVIEW</strong></div><button type="button" class="hangar-unit-toggle" data-action="hangar-preview-unit" aria-label="Preview mech instead of tank">VIEW MECH</button></div>
+    <div class="m12-art-plate" aria-hidden="true"></div>
     <div class="hangar-architecture" aria-hidden="true"></div>
     <canvas id="hangar-unit-preview" width="400" height="240" aria-label="Equipped paint on Sector Rebound tank"></canvas>
+    <button type="button" class="m12-art-cycle" data-action="m12-art-next" aria-label="Compare experimental Hangar backgrounds" hidden>ART: WARM</button>
     <div class="hangar-bay-foot"><span id="hangar-preview-unit-label">PREVIEW ONLY · COSMETIC</span><span id="hangar-preview-paint">PAINT · STANDARD</span></div>
    </section>
    <div class="hangar-customize">
@@ -298,7 +301,7 @@
   <p class="hangar-equipped" id="hangar-status" role="status">EQUIPPED · STANDARD · SOLO ONLY</p>
   </div>
   <div id="hangar-insignia" class="hangar-pane" role="tabpanel" aria-label="Pilot insignia" hidden>
-  <h3 class="hangar-subhead">PILOT INSIGNIA</h3>
+  <div class="m12-insignia-head"><h3 class="hangar-subhead">PILOT INSIGNIA</h3><button type="button" class="m12-insignia-art-cycle" data-action="m12-insignia-art-next" aria-label="Compare original and experimental insignia art" aria-pressed="true" hidden>BADGES: STUDY</button></div>
   <div class="emblem-grid" role="group" aria-label="Choose operator insignia for local Dossier">
    <button type="button" data-action="equip-emblem" data-emblem-id="mark.field"><span class="emblem-symbol" aria-hidden="true"><svg class="sr-mark-icon" viewBox="0 0 32 32"><use href="#sr-mark-field"/></svg></span><strong>FIELD</strong><small>STANDARD ISSUE</small></button>
    <button type="button" data-action="equip-emblem" data-emblem-id="mark.vector" disabled><span class="emblem-symbol" aria-hidden="true"><svg class="sr-mark-icon" viewBox="0 0 32 32"><use href="#sr-mark-vector"/></svg></span><strong>VECTOR</strong><small>0 / 3 MATCHES</small></button>

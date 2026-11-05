@@ -4173,3 +4173,303 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  .solo-watch-bar button{min-height:32px;padding:5px 7px}
 }
 @media(prefers-reduced-motion:reduce){.solo-watch-bar{transition:none;animation:none}}
+
+
+/* M12 standalone visual study, never active in production startup.
+   Study plate sits below the real Tank/Mech canvas; original CSS is a third option. */
+#menu #panel .m12-art-cycle[hidden]{display:none!important}
+#menu #panel .m12-art-cycle:not([hidden]){
+ flex:0 0 auto;min-width:93px;min-height:44px;margin:0;padding:5px 8px;
+ border:1px solid #8aadaf;background:#213e4a;color:#f5e2b7;
+ font:800 clamp(9px,1vw,12px)/1 ui-monospace,monospace;letter-spacing:.02em;
+ border-radius:3px;box-shadow:inset 0 -2px 0 #b58d54;
+}
+#menu #panel .m12-art-cycle:focus-visible{outline:2px solid #f4ca83;outline-offset:2px}
+#menu .hangar-bay .m12-art-plate{display:none;pointer-events:none}
+#menu .hangar-bay[data-m12-art="warm"],
+#menu .hangar-bay[data-m12-art="blueprint"]{background:#091923}
+#menu .hangar-bay[data-m12-art="warm"] .m12-art-plate,
+#menu .hangar-bay[data-m12-art="blueprint"] .m12-art-plate{
+ position:absolute;display:block;inset:0;z-index:0;pointer-events:none;
+ background-position:center center;background-size:cover;background-repeat:no-repeat;
+}
+#menu .hangar-bay[data-m12-art="warm"] .m12-art-plate{
+ background-image:url("assets/m12/hangar-warm-empty-v1.svg");
+}
+#menu .hangar-bay[data-m12-art="blueprint"] .m12-art-plate{
+ background-image:url("assets/m12/hangar-blueprint-empty-v1.svg");
+}
+#menu .hangar-bay[data-m12-art="warm"]::before,
+#menu .hangar-bay[data-m12-art="blueprint"]::before,
+#menu .hangar-bay[data-m12-art="warm"]::after,
+#menu .hangar-bay[data-m12-art="blueprint"]::after,
+#menu .hangar-bay[data-m12-art="warm"] .hangar-architecture,
+#menu .hangar-bay[data-m12-art="blueprint"] .hangar-architecture{opacity:0!important}
+#menu .hangar-bay[data-m12-art="warm"] #hangar-unit-preview,
+#menu .hangar-bay[data-m12-art="blueprint"] #hangar-unit-preview{
+ position:absolute;z-index:1;pointer-events:none;
+}
+#menu .hangar-bay[data-m12-art] :is(.hangar-bay-caption,.hangar-bay-foot){z-index:2}
+@media(max-width:650px) and (orientation:landscape){
+ #menu #panel .m12-art-cycle:not([hidden]){min-width:80px;min-height:44px;padding:5px;font-size:9px}
+ #menu .hangar-head .hangar-title p{display:none}
+}
+@media(prefers-reduced-motion:reduce){#menu .hangar-bay[data-m12-art] .m12-art-plate{animation:none!important;transition:none!important}}
+
+/* M12 visual QA: art comparison stays inside its own preview stage, never
+   crowds the established global BACK and Hangar heading at narrow landscape. */
+#menu #panel .hangar-bay .m12-art-cycle:not([hidden]){
+ position:absolute;z-index:3;right:clamp(4px,.8vw,10px);bottom:clamp(31px,5dvh,38px);
+ min-width:83px;min-height:44px;max-width:110px;
+ padding:5px 7px;white-space:nowrap;
+ background:#102e3ada;border:1px solid #a1bec0;
+ color:#f4e0ac;
+}
+
+/* M12-E isolated mode artwork study. The normal game never matches this selector,
+   so it never fetches or decodes these local artwork files. Original mode buttons,
+   text, keyboard focus, hit areas and authentic live vehicle preview stay intact. */
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-mission,
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch{isolation:isolate;overflow:hidden}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-mission::before,
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch::before{
+ content:"";display:block;position:absolute;right:14px;top:0;bottom:0;
+ width:clamp(52px,25%,96px);opacity:.67;pointer-events:none;
+ background-position:center;background-size:cover;background-repeat:no-repeat;
+ mask-image:linear-gradient(90deg,transparent 0%,#000 38%,#000 100%);
+}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-cqc::before{background-image:url("assets/m12/mode-cqc-study-v1.svg")}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-ffa::before{background-image:url("assets/m12/mode-ffa-study-v1.svg")}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-tdm::before{background-image:url("assets/m12/mode-tdm-study-v1.svg")}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-custom::before{background-image:url("assets/m12/mode-custom-study-v1.svg");opacity:.50}
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch[data-action="forwardbay"]::before{background-image:url("assets/m12/mode-forward-bays-study-v1.svg")}
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch[data-action="ctf"]::before{background-image:url("assets/m12/mode-ctf-study-v1.svg")}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-copy,
+#menu .mode-screen[data-m12-mode-art="on"] .mode-icon,
+#menu .mode-screen[data-m12-mode-art="on"] .mode-arrow,
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-copy,
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-icon,
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-arrow{position:relative;z-index:1}
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch{position:relative}
+@media(max-width:650px){
+ #menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-mission::before{right:8px;width:52px;opacity:.45}
+}
+@media(prefers-reduced-motion:reduce){
+ #menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-mission::before,
+ #menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch::before{animation:none!important;transition:none!important}
+}
+
+/* M12-E2: a genuine in-app A/B on the isolated visual lab only.
+   Fourth header column fits inside the existing compact landscape header.
+   Native button remains hidden on every default/non-M12 launch. */
+#menu #panel .m12-mode-art-cycle[hidden]{display:none!important}
+#menu .mode-screen[data-m12-mode-art] .mode-head{
+ grid-template-columns:minmax(0,1fr) clamp(72px,13vw,140px) clamp(88px,11vw,114px) auto;
+ column-gap:clamp(3px,.55vw,8px);
+}
+#menu #panel .mode-screen[data-m12-mode-art] .mode-head>.m12-mode-art-cycle{
+ width:100%;min-width:0;min-height:44px;max-height:44px;
+ align-self:center;justify-self:stretch;margin:0;padding:4px 5px;
+ white-space:nowrap;letter-spacing:.01em;
+ font:800 clamp(9px,.9vw,11px)/1.08 ui-monospace,monospace;
+ color:#f0dfb6;background:#163643;border:1px solid #688d94;border-radius:3px;
+ box-shadow:inset 0 -2px 0 #b58d54;
+}
+#menu #panel .mode-screen[data-m12-mode-art] .mode-head>.m12-mode-art-cycle:focus-visible{
+ outline:2px solid #ffdc9b;outline-offset:2px;
+}
+#menu #panel .mode-screen[data-m12-mode-art="off"] .mode-head>.m12-mode-art-cycle{
+ color:#c4dce0;border-color:#62747a;box-shadow:none;background:#1d3039;
+}
+@media(max-width:620px) and (orientation:landscape){
+ #menu .mode-screen[data-m12-mode-art] .mode-head{
+  grid-template-columns:minmax(0,1fr) 72px 88px 68px;column-gap:3px;
+ }
+ #menu #panel .mode-screen[data-m12-mode-art] .mode-head>.m12-mode-art-cycle{
+  font-size:9px;padding:4px 3px;
+ }
+}
+
+/* M12-E3: offline insignia review only; non-M12 apps retain canonical SVG icons. */
+#menu #panel .m12-insignia-art-cycle[hidden]{display:none!important}
+#menu .hangar-screen[data-m12-insignia-art] .m12-insignia-head{
+ display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0;min-height:44px;
+}
+#menu .hangar-screen[data-m12-insignia-art] .m12-insignia-head .hangar-subhead{
+ min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+#menu #panel .hangar-screen[data-m12-insignia-art] .m12-insignia-art-cycle{
+ flex:0 0 auto;width:clamp(110px,13vw,140px);max-width:140px;min-width:110px;min-height:44px;margin:0;padding:5px 7px;
+ border:1px solid #8babb2;border-radius:3px;background:#1a3b48;color:#f3deac;
+ font:800 clamp(9px,.95vw,11px)/1.1 ui-monospace,monospace;
+ white-space:nowrap;box-shadow:inset 0 -2px 0 #bd985d;
+}
+#menu #panel .hangar-screen[data-m12-insignia-art="off"] .m12-insignia-art-cycle{
+ background:#233742;color:#b8d2d9;box-shadow:none;
+}
+#menu .hangar-screen[data-m12-insignia-art="on"] .emblem-grid .emblem-symbol{
+ background-color:#102632;background-size:contain;background-position:center;background-repeat:no-repeat;
+}
+#menu .hangar-screen[data-m12-insignia-art="on"] .emblem-grid .emblem-symbol .sr-mark-icon,
+#menu .hangar-screen[data-m12-insignia-art="on"] .insignia-detail-mark .sr-mark-icon{visibility:hidden}
+#menu .hangar-screen[data-m12-insignia-art="on"] .emblem-grid [data-emblem-id="mark.field"] .emblem-symbol{
+ background-image:url("assets/m12/insignia-field-study-v1.svg");
+}
+#menu .hangar-screen[data-m12-insignia-art="on"] .emblem-grid [data-emblem-id="mark.vector"] .emblem-symbol{
+ background-image:url("assets/m12/insignia-vector-study-v1.svg");
+}
+#menu .hangar-screen[data-m12-insignia-art="on"] .emblem-grid [data-emblem-id="mark.ace"] .emblem-symbol{
+ background-image:url("assets/m12/insignia-ace-study-v1.svg");
+}
+#menu .hangar-screen[data-m12-insignia-art="on"] .emblem-grid [data-emblem-id="mark.command"] .emblem-symbol{
+ background-image:url("assets/m12/insignia-command-study-v1.svg");
+}
+#menu .hangar-screen[data-m12-insignia-art="on"] .insignia-detail-mark{
+ background-position:center;background-repeat:no-repeat;background-size:contain;
+}
+#menu .hangar-screen[data-m12-insignia-art="on"] .insignia-detail-mark[data-study-emblem="field"]{
+ background-image:url("assets/m12/insignia-field-study-v1.svg");
+}
+#menu .hangar-screen[data-m12-insignia-art="on"] .insignia-detail-mark[data-study-emblem="vector"]{
+ background-image:url("assets/m12/insignia-vector-study-v1.svg");
+}
+#menu .hangar-screen[data-m12-insignia-art="on"] .insignia-detail-mark[data-study-emblem="ace"]{
+ background-image:url("assets/m12/insignia-ace-study-v1.svg");
+}
+#menu .hangar-screen[data-m12-insignia-art="on"] .insignia-detail-mark[data-study-emblem="command"]{
+ background-image:url("assets/m12/insignia-command-study-v1.svg");
+}
+@media(max-width:650px) and (orientation:landscape){
+ #menu #panel .hangar-screen[data-m12-insignia-art] .m12-insignia-art-cycle{min-width:105px;padding:4px 5px;font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ #menu .hangar-screen[data-m12-insignia-art="on"] .emblem-symbol{animation:none!important;transition:none!important}
+}
+
+/* M12-G isolated visual cohesion and phone legibility. No effect when the
+   explicit M12 study URL / its art toggles are OFF. No new runtime assets. */
+#menu .mode-screen[data-m12-mode-art="on"]{
+ --m12-steel:#183743;--m12-cyan:#8dd3d7;--m12-amber:#e2ba78;
+}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-head{
+ border-bottom-color:#6fabb057;
+}
+#menu #panel .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-mission,
+#menu #panel .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch{
+ border-top-color:#688e9259;border-bottom-color:#172e3f;
+ background:linear-gradient(105deg,#172f3c 0%,#112935 58%,#0c222c 100%);
+ box-shadow:inset 0 1px 0 #d4edf018,inset 0 -1px 0 #050e166b;
+}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-mission::before{
+ right:0;width:clamp(90px,37%,148px);opacity:.78;
+ background-position:right center;
+ mask-image:linear-gradient(90deg,transparent 0%,#000 32%,#000 100%);
+}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-custom::before{
+ opacity:.65;
+}
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch::before{
+ right:0;width:clamp(96px,33%,157px);opacity:.72;
+ background-position:right center;
+ mask-image:linear-gradient(90deg,transparent 0%,#000 36%,#000 100%);
+}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-copy,
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-copy{
+ text-shadow:0 1px 3px #051722;
+}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-copy strong,
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-copy strong{
+ color:#f4f6f1;
+}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-copy small,
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-copy small{
+ color:#bdd4d6;
+}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-serial{
+ color:#d1b37b;
+}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-icon,
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-icon{
+ color:#c2e5e5;border:1px solid #547a80;
+ background:#102934e6;
+}
+#menu #panel .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-mission:focus-visible,
+#menu #panel .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch:focus-visible{
+ outline:2px solid #f4d18f;outline-offset:1px;
+}
+/* Badges echo the same thin metal rail/amber selected identity as mode cards.
+   Disabled unlocks remain disabled, dim enough to read but not masquerade as owned. */
+#menu .hangar-screen[data-m12-insignia-art="on"] .m12-insignia-head{
+ border-bottom:1px solid #76a5a33b;padding-bottom:2px;
+}
+#menu #panel .hangar-screen[data-m12-insignia-art="on"] .emblem-grid button{
+ border-color:#54727b;
+ background:linear-gradient(125deg,#193441,#112b37);
+ box-shadow:inset 0 1px 0 #dbedf018;
+}
+#menu #panel .hangar-screen[data-m12-insignia-art="on"] .emblem-grid button.selected{
+ border-color:#e4ba78;
+ box-shadow:inset 0 0 0 1px #dcb67d66,inset 0 1px 0 #fff4dd22;
+}
+#menu #panel .hangar-screen[data-m12-insignia-art="on"] .emblem-grid button:disabled{
+ opacity:.77;border-color:#537079;border-style:solid;
+}
+#menu .hangar-screen[data-m12-insignia-art="on"] .emblem-grid button.locked .emblem-symbol{
+ filter:grayscale(.78);opacity:.72;
+}
+#menu .hangar-screen[data-m12-insignia-art="on"] .emblem-grid .emblem-symbol{
+ width:clamp(28px,3.7vw,38px);height:clamp(28px,5.3dvh,36px);
+ border:1px solid #6f9295;border-radius:2px;
+ background-color:#102632;
+}
+#menu .hangar-screen[data-m12-insignia-art="on"] .emblem-grid strong{
+ font-size:clamp(9px,1.05vw,11px);letter-spacing:.025em;
+ white-space:nowrap;
+}
+#menu .hangar-screen[data-m12-insignia-art="on"] .emblem-grid small{
+ font-size:clamp(7px,.85vw,9px);white-space:nowrap;
+}
+#menu .hangar-screen[data-m12-insignia-art="on"] .insignia-detail-mark{
+ border-color:#dfbb7e;box-shadow:inset 0 0 0 1px #dcb67d3a;
+}
+#menu .hangar-bay:is([data-m12-art="warm"],[data-m12-art="blueprint"]){
+ border-color:#5c858e;box-shadow:inset 0 0 0 1px #9ccece1c;
+}
+@media(max-width:650px) and (orientation:landscape){
+ #menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-mission::before{
+  width:clamp(72px,31%,105px);opacity:.62;
+ }
+ #menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch::before{
+  width:clamp(77px,30%,104px);opacity:.6;
+ }
+ #menu .hangar-screen[data-m12-insignia-art="on"] .emblem-grid strong{
+  font-size:9px;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ #menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-mission,
+ #menu .hangar-screen[data-m12-insignia-art="on"] .emblem-grid button{
+  animation:none!important;transition:none!important;
+ }
+}
+
+/* M13-A isolated production-style preview: actual equipped insignia, no save change. */
+#menu .dossier-screen[data-m13-preview="on"] #dossier-emblem-mark{
+ background-position:center;background-size:contain;background-repeat:no-repeat;
+ background-color:#112b35;border:1px solid #d7b777;border-radius:2px;
+ box-shadow:inset 0 0 0 1px #efd09135;
+}
+#menu .dossier-screen[data-m13-preview="on"] #dossier-emblem-mark .sr-mark-icon{visibility:hidden}
+#menu .dossier-screen[data-m13-preview="on"] #dossier-emblem-mark[data-m13-emblem="field"]{background-image:url("assets/m12/insignia-field-study-v1.svg")}
+#menu .dossier-screen[data-m13-preview="on"] #dossier-emblem-mark[data-m13-emblem="vector"]{background-image:url("assets/m12/insignia-vector-study-v1.svg")}
+#menu .dossier-screen[data-m13-preview="on"] #dossier-emblem-mark[data-m13-emblem="ace"]{background-image:url("assets/m12/insignia-ace-study-v1.svg")}
+#menu .dossier-screen[data-m13-preview="on"] #dossier-emblem-mark[data-m13-emblem="command"]{background-image:url("assets/m12/insignia-command-study-v1.svg")}
+/* Free the Mode Select header space after hiding the dev comparison control. */
+#menu .mode-screen[data-m12-mode-art="on"] .mode-head:has(>.m12-mode-art-cycle[hidden]){
+ grid-template-columns:minmax(0,1fr) clamp(104px,18vw,172px) auto;
+}
+@media(max-width:620px) and (orientation:landscape){
+ #menu .mode-screen[data-m12-mode-art="on"] .mode-head:has(>.m12-mode-art-cycle[hidden]){
+  grid-template-columns:minmax(0,1fr) 100px 70px;
+ }
+}
