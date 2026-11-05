@@ -90,7 +90,7 @@ async function reviewUI(which){
  await page.locator('#menu button[data-action="settings"]').click();
  assert.equal(await page.locator('#map-size').inputValue(),'standard',which+': map size');
  assert.equal(await page.locator('#bot-count').inputValue(),'1',which+': bot count');
- await page.locator('.settings-screen [data-action="settings-back"]').click();
+ await page.locator('#menu button[data-action="settings-back"]').click();
  await page.locator('#menu button[data-action="modes"]').click();
  await page.locator('.mode-grid button[data-action="custom"]').click();
  assert.equal(await page.locator('#custom-mode').inputValue(),'survival_ffa',which+': Custom mode');
