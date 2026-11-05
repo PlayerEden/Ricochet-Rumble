@@ -68,9 +68,11 @@ for(const name of names)
 const activity=fs.readFileSync(
  'android/app/src/main/java/com/playereden/ricochetrumble/MainActivity.java','utf8');
 assert.ok(activity.includes('getPackageName().endsWith(".m12visual")')&&
- activity.includes('index.html?hybridMenu=1&m12Art=warm')&&
+ activity.includes('index.html?hybridMenu=1&m13Preview=1')&&
  activity.includes('file:///android_asset/index.html";'),
  'Original Android launch path must remain preserved');
+assert.ok(fs.readFileSync('web/game.js','utf8').includes("const M13_PROMOTION_PREVIEW="),
+ 'M13 art preview must not silently become the default');
 const report={
  result:'SCOPE_PASS_RELEASE_BLOCKED',baselineSha:base,checkedHeadSha:head,
  changedFiles:diff.length,diff,protectedBaselineFiles:protectedPaths,

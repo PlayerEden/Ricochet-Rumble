@@ -86,7 +86,7 @@ public final class MainActivity extends Activity {
         // Only the new isolated M12 QA app auto-opens the art comparison.
         // Standard production and the older Hybrid Test preserve their URLs.
         String initialPage = getPackageName().endsWith(".m12visual")
-            ? "file:///android_asset/index.html?hybridMenu=1&m12Art=warm"
+            ? "file:///android_asset/index.html?hybridMenu=1&m13Preview=1"
             : getPackageName().endsWith(".hybridtest")
                 ? "file:///android_asset/index.html?hybridMenu=1"
                 : "file:///android_asset/index.html";

@@ -4404,3 +4404,24 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
   animation:none!important;transition:none!important;
  }
 }
+
+/* M13-A isolated production-style preview: actual equipped insignia, no save change. */
+#menu .dossier-screen[data-m13-preview="on"] #dossier-emblem-mark{
+ background-position:center;background-size:contain;background-repeat:no-repeat;
+ background-color:#112b35;border:1px solid #d7b777;border-radius:2px;
+ box-shadow:inset 0 0 0 1px #efd09135;
+}
+#menu .dossier-screen[data-m13-preview="on"] #dossier-emblem-mark .sr-mark-icon{visibility:hidden}
+#menu .dossier-screen[data-m13-preview="on"] #dossier-emblem-mark[data-m13-emblem="field"]{background-image:url("assets/m12/insignia-field-study-v1.svg")}
+#menu .dossier-screen[data-m13-preview="on"] #dossier-emblem-mark[data-m13-emblem="vector"]{background-image:url("assets/m12/insignia-vector-study-v1.svg")}
+#menu .dossier-screen[data-m13-preview="on"] #dossier-emblem-mark[data-m13-emblem="ace"]{background-image:url("assets/m12/insignia-ace-study-v1.svg")}
+#menu .dossier-screen[data-m13-preview="on"] #dossier-emblem-mark[data-m13-emblem="command"]{background-image:url("assets/m12/insignia-command-study-v1.svg")}
+/* Free the Mode Select header space after hiding the dev comparison control. */
+#menu .mode-screen[data-m12-mode-art="on"] .mode-head:has(>.m12-mode-art-cycle[hidden]){
+ grid-template-columns:minmax(0,1fr) clamp(104px,18vw,172px) auto;
+}
+@media(max-width:620px) and (orientation:landscape){
+ #menu .mode-screen[data-m12-mode-art="on"] .mode-head:has(>.m12-mode-art-cycle[hidden]){
+  grid-template-columns:minmax(0,1fr) 100px 70px;
+ }
+}

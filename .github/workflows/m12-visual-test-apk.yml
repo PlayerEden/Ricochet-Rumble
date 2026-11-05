@@ -71,6 +71,8 @@ jobs:
           export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           test -n "$CHROME_BIN"
           node tests/m12-hangar-visual-qa.mjs
+          node tests/m13-promotion-preview-qa.mjs
+          test -s qa-results/m13/preview/report.json
           node tests/m12-art-scale-budget.mjs
           node tests/m12-f2-progress-continuity.mjs
           test -s qa-results/m12/release-gate/m12-f2-progress-continuity.json
@@ -121,8 +123,8 @@ jobs:
         run: |
           set -euo pipefail
           grep -F 'android:label="Sector Rebound"' app/src/main/AndroidManifest.xml
-          sed -i 's/android:label="Sector Rebound"/android:label="SR M12 Visual"/' app/src/main/AndroidManifest.xml
-          grep -F 'android:label="SR M12 Visual"' app/src/main/AndroidManifest.xml
+          sed -i 's/android:label="Sector Rebound"/android:label="SR M13 Preview"/' app/src/main/AndroidManifest.xml
+          grep -F 'android:label="SR M13 Preview"' app/src/main/AndroidManifest.xml
           gradle --no-daemon :app:assembleDebug -PsrM12VisualLabPackage=true
       - name: Verify isolated Android ID, embedded art, signer, native launch and hash
         run: |
@@ -135,7 +137,7 @@ jobs:
           "$apksigner" verify --min-sdk-version 26 --print-certs "$apk" > /tmp/sr-m12-cert.txt
           line="$("$aapt" dump badging "$apk" | head -n 1)"
           [[ "$line" == *"name='com.playereden.ricochetrumble.m12visual'"* ]]
-          "$aapt" dump badging "$apk" | grep -F "application-label:'SR M12 Visual'"
+          "$aapt" dump badging "$apk" | grep -F "application-label:'SR M13 Preview'"
           python3 - "$apk" <<'PY'
           import sys, zipfile, pathlib, hashlib
           with zipfile.ZipFile(sys.argv[1]) as z:
@@ -148,20 +150,21 @@ jobs:
                   assert z.read('assets/'+f)==pathlib.Path('web/'+f).read_bytes(), f+' web/android bundle drift'
               assert b'm12-art-cycle' in z.read('assets/index.html')
               assert b'refreshM12HangarStudy' in z.read('assets/game.js')
+              assert b'M13_PROMOTION_PREVIEW' in z.read('assets/game.js')
               assert sum(f.startswith('assets/assets/m12/') for f in z.namelist())==12, 'Expected twelve M12-only resources'
               dex=[n for n in z.namelist() if n.startswith('classes') and n.endswith('.dex')]
-              assert dex and any(b'm12Art=warm' in z.read(n) for n in dex), 'Missing dedicated M12 app launch URL'
+              assert dex and any(b'm13Preview=1' in z.read(n) for n in dex), 'Missing dedicated M12 app launch URL'
           PY
           mkdir -p dist
-          cp "$apk" dist/SR-M12-Visual-Test.apk
-          hash="$(sha256sum dist/SR-M12-Visual-Test.apk | awk '{print $1}')"
+          cp "$apk" dist/SR-M13-Promotion-Preview.apk
+          hash="$(sha256sum dist/SR-M13-Promotion-Preview.apk | awk '{print $1}')"
           {
             echo "PR_HEAD=${{ github.event.pull_request.head.sha }}"
             echo "WORKFLOW_SOURCE_SHA=$GITHUB_SHA"
             echo "APP_ID=com.playereden.ricochetrumble.m12visual"
-            echo "LAUNCHER=SR M12 Visual"
-            echo "INITIAL_URL=file:///android_asset/index.html?hybridMenu=1&m12Art=warm"
-            echo "TEST_UI=Hangar ART cycles WARM > BLUEPRINT > ORIGINAL; Mode Select ART toggles STUDY / ORIGINAL independently"
+            echo "LAUNCHER=SR M13 Preview"
+            echo "INITIAL_URL=file:///android_asset/index.html?hybridMenu=1&m13Preview=1"
+            echo "TEST_UI=Approved Warm Hangar, study modes, badges and Dossier; dev comparison controls hidden"
             echo "APK_SHA256=$hash"
             echo "SIGNER=DISPOSABLE_CI_DEBUG"
             echo "NO_OWNER_SAVED_DATA_ACCESS"
@@ -173,12 +176,13 @@ jobs:
       - name: Upload tested screenshots, app and verification
         uses: actions/upload-artifact@v4
         with:
-          name: SR-M12-Visual-Test-APK-${{ github.run_id }}
+          name: SR-M13-Promotion-Preview-APK-${{ github.run_id }}
           path: |
-            dist/SR-M12-Visual-Test.apk
+            dist/SR-M13-Promotion-Preview.apk
             dist/verification.txt
             dist/m12-f-default-apk.txt
             qa-results/m12/visual/
             qa-results/m12/release-gate/
+            qa-results/m13/preview/
           retention-days: 21
           if-no-files-found: error
