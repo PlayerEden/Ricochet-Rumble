@@ -29,11 +29,16 @@ def requestedPreviewCode = providers.gradleProperty('srPreviewVersionCode').orNu
 def requestedPreviewName = providers.gradleProperty('srPreviewVersionName').orNull
 def previewPackageSwitch = providers.gradleProperty('srPreviewPackage').orNull
 // An isolated, self-contained phone demo. Never uses the production or owner preview ID.
+def pacingLabPackage = providers.gradleProperty('srPacingLabPackage').orNull
+if (pacingLabPackage != null && pacingLabPackage != 'true')
+    throw new GradleException('srPacingLabPackage must be true if supplied')
 def hybridLabPackage = providers.gradleProperty('srHybridLabPackage').orNull
 if (hybridLabPackage != null && hybridLabPackage != 'true')
     throw new GradleException('srHybridLabPackage must be true when supplied')
 if (hybridLabPackage == 'true' && previewPackageSwitch != null)
     throw new GradleException('Hybrid test package must never be combined with owner preview package')
+if (pacingLabPackage == 'true' && (previewPackageSwitch != null || hybridLabPackage != null))
+    throw new GradleException('Pacing test app must never reuse existing owner or hybrid identity')
 if (previewPackageSwitch != null && previewPackageSwitch != 'true')
     throw new GradleException('srPreviewPackage must be true when present')
 if ((requestedPreviewCode != null) != (previewPackageSwitch == 'true'))
@@ -87,6 +92,7 @@ android {
             // CI QA without this flag retains the historical package and version.
             if (previewPackageSwitch == 'true') applicationIdSuffix '.preview'
             if (hybridLabPackage == 'true') applicationIdSuffix '.hybridtest'
+            if (pacingLabPackage == 'true') applicationIdSuffix '.m13pacing'
             if (hasTestSigning) signingConfig signingConfigs.internalTest
         }
         release {
