@@ -65,6 +65,7 @@ try{
   await page.goto('http://127.0.0.1:'+srv.address().port,{waitUntil:'load'});
   await page.waitForFunction(()=>!!window.__arcQa);
   if(w===568){
+   await page.locator('#menu button[data-action="settings"]').click();
    assert.equal(await page.locator('#map-size').inputValue(),'standard');
    assert.equal(await page.locator('#bot-count').inputValue(),'3');
    assert.equal(await page.locator('#lives-choice').inputValue(),'3');
@@ -72,9 +73,11 @@ try{
     settings:{mapSize:'small',botCount:2,bulletCap:4,startLives:2,teamMode:'ffa',botSkill:'normal'},
     comfort:{sound:false},playlist:{version:1,enabled:['survival_ffa']}})));
    await page.reload({waitUntil:'load'});
+   await page.locator('#menu button[data-action="settings"]').click();
    assert.equal(await page.locator('#map-size').inputValue(),'small');
    assert.equal(await page.locator('#bot-count').inputValue(),'2');
    assert.equal(await page.locator('#lives-choice').inputValue(),'2');
+   await page.locator('#menu button[data-action="settings-back"]').click();
   }
   const before=await page.evaluate(()=>Object.fromEntries(Object.keys(localStorage).map(k=>[k,localStorage.getItem(k)])));
   let row=await page.evaluate(()=>window.__arcQa.start('survival_ffa'));
