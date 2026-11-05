@@ -23,11 +23,11 @@ for(const a of assets){
  assert.ok(category,'unbudgeted art '+a.file);
  const bytes=Buffer.byteLength(content);
  assert.ok(bytes>100&&bytes<=category.maxCompressedBytesPerAsset,'art source size budget '+a.file);
- assert.ok(!/<(?:script|text|image|foreignObject|iframe|animate|set|use)\\b/i.test(content),
+ assert.ok(!/<(?:script|text|image|foreignObject|iframe|animate|set|use)\b/i.test(content),
   'No active, text or embedded SVG elements '+a.file);
- assert.ok(!/(?:https?:)?\\/\\/(?!www\\.w3\\.org\\/2000\\/svg)/i.test(content),
+ assert.ok(!/(?:https?:)?\/\/(?!www\.w3\.org\/2000\/svg)/i.test(content),
   'No external art dependency '+a.file);
- assert.ok(!/@font-face|<style\\b|data:/i.test(content),'No hidden stylesheet/data '+a.file);
+ assert.ok(!/@font-face|<style\b|data:/i.test(content),'No hidden stylesheet/data '+a.file);
  sum+=bytes;listed.push({asset:a.file,category:a.category,sourceBytes:bytes});
  if(a.category==='emblem-study')raw[a.file.split('-')[1]]=content;
 }
