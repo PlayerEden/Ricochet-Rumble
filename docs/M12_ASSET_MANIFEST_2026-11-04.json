@@ -3,8 +3,8 @@
   "project": "Sector Rebound",
   "program": "M12 asset and render efficiency",
   "baselineCommit": "b114dfa37af2f132e4d3c08d503afcb15c5dff19",
-  "runtimeAssetIntegration": "opt-in-only-m12visual-hangar",
-  "stage": "M12-C-visual-test",
+  "runtimeAssetIntegration": "opt-in-only-m12visual-hangar-and-modes",
+  "stage": "M12-E-mode-art-study",
   "allCategoriesOptIn": true,
   "defaultGameArtPreserved": true,
   "categories": [
@@ -28,18 +28,18 @@
     {
       "id": "mode-card-illustration",
       "priority": 2,
-      "kind": "illustration",
+      "kind": "original-vector-illustration",
       "instances": 5,
-      "format": "webp",
+      "format": "svg",
       "dimensions": [
         512,
         288
       ],
       "maxCompressedBytesPerAsset": 76800,
       "decodedRGBABytesPerAsset": 589824,
-      "content": "five actual modes, abstract environments, no embedded text or fake mechanics",
-      "renderPath": "Mode Select DOM cards",
-      "runtimeStatus": "concept-only",
+      "content": "Five distinct compact tactical illustrations for Close Quarters, Free-for-All, TDM, CTF and Forward Bays; no embedded text, actors, new mechanics or network resources. Custom Match intentionally reuses a faded Forward Bays motif during the study.",
+      "renderPath": "Existing Mode Select button pseudo-element only under ?m12Art opt-in",
+      "runtimeStatus": "opt-in-test",
       "requiresActualPerfGain": false
     },
     {
@@ -54,7 +54,7 @@
       ],
       "maxCompressedBytesPerAsset": 5120,
       "decodedRGBABytesPerAsset": 36864,
-      "content": "FIELD diamond, VECTOR triangle, ACE four-point star, COMMAND filled diamond",
+      "content": "Four original vector concept variants of the already-existing FIELD/VECTOR/ACE/COMMAND shapes; docs only, not new unlocks or replacements",
       "renderPath": "existing SVG use IDs, no unlock change",
       "runtimeStatus": "concept-only",
       "requiresActualPerfGain": false

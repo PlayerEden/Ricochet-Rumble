@@ -185,7 +185,7 @@ function openHangar(fromDossier=false,newUnlocks=[]){
  const back=document.querySelector('.hangar-screen button[data-action="hangar-back"]');
  back?.setAttribute?.('aria-label',hangarReturnToDossier?'Back to Dossier':'Back to main menu');
 }
-function openModes(){setPanel(document.getElementById('modes-template').innerHTML);}
+function openModes(){setPanel(document.getElementById('modes-template').innerHTML);if(M12_ART_PARAM)panel.querySelector('.mode-screen')?.setAttribute('data-m12-mode-art','on');}
 let loadingForwardBay=false;
 let loadingCtf=false;
 function launchCtfExercise(){

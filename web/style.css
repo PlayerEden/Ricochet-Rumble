@@ -4177,3 +4177,36 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
  background:#102e3ada;border:1px solid #a1bec0;
  color:#f4e0ac;
 }
+
+/* M12-E isolated mode artwork study. The normal game never matches this selector,
+   so it never fetches or decodes these local artwork files. Original mode buttons,
+   text, keyboard focus, hit areas and authentic live vehicle preview stay intact. */
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-mission,
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch{isolation:isolate;overflow:hidden}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-mission::before,
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch::before{
+ content:"";display:block;position:absolute;right:14px;top:0;bottom:0;
+ width:clamp(52px,25%,96px);opacity:.67;pointer-events:none;
+ background-position:center;background-size:cover;background-repeat:no-repeat;
+ mask-image:linear-gradient(90deg,transparent 0%,#000 38%,#000 100%);
+}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-cqc::before{background-image:url("assets/m12/mode-cqc-study-v1.svg")}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-ffa::before{background-image:url("assets/m12/mode-ffa-study-v1.svg")}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-tdm::before{background-image:url("assets/m12/mode-tdm-study-v1.svg")}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-custom::before{background-image:url("assets/m12/mode-forward-bays-study-v1.svg");opacity:.26}
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch[data-action="forwardbay"]::before{background-image:url("assets/m12/mode-forward-bays-study-v1.svg")}
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch[data-action="ctf"]::before{background-image:url("assets/m12/mode-ctf-study-v1.svg")}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-copy,
+#menu .mode-screen[data-m12-mode-art="on"] .mode-icon,
+#menu .mode-screen[data-m12-mode-art="on"] .mode-arrow,
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-copy,
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-icon,
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-arrow{position:relative;z-index:1}
+#menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch{position:relative}
+@media(max-width:650px){
+ #menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-mission::before{right:8px;width:52px;opacity:.45}
+}
+@media(prefers-reduced-motion:reduce){
+ #menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-mission::before,
+ #menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch::before{animation:none!important;transition:none!important}
+}

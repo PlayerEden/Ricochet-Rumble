@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const m=JSON.parse(read('docs/M12_ASSET_MANIFEST_2026-11-04.json'));
-assert.equal(m.schemaVersion,1);assert.equal(m.stage,'M12-C-visual-test');
-assert.equal(m.runtimeAssetIntegration,'opt-in-only-m12visual-hangar');assert.equal(m.allCategoriesOptIn,true);
+assert.equal(m.schemaVersion,1);assert.equal(m.stage,'M12-E-mode-art-study');
+assert.equal(m.runtimeAssetIntegration,'opt-in-only-m12visual-hangar-and-modes');assert.equal(m.allCategoriesOptIn,true);
 assert.equal(m.defaultGameArtPreserved,true);
 const ids=m.categories.map(x=>x.id);
 assert.equal(ids.length,6);assert.equal(new Set(ids).size,ids.length);
@@ -49,5 +49,26 @@ for(const variant of ['warm','blueprint']){
   'android/app/src/main/assets/assets/m12/hangar-'+variant+'-empty-v1.svg'])
   assert.equal(read(path),svg,'Web/Android visual art must be exact original source: '+path);
 }
+
+for(const name of ['cqc','ffa','tdm','ctf','forward-bays']){
+ const doc=read('docs/m12-art-studies/mode-'+name+'-study-v1.svg');
+ assert.match(doc,/<svg\\b[^>]*width="512"[^>]*height="288"/);
+ assert.ok(doc.length<76800&&doc.length>800,'compact original vector');
+ assert.ok(!/<(?:script|text|image|foreignObject)\\b/i.test(doc),'no baked UI, actors or code');
+ assert.ok(!/https?:\\/\\/(?!www\\.w3\\.org\\/2000\\/svg)/i.test(doc),'no remote dependency');
+ for(const p of ['web/assets/m12/','android/app/src/main/assets/assets/m12/'])
+  assert.equal(read(p+'mode-'+name+'-study-v1.svg'),doc,'mirrored offline mode art '+name);
+ assert.ok(css.includes('mode-'+name+'-study-v1.svg'),'visual study CSS referenced '+name);
+}
+for(const name of ['field','vector','ace','command']){
+ const svg=read('docs/m12-art-studies/insignia-'+name+'-study-v1.svg');
+ assert.match(svg,/<svg\\b[^>]*width="96"[^>]*height="96"/);
+ assert.ok(svg.length<5120);
+ assert.ok(!/<(?:script|text|image|foreignObject)\\b/i.test(svg));
+ assert.ok(html.includes('id="sr-mark-'+name+'"'),'existing insignia remains canonical');
+}
+assert.ok(js.includes("if(M12_ART_PARAM)panel.querySelector('.mode-screen')"),'test-only mode art opt-in');
+assert.ok(css.includes('.mode-screen[data-m12-mode-art="on"]'),'art selectors must require opt-in');
+
 console.log('M12_ASSET_CONTRACT_PASS '+JSON.stringify({stage:m.stage,categories:ids,
  maxBatchCompressedKiB:Math.round(m.categories.filter(a=>a.priority<=3).reduce((n,a)=>n+a.instances*a.maxCompressedBytesPerAsset,0)/1024)}));
