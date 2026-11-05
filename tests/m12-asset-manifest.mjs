@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const m=JSON.parse(read('docs/M12_ASSET_MANIFEST_2026-11-04.json'));
-assert.equal(m.schemaVersion,1);assert.equal(m.stage,'M12-E3-insignia-comparison');
+assert.equal(m.schemaVersion,1);assert.equal(m.stage,'M12-E4-scale-and-source-audit');
 assert.equal(m.runtimeAssetIntegration,'opt-in-only-m12visual-hangar-modes-insignias');assert.equal(m.allCategoriesOptIn,true);
 assert.equal(m.defaultGameArtPreserved,true);
 const ids=m.categories.map(x=>x.id);

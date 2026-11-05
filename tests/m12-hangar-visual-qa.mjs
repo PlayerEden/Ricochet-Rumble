@@ -111,6 +111,7 @@ try{
   }
   assert.equal(await page.locator('.insignia-detail-mark').getAttribute('data-study-emblem'),'field');
   await page.screenshot({path:out+'/insignia-study-'+w+'x'+h+'.png',animations:'disabled'});
+  const badgesBefore=await page.evaluate(()=>{const pairs=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);pairs.push([k,localStorage.getItem(k)]);}return pairs.sort((a,b)=>a[0].localeCompare(b[0]));});
   await badgeToggle.click();
   assert.equal(await badgeToggle.getAttribute('aria-pressed'),'false');
   assert.equal(await page.locator('.hangar-screen').getAttribute('data-m12-insignia-art'),'off');
@@ -122,6 +123,8 @@ try{
   await page.screenshot({path:out+'/insignia-original-'+w+'x'+h+'.png',animations:'disabled'});
   await badgeToggle.click();
   assert.equal(await badgeToggle.getAttribute('aria-pressed'),'true');
+  assert.deepEqual(await page.evaluate(()=>{const pairs=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);pairs.push([k,localStorage.getItem(k)]);}return pairs.sort((a,b)=>a[0].localeCompare(b[0]));}),badgesBefore,
+   'Badge art switching cannot alter saved local data');
   assert.equal(await page.locator('#insignia-detail-name').textContent(),'FIELD','equipped mark changed');
 
   // M12-E: real Mode Select. Decorative cards must not change controls or navigation.
@@ -141,6 +144,7 @@ try{
    'compare button outside screen '+w+'x'+h+' '+JSON.stringify(controls));
   assert.ok(controls.compare.right<=controls.back.x+1&&controls.preview.right<=controls.compare.x+1,
    'mode compare overlaps Back or real vehicle preview '+w+'x'+h+' '+JSON.stringify(controls));
+  const modesBefore=await page.evaluate(()=>{const pairs=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);pairs.push([k,localStorage.getItem(k)]);}return pairs.sort((a,b)=>a[0].localeCompare(b[0]));});
   await compare.click();
   assert.equal(await page.locator('.mode-screen').getAttribute('data-m12-mode-art'),'off');
   assert.equal(await compare.getAttribute('aria-pressed'),'false');
@@ -153,6 +157,8 @@ try{
   await compare.click();
   assert.equal(await page.locator('.mode-screen').getAttribute('data-m12-mode-art'),'on');
   assert.equal(await compare.getAttribute('aria-pressed'),'true');
+  assert.deepEqual(await page.evaluate(()=>{const pairs=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);pairs.push([k,localStorage.getItem(k)]);}return pairs.sort((a,b)=>a[0].localeCompare(b[0]));}),modesBefore,
+   'Mode art switching cannot alter saved local data');
   for(const [action,art] of [['cqc','cqc'],['scored_ffa','ffa'],['scored_tdm','tdm'],['custom','custom']]){
    const card=page.locator('.mode-grid button[data-action="'+action+'"]');
    assert.equal(await card.isVisible(),true,'mode button visible '+action);

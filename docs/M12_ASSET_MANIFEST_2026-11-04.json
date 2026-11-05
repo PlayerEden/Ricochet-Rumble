@@ -4,7 +4,7 @@
   "program": "M12 asset and render efficiency",
   "baselineCommit": "b114dfa37af2f132e4d3c08d503afcb15c5dff19",
   "runtimeAssetIntegration": "opt-in-only-m12visual-hangar-modes-insignias",
-  "stage": "M12-E3-insignia-comparison",
+  "stage": "M12-E4-scale-and-source-audit",
   "allCategoriesOptIn": true,
   "defaultGameArtPreserved": true,
   "categories": [
@@ -54,7 +54,7 @@
       ],
       "maxCompressedBytesPerAsset": 5120,
       "decodedRGBABytesPerAsset": 36864,
-      "content": "Four original vector concept variants of the already-existing FIELD/VECTOR/ACE/COMMAND shapes; docs only, not new unlocks or replacements",
+      "content": "FIELD/VECTOR/ACE/COMMAND study sources mirrored to isolated test Hangar; earned conditions unchanged; 24/32/48/96 pixel legibility proxies",
       "renderPath": "Opt-in Hangar insignia cards and equipped detail; real unlocks and Dossier remain canonical",
       "runtimeStatus": "opt-in-test",
       "requiresActualPerfGain": false

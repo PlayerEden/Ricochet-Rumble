@@ -68,7 +68,10 @@ jobs:
           export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           test -n "$CHROME_BIN"
           node tests/m12-hangar-visual-qa.mjs
+          node tests/m12-art-scale-budget.mjs
           test -s qa-results/m12/visual/report.json
+          test -s qa-results/m12/visual/insignia-scale-sheet-24-32-48-96.png
+          test -s qa-results/m12/visual/m12-e4-source-and-scale-audit.json
           for viewport in 568x320 640x360 740x360 915x412 1280x720; do
             test -s "qa-results/m12/visual/hangar-warm-tank-$viewport.png"
             test -s "qa-results/m12/visual/hangar-blueprint-mech-$viewport.png"
