@@ -1287,9 +1287,15 @@ function matchArcFor(st=state,session=mode){
  const deaths=(st.deaths||[]).reduce((total,k)=>total+(Number(k)||0),0);
  const lives=st.lives?.[0]||0;
  const opponents=active.filter(i=>!friendlyForState(0,i,st)).length;
- const stage=deaths>0&&(sides.size<=2||lives<=1)?'final':
-   elapsed<18&&deaths===0?'deployment':'engagement';
- const label=stage==='final'?'FINAL STAND':stage==='deployment'?'DEPLOY':'ENGAGE';
+ // Team modes always have two team IDs, so team count alone is NOT a finale.
+ const decisive=st.config?.teamMode==='teams'?opponents<=1:sides.size<=2;
+ const eliminated=lives===0;
+ const stage=eliminated&&!decisive?'spectating':
+  deaths>0&&(decisive||(lives>0&&lives<=1))?'final':
+  elapsed<18&&deaths===0?'deployment':'engagement';
+ const label=stage==='spectating'?'WATCH FIGHT':
+  stage==='final'?(eliminated?'FINAL CONTACT':'FINAL STAND'):
+  stage==='deployment'?'DEPLOY':'ENGAGE';
  const time=durationLabel(Math.floor(elapsed));
  return {stage,label,text:label+' · '+time+' · '+opponents+' LEFT',
   aria:label+'. '+time+' elapsed. '+opponents+' enemy sides remain. '+lives+' lives.',
@@ -1317,7 +1323,7 @@ function refreshMatchArc(clock){
 
 /* M13-B4: the truly eliminated Solo Survival operator may watch surviving bots.
    Camera and controls only; never alter AI, damage, rewards, scoring or LAN. */
-let soloWatchSeat=null,soloWatchMatchId=null;
+let soloWatchSeat=null,soloWatchMatchId=null,soloWatchFocusPending=false;
 function soloWatchActive(st=state,session=mode){
  return session==='solo'&&st?.winner<0&&st.lives?.[0]===0&&
   !st.config?.dailySector&&!st.config?.ctfExercise&&!st.config?.forwardBayExercise&&
@@ -1338,7 +1344,7 @@ function soloWatchTarget(){
  const seats=soloWatchCandidates();
  if(!seats.length)return null;
  if(soloWatchMatchId!==state.matchId){soloWatchMatchId=state.matchId;soloWatchSeat=null;}
- if(!seats.includes(soloWatchSeat))soloWatchSeat=seats[0];
+ if(!seats.includes(soloWatchSeat)){soloWatchSeat=seats[0];soloWatchFocusPending=true;}
  return state.tanks[soloWatchSeat]||null;
 }
 function updateSoloWatchUI(){
@@ -1362,6 +1368,7 @@ function cycleSoloWatchTarget(){
  if(seats.length<2)return false;
  const index=seats.indexOf(soloWatchSeat);
  soloWatchSeat=seats[(index+1+seats.length)%seats.length];
+ soloWatchFocusPending=true;
  updateSoloWatchUI();return true;
 }
 
@@ -1561,7 +1568,7 @@ function newMatch(which,dailyOptions=null){
  matchModeId:'survival_ffa',quickPlayMatch:false,customMatch:false,pilotMode:true}:ctfLaunch?{...selectedRules,matchModeId:'scored_tdm',
  mapSize:'standard',teamMode:'teams',botCount:3,botSkill:'normal',pilotMode:true,
  forwardBayExercise:true,ctfExercise:true,quickPlayMatch:false}:bayLaunch?{...selectedRules,matchModeId:'scored_tdm',mapSize:'standard',teamMode:'teams',botCount:3,botSkill:'normal',pilotMode:true,forwardBayExercise:true,quickPlayMatch:false}:dailyLaunch?dailyOptions:customLaunch?customOptionsFor():scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:which==='scored_tdm'?'teams':'ffa',matchModeId:which,pilotMode:true}:playlistId?quickPlayOptionsFor(playlistId):{...selectedRules,pilotMode:true};
- state=initialState(arena,options,dailyLaunch?options.dailySeed:freshSectorSeed(state?.mazeSeed));soloWatchSeat=null;soloWatchMatchId=state.matchId;lastMatchArcStage=null;lastMatchArcId=state.matchId;dailyAttemptedKey='';dailyLastRecord=null;roundUnlocks=[];camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();releaseShot=null;remoteReleaseShot=null;refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch||practiceLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(ctfLaunch?'CAPTURE THE FLAG · TEST':bayLaunch?'FORWARD BAY · TEAM EXERCISE':dailyLaunch?'DAILY SECTOR':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config))):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch||practiceLaunch){exitMenu();audioCue('deploy');if(mode==='solo')firstMatchHint();}}
+ state=initialState(arena,options,dailyLaunch?options.dailySeed:freshSectorSeed(state?.mazeSeed));soloWatchSeat=null;soloWatchFocusPending=false;soloWatchMatchId=state.matchId;lastMatchArcStage=null;lastMatchArcId=state.matchId;dailyAttemptedKey='';dailyLastRecord=null;roundUnlocks=[];camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();releaseShot=null;remoteReleaseShot=null;refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch||practiceLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(ctfLaunch?'CAPTURE THE FLAG · TEST':bayLaunch?'FORWARD BAY · TEAM EXERCISE':dailyLaunch?'DAILY SECTOR':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config))):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch||practiceLaunch){exitMenu();audioCue('deploy');if(mode==='solo')firstMatchHint();}}
 function resetAll(advancePlaylist=false){
  const previousSeed=state.mazeSeed;
  const carriedSeries=mode==='host'&&state.winner>=0&&state.lanSeries?
@@ -1579,7 +1586,7 @@ function resetAll(advancePlaylist=false){
   options=quickPlayOptionsFor(id,selectedRules);
  }
  state=initialState(0,options,options.dailySector?options.dailySeed:freshSectorSeed(previousSeed));
- soloWatchSeat=null;soloWatchMatchId=state.matchId;
+ soloWatchSeat=null;soloWatchFocusPending=false;soloWatchMatchId=state.matchId;
  lastMatchArcStage=null;lastMatchArcId=state.matchId;
  if(carriedSeries)state.lanSeries=carriedSeries;
  dailyAttemptedKey='';dailyLastRecord=null;
@@ -3058,7 +3065,14 @@ function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick
  camera.zoom=Math.max(zoomFloor,camera.zoom+(zoomTarget-camera.zoom)*(1-Math.exp(-Math.min(.1,Math.max(0,dt))*5.2)));
  const zoom=camera.zoom,viewW=W/zoom,viewH=H/zoom;
  const apron=mazeGrid?CAMERA_APRON:0;const desiredX=clamp((localTank?.x||W/2)-viewW/2,-apron,Math.max(-apron,worldW+apron-viewW)),desiredY=clamp((localTank?.y||H/2)-viewH/2,-apron,Math.max(-apron,worldH+apron-viewH));
- const follow=1-Math.exp(-Math.min(.1,dt)*13);camera.x+=(desiredX-camera.x)*follow;camera.y+=(desiredY-camera.y)*follow;if(!mazeGrid){camera.x=0;camera.y=0}
+ if(watchTarget&&soloWatchFocusPending){
+  // Never show empty terrain while crossing the maze between living cameras.
+  camera.x=desiredX;camera.y=desiredY;soloWatchFocusPending=false;
+ }else{
+  const follow=1-Math.exp(-Math.min(.1,dt)*13);
+  camera.x+=(desiredX-camera.x)*follow;camera.y+=(desiredY-camera.y)*follow;
+ }
+ if(!mazeGrid){camera.x=0;camera.y=0}
  c.scale(zoom,zoom);c.translate(-camera.x,-camera.y);
  // Paint past the playable perimeter so a small camera pullback remains
  // immersive rather than showing untextured side gutters.
@@ -3617,7 +3631,7 @@ function manual(){if(!bridgeReady()){notice('Manual LAN join requires the Androi
  '<header class="lan-utility-head"><div class="eyebrow">FIELDGRID / LOCAL OPERATIONS</div><h2>JOIN <span>BY IP</span></h2><p>Use the address and port displayed on the host phone.</p></header>'+
  '<div class="lan-utility-body"><span class="lan-brief-serial">03 / MANUAL CONNECTION</span><label class="lan-ip-label" for="lan-address">HOST ADDRESS / PORT<input type="text" id="lan-address" placeholder="192.168.1.25:47321" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false"></label><p class="lan-utility-note">Both Android phones must be connected to the same Wi-Fi. Example: 192.168.1.25:47321</p></div>'+
  '<footer class="lan-utility-actions"><button type="button" class="primary" data-action="ip-join">CONNECT</button><button type="button" data-action="find">FIND NEARBY</button><button type="button" data-action="close">MAIN MENU</button></footer></section>')}
-function stop(){soloWatchSeat=null;soloWatchMatchId=null;document.getElementById('game-screen')?.classList.remove('solo-watching');document.getElementById('solo-watch-bar')?.classList.add('hidden');if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;lanLobby=null;lanSpectating=false;lanSpectatePending=null;lanRoomFull=false;lanRetryEndpoint=null;
+function stop(){soloWatchSeat=null;soloWatchMatchId=null;soloWatchFocusPending=false;document.getElementById('game-screen')?.classList.remove('solo-watching');document.getElementById('solo-watch-bar')?.classList.add('hidden');if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;lanLobby=null;lanSpectating=false;lanSpectatePending=null;lanRoomFull=false;lanRetryEndpoint=null;
  lanHostJoinNext=null;lanHostJoinSeq=0;lanHostPromotedMatchId=0;
  lanGuestJoinNext='none';lanGuestQueueBoundary='match';lanGuestJoinSeq=0;lanGuestJoinPending=false;lanGuestPromotePending=null;
  document.getElementById('game-screen')?.classList.remove('spectating');neutralizeGuestInput();mode='idle';playlistBag=[];lastSoloModeId=null;releaseControls();document.getElementById('mode-label').textContent='NO GAME ACTIVE';panel.innerHTML=originalPanel;applyPrefsToUI();menu.classList.remove('hidden')}

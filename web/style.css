@@ -4473,3 +4473,8 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
   grid-template-columns:minmax(0,1fr) 100px 70px;
  }
 }
+
+/* M13-C: a neutral in-battle watch state, not a premature final warning. */
+.game-hud .score-clock.match-arc[data-match-stage="spectating"]{
+ background:#143440e9;border-color:#7db0b0;color:#ceeeec;
+}

@@ -14,11 +14,21 @@ function hooks(){
    mode='solo';paused=false;menu.classList.add('hidden');
    state=initialState(0,{...selectedRules,matchModeId:'survival_ffa',mapSize:'standard',
     teamMode:'ffa',botCount:3,startLives:3,pilotMode:true},12345);
-   state.lives[0]=0;state.winner=-1;refreshHUD();render(1/60);
-   return {active:soloWatchActive(),seat:soloWatchSeat,hidden:
+   state.lives[0]=0;state.deaths[0]=3;state.winner=-1;refreshHUD();render(1/60);
+   const target=state.tanks[soloWatchSeat],sx=(target.x-camera.x)*camera.zoom,
+    sy=(target.y-camera.y)*camera.zoom;
+   return {active:soloWatchActive(),seat:soloWatchSeat,
+    cameraOnTarget:sx>=0&&sx<=W&&sy>=0&&sy<=H,
+    phase:matchArcFor()?.stage,clock:document.getElementById('score-clock').textContent,
+    hidden:
     document.getElementById('game-screen').classList.contains('solo-watching')};
   },
-  camera(){return soloWatchSeat},
+  camera(){
+   render(1/60);
+   const target=state.tanks[soloWatchSeat],x=(target.x-camera.x)*camera.zoom,
+     y=(target.y-camera.y)*camera.zoom;
+   return {seat:soloWatchSeat,onTarget:x>=0&&x<=W&&y>=0&&y<=H};
+  },
   alive(){return state.lives[soloWatchSeat]>0},
   deny(){mode='host';refreshHUD();return soloWatchActive()}
  };
@@ -80,13 +90,18 @@ try{
   const watch=await page.evaluate(()=>window.__fusionQA.watch());
   assert.equal(watch.active,true);
   assert.equal(watch.hidden,true);
+  assert.equal(watch.cameraOnTarget,true,'first watch target visible immediately');
+  assert.equal(watch.phase,'spectating','other combatants are still fighting');
+  assert.match(watch.clock,/WATCH FIGHT/);
   assert.equal(await page.locator('#solo-watch-bar').isVisible(),true);
   assert.equal(await page.locator('.touch-zone').first().isVisible(),false);
   const bounds=await page.locator('#solo-watch-bar').boundingBox();
   assert.ok(bounds&&bounds.x>=0&&bounds.x+bounds.width<=w+1&&
    bounds.y>=0&&bounds.y+bounds.height<=h+1,'spectator camera button on screen');
   await page.locator('#solo-watch-next').click();
-  assert.notEqual(await page.evaluate(()=>window.__fusionQA.camera()),watch.seat);
+  const camera=await page.evaluate(()=>window.__fusionQA.camera());
+  assert.notEqual(camera.seat,watch.seat);
+  assert.equal(camera.onTarget,true,'NEXT CAMERA must put new survivor in view immediately');
   assert.equal(await page.evaluate(()=>window.__fusionQA.alive()),true);
   await page.screenshot({path:output+'/watch-'+w+'x'+h+'.png',animations:'disabled'});
   assert.equal(await page.evaluate(()=>window.__fusionQA.deny()),false,'LAN cannot activate Solo watch');
