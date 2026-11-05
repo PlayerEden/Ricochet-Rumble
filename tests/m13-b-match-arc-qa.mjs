@@ -32,6 +32,25 @@ function hooks(){
    if(kind==='resume')paused=false;
    refreshHUD();return this.read();
   },
+  watch(){
+   this.start('survival_ffa');
+   state.lives[0]=0;state.winner=-1;refreshHUD();render(1/60);
+   return this.readWatch();
+  },
+  readWatch(){
+   const target=soloWatchTarget(),seat=soloWatchSeat;
+   return {active:soloWatchActive(),seat,targetAlive:seat!==null&&state.lives[seat]>0,
+    visible:!document.getElementById('solo-watch-bar').classList.contains('hidden'),
+    label:document.getElementById('solo-watch-label').textContent,
+    controlHidden:document.getElementById('game-screen').classList.contains('solo-watching'),
+    x:target?.x??null,y:target?.y??null};
+  },
+  eliminateCameraTarget(){
+   if(!soloWatchActive())return null;
+   state.lives[soloWatchSeat]=0;refreshHUD();render(1/60);return this.readWatch();
+  },
+  denyWatch(){mode='host';refreshHUD();return {active:soloWatchActive(),
+   barHidden:document.getElementById('solo-watch-bar').classList.contains('hidden')}},
   lan(){mode='host';paused=false;refreshHUD();return this.read()},
   read(){
    const clock=document.getElementById('score-clock'),phase=matchArcFor();
@@ -111,11 +130,27 @@ try{
   for(const other of ['.scorestrip','#menu-button','.joystick','.fire-btn'])
    assert.equal(intersects(rects['#score-clock'],rects[other]),false,
     'HUD collision '+other+' '+w+'x'+h);
+  const watch=await page.evaluate(()=>window.__arcQa.watch());
+  assert.equal(watch.active,true,'Solo spectators only while dead with survivors');
+  assert.equal(watch.visible,true);assert.equal(watch.targetAlive,true);
+  assert.equal(watch.controlHidden,true,'dead pilot combat controls hidden');
+  assert.match(watch.label,/WATCHING · BOT/);
+  const box=await page.locator('#solo-watch-bar').boundingBox();
+  assert.ok(box&&box.x>=0&&box.x+box.width<=w&&box.y+box.height<=h,'watch UI visible on phone');
+  await page.screenshot({path:output+'/spectator-'+w+'x'+h+'.png',animations:'disabled'});
+  await page.locator('#solo-watch-next').click();
+  const next=await page.evaluate(()=>window.__arcQa.readWatch());
+  assert.notEqual(next.seat,watch.seat,'NEXT CAMERA cycles actual living combatants');
+  assert.equal(next.targetAlive,true);
+  const auto=await page.evaluate(()=>window.__arcQa.eliminateCameraTarget());
+  assert.equal(auto.active,true);assert.equal(auto.targetAlive,true,'camera retargets after viewed bot dies');
+  const denied=await page.evaluate(()=>window.__arcQa.denyWatch());
+  assert.equal(denied.active,false);assert.equal(denied.barHidden,true,'LAN cannot use Solo spectator');
   row=await page.evaluate(()=>window.__arcQa.lan());
   assert.equal(row.phase,null);assert.equal(row.arc,false,'LAN original presentation');
   const after=await page.evaluate(()=>Object.fromEntries(Object.keys(localStorage).map(k=>[k,localStorage.getItem(k)])));
   assert.deepEqual(after,before,'No new save writes');
-  results.push({viewport:w+'x'+h,stages:3,scoringUnchanged:true,savesSafe:true,lanUnchanged:true});
+  results.push({viewport:w+'x'+h,stages:3,scoringUnchanged:true,savesSafe:true,lanUnchanged:true,soloWatch:true,realTargetCycle:true});
   await ctx.close();
  }
  assert.deepEqual(errors,[],'Browser exceptions');

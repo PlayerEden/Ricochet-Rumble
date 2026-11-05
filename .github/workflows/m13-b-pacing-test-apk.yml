@@ -35,6 +35,7 @@ jobs:
           node --check web/game.js
           node --check tests/m13-b-match-arc-qa.mjs
           node --check tests/m13-b-pacing-benchmark.mjs
+          node --check tests/m13-b-scored-target-trials.mjs
           for file in game.js index.html style.css scored-match.js save-backup.js dossier.js lan-room.js lan-series.js; do
             cmp "web/$file" "android/app/src/main/assets/$file"
           done
@@ -58,6 +59,8 @@ jobs:
         run: |
           set -euo pipefail
           node tests/m13-b-pacing-benchmark.mjs
+          node tests/m13-b-scored-target-trials.mjs
+          test -s qa-results/m13-b/score-target-trials.json
           test -s qa-results/m13-b/natural-pacing.json
       - name: Install official Android API 36 and build tools
         run: |
