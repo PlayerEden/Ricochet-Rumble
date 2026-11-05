@@ -37,7 +37,7 @@ assert.ok(read('android/app/build.gradle').includes("assets.srcDir 'src/m12Visua
  'only dedicated test package may include M12 SVG assets');
 assert.equal(fs.existsSync(new URL('../android/app/src/main/assets/assets/m12',import.meta.url)),false,
  'regular Android assets must contain zero M12 studies');
-assert.ok(read('android/app/src/main/java/com/playereden/ricochetrumble/MainActivity.java').includes('m12Art=warm'),
+assert.ok(read('android/app/src/main/java/com/playereden/ricochetrumble/MainActivity.java').includes('m13Preview=1'),
  'dedicated test app should enable its own opt-in visual URL');
 for(const id of ["'fieldgrid.standard'","'fieldgrid.moss'","'mark.field'","'mark.vector'"])
  assert.ok(js.includes(id),'real cosmetic ID '+id);
