@@ -23,6 +23,11 @@ function openDossier(){setPanel(document.getElementById('dossier-template').inne
  const mark=document.getElementById('dossier-emblem-mark'),name=document.getElementById('dossier-emblem-name');
  const markUse=mark?.querySelector('use');
  if(markUse)markUse.setAttribute('href','#sr-mark-'+equippedEmblem.slice(5));
+ // Read-only M13 mirror of real equipped operator insignia.
+ const dossierScreen=panel.querySelector('.dossier-screen');
+ if(M13_PROMOTION_PREVIEW&&mark&&dossierScreen){
+  dossierScreen.dataset.m13Preview='on';mark.dataset.m13Emblem=equippedEmblem.slice(5);
+ }
  if(name)name.textContent=OPERATOR_EMBLEMS[equippedEmblem].label;
  mark?.closest('.dossier-emblem')?.setAttribute('aria-label','Equipped operator insignia: '+OPERATOR_EMBLEMS[equippedEmblem].label);
  const intro=document.getElementById('dossier-intro');
@@ -95,6 +100,8 @@ function refreshHangar(){
  if(emblemStatus){emblemStatus.textContent='';emblemStatus.hidden=true;}
  const detailIcon=document.getElementById('insignia-detail-use');
  if(typeof detailIcon?.setAttribute==='function')detailIcon.setAttribute('href','#sr-mark-'+equippedEmblem.slice(5));
+ const studyDetail=document.querySelector('.hangar-screen .insignia-detail-mark');
+ if(studyDetail)studyDetail.dataset.studyEmblem=equippedEmblem.slice(5);
  const detailName=document.getElementById('insignia-detail-name');
  if(detailName)detailName.textContent=OPERATOR_EMBLEMS[equippedEmblem].label;
  const nextProgress=document.getElementById('insignia-next-progress');
@@ -138,6 +145,47 @@ function rewardHangarTab(unlocks){
  return unlocks.some(name=>typeof name==='string'&&name.endsWith(' PAINT'))?'paint':
   unlocks.some(name=>typeof name==='string'&&name.endsWith(' INSIGNIA'))?'insignia':'paint';
 }
+// M13 approved-art preview is explicit and transient, never normal app startup.
+const M13_PROMOTION_PREVIEW=(()=>{
+ try{return new URLSearchParams(String(window.location?.search||'')).get('m13Preview')==='1';}
+ catch(_){return false}
+})();
+// M12 art comparison still requires the original explicit query parameter.
+const M12_HANGAR_STUDIES=['warm','blueprint','original'];
+const M12_ART_PARAM=(()=>{
+ if(M13_PROMOTION_PREVIEW)return 'warm';
+ try{const value=new URLSearchParams(String(window.location?.search||'')).get('m12Art');
+  return M12_HANGAR_STUDIES.includes(value)?value:null;}catch(_){return null}
+})();
+let m12HangarStudy=M12_ART_PARAM;
+// M12-E2: comparison state is transient, independent of Hangar selection and never persisted.
+let m12ModeStudyEnabled=M12_ART_PARAM!=='original';
+let m12InsigniaStudyEnabled=M12_ART_PARAM!=='original'; // transient review state
+function refreshM12InsigniaStudy(){
+ const screen=panel.querySelector('.hangar-screen'),button=screen?.querySelector('.m12-insignia-art-cycle');
+ if(!screen)return;
+ if(!M12_ART_PARAM){screen.removeAttribute('data-m12-insignia-art');if(button)button.hidden=true;return;}
+ screen.dataset.m12InsigniaArt=m12InsigniaStudyEnabled?'on':'off';
+ if(button){
+  button.hidden=M13_PROMOTION_PREVIEW;
+  button.textContent=m12InsigniaStudyEnabled?'BADGES: STUDY':'BADGES: ORIGINAL';
+  button.setAttribute('aria-pressed',String(m12InsigniaStudyEnabled));
+  button.setAttribute('aria-label',m12InsigniaStudyEnabled?
+   'Experimental insignia art visible; show original insignias':
+   'Original insignia art visible; show experimental insignias');
+ }
+}
+function refreshM12HangarStudy(){
+ const stage=document.querySelector('.hangar-bay'),control=document.querySelector('.m12-art-cycle');
+ if(!stage)return;
+ if(!M12_ART_PARAM){if(stage.removeAttribute)stage.removeAttribute('data-m12-art');else if(stage.dataset)delete stage.dataset.m12Art;if(control)control.hidden=true;return;}
+ stage.dataset.m12Art=m12HangarStudy;
+ if(control){
+  control.hidden=M13_PROMOTION_PREVIEW;control.textContent='ART: '+m12HangarStudy.toUpperCase();
+  control.setAttribute('aria-label','Experimental Hangar background: '+m12HangarStudy+'. Tap to compare another stage');
+  control.setAttribute('aria-pressed',String(m12HangarStudy!=='original'));
+ }
+}
 function openHangar(fromDossier=false,newUnlocks=[]){
  hangarReturnToDossier=!!fromDossier;
  hangarPreviewUnit='tank';
@@ -146,7 +194,9 @@ function openHangar(fromDossier=false,newUnlocks=[]){
  const study=/(?:^|[?&])hangarStudy=blueprint(?:&|$)/.test(String(window.location?.search||''))?'blueprint':'warm';
  const dock=document.querySelector('.hangar-bay');
  if(dock)dock.dataset.hangarStudy=study==='blueprint'?'blueprint':'warm';
+ refreshM12HangarStudy();
  refreshHangar();
+ refreshM12InsigniaStudy();
  const rewards=Array.isArray(newUnlocks)?newUnlocks.filter(s=>typeof s==='string').slice(0,5):[];
  showHangarTab(rewardHangarTab(rewards));
  if(rewards.length){
@@ -166,7 +216,30 @@ function openHangar(fromDossier=false,newUnlocks=[]){
  const back=document.querySelector('.hangar-screen button[data-action="hangar-back"]');
  back?.setAttribute?.('aria-label',hangarReturnToDossier?'Back to Dossier':'Back to main menu');
 }
-function openModes(){setPanel(document.getElementById('modes-template').innerHTML);}
+function refreshM12ModeStudy(){
+ const screen=panel.querySelector('.mode-screen'),control=screen?.querySelector('.m12-mode-art-cycle');
+ if(!screen)return;
+ if(!M12_ART_PARAM){screen.removeAttribute('data-m12-mode-art');if(control)control.hidden=true;return;}
+ screen.dataset.m12ModeArt=m12ModeStudyEnabled?'on':'off';
+ if(control){
+  control.hidden=M13_PROMOTION_PREVIEW;
+  control.textContent=m12ModeStudyEnabled?'ART: STUDY':'ART: ORIGINAL';
+  control.setAttribute('aria-pressed',String(m12ModeStudyEnabled));
+  control.setAttribute('aria-label',m12ModeStudyEnabled?
+   'Experimental Mode Select artwork enabled; show original appearance':
+   'Original Mode Select appearance; show experimental artwork');
+ }
+}
+function openModes(){
+ setPanel(document.getElementById('modes-template').innerHTML);
+ refreshM12ModeStudy();
+ if(M13_B_PACING_PREVIEW){
+  for(const [action,target] of [['cqc',CQC_RULES.scoreTarget],['scored_tdm',VEHICLE_TDM_RULES.scoreTarget]]){
+   const line=panel.querySelector('[data-action="'+action+'"] .mode-copy small');
+   if(line)line.textContent=(action==='cqc'?'PILOTS ONLY':'2 TEAMS')+' · '+target+' KOs';
+  }
+ }
+}
 let loadingForwardBay=false;
 let loadingCtf=false;
 function launchCtfExercise(){
@@ -275,17 +348,23 @@ function doBackupAction(action){
 
 const CUSTOM_PRESETS_KEY='rr-custom-presets-v1';
 let comfort={sound:true,music:true,shake:false,autoFire:false,leftHanded:false,pilotAssist:false,pilotRelease:false,releaseFire:true,alliedTraces:true},fixedAccumulator=0;
-let selectedRules={botCount:2,bulletCap:4,startLives:2,teamMode:'ffa',botSkill:'normal',mapSize:'small'};
+// New profiles receive a fuller battle; existing saved rules remain authoritative.
+let selectedRules={botCount:3,bulletCap:4,startLives:3,teamMode:'ffa',botSkill:'normal',mapSize:'standard'};
 // v0.9.22 / Slice A: stable solo presets backed by CURRENT survival combat, not proposed score modes.
 const MATCH_MODE_PRESETS=Object.freeze({
  survival_ffa:Object.freeze({id:'survival_ffa',label:'SOLO SURVIVAL',teamMode:'ffa',objective:'last_side_standing',vehiclePolicy:'existing',allowedSizes:Object.freeze(['small','standard','large'])}),
  survival_teams:Object.freeze({id:'survival_teams',label:'TEAM SURVIVAL',teamMode:'teams',objective:'last_side_standing',vehiclePolicy:'existing',allowedSizes:Object.freeze(['small','standard','large'])})
 });
 const RELEASED_MATCH_MODES=Object.freeze(Object.keys(MATCH_MODE_PRESETS)); // Defaults remain existing Survival modes.
+// M13-B5 score-target candidate is opt-in ONLY via isolated .m13pacing app.
+const M13_B_PACING_PREVIEW=(()=>{
+ try{return new URLSearchParams(String(window.location?.search||'')).get('m13Pacing')==='1';}
+ catch(_){return false}
+})();
 // CQC is an EXPLICIT test button, NOT silently added to approved survival playlists.
-const CQC_RULES=Object.freeze({mode:'ffa',scoreTarget:10,clockSeconds:180,vehiclePolicy:'none'});
+const CQC_RULES=Object.freeze({mode:'ffa',scoreTarget:M13_B_PACING_PREVIEW?15:10,clockSeconds:180,vehiclePolicy:'none'});
 const VEHICLE_FFA_RULES=Object.freeze({mode:'ffa',scoreTarget:10,clockSeconds:240,vehiclePolicy:'standard'});
-const VEHICLE_TDM_RULES=Object.freeze({mode:'teams',scoreTarget:15,clockSeconds:300,vehiclePolicy:'standard'});
+const VEHICLE_TDM_RULES=Object.freeze({mode:'teams',scoreTarget:M13_B_PACING_PREVIEW?30:15,clockSeconds:300,vehiclePolicy:'standard'});
 const SCORED_MATCH_RULES=Object.freeze({cqc:CQC_RULES,scored_ffa:VEHICLE_FFA_RULES,scored_tdm:VEHICLE_TDM_RULES});
 // V1 Survival selections remain valid. Scored modes are deliberate opt-in, never default.
 const QUICK_PLAY_OPT_IN_MODES=Object.freeze(['cqc','scored_ffa','scored_tdm']);
@@ -699,6 +778,12 @@ function savePrefs(){selectedRules=readSettings();
  applyPlaylistUI();
 }
 function applyPlaylistUI(){
+ if(M13_B_PACING_PREVIEW){
+  for(const [id,text] of [['cqc',' CLOSE QUARTERS · 15 KOs / 3 MIN'],['scored_tdm',' TEAM DEATHMATCH · 30 KOs / 5 MIN']]){
+   const input=document.querySelector('input[data-playlist-mode="'+id+'"]');
+   if(input?.nextSibling?.nodeType===3)input.nextSibling.textContent=text;
+  }
+ }
  for(const el of document.querySelectorAll('input[data-playlist-mode]'))el.checked=selectedPlaylistIds.includes(el.dataset.playlistMode);
  for(const button of document.querySelectorAll('[data-action="solo"],[data-action="settings-play"]'))button.disabled=!selectedPlaylistIds.length;
  const status=document.getElementById('playlist-status');
@@ -706,7 +791,7 @@ function applyPlaylistUI(){
    status.textContent=!count?'SELECT AT LEAST ONE MODE':count+' SELECTED · '+(scored?scored+' SCORING TRIAL'+(scored===1?'':'S')+' ENABLED':'SURVIVAL MODES ONLY');
  }
 }
-function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){const st=p.settings||{};selectedRules={mapSize:MAP_SIZES[st.mapSize]?st.mapSize:'small',botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:2,bulletCap:[1,2,3,4,5,8].includes(st.bulletCap)?st.bulletCap:4,startLives:[2,3,5].includes(st.startLives)?st.startLives:2,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key];if(p.playlist?.version===1&&Array.isArray(p.playlist.enabled))setPlaylistModes(p.playlist.enabled)}}catch(_){}loadCustomDraft();loadCustomPresets();applyPrefsToUI()}
+function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){const st=p.settings||{};selectedRules={mapSize:MAP_SIZES[st.mapSize]?st.mapSize:'standard',botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:3,bulletCap:[1,2,3,4,5,8].includes(st.bulletCap)?st.bulletCap:4,startLives:[2,3,5].includes(st.startLives)?st.startLives:3,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key];if(p.playlist?.version===1&&Array.isArray(p.playlist.enabled))setPlaylistModes(p.playlist.enabled)}}catch(_){}loadCustomDraft();loadCustomPresets();applyPrefsToUI()}
 function applyPrefsToUI(){const picks={mapSize:selectedRules.mapSize,botCount:selectedRules.botCount,bulletCap:selectedRules.bulletCap,startLives:selectedRules.startLives,teamMode:selectedRules.teamMode,botSkill:selectedRules.botSkill};const ids={mapSize:'map-size',botCount:'bot-count',bulletCap:'bullet-cap',startLives:'lives-choice',teamMode:'team-choice',botSkill:'bot-skill'};for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(el&&el.options&&[...el.options].some(o=>o.value===String(picks[key])))el.value=String(picks[key])}for(const key of Object.keys(comfort)){const el=document.getElementById('pref-'+key);if(el)el.checked=comfort[key]}const el=document.getElementById('fire-mode');if(el)el.textContent=comfort.autoFire?'AUTO ON':comfort.releaseFire?'AIM · RELEASE':'HOLD TO FIRE';document.querySelector('.battlefield')?.classList.toggle('swap-controls',comfort.leftHanded);applyPlaylistUI();}
 function releaseControls(){touch.clear();pressed.clear();releaseShot=null;remoteReleaseShot=null;clearStick();clearFireAim();for(const el of document.querySelectorAll('[data-key]'))el.classList.remove('active')}
 
@@ -1175,6 +1260,118 @@ function refreshHudScoreAccents(){
  if(mine?.style)mine.style.color=accents.left;
  if(theirs?.style)theirs.style.color=accents.right;
 }
+
+// M13-B: truthful Solo stage, elapsed/remaining clock, actual KO goal.
+// Read-only presentation; never adjust winners, AI, simulation or save records.
+function matchArcFor(st=state,session=mode){
+ if(!st||session!=='solo'||st.config?.ctfExercise||st.config?.dailySector||
+   st.config?.forwardBayExercise||(!st.scored&&!(st.config?.botCount>0)))return null;
+ if(st.winner>=0)return null;
+ const elapsed=Math.max(0,Number(st.scored?.elapsedSeconds??st.elapsedSeconds)||0);
+ if(st.scored){
+  const s=st.scored;
+  const scores=s.mode==='teams'?[0,1].map(team=>s.operatorKOs.reduce(
+   (sum,k,i)=>sum+(s.teamIds[i]===team?k:0),0)):[...s.operatorKOs];
+  const leader=Math.max(0,...scores),target=s.scoreTarget;
+  const left=Math.max(0,s.clockSeconds-elapsed);
+  const stage=left<=45||leader>=Math.ceil(.8*target)?'final':
+    elapsed<18&&leader===0?'deployment':'engagement';
+  const label=stage==='final'?'FINAL PUSH':stage==='deployment'?'DEPLOY':'ENGAGE';
+  const time=durationLabel(Math.ceil(left));
+  return {stage,label,text:label+' · '+time+' · '+leader+'/'+target,
+   aria:label+'. '+time+' left. Leader '+leader+' of '+target+' KOs.',
+   leader,target,left,elapsed};
+ }
+ const active=(st.tanks||[]).map((_,i)=>i).filter(i=>(st.lives?.[i]||0)>0);
+ const sides=new Set(active.map(i=>teamOf(i,st)));
+ const deaths=(st.deaths||[]).reduce((total,k)=>total+(Number(k)||0),0);
+ const lives=st.lives?.[0]||0;
+ const opponents=active.filter(i=>!friendlyForState(0,i,st)).length;
+ // Team modes always have two team IDs, so team count alone is NOT a finale.
+ const decisive=st.config?.teamMode==='teams'?opponents<=1:sides.size<=2;
+ const eliminated=lives===0;
+ const stage=eliminated&&!decisive?'spectating':
+  deaths>0&&(decisive||(lives>0&&lives<=1))?'final':
+  elapsed<18&&deaths===0?'deployment':'engagement';
+ const label=stage==='spectating'?'WATCH FIGHT':
+  stage==='final'?(eliminated?'FINAL CONTACT':'FINAL STAND'):
+  stage==='deployment'?'DEPLOY':'ENGAGE';
+ const time=durationLabel(Math.floor(elapsed));
+ return {stage,label,text:label+' · '+time+' · '+opponents+' LEFT',
+  aria:label+'. '+time+' elapsed. '+opponents+' enemy sides remain. '+lives+' lives.',
+  opponents,lives,elapsed};
+}
+let lastMatchArcStage=null,lastMatchArcId=0;
+function refreshMatchArc(clock){
+ const phase=matchArcFor(),active=!!phase;
+ clock.classList.toggle('match-arc',active);
+ if(!active){delete clock.dataset.matchStage;return false;}
+ clock.textContent=phase.text;
+ clock.dataset.matchStage=phase.stage;
+ if(typeof clock.setAttribute==='function')clock.setAttribute('aria-label',phase.aria);
+ if(lastMatchArcId!==state.matchId){lastMatchArcId=state.matchId;lastMatchArcStage=null;}
+ if(!paused&&menu.classList.contains('hidden')&&lastMatchArcStage!==phase.stage){
+  if(lastMatchArcStage!==null){
+   if(phase.stage==='engagement')notice('ENGAGEMENT · CONTACTS ACTIVE',1900);
+   else if(phase.stage==='final')notice(phase.label+' · MATCH AT STAKE',2200);
+  }
+  lastMatchArcStage=phase.stage;
+ }
+ return true;
+}
+
+
+/* M13-B4: the truly eliminated Solo Survival operator may watch surviving bots.
+   Camera and controls only; never alter AI, damage, rewards, scoring or LAN. */
+let soloWatchSeat=null,soloWatchMatchId=null,soloWatchFocusPending=false;
+function soloWatchActive(st=state,session=mode){
+ return session==='solo'&&st?.winner<0&&st.lives?.[0]===0&&
+  !st.config?.dailySector&&!st.config?.ctfExercise&&!st.config?.forwardBayExercise&&
+  ['survival_ffa','survival_teams'].includes(st.config?.matchModeId)&&
+  st.tanks?.some((_,i)=>i>0&&st.lives[i]>0);
+}
+function soloWatchCandidates(st=state){
+ if(!soloWatchActive(st))return [];
+ const alive=st.tanks.map((_,i)=>i).filter(i=>i>0&&st.lives[i]>0);
+ const nearestOpponent=i=>{
+  const other=alive.filter(j=>j!==i&&teamOf(j,st)!==teamOf(i,st));
+  return other.length?Math.min(...other.map(j=>Math.hypot(
+   st.tanks[i].x-st.tanks[j].x,st.tanks[i].y-st.tanks[j].y))):Infinity;
+ };
+ return alive.sort((a,b)=>nearestOpponent(a)-nearestOpponent(b)||a-b);
+}
+function soloWatchTarget(){
+ const seats=soloWatchCandidates();
+ if(!seats.length)return null;
+ if(soloWatchMatchId!==state.matchId){soloWatchMatchId=state.matchId;soloWatchSeat=null;}
+ if(!seats.includes(soloWatchSeat)){soloWatchSeat=seats[0];soloWatchFocusPending=true;}
+ return state.tanks[soloWatchSeat]||null;
+}
+function updateSoloWatchUI(){
+ const wrapper=document.getElementById('solo-watch-bar'),gameScreen=document.getElementById('game-screen');
+ const target=soloWatchTarget(),active=!!target;
+ if(gameScreen)gameScreen.classList.toggle('solo-watching',active);
+ if(wrapper){
+  wrapper.classList.toggle('hidden',!active);
+  if(active){
+   const name=document.getElementById('solo-watch-label');
+   if(name)name.textContent='WATCHING · '+label(soloWatchSeat);
+   const next=document.getElementById('solo-watch-next');
+   if(next){next.disabled=soloWatchCandidates().length<2;
+    if(typeof next.setAttribute==='function')next.setAttribute('aria-label','Follow next surviving combatant');}
+  }
+ }
+ return active;
+}
+function cycleSoloWatchTarget(){
+ const seats=soloWatchCandidates();
+ if(seats.length<2)return false;
+ const index=seats.indexOf(soloWatchSeat);
+ soloWatchSeat=seats[(index+1+seats.length)%seats.length];
+ soloWatchFocusPending=true;
+ updateSoloWatchUI();return true;
+}
+
 function refreshHUD(){refreshHudModeChip();refreshHudScoreAccents();const me=mode==='guest'&&!lanSpectating?1:0,other=me===0?1:0;
  document.getElementById('score0').textContent=state.lives[me]??0;document.getElementById('score1').textContent=state.lives[other]??0;
  const botLives=mode==='solo'||(mode==='host'&&state.config?.lanHostSolo===true)?
@@ -1218,7 +1415,7 @@ function refreshHUD(){refreshHudModeChip();refreshHudScoreAccents();const me=mod
  if(slots&&cap<=12){const markup=Array.from({length:cap},(_,i)=>'<i class="shell-slot'+(i<available?' ready':'')+'"></i>').join('');if(slots.innerHTML!==markup)slots.innerHTML=markup;}
 }
  const power=document.getElementById('power-status');if(power){const def=PICKUPS[localPilot?.powerType];const activePower=(state.lives[me]??0)>0&&!!def&&localPilot.powerTimer>0;power.classList.toggle('hidden',!activePower);power.textContent=activePower?def.name+' · '+Math.ceil(localPilot.powerTimer)+'s':'';if(activePower)power.style.borderColor=def.color;}
- const ended=state.winner>=0&&mode!=='idle';if(ended||state.eventTimer>0)toast.classList.remove('visible');
+ const ended=state.winner>=0&&mode!=='idle';updateSoloWatchUI();if(ended||state.eventTimer>0)toast.classList.remove('visible');
  document.getElementById('game-screen')?.classList.toggle('match-finished',ended);
  const report=document.getElementById('after-action');
  // Solo results are captured once from combat state. LAN guest uses the existing
@@ -1308,7 +1505,18 @@ function refreshHUD(){refreshHudModeChip();refreshHudScoreAccents();const me=mod
  }
  const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=comfort.autoFire?'AUTO ON':comfort.releaseFire&&['solo','host','guest'].includes(mode)?'AIM · RELEASE':'HOLD TO FIRE';
  const clock=document.getElementById('score-clock'),life=document.querySelector('.scorestrip .hud-life');
- if(clock){clock.classList.toggle('hidden',!isScoredMatch()||ctf);if(isScoredMatch()&&!ctf)clock.textContent=durationLabel(Math.ceil(Math.max(0,state.scored.clockSeconds-state.scored.elapsedSeconds)))+(state.lanSeries?' · R'+state.lanSeries.round+'/3':'');}
+ if(clock){
+  const arc=mode==='solo'?refreshMatchArc(clock):false;
+  clock.classList.toggle('hidden',!(isScoredMatch()||arc)||ctf);
+  if(!arc){
+   // Restored to canonical LAN/CTF presentation when exiting Solo watch mode.
+   clock.classList.remove('match-arc');delete clock.dataset.matchStage;
+   if(isScoredMatch()&&!ctf){
+    clock.textContent=durationLabel(Math.ceil(Math.max(0,state.scored.clockSeconds-state.scored.elapsedSeconds)))+(state.lanSeries?' · R'+state.lanSeries.round+'/3':'');
+    if(typeof clock.setAttribute==='function')clock.setAttribute('aria-label','Time remaining');
+   }
+  }
+ }
  if(life)life.classList.toggle('hidden',isScoredMatch());
  if(ctf){
   document.getElementById('score0').textContent=state.ctf.scores[0];
@@ -1360,7 +1568,7 @@ function newMatch(which,dailyOptions=null){
  matchModeId:'survival_ffa',quickPlayMatch:false,customMatch:false,pilotMode:true}:ctfLaunch?{...selectedRules,matchModeId:'scored_tdm',
  mapSize:'standard',teamMode:'teams',botCount:3,botSkill:'normal',pilotMode:true,
  forwardBayExercise:true,ctfExercise:true,quickPlayMatch:false}:bayLaunch?{...selectedRules,matchModeId:'scored_tdm',mapSize:'standard',teamMode:'teams',botCount:3,botSkill:'normal',pilotMode:true,forwardBayExercise:true,quickPlayMatch:false}:dailyLaunch?dailyOptions:customLaunch?customOptionsFor():scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:which==='scored_tdm'?'teams':'ffa',matchModeId:which,pilotMode:true}:playlistId?quickPlayOptionsFor(playlistId):{...selectedRules,pilotMode:true};
- state=initialState(arena,options,dailyLaunch?options.dailySeed:freshSectorSeed(state?.mazeSeed));dailyAttemptedKey='';dailyLastRecord=null;roundUnlocks=[];camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();releaseShot=null;remoteReleaseShot=null;refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch||practiceLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(ctfLaunch?'CAPTURE THE FLAG · TEST':bayLaunch?'FORWARD BAY · TEAM EXERCISE':dailyLaunch?'DAILY SECTOR':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config))):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch||practiceLaunch){exitMenu();audioCue('deploy');if(mode==='solo')firstMatchHint();}}
+ state=initialState(arena,options,dailyLaunch?options.dailySeed:freshSectorSeed(state?.mazeSeed));soloWatchSeat=null;soloWatchFocusPending=false;soloWatchMatchId=state.matchId;lastMatchArcStage=null;lastMatchArcId=state.matchId;dailyAttemptedKey='';dailyLastRecord=null;roundUnlocks=[];camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();releaseShot=null;remoteReleaseShot=null;refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch||practiceLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(ctfLaunch?'CAPTURE THE FLAG · TEST':bayLaunch?'FORWARD BAY · TEAM EXERCISE':dailyLaunch?'DAILY SECTOR':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config))):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch||practiceLaunch){exitMenu();audioCue('deploy');if(mode==='solo')firstMatchHint();}}
 function resetAll(advancePlaylist=false){
  const previousSeed=state.mazeSeed;
  const carriedSeries=mode==='host'&&state.winner>=0&&state.lanSeries?
@@ -1378,6 +1586,8 @@ function resetAll(advancePlaylist=false){
   options=quickPlayOptionsFor(id,selectedRules);
  }
  state=initialState(0,options,options.dailySector?options.dailySeed:freshSectorSeed(previousSeed));
+ soloWatchSeat=null;soloWatchFocusPending=false;soloWatchMatchId=state.matchId;
+ lastMatchArcStage=null;lastMatchArcId=state.matchId;
  if(carriedSeries)state.lanSeries=carriedSeries;
  dailyAttemptedKey='';dailyLastRecord=null;
  if(mode==='host')neutralizeGuestInput();
@@ -2847,14 +3057,22 @@ function drawEnemyBotCue(c,t,cue){
 }
 function render(dt=STEP){const c=ctx;c.clearRect(0,0,W,H);c.save();if(screenKick>0)c.translate(Math.sin(visualClock*130)*screenKick,Math.cos(visualClock*98)*screenKick*.5);// Widened tactical camera. The perimeter includes enough rendered exterior
  // floor tiles so wide Android screens do not reveal blank side gutters.
- const me=mode==='guest'&&!lanSpectating?1:0,localTank=state.lives[me]>0?state.tanks[me]:(state.tanks.find((t,i)=>state.lives[i]>0)||state.tanks[me]||state.tanks[0]);
+ const me=mode==='guest'&&!lanSpectating?1:0,watchTarget=mode==='solo'?soloWatchTarget():null,
+ localTank=watchTarget||(state.lives[me]>0?state.tanks[me]:(state.tanks.find((t,i)=>state.lives[i]>0)||state.tanks[me]||state.tanks[0]));
  const zoomTarget=cameraZoom(localTank);
  if(!Number.isFinite(camera.zoom))camera.zoom=zoomTarget;
  const zoomFloor=mazeGrid?Math.max(W/(worldW+CAMERA_APRON*2),H/(worldH+CAMERA_APRON*2)):1;
  camera.zoom=Math.max(zoomFloor,camera.zoom+(zoomTarget-camera.zoom)*(1-Math.exp(-Math.min(.1,Math.max(0,dt))*5.2)));
  const zoom=camera.zoom,viewW=W/zoom,viewH=H/zoom;
  const apron=mazeGrid?CAMERA_APRON:0;const desiredX=clamp((localTank?.x||W/2)-viewW/2,-apron,Math.max(-apron,worldW+apron-viewW)),desiredY=clamp((localTank?.y||H/2)-viewH/2,-apron,Math.max(-apron,worldH+apron-viewH));
- const follow=1-Math.exp(-Math.min(.1,dt)*13);camera.x+=(desiredX-camera.x)*follow;camera.y+=(desiredY-camera.y)*follow;if(!mazeGrid){camera.x=0;camera.y=0}
+ if(watchTarget&&soloWatchFocusPending){
+  // Never show empty terrain while crossing the maze between living cameras.
+  camera.x=desiredX;camera.y=desiredY;soloWatchFocusPending=false;
+ }else{
+  const follow=1-Math.exp(-Math.min(.1,dt)*13);
+  camera.x+=(desiredX-camera.x)*follow;camera.y+=(desiredY-camera.y)*follow;
+ }
+ if(!mazeGrid){camera.x=0;camera.y=0}
  c.scale(zoom,zoom);c.translate(-camera.x,-camera.y);
  // Paint past the playable perimeter so a small camera pullback remains
  // immersive rather than showing untextured side gutters.
@@ -3413,7 +3631,7 @@ function manual(){if(!bridgeReady()){notice('Manual LAN join requires the Androi
  '<header class="lan-utility-head"><div class="eyebrow">FIELDGRID / LOCAL OPERATIONS</div><h2>JOIN <span>BY IP</span></h2><p>Use the address and port displayed on the host phone.</p></header>'+
  '<div class="lan-utility-body"><span class="lan-brief-serial">03 / MANUAL CONNECTION</span><label class="lan-ip-label" for="lan-address">HOST ADDRESS / PORT<input type="text" id="lan-address" placeholder="192.168.1.25:47321" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false"></label><p class="lan-utility-note">Both Android phones must be connected to the same Wi-Fi. Example: 192.168.1.25:47321</p></div>'+
  '<footer class="lan-utility-actions"><button type="button" class="primary" data-action="ip-join">CONNECT</button><button type="button" data-action="find">FIND NEARBY</button><button type="button" data-action="close">MAIN MENU</button></footer></section>')}
-function stop(){if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;lanLobby=null;lanSpectating=false;lanSpectatePending=null;lanRoomFull=false;lanRetryEndpoint=null;
+function stop(){soloWatchSeat=null;soloWatchMatchId=null;soloWatchFocusPending=false;document.getElementById('game-screen')?.classList.remove('solo-watching');document.getElementById('solo-watch-bar')?.classList.add('hidden');if(bridgeReady())window.AndroidBridge.stopNetwork();connected=false;paused=true;lanLobby=null;lanSpectating=false;lanSpectatePending=null;lanRoomFull=false;lanRetryEndpoint=null;
  lanHostJoinNext=null;lanHostJoinSeq=0;lanHostPromotedMatchId=0;
  lanGuestJoinNext='none';lanGuestQueueBoundary='match';lanGuestJoinSeq=0;lanGuestJoinPending=false;lanGuestPromotePending=null;
  document.getElementById('game-screen')?.classList.remove('spectating');neutralizeGuestInput();mode='idle';playlistBag=[];lastSoloModeId=null;releaseControls();document.getElementById('mode-label').textContent='NO GAME ACTIVE';panel.innerHTML=originalPanel;applyPrefsToUI();menu.classList.remove('hidden')}
@@ -3456,7 +3674,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
  if(a==='toggle-sound'||a==='toggle-music'){togglePauseAudio(a==='toggle-sound'?'sound':'music',b);return;}
  if(!['solo','settings-play','practice','cqc','scored_ffa','scored_tdm','custom-play','duel','host','find','custom-preset-save','custom-preset-delete','custom-preset-load','ip-join'].includes(a))
   audioCue(['settings-back','help-back','dossier-back','backup-back','modes-back','custom-back','close','resume'].includes(a)?'ui-back':'ui-select');
- if(a==='lan-retry'){retryLanEndpoint();return;}else if(a==='lan-ready'){guestLanReady();return;}else if(a==='lan-start'){launchLanMatch();return;}else if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest?.('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-preview-unit'){hangarPreviewUnit=hangarPreviewUnit==='tank'?'mech':'tank';drawHangarUnitPreview()}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
+ if(a==='lan-retry'){retryLanEndpoint();return;}else if(a==='lan-ready'){guestLanReady();return;}else if(a==='lan-start'){launchLanMatch();return;}else if(a==='modes'){openModes()}else if(a==='m12-mode-art-next'){if(M12_ART_PARAM&&!M13_PROMOTION_PREVIEW){m12ModeStudyEnabled=!m12ModeStudyEnabled;refreshM12ModeStudy();}return;}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest?.('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-preview-unit'){hangarPreviewUnit=hangarPreviewUnit==='tank'?'mech':'tank';drawHangarUnitPreview()}else if(a==='m12-art-next'){if(M12_ART_PARAM&&!M13_PROMOTION_PREVIEW){m12HangarStudy=M12_HANGAR_STUDIES[(M12_HANGAR_STUDIES.indexOf(m12HangarStudy)+1)%3];refreshM12HangarStudy();}return;}else if(a==='m12-insignia-art-next'){if(M12_ART_PARAM&&!M13_PROMOTION_PREVIEW){m12InsigniaStudyEnabled=!m12InsigniaStudyEnabled;refreshM12InsigniaStudy();}return;}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
    const ok=equipPaint(b.dataset.paintId);
    refreshHangar();const status=document.getElementById('hangar-status');
    if(!ok&&status)status.textContent=paintProgress(b.dataset.paintId).eligible?'COULD NOT SAVE PAINT · CURRENT PAINT KEPT':'LOCKED · COMPLETE DOSSIER MILESTONE FIRST';
@@ -3525,7 +3743,8 @@ function showPauseMenu(){
     '<button data-action="close">DISCONNECT</button>'));
  }
 }
-document.getElementById('spectator-queue')?.addEventListener('click',()=>{
+document.getElementById('solo-watch-next')?.addEventListener('click',()=>{if(cycleSoloWatchTarget())audioCue('ui-select');});
+ document.getElementById('spectator-queue')?.addEventListener('click',()=>{
  guestJoinNextAction(lanGuestJoinNext==='queued'?'cancel':'join');
 });
 document.getElementById('menu-button').addEventListener('click',()=>{if(mode!=='idle')audioCue('ui-select');showPauseMenu()});

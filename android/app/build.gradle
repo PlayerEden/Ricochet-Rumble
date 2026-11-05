@@ -29,11 +29,21 @@ def requestedPreviewCode = providers.gradleProperty('srPreviewVersionCode').orNu
 def requestedPreviewName = providers.gradleProperty('srPreviewVersionName').orNull
 def previewPackageSwitch = providers.gradleProperty('srPreviewPackage').orNull
 // An isolated, self-contained phone demo. Never uses the production or owner preview ID.
+def fusionLabPackage = providers.gradleProperty('srM13FusionPackage').orNull
+if (fusionLabPackage != null && fusionLabPackage != 'true')
+    throw new GradleException('srM13FusionPackage must be true if supplied')
+def pacingLabPackage = providers.gradleProperty('srPacingLabPackage').orNull
+if (pacingLabPackage != null && pacingLabPackage != 'true')
+    throw new GradleException('srPacingLabPackage must be true if supplied')
 def hybridLabPackage = providers.gradleProperty('srHybridLabPackage').orNull
 if (hybridLabPackage != null && hybridLabPackage != 'true')
     throw new GradleException('srHybridLabPackage must be true when supplied')
 if (hybridLabPackage == 'true' && previewPackageSwitch != null)
     throw new GradleException('Hybrid test package must never be combined with owner preview package')
+if (pacingLabPackage == 'true' && (previewPackageSwitch != null || hybridLabPackage != null || fusionLabPackage != null))
+    throw new GradleException('Pacing test app must never reuse existing owner or hybrid identity')
+if (fusionLabPackage == 'true' && (previewPackageSwitch != null || hybridLabPackage != null || pacingLabPackage != null))
+    throw new GradleException('Unified app must have its own independent debug identity')
 if (previewPackageSwitch != null && previewPackageSwitch != 'true')
     throw new GradleException('srPreviewPackage must be true when present')
 if ((requestedPreviewCode != null) != (previewPackageSwitch == 'true'))
@@ -63,6 +73,12 @@ android {
         versionCode previewVersionCode
         versionName previewVersionName
     }
+    // Review-only SVG assets are never packaged into the normal Android app.
+    sourceSets {
+        debug {
+            if (fusionLabPackage == 'true') assets.srcDir 'src/m12Visual/assets'
+        }
+    }
     signingConfigs {
         if (hasUploadSigning) {
             releaseUpload {
@@ -87,6 +103,8 @@ android {
             // CI QA without this flag retains the historical package and version.
             if (previewPackageSwitch == 'true') applicationIdSuffix '.preview'
             if (hybridLabPackage == 'true') applicationIdSuffix '.hybridtest'
+            if (pacingLabPackage == 'true') applicationIdSuffix '.m13pacing'
+            if (fusionLabPackage == 'true') applicationIdSuffix '.m13fusion'
             if (hasTestSigning) signingConfig signingConfigs.internalTest
         }
         release {
