@@ -104,6 +104,20 @@ try{
   for(const n of ['field','vector','ace','command']){
    const item=page.locator('.emblem-grid [data-emblem-id="mark.'+n+'"]');
    const image=await item.locator('.emblem-symbol').evaluate(el=>getComputedStyle(el).backgroundImage);
+   const badgeRead=await item.evaluate(el=>{
+    const r=el.getBoundingClientRect(),name=el.querySelector('strong').getBoundingClientRect(),
+     small=el.querySelector('small').getBoundingClientRect(),s=getComputedStyle(el);
+    return {card:{x:r.x,y:r.y,right:r.right,bottom:r.bottom},
+     title:{x:name.x,right:name.right},caption:{x:small.x,right:small.right},
+     opacity:Number(s.opacity),overflow:el.scrollWidth-el.clientWidth};
+   });
+   assert.ok(badgeRead.title.x>=badgeRead.card.x-1&&badgeRead.title.right<=badgeRead.card.right+1,
+    'Insignia title clipped '+n+' '+w+'x'+h+' '+JSON.stringify(badgeRead));
+   assert.ok(badgeRead.caption.x>=badgeRead.card.x-1&&badgeRead.caption.right<=badgeRead.card.right+1,
+    'Insignia caption clipped '+n+' '+w+'x'+h+' '+JSON.stringify(badgeRead));
+   assert.ok(badgeRead.overflow<=2,'Insignia card overflow '+n+' '+w+'x'+h);
+   if(n!=='field')assert.ok(badgeRead.opacity>=.70&&badgeRead.opacity<.9,
+     'Locked badge study must remain legible and visibly unavailable');
    assert.ok(image.includes('insignia-'+n+'-study-v1.svg'),'study badge missing '+n);
    assert.equal(await item.isDisabled(),n!=='field','existing unlock requirements changed '+n);
    const loaded=await imageLoad(page,'insignia-'+n+'-study-v1.svg');
@@ -164,13 +178,22 @@ try{
    assert.equal(await card.isVisible(),true,'mode button visible '+action);
    const geometry=await card.evaluate(el=>{
     const r=el.getBoundingClientRect(),art=getComputedStyle(el,'::before');
-    return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,height:r.height,image:art.backgroundImage,pointer:art.pointerEvents};
+    const name=el.querySelector('.mode-copy strong').getBoundingClientRect();
+    return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,height:r.height,
+     image:art.backgroundImage,pointer:art.pointerEvents,illustrationWidth:parseFloat(art.width),
+     titleX:name.x,titleRight:name.right,background:getComputedStyle(el).backgroundImage};
    });
    assert.ok(geometry.x>=-1&&geometry.right<=w+1&&geometry.y>=-1&&geometry.bottom<=h+1,
     'mode clipped '+w+'x'+h+' '+action+' '+JSON.stringify(geometry));
    assert.ok(geometry.height>=40,'touch height must remain usable');
    assert.ok(geometry.image.includes('mode-'+art+'-study-v1.svg'),'missing art for '+action);
    assert.equal(geometry.pointer,'none','mode art cannot intercept touches');
+   assert.ok(geometry.illustrationWidth>=70,
+    'Mode illustration too small to identify at '+w+'x'+h+' '+action);
+   assert.ok(geometry.titleX>=geometry.x-1&&geometry.titleRight<=geometry.right+1,
+    'Mode title clipped by art/layout at '+w+'x'+h+' '+action);
+   assert.ok(geometry.background.includes('linear-gradient'),
+    'M12-G coherent dark steel frame missing '+action);
    modeRows.push({viewport:w+'x'+h,action,art,geometry});
   }
   for(const name of ['cqc','ffa','tdm','custom','ctf','forward-bays']){
@@ -237,7 +260,7 @@ try{
  assert.deepEqual(problems,[],'no game JavaScript errors');
  assert.deepEqual(missing,[],'all game and visual assets available locally');
  assert.deepEqual(remote,[],'no external network calls');
- const report={result:'PASS',source:'REAL_CHROMIUM_GAME_UI_NOT_PHYSICAL_ANDROID',
+ const report={result:'PASS',source:'REAL_CHROMIUM_GAME_UI_NOT_PHYSICAL_ANDROID',visualCohesionStage:'M12-G',
   cases:rows.length,defaultUnchanged:true,independentStudyVariants:['warm','blueprint','original'],
   modeCases:modeRows.length,sizes:dimensions.map(x=>x.join('x')),screenshots:rows.length+1+dimensions.length*5+1,originalModeNoPrefetch:true,insigniaVariants:['study','original'],rows,modeRows};
  fs.writeFileSync(out+'/report.json',JSON.stringify(report,null,2)+'\n');
