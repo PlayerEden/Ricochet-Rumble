@@ -39,7 +39,7 @@
         <span id="round" class="middle" aria-label="Vehicle armor: 3 of 3">TANK · 3/3</span>
         <span class="pink-tag"><strong id="score1">1</strong> <span id="player1-label">ENEMIES</span></span>
       </div>
-      <span id="score-clock" class="score-clock hidden" aria-label="Time remaining">03:00</span>
+      <span id="score-clock" class="score-clock hidden" role="status" aria-live="off" aria-label="Time remaining">03:00</span>
       <span id="power-status" class="power-status hidden" aria-live="off"></span>
       <span id="spectator-status" class="spectator-status hidden" role="status" aria-live="polite">SPECTATING · HOST</span>
       <button id="spectator-queue" class="spectator-queue hidden" type="button" aria-label="Queue or cancel joining the next round or match">JOIN NEXT</button>
@@ -57,6 +57,10 @@
         <div id="toast" class="toast" role="status" aria-live="polite"></div>
         <div id="field-coach" class="field-coach hidden" role="status" aria-live="polite" aria-atomic="true"></div>
         <div id="ctf-status" class="ctf-status hidden" role="status" aria-live="off"></div>
+        <div id="solo-watch-bar" class="solo-watch-bar hidden" role="group" aria-label="Watch the remaining Solo battle">
+          <span id="solo-watch-label" aria-live="polite">WATCHING · BATTLE</span>
+          <button id="solo-watch-next" type="button" aria-label="Follow next surviving combatant">NEXT CAMERA</button>
+        </div>
         <section id="after-action" class="after-action hidden" aria-label="After-action match report">
           <div class="aa-panel">
             <div class="aa-rail"><span id="aa-mode-label">FIELDGRID // OPERATIONS</span><span id="aa-outcome">AFTER ACTION</span></div>

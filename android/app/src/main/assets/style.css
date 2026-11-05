@@ -4125,3 +4125,51 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 /* M5.1-D: one equipped insignia card, with separate visible errors only if save fails. */
 #menu #emblem-status[hidden]{display:none!important}
 #menu #emblem-status:not([hidden]){margin:3px 0 5px;color:#f7d9a4;border-left-color:#edb66d}
+
+/* M13-B: the existing clock slot doubles as the Solo match arc, without
+   stealing thumb controls, the CTF objective, or the top scoreboard. */
+.game-hud .score-clock.match-arc:not(.hidden){
+ width:max-content;max-width:min(248px,60vw);min-height:24px;
+ padding:4px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+ background:#132b37ed;border-color:#78a4a9;color:#c4eced;
+ font:850 clamp(9px,1.2vw,12px)/1.2 'Droid Sans Mono',ui-monospace,monospace;
+}
+.game-hud .score-clock.match-arc[data-match-stage="final"]{
+ background:#3b2f21ed;border-color:#e1b679;color:#ffe2a7;
+}
+.game-hud .score-clock.match-arc[data-match-stage="deployment"]{
+ background:#16313bed;border-color:#6aaeb7;color:#bcf3ee;
+}
+@media(max-width:650px) and (orientation:landscape){
+ .game-hud .score-clock.match-arc:not(.hidden){font-size:9px;padding:3px 7px;max-width:57vw}
+}
+@media(prefers-reduced-motion:reduce){
+ .game-hud .score-clock.match-arc{transition:none;animation:none}
+}
+
+/* M13-B4. Solo Survival after-elimination spectating only. */
+.game-screen.solo-watching .battlefield>.touch-zone{display:none!important;pointer-events:none!important}
+.solo-watch-bar.hidden{display:none!important}
+.solo-watch-bar{
+ position:absolute;bottom:max(12px,calc(var(--sr-safe-bottom) + 12px));
+ left:50%;transform:translateX(-50%);z-index:8;pointer-events:none;
+ display:flex;align-items:center;gap:8px;max-width:60vw;
+ border:1px solid #698f98;background:#102833e8;border-radius:5px;
+ padding:4px 5px 4px 10px;box-shadow:0 4px 12px #020c12a8;
+ color:#c9e9e8;font:850 clamp(9px,1.2vw,12px)/1.1 ui-monospace,monospace;
+}
+.solo-watch-bar span{max-width:28vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.solo-watch-bar button{
+ pointer-events:auto;cursor:pointer;flex-shrink:0;min-height:36px;
+ padding:6px 11px;border:1px solid #c5a76c;background:#2e393d;color:#ffe1a9;
+ border-radius:4px;font:850 clamp(9px,1.15vw,12px)/1.1 'sans-serif-condensed',Arial,sans-serif;
+}
+.solo-watch-bar button:disabled{opacity:.5;cursor:default}
+.solo-watch-bar button:focus-visible{outline:2px solid #f7d78d;outline-offset:2px}
+.game-screen:has(.overlay:not(.hidden)) .solo-watch-bar,
+.game-screen.match-finished .solo-watch-bar{display:none!important}
+@media(max-width:650px) and (orientation:landscape){
+ .solo-watch-bar{max-width:60vw;padding:3px 4px 3px 7px;gap:5px}
+ .solo-watch-bar button{min-height:32px;padding:5px 7px}
+}
+@media(prefers-reduced-motion:reduce){.solo-watch-bar{transition:none;animation:none}}
