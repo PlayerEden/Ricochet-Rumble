@@ -166,7 +166,15 @@ function openHangar(fromDossier=false,newUnlocks=[]){
  const back=document.querySelector('.hangar-screen button[data-action="hangar-back"]');
  back?.setAttribute?.('aria-label',hangarReturnToDossier?'Back to Dossier':'Back to main menu');
 }
-function openModes(){setPanel(document.getElementById('modes-template').innerHTML);}
+function openModes(){
+ setPanel(document.getElementById('modes-template').innerHTML);
+ if(M13_B_PACING_PREVIEW){
+  for(const [action,target] of [['cqc',CQC_RULES.scoreTarget],['scored_tdm',VEHICLE_TDM_RULES.scoreTarget]]){
+   const line=panel.querySelector('[data-action="'+action+'"] .mode-copy small');
+   if(line)line.textContent=(action==='cqc'?'PILOTS ONLY':'2 TEAMS')+' · '+target+' KOs';
+  }
+ }
+}
 let loadingForwardBay=false;
 let loadingCtf=false;
 function launchCtfExercise(){
@@ -283,10 +291,15 @@ const MATCH_MODE_PRESETS=Object.freeze({
  survival_teams:Object.freeze({id:'survival_teams',label:'TEAM SURVIVAL',teamMode:'teams',objective:'last_side_standing',vehiclePolicy:'existing',allowedSizes:Object.freeze(['small','standard','large'])})
 });
 const RELEASED_MATCH_MODES=Object.freeze(Object.keys(MATCH_MODE_PRESETS)); // Defaults remain existing Survival modes.
+// M13-B5 score-target candidate is opt-in ONLY via isolated .m13pacing app.
+const M13_B_PACING_PREVIEW=(()=>{
+ try{return new URLSearchParams(String(window.location?.search||'')).get('m13Pacing')==='1';}
+ catch(_){return false}
+})();
 // CQC is an EXPLICIT test button, NOT silently added to approved survival playlists.
-const CQC_RULES=Object.freeze({mode:'ffa',scoreTarget:10,clockSeconds:180,vehiclePolicy:'none'});
+const CQC_RULES=Object.freeze({mode:'ffa',scoreTarget:M13_B_PACING_PREVIEW?15:10,clockSeconds:180,vehiclePolicy:'none'});
 const VEHICLE_FFA_RULES=Object.freeze({mode:'ffa',scoreTarget:10,clockSeconds:240,vehiclePolicy:'standard'});
-const VEHICLE_TDM_RULES=Object.freeze({mode:'teams',scoreTarget:15,clockSeconds:300,vehiclePolicy:'standard'});
+const VEHICLE_TDM_RULES=Object.freeze({mode:'teams',scoreTarget:M13_B_PACING_PREVIEW?30:15,clockSeconds:300,vehiclePolicy:'standard'});
 const SCORED_MATCH_RULES=Object.freeze({cqc:CQC_RULES,scored_ffa:VEHICLE_FFA_RULES,scored_tdm:VEHICLE_TDM_RULES});
 // V1 Survival selections remain valid. Scored modes are deliberate opt-in, never default.
 const QUICK_PLAY_OPT_IN_MODES=Object.freeze(['cqc','scored_ffa','scored_tdm']);
@@ -700,6 +713,12 @@ function savePrefs(){selectedRules=readSettings();
  applyPlaylistUI();
 }
 function applyPlaylistUI(){
+ if(M13_B_PACING_PREVIEW){
+  for(const [id,text] of [['cqc',' CLOSE QUARTERS · 15 KOs / 3 MIN'],['scored_tdm',' TEAM DEATHMATCH · 30 KOs / 5 MIN']]){
+   const input=document.querySelector('input[data-playlist-mode="'+id+'"]');
+   if(input?.nextSibling?.nodeType===3)input.nextSibling.textContent=text;
+  }
+ }
  for(const el of document.querySelectorAll('input[data-playlist-mode]'))el.checked=selectedPlaylistIds.includes(el.dataset.playlistMode);
  for(const button of document.querySelectorAll('[data-action="solo"],[data-action="settings-play"]'))button.disabled=!selectedPlaylistIds.length;
  const status=document.getElementById('playlist-status');

@@ -153,6 +153,24 @@ try{
   results.push({viewport:w+'x'+h,stages:3,scoringUnchanged:true,savesSafe:true,lanUnchanged:true,soloWatch:true,realTargetCycle:true});
   await ctx.close();
  }
+ // The preview-only route must show actual 15 / 30 score rules and labels.
+ const preview=await browser.newContext({viewport:{width:740,height:360}});
+ const previewPage=await preview.newPage();
+ previewPage.on('pageerror',e=>errors.push('preview '+e.message));
+ await previewPage.goto('http://127.0.0.1:'+srv.address().port+'/?m13Pacing=1',{waitUntil:'load'});
+ await previewPage.waitForFunction(()=>!!window.__arcQa);
+ await previewPage.locator('#menu button[data-action="modes"]').click();
+ assert.match(await previewPage.locator('.mode-cqc .mode-copy small').textContent(),/15 KOs/);
+ assert.match(await previewPage.locator('.mode-tdm .mode-copy small').textContent(),/30 KOs/);
+ let previewRow=await previewPage.evaluate(()=>window.__arcQa.start('cqc'));
+ assert.equal(previewRow.target,15,'CQC test APK must use the chosen 15-KO trial');
+ assert.equal(previewRow.cap,180,'CQC clock remains three minutes');
+ previewRow=await previewPage.evaluate(()=>window.__arcQa.start('scored_tdm'));
+ assert.equal(previewRow.target,30,'TDM test APK must use the chosen 30-KO trial');
+ assert.equal(previewRow.cap,300,'TDM clock remains five minutes');
+ previewRow=await previewPage.evaluate(()=>window.__arcQa.start('scored_ffa'));
+ assert.equal(previewRow.target,10,'FFA is intentionally unchanged');
+ await preview.close();
  assert.deepEqual(errors,[],'Browser exceptions');
  fs.writeFileSync(output+'/match-arc-qa.json',JSON.stringify({result:'PASS',results},null,2)+'\n');
  console.log('M13_B_MATCH_ARC_REAL_BROWSER_PASS '+JSON.stringify({viewports:results.length,

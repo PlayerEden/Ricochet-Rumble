@@ -95,12 +95,23 @@ jobs:
             cmp "web/$file" <(unzip -p "$apk" "assets/$file")
           done
           node tools/verify-hybrid-menu-bundle.mjs --apk="$apk"
+          python3 - "$apk" <<'PY'
+          import sys,zipfile
+          with zipfile.ZipFile(sys.argv[1]) as z:
+              dex=[n for n in z.namelist() if n.startswith('classes') and n.endswith('.dex')]
+              assert dex and any(b'm13Pacing=1' in z.read(n) for n in dex), 'Test app must opt into B5 target trial'
+              js=z.read('assets/game.js')
+              assert b'M13_B_PACING_PREVIEW' in js, 'Missing opt-in game rules'
+          print('M13_B5_ANDROID_PREVIEW_TARGETS_VERIFIED')
+          PY
           mkdir -p dist
           cp "$apk" dist/SR-M13-Battle-Test.apk
           {
             echo "SOURCE_SHA=$GITHUB_SHA"
             echo "APP_ID=com.playereden.ricochetrumble.m13pacing"
             echo "LABEL=SR M13 Battle"
+            echo "LAUNCH_URL=file:///android_asset/index.html?m13Pacing=1"
+            echo "SOLO_TEST_TARGETS=CQC15,TDM30,FFA10"
             echo "APK_SHA256=$(sha256sum dist/SR-M13-Battle-Test.apk | awk '{print $1}')"
             echo "SIGNER=DISPOSABLE_CI_DEBUG_NOT_UPGRADE_SAFE"
             echo "NORMAL_OWNER_APP_AND_SAVE_DATA_UNTOUCHED"
