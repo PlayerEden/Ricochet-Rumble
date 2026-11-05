@@ -9,7 +9,7 @@ const root=path.resolve('web'),problems=[],remote=[],missing=[];
 const allowed=new Set(['index.html','style.css','game.js','dossier.js','save-backup.js',
  'scored-match.js','forward-bays.js','lan-series.js','lan-room.js','ctf-rules.js','ctf-ai.js',
  'assets/m12/hangar-warm-empty-v1.svg','assets/m12/hangar-blueprint-empty-v1.svg',
- 'assets/m12/mode-cqc-study-v1.svg','assets/m12/mode-ffa-study-v1.svg','assets/m12/mode-tdm-study-v1.svg','assets/m12/mode-ctf-study-v1.svg','assets/m12/mode-forward-bays-study-v1.svg']);
+ 'assets/m12/mode-cqc-study-v1.svg','assets/m12/mode-ffa-study-v1.svg','assets/m12/mode-tdm-study-v1.svg','assets/m12/mode-custom-study-v1.svg','assets/m12/mode-ctf-study-v1.svg','assets/m12/mode-forward-bays-study-v1.svg']);
 const server=http.createServer((req,res)=>{
  const name=decodeURIComponent(new URL(req.url,'http://127.0.0.1/').pathname).replace(/^\/+/,'')||'index.html';
  if(name==='favicon.ico'){res.writeHead(204);res.end();return;}
