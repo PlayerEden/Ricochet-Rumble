@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "project": "Sector Rebound",
+  "program": "M12 asset and render efficiency",
+  "baselineCommit": "b114dfa37af2f132e4d3c08d503afcb15c5dff19",
+  "runtimeAssetIntegration": "m12visual-debug-only-android-assets",
+  "stage": "M12-F-packaging-and-release-audit",
+  "allCategoriesOptIn": true,
+  "defaultGameArtPreserved": true,
+  "categories": [
+    {
+      "id": "hangar-background",
+      "priority": 1,
+      "kind": "static-background",
+      "instances": 2,
+      "format": "svg",
+      "dimensions": [
+        1024,
+        576
+      ],
+      "maxCompressedBytesPerAsset": 163840,
+      "decodedRGBABytesPerAsset": 2359296,
+      "content": "empty industrial bay, central safe area, no player sprites or UI; current study is original offline SVG, not an optimized WebP production asset",
+      "renderPath": "CSS Hangar decoration; real tank/mech remain Canvas",
+      "runtimeStatus": "opt-in-test",
+      "requiresActualPerfGain": false
+    },
+    {
+      "id": "mode-card-illustration",
+      "priority": 2,
+      "kind": "original-vector-illustration",
+      "instances": 6,
+      "format": "svg",
+      "dimensions": [
+        512,
+        288
+      ],
+      "maxCompressedBytesPerAsset": 76800,
+      "decodedRGBABytesPerAsset": 589824,
+      "content": "Six original offline vector studies for existing Close Quarters, FFA, TDM, Custom Match, CTF and Forward Bays. Each uses actual current game mode terminology, no fake game state; visually comparable with original Mode Select on test app.",
+      "renderPath": "Existing Mode Select button pseudo-element only under ?m12Art opt-in",
+      "runtimeStatus": "opt-in-test",
+      "requiresActualPerfGain": false
+    },
+    {
+      "id": "emblem-study",
+      "priority": 3,
+      "kind": "original-vector-study",
+      "instances": 4,
+      "format": "svg",
+      "dimensions": [
+        96,
+        96
+      ],
+      "maxCompressedBytesPerAsset": 5120,
+      "decodedRGBABytesPerAsset": 36864,
+      "content": "FIELD/VECTOR/ACE/COMMAND study sources mirrored to isolated test Hangar; earned conditions unchanged; 24/32/48/96 pixel legibility proxies",
+      "renderPath": "Opt-in Hangar insignia cards and equipped detail; real unlocks and Dossier remain canonical",
+      "runtimeStatus": "opt-in-test",
+      "requiresActualPerfGain": false
+    },
+    {
+      "id": "menu-trim",
+      "priority": 4,
+      "kind": "noninteractive-decoration",
+      "instances": 1,
+      "format": "svg",
+      "dimensions": [
+        512,
+        128
+      ],
+      "maxCompressedBytesPerAsset": 10240,
+      "decodedRGBABytesPerAsset": 262144,
+      "content": "subtle neutral plate, no faux controls or embedded text",
+      "renderPath": "menu CSS",
+      "runtimeStatus": "deferred",
+      "requiresActualPerfGain": false
+    },
+    {
+      "id": "arena-floor-tiles",
+      "priority": 5,
+      "kind": "render-cache-prototype",
+      "instances": 1,
+      "format": "png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "maxCompressedBytesPerAsset": 262144,
+      "decodedRGBABytesPerAsset": 1048576,
+      "content": "deterministic tile geometry matching existing floor, no collision edits",
+      "renderPath": "render(dt) floor loop",
+      "runtimeStatus": "blocked-on-profiling",
+      "requiresActualPerfGain": true
+    },
+    {
+      "id": "arena-prop-atlas",
+      "priority": 6,
+      "kind": "static-world-prop",
+      "instances": 1,
+      "format": "png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "maxCompressedBytesPerAsset": 262144,
+      "decodedRGBABytesPerAsset": 1048576,
+      "content": "noncolliding only; every visible prop must be grounded in actual arena logic",
+      "renderPath": "render(dt) world decorations",
+      "runtimeStatus": "deferred",
+      "requiresActualPerfGain": true
+    }
+  ],
+  "protected": [
+    "real tank/mech/pilot renderer",
+    "team colors",
+    "aim and projectiles",
+    "collision geometry",
+    "minimap and HUD",
+    "joystick/FIRE/EXIT hit areas",
+    "LAN messages",
+    "Dossier/save keys",
+    "Android signing and package ID"
+  ],
+  "androidAssetIsolation": "src/m12Visual/assets is included only in .m12visual debug sourceSet; standard debug and release omit assets",
+  "releaseApproval": "blocked-pending-phone-LAN-FPS-signing-and-owner-review"
+}
