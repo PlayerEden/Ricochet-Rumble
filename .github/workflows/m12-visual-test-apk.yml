@@ -72,6 +72,10 @@ jobs:
           test -n "$CHROME_BIN"
           node tests/m12-hangar-visual-qa.mjs
           node tests/m12-art-scale-budget.mjs
+          node tests/m12-f2-progress-continuity.mjs
+          test -s qa-results/m12/release-gate/m12-f2-progress-continuity.json
+          test -s qa-results/m12/release-gate/m12-f2-baseline-dossier.png
+          test -s qa-results/m12/release-gate/m12-f2-current-dossier.png
           test -s qa-results/m12/visual/report.json
           test -s qa-results/m12/visual/insignia-scale-sheet-24-32-48-96.png
           test -s qa-results/m12/visual/m12-e4-source-and-scale-audit.json

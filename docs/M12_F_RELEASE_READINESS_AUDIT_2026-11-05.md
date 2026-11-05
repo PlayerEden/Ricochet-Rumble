@@ -28,3 +28,11 @@
 5. Separate full Android/visual CI workflow was skipped by policy; do not imply it passed.
 
 **No merge into main, no Play production build, no implicit save migration.** The next production-art decision belongs in a separate review/PR after approvals.
+
+## M12-F2 — baseline-to-candidate progress continuity on real Chromium
+
+With zero release changes, `tests/m12-f2-progress-continuity.mjs` serves exact original `main` at the pinned baseline SHA, then swaps HTTP-served scripts/styles to the current M12 PR SHA **on the same browser origin** without resetting browser storage. It seeds **six synthetic game records** (options, Custom rules, Custom presets, Dossier, equipped paint/earned insignia and Daily Sector) and compares their exact raw JSON bytes before and after a second launch and opt-in badge art cycle. It also verifies the Dossier match and KO totals, equipped/unlocked Vector mark, paint, settings and Custom presets in real app menus, producing before/after screenshots and key-specific SHA256 fingerprints. Source files are read from Git and the candidate checkout, not mocked modules.
+
+**Limit of inference:** A headless Chromium same-origin source swap is **not** an Android APK installation, does not establish Android signature continuity, and cannot guarantee real-device uninstall/reinstall data preservation. Unlike upgrading with the same package ID, **uninstalling an app erases its local storage**. The M12 visual APK has a different app ID, so its progress cannot transparently transfer into the normal app; manual export/restore is a separate, user-directed operation. The disposable CI debug signer still means the visual-test APK may need reinstallation on later downloads. Real same-signer, increasing-versionCode on-device installation remains a required separate gate.
+
+The M12 visual-test workflow now runs this scenario automatically and retains machine-readable evidence in the test artifact. All logic is test-only; do not modify actual storage keys, backup behavior or canonical app paths in M12-F2.
