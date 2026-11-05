@@ -16,7 +16,7 @@ const assets=[
 const raw={},listed=[];let sum=0;
 for(const a of assets){
  const content=read('web/assets/m12/'+a.file),src=read('docs/m12-art-studies/'+a.file);
- const android=read('android/app/src/main/assets/assets/m12/'+a.file);
+ const android=read('android/app/src/m12Visual/assets/assets/m12/'+a.file);
  assert.equal(content,src,'source study drift '+a.file);
  assert.equal(content,android,'Android/Web art drift '+a.file);
  const category=budget.categories.find(x=>x.id===a.category);

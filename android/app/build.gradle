@@ -69,6 +69,15 @@ android {
         versionCode previewVersionCode
         versionName previewVersionName
     }
+    // M12 experimental art is exclusively packaged by the standalone debug app.
+    // Normal debug, preview, hybrid-test, and release variants omit study images.
+    sourceSets {
+        debug {
+            if (m12VisualLabPackage == 'true') {
+                assets.srcDir 'src/m12Visual/assets'
+            }
+        }
+    }
     signingConfigs {
         if (hasUploadSigning) {
             releaseUpload {

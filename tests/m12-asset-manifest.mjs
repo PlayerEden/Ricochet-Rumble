@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const m=JSON.parse(read('docs/M12_ASSET_MANIFEST_2026-11-04.json'));
-assert.equal(m.schemaVersion,1);assert.equal(m.stage,'M12-E4-scale-and-source-audit');
-assert.equal(m.runtimeAssetIntegration,'opt-in-only-m12visual-hangar-modes-insignias');assert.equal(m.allCategoriesOptIn,true);
+assert.equal(m.schemaVersion,1);assert.equal(m.stage,'M12-F-packaging-and-release-audit');
+assert.equal(m.runtimeAssetIntegration,'m12visual-debug-only-android-assets');assert.equal(m.allCategoriesOptIn,true);
 assert.equal(m.defaultGameArtPreserved,true);
 const ids=m.categories.map(x=>x.id);
 assert.equal(ids.length,6);assert.equal(new Set(ids).size,ids.length);
@@ -32,6 +32,11 @@ assert.ok(html.includes('data-action="m12-art-next"')&&html.includes('class="m12
  'test-only cycling control absent or visible by default');
 assert.ok(read('android/app/build.gradle').includes("applicationIdSuffix '.m12visual'"),
  'isolated test identity must never replace an owner or hybrid build');
+assert.ok(read('android/app/build.gradle').includes("assets.srcDir 'src/m12Visual/assets'") &&
+ read('android/app/build.gradle').includes("if (m12VisualLabPackage == 'true')"),
+ 'only dedicated test package may include M12 SVG assets');
+assert.equal(fs.existsSync(new URL('../android/app/src/main/assets/assets/m12',import.meta.url)),false,
+ 'regular Android assets must contain zero M12 studies');
 assert.ok(read('android/app/src/main/java/com/playereden/ricochetrumble/MainActivity.java').includes('m12Art=warm'),
  'dedicated test app should enable its own opt-in visual URL');
 for(const id of ["'fieldgrid.standard'","'fieldgrid.moss'","'mark.field'","'mark.vector'"])
@@ -46,7 +51,7 @@ for(const variant of ['warm','blueprint']){
  assert.ok(!/\b(?:https?:)?\/\/[^"']+/.test(svg.replace('http://www.w3.org/2000/svg','')),
    'no external image/font/CDN dependencies in asset concept');
  for(const path of ['web/assets/m12/hangar-'+variant+'-empty-v1.svg',
-  'android/app/src/main/assets/assets/m12/hangar-'+variant+'-empty-v1.svg'])
+  'android/app/src/m12Visual/assets/assets/m12/hangar-'+variant+'-empty-v1.svg'])
   assert.equal(read(path),svg,'Web/Android visual art must be exact original source: '+path);
 }
 
@@ -56,7 +61,7 @@ for(const name of ['cqc','ffa','tdm','custom','ctf','forward-bays']){
  assert.ok(doc.length<76800&&doc.length>800,'compact original vector');
  assert.ok(!/<(?:script|text|image|foreignObject)\b/i.test(doc),'no baked UI, actors or code');
  assert.ok(!/https?:\/\/(?!www\.w3\.org\/2000\/svg)/i.test(doc),'no remote dependency');
- for(const p of ['web/assets/m12/','android/app/src/main/assets/assets/m12/'])
+ for(const p of ['web/assets/m12/','android/app/src/m12Visual/assets/assets/m12/'])
   assert.equal(read(p+'mode-'+name+'-study-v1.svg'),doc,'mirrored offline mode art '+name);
  assert.ok(css.includes('mode-'+name+'-study-v1.svg'),'visual study CSS referenced '+name);
 }
@@ -66,7 +71,7 @@ for(const name of ['field','vector','ace','command']){
  assert.ok(svg.length<5120);
  assert.ok(!/<(?:script|text|image|foreignObject)\b/i.test(svg));
  assert.ok(html.includes('id="sr-mark-'+name+'"'),'existing insignia remains canonical');
- for(const prefix of ['web/assets/m12/','android/app/src/main/assets/assets/m12/'])
+ for(const prefix of ['web/assets/m12/','android/app/src/m12Visual/assets/assets/m12/'])
   assert.equal(read(prefix+'insignia-'+name+'-study-v1.svg'),svg,'insignia mirror '+name);
  assert.ok(css.includes('insignia-'+name+'-study-v1.svg'),'study CSS references '+name);
 }

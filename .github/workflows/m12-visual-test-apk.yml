@@ -26,6 +26,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -44,22 +46,23 @@ jobs:
           node tools/verify-hybrid-menu-bundle.mjs
           node --check tests/m12-hangar-visual-qa.mjs
           node tests/m12-asset-manifest.mjs
+          M12_EXPECTED_PR_BASE="${{ github.event.pull_request.base.sha }}" node tests/m12-f-release-gate.mjs
           node tests/smoke.mjs
           for f in index.html style.css game.js; do
             cmp "web/$f" "android/app/src/main/assets/$f"
           done
           for f in hangar-warm-empty-v1.svg hangar-blueprint-empty-v1.svg; do
-            cmp "web/assets/m12/$f" "android/app/src/main/assets/assets/m12/$f"
+            cmp "web/assets/m12/$f" "android/app/src/m12Visual/assets/assets/m12/$f"
           done
           for mode in cqc ffa tdm custom ctf forward-bays; do
             f="mode-$mode-study-v1.svg"
             cmp "docs/m12-art-studies/$f" "web/assets/m12/$f"
-            cmp "web/assets/m12/$f" "android/app/src/main/assets/assets/m12/$f"
+            cmp "web/assets/m12/$f" "android/app/src/m12Visual/assets/assets/m12/$f"
           done
           for badge in field vector ace command; do
             f="insignia-$badge-study-v1.svg"
             cmp "docs/m12-art-studies/$f" "web/assets/m12/$f"
-            cmp "web/assets/m12/$f" "android/app/src/main/assets/assets/m12/$f"
+            cmp "web/assets/m12/$f" "android/app/src/m12Visual/assets/assets/m12/$f"
           done
       - name: Real browser five-size art comparison and game controls
         run: |
@@ -89,6 +92,26 @@ jobs:
           SDKMANAGER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
           test -n "$SDKMANAGER"
           "$SDKMANAGER" --install "platforms;android-36" "build-tools;35.0.0"
+      - name: Verify standard Android debug APK contains zero M12 art
+        working-directory: android
+        run: |
+          set -euo pipefail
+          gradle --no-daemon :app:assembleDebug
+          apk="app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$apk"
+          aapt="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/aapt"
+          "$aapt" dump badging "$apk" | grep -F "name='com.playereden.ricochetrumble'"
+          python3 - "$apk" <<'PY'
+          import pathlib, sys, zipfile
+          with zipfile.ZipFile(sys.argv[1]) as z:
+              forbidden=[f for f in z.namelist() if f.startswith('assets/assets/m12/')]
+              assert not forbidden, 'Standard Android APK unexpectedly contains M12 art: '+repr(forbidden)
+              for name in ('index.html','style.css','game.js'):
+                  assert z.read('assets/'+name)==pathlib.Path('../web/'+name).read_bytes(), 'Normal Android/Web source mismatch: '+name
+          print('M12_F_DEFAULT_APK_ART_EXCLUSION_PASS')
+          PY
+          mkdir -p ../dist
+          printf 'DEFAULT_APP_ID=com.playereden.ricochetrumble\nSTANDARD_APK_M12_ASSETS=0\nSIGNER=CI_DEBUG_NOT_UPGRADE_SAFE\nRELEASE_APPROVAL=NO\n' > ../dist/m12-f-default-apk.txt
       - name: Package only the isolated M12 Visual Test debug app
         working-directory: android
         run: |
@@ -121,6 +144,7 @@ jobs:
                   assert z.read('assets/'+f)==pathlib.Path('web/'+f).read_bytes(), f+' web/android bundle drift'
               assert b'm12-art-cycle' in z.read('assets/index.html')
               assert b'refreshM12HangarStudy' in z.read('assets/game.js')
+              assert sum(f.startswith('assets/assets/m12/') for f in z.namelist())==12, 'Expected twelve M12-only resources'
               dex=[n for n in z.namelist() if n.startswith('classes') and n.endswith('.dex')]
               assert dex and any(b'm12Art=warm' in z.read(n) for n in dex), 'Missing dedicated M12 app launch URL'
           PY
@@ -149,6 +173,8 @@ jobs:
           path: |
             dist/SR-M12-Visual-Test.apk
             dist/verification.txt
+            dist/m12-f-default-apk.txt
             qa-results/m12/visual/
+            qa-results/m12/release-gate/
           retention-days: 21
           if-no-files-found: error

@@ -3,8 +3,8 @@
   "project": "Sector Rebound",
   "program": "M12 asset and render efficiency",
   "baselineCommit": "b114dfa37af2f132e4d3c08d503afcb15c5dff19",
-  "runtimeAssetIntegration": "opt-in-only-m12visual-hangar-modes-insignias",
-  "stage": "M12-E4-scale-and-source-audit",
+  "runtimeAssetIntegration": "m12visual-debug-only-android-assets",
+  "stage": "M12-F-packaging-and-release-audit",
   "allCategoriesOptIn": true,
   "defaultGameArtPreserved": true,
   "categories": [
@@ -121,5 +121,7 @@
     "LAN messages",
     "Dossier/save keys",
     "Android signing and package ID"
-  ]
+  ],
+  "androidAssetIsolation": "src/m12Visual/assets is included only in .m12visual debug sourceSet; standard debug and release omit assets",
+  "releaseApproval": "blocked-pending-phone-LAN-FPS-signing-and-owner-review"
 }
