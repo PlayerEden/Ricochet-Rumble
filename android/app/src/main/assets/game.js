@@ -1417,10 +1417,13 @@ function refreshHUD(){refreshHudModeChip();refreshHudScoreAccents();const me=mod
  if(clock){
   const arc=mode==='solo'?refreshMatchArc(clock):false;
   clock.classList.toggle('hidden',!(isScoredMatch()||arc)||ctf);
-  if(!arc&&isScoredMatch()&&!ctf){
-   clock.classList.remove('match-arc');
-   clock.textContent=durationLabel(Math.ceil(Math.max(0,state.scored.clockSeconds-state.scored.elapsedSeconds)))+(state.lanSeries?' · R'+state.lanSeries.round+'/3':'');
-   if(typeof clock.setAttribute==='function')clock.setAttribute('aria-label','Time remaining');
+  if(!arc){
+   // Restored to canonical LAN/CTF presentation when exiting Solo watch mode.
+   clock.classList.remove('match-arc');delete clock.dataset.matchStage;
+   if(isScoredMatch()&&!ctf){
+    clock.textContent=durationLabel(Math.ceil(Math.max(0,state.scored.clockSeconds-state.scored.elapsedSeconds)))+(state.lanSeries?' · R'+state.lanSeries.round+'/3':'');
+    if(typeof clock.setAttribute==='function')clock.setAttribute('aria-label','Time remaining');
+   }
   }
  }
  if(life)life.classList.toggle('hidden',isScoredMatch());
