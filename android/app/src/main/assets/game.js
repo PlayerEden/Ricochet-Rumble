@@ -275,7 +275,8 @@ function doBackupAction(action){
 
 const CUSTOM_PRESETS_KEY='rr-custom-presets-v1';
 let comfort={sound:true,music:true,shake:false,autoFire:false,leftHanded:false,pilotAssist:false,pilotRelease:false,releaseFire:true,alliedTraces:true},fixedAccumulator=0;
-let selectedRules={botCount:2,bulletCap:4,startLives:2,teamMode:'ffa',botSkill:'normal',mapSize:'small'};
+// New profiles receive a fuller battle; existing saved rules remain authoritative.
+let selectedRules={botCount:3,bulletCap:4,startLives:3,teamMode:'ffa',botSkill:'normal',mapSize:'standard'};
 // v0.9.22 / Slice A: stable solo presets backed by CURRENT survival combat, not proposed score modes.
 const MATCH_MODE_PRESETS=Object.freeze({
  survival_ffa:Object.freeze({id:'survival_ffa',label:'SOLO SURVIVAL',teamMode:'ffa',objective:'last_side_standing',vehiclePolicy:'existing',allowedSizes:Object.freeze(['small','standard','large'])}),
@@ -706,7 +707,7 @@ function applyPlaylistUI(){
    status.textContent=!count?'SELECT AT LEAST ONE MODE':count+' SELECTED · '+(scored?scored+' SCORING TRIAL'+(scored===1?'':'S')+' ENABLED':'SURVIVAL MODES ONLY');
  }
 }
-function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){const st=p.settings||{};selectedRules={mapSize:MAP_SIZES[st.mapSize]?st.mapSize:'small',botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:2,bulletCap:[1,2,3,4,5,8].includes(st.bulletCap)?st.bulletCap:4,startLives:[2,3,5].includes(st.startLives)?st.startLives:2,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key];if(p.playlist?.version===1&&Array.isArray(p.playlist.enabled))setPlaylistModes(p.playlist.enabled)}}catch(_){}loadCustomDraft();loadCustomPresets();applyPrefsToUI()}
+function loadPrefs(){try{const p=JSON.parse(window.localStorage?.getItem(PREF_KEY)||'null');if(p){const st=p.settings||{};selectedRules={mapSize:MAP_SIZES[st.mapSize]?st.mapSize:'standard',botCount:Number.isInteger(st.botCount)&&st.botCount>=0&&st.botCount<=4?st.botCount:3,bulletCap:[1,2,3,4,5,8].includes(st.bulletCap)?st.bulletCap:4,startLives:[2,3,5].includes(st.startLives)?st.startLives:3,teamMode:['ffa','coop','teams'].includes(st.teamMode)?st.teamMode:'ffa',botSkill:['casual','normal','spicy'].includes(st.botSkill)?st.botSkill:'normal'};for(const key of Object.keys(comfort))if(typeof p.comfort?.[key]==='boolean')comfort[key]=p.comfort[key];if(p.playlist?.version===1&&Array.isArray(p.playlist.enabled))setPlaylistModes(p.playlist.enabled)}}catch(_){}loadCustomDraft();loadCustomPresets();applyPrefsToUI()}
 function applyPrefsToUI(){const picks={mapSize:selectedRules.mapSize,botCount:selectedRules.botCount,bulletCap:selectedRules.bulletCap,startLives:selectedRules.startLives,teamMode:selectedRules.teamMode,botSkill:selectedRules.botSkill};const ids={mapSize:'map-size',botCount:'bot-count',bulletCap:'bullet-cap',startLives:'lives-choice',teamMode:'team-choice',botSkill:'bot-skill'};for(const [key,id] of Object.entries(ids)){const el=document.getElementById(id);if(el&&el.options&&[...el.options].some(o=>o.value===String(picks[key])))el.value=String(picks[key])}for(const key of Object.keys(comfort)){const el=document.getElementById('pref-'+key);if(el)el.checked=comfort[key]}const el=document.getElementById('fire-mode');if(el)el.textContent=comfort.autoFire?'AUTO ON':comfort.releaseFire?'AIM · RELEASE':'HOLD TO FIRE';document.querySelector('.battlefield')?.classList.toggle('swap-controls',comfort.leftHanded);applyPlaylistUI();}
 function releaseControls(){touch.clear();pressed.clear();releaseShot=null;remoteReleaseShot=null;clearStick();clearFireAim();for(const el of document.querySelectorAll('[data-key]'))el.classList.remove('active')}
 
@@ -1175,6 +1176,61 @@ function refreshHudScoreAccents(){
  if(mine?.style)mine.style.color=accents.left;
  if(theirs?.style)theirs.style.color=accents.right;
 }
+
+// M13-B: truthful Solo stage, elapsed/remaining clock, actual KO goal.
+// Read-only presentation; never adjust winners, AI, simulation or save records.
+function matchArcFor(st=state,session=mode){
+ if(!st||session!=='solo'||st.config?.ctfExercise||st.config?.dailySector||
+   st.config?.forwardBayExercise||(!st.scored&&!(st.config?.botCount>0)))return null;
+ if(st.winner>=0)return null;
+ const elapsed=Math.max(0,Number(st.scored?.elapsedSeconds??st.elapsedSeconds)||0);
+ if(st.scored){
+  const s=st.scored;
+  const scores=s.mode==='teams'?[0,1].map(team=>s.operatorKOs.reduce(
+   (sum,k,i)=>sum+(s.teamIds[i]===team?k:0),0)):[...s.operatorKOs];
+  const leader=Math.max(0,...scores),target=s.scoreTarget;
+  const left=Math.max(0,s.clockSeconds-elapsed);
+  const stage=left<=45||leader>=Math.ceil(.8*target)?'final':
+    elapsed<18&&leader===0?'deployment':'engagement';
+  const label=stage==='final'?'FINAL PUSH':stage==='deployment'?'DEPLOY':'ENGAGE';
+  const time=durationLabel(Math.ceil(left));
+  return {stage,label,text:label+' · '+time+' · '+leader+'/'+target,
+   aria:label+'. '+time+' left. Leader '+leader+' of '+target+' KOs.',
+   leader,target,left,elapsed};
+ }
+ const active=(st.tanks||[]).map((_,i)=>i).filter(i=>(st.lives?.[i]||0)>0);
+ const sides=new Set(active.map(i=>teamOf(i,st)));
+ const deaths=(st.deaths||[]).reduce((total,k)=>total+(Number(k)||0),0);
+ const lives=st.lives?.[0]||0;
+ const opponents=new Set(active.filter(i=>!friendlyForState(0,i,st))
+  .map(i=>teamOf(i,st))).size;
+ const stage=deaths>0&&(sides.size<=2||lives<=1)?'final':
+   elapsed<18&&deaths===0?'deployment':'engagement';
+ const label=stage==='final'?'FINAL STAND':stage==='deployment'?'DEPLOY':'ENGAGE';
+ const time=durationLabel(Math.floor(elapsed));
+ return {stage,label,text:label+' · '+time+' · '+opponents+' LEFT',
+  aria:label+'. '+time+' elapsed. '+opponents+' enemy sides remain. '+lives+' lives.',
+  opponents,lives,elapsed};
+}
+let lastMatchArcStage=null,lastMatchArcId=0;
+function refreshMatchArc(clock){
+ const phase=matchArcFor(),active=!!phase;
+ clock.classList.toggle('match-arc',active);
+ if(!active){delete clock.dataset.matchStage;return false;}
+ clock.textContent=phase.text;
+ clock.dataset.matchStage=phase.stage;
+ if(typeof clock.setAttribute==='function')clock.setAttribute('aria-label',phase.aria);
+ if(lastMatchArcId!==state.matchId){lastMatchArcId=state.matchId;lastMatchArcStage=null;}
+ if(!paused&&menu.classList.contains('hidden')&&lastMatchArcStage!==phase.stage){
+  if(lastMatchArcStage!==null){
+   if(phase.stage==='engagement')notice('ENGAGEMENT · CONTACTS ACTIVE',1900);
+   else if(phase.stage==='final')notice(phase.label+' · MATCH AT STAKE',2200);
+  }
+  lastMatchArcStage=phase.stage;
+ }
+ return true;
+}
+
 function refreshHUD(){refreshHudModeChip();refreshHudScoreAccents();const me=mode==='guest'&&!lanSpectating?1:0,other=me===0?1:0;
  document.getElementById('score0').textContent=state.lives[me]??0;document.getElementById('score1').textContent=state.lives[other]??0;
  const botLives=mode==='solo'||(mode==='host'&&state.config?.lanHostSolo===true)?
@@ -1308,7 +1364,15 @@ function refreshHUD(){refreshHudModeChip();refreshHudScoreAccents();const me=mod
  }
  const fireHint=document.getElementById('fire-mode');if(fireHint)fireHint.textContent=comfort.autoFire?'AUTO ON':comfort.releaseFire&&['solo','host','guest'].includes(mode)?'AIM · RELEASE':'HOLD TO FIRE';
  const clock=document.getElementById('score-clock'),life=document.querySelector('.scorestrip .hud-life');
- if(clock){clock.classList.toggle('hidden',!isScoredMatch()||ctf);if(isScoredMatch()&&!ctf)clock.textContent=durationLabel(Math.ceil(Math.max(0,state.scored.clockSeconds-state.scored.elapsedSeconds)))+(state.lanSeries?' · R'+state.lanSeries.round+'/3':'');}
+ if(clock){
+  const arc=mode==='solo'?refreshMatchArc(clock):false;
+  clock.classList.toggle('hidden',!(isScoredMatch()||arc)||ctf);
+  if(!arc&&isScoredMatch()&&!ctf){
+   clock.classList.remove('match-arc');
+   clock.textContent=durationLabel(Math.ceil(Math.max(0,state.scored.clockSeconds-state.scored.elapsedSeconds)))+(state.lanSeries?' · R'+state.lanSeries.round+'/3':'');
+   if(typeof clock.setAttribute==='function')clock.setAttribute('aria-label','Time remaining');
+  }
+ }
  if(life)life.classList.toggle('hidden',isScoredMatch());
  if(ctf){
   document.getElementById('score0').textContent=state.ctf.scores[0];
@@ -1360,7 +1424,7 @@ function newMatch(which,dailyOptions=null){
  matchModeId:'survival_ffa',quickPlayMatch:false,customMatch:false,pilotMode:true}:ctfLaunch?{...selectedRules,matchModeId:'scored_tdm',
  mapSize:'standard',teamMode:'teams',botCount:3,botSkill:'normal',pilotMode:true,
  forwardBayExercise:true,ctfExercise:true,quickPlayMatch:false}:bayLaunch?{...selectedRules,matchModeId:'scored_tdm',mapSize:'standard',teamMode:'teams',botCount:3,botSkill:'normal',pilotMode:true,forwardBayExercise:true,quickPlayMatch:false}:dailyLaunch?dailyOptions:customLaunch?customOptionsFor():scoredLaunch?{...selectedRules,mapSize:cqcLaunch?'small':'standard',botCount:3,teamMode:which==='scored_tdm'?'teams':'ffa',matchModeId:which,pilotMode:true}:playlistId?quickPlayOptionsFor(playlistId):{...selectedRules,pilotMode:true};
- state=initialState(arena,options,dailyLaunch?options.dailySeed:freshSectorSeed(state?.mazeSeed));dailyAttemptedKey='';dailyLastRecord=null;roundUnlocks=[];camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();releaseShot=null;remoteReleaseShot=null;refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch||practiceLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(ctfLaunch?'CAPTURE THE FLAG · TEST':bayLaunch?'FORWARD BAY · TEAM EXERCISE':dailyLaunch?'DAILY SECTOR':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config))):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch||practiceLaunch){exitMenu();audioCue('deploy');if(mode==='solo')firstMatchHint();}}
+ state=initialState(arena,options,dailyLaunch?options.dailySeed:freshSectorSeed(state?.mazeSeed));lastMatchArcStage=null;lastMatchArcId=state.matchId;dailyAttemptedKey='';dailyLastRecord=null;roundUnlocks=[];camera.zoom=null;resultCuePlayed=false;quietContactSeconds=0;radarReminderShown=false;coachEnabled=false;coachRemaining=0;coachPilotShown=false;coachSupplyShown=false;document.getElementById('field-coach')?.classList.add('hidden');particles=[];damagePulse=0;fxSeq=lastRemoteFxId=0;fireCooldown.fill(0);clearStick();clearFireAim();releaseShot=null;remoteReleaseShot=null;refreshHUD();document.getElementById('mode-label').textContent=(which==='solo'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch||practiceLaunch)?(state.config.botCount===0?'PRACTICE FIELD':(ctfLaunch?'CAPTURE THE FLAG · TEST':bayLaunch?'FORWARD BAY · TEAM EXERCISE':dailyLaunch?'DAILY SECTOR':(customLaunch?'CUSTOM · ':'')+soloModeLabel(state.config))):which==='host'?'HOST MATCH':which==='guest'?'JOIN MATCH':'LOCAL MATCH';if(which==='solo'||which==='duel'||scoredLaunch||customLaunch||dailyLaunch||bayLaunch||ctfLaunch||practiceLaunch){exitMenu();audioCue('deploy');if(mode==='solo')firstMatchHint();}}
 function resetAll(advancePlaylist=false){
  const previousSeed=state.mazeSeed;
  const carriedSeries=mode==='host'&&state.winner>=0&&state.lanSeries?
@@ -1378,6 +1442,7 @@ function resetAll(advancePlaylist=false){
   options=quickPlayOptionsFor(id,selectedRules);
  }
  state=initialState(0,options,options.dailySector?options.dailySeed:freshSectorSeed(previousSeed));
+ lastMatchArcStage=null;lastMatchArcId=state.matchId;
  if(carriedSeries)state.lanSeries=carriedSeries;
  dailyAttemptedKey='';dailyLastRecord=null;
  if(mode==='host')neutralizeGuestInput();

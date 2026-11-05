@@ -4125,3 +4125,24 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 /* M5.1-D: one equipped insignia card, with separate visible errors only if save fails. */
 #menu #emblem-status[hidden]{display:none!important}
 #menu #emblem-status:not([hidden]){margin:3px 0 5px;color:#f7d9a4;border-left-color:#edb66d}
+
+/* M13-B: the existing clock slot doubles as the Solo match arc, without
+   stealing thumb controls, the CTF objective, or the top scoreboard. */
+.game-hud .score-clock.match-arc:not(.hidden){
+ width:max-content;max-width:min(248px,60vw);min-height:24px;
+ padding:4px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+ background:#132b37ed;border-color:#78a4a9;color:#c4eced;
+ font:850 clamp(9px,1.2vw,12px)/1.2 'Droid Sans Mono',ui-monospace,monospace;
+}
+.game-hud .score-clock.match-arc[data-match-stage="final"]{
+ background:#3b2f21ed;border-color:#e1b679;color:#ffe2a7;
+}
+.game-hud .score-clock.match-arc[data-match-stage="deployment"]{
+ background:#16313bed;border-color:#6aaeb7;color:#bcf3ee;
+}
+@media(max-width:650px) and (orientation:landscape){
+ .game-hud .score-clock.match-arc:not(.hidden){font-size:9px;padding:3px 7px;max-width:57vw}
+}
+@media(prefers-reduced-motion:reduce){
+ .game-hud .score-clock.match-arc{transition:none;animation:none}
+}
