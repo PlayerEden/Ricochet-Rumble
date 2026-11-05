@@ -12,7 +12,7 @@ function hooks(){
   start(id='survival_ffa'){
    mode='solo';paused=false;menu.classList.add('hidden');
    state=initialState(0,{...selectedRules,matchModeId:id,
-    teamMode:id==='scored_tdm'?'teams':'ffa',
+    teamMode:['scored_tdm','survival_teams'].includes(id)?'teams':'ffa',
     mapSize:id==='cqc'?'small':'standard',botCount:3,startLives:3,pilotMode:true},12345);
    lastMatchArcStage=null;lastMatchArcId=state.matchId;state.elapsedSeconds=0;
    refreshHUD();return this.read();
@@ -100,6 +100,10 @@ try{
    row=await page.evaluate(()=>window.__arcQa.stage('resume'));assert.equal(row.phase,'final');
   }
   await page.screenshot({path:output+'/scored-final-'+w+'x'+h+'.png',animations:'disabled'});
+  const teams=await page.evaluate(()=>window.__arcQa.start('survival_teams'));
+  assert.equal(teams.phase,'deployment');
+  assert.ok(teams.text.includes('2 LEFT'),'team Survival shows 2 real enemy bots, not one enemy faction');
+  await page.evaluate(()=>window.__arcQa.start('scored_ffa'));
   const rects=await page.evaluate(()=>Object.fromEntries(
    ['#score-clock','.scorestrip','#menu-button','.joystick','.fire-btn'].map(k=>
     [k,document.querySelector(k).getBoundingClientRect().toJSON()])));

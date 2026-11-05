@@ -21,6 +21,8 @@ const testMath=Object.create(Math);testMath.random=()=>simRand?simRand():Math.ra
 function seedRandom(seed){let z=seed>>>0;simRand=()=>{z^=z<<13;z^=z>>>17;z^=z<<5;return(z>>>0)/4294967296;};}
 const env={window:win,document,performance:{now(){return tick}},requestAnimationFrame(f){frame=f},clearTimeout(){},setTimeout(){return 1},console,Math:testMath,Number,Set,JSON,String};
 vm.runInNewContext(fs.readFileSync(new URL('../web/scored-match.js',import.meta.url),'utf8'),env,{filename:'scored-match.js'});
+// Team Survival and TDM require the exact real Forward Bays planner.
+vm.runInNewContext(fs.readFileSync(new URL('../web/forward-bays.js',import.meta.url),'utf8'),env,{filename:'forward-bays.js'});
 let script=fs.readFileSync(new URL('../web/game.js',import.meta.url),'utf8');
 
 // TEST-ONLY: substitute the HUMAN input adapter for seat 0 with the *same*

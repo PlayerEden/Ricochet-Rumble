@@ -1202,8 +1202,7 @@ function matchArcFor(st=state,session=mode){
  const sides=new Set(active.map(i=>teamOf(i,st)));
  const deaths=(st.deaths||[]).reduce((total,k)=>total+(Number(k)||0),0);
  const lives=st.lives?.[0]||0;
- const opponents=new Set(active.filter(i=>!friendlyForState(0,i,st))
-  .map(i=>teamOf(i,st))).size;
+ const opponents=active.filter(i=>!friendlyForState(0,i,st)).length;
  const stage=deaths>0&&(sides.size<=2||lives<=1)?'final':
    elapsed<18&&deaths===0?'deployment':'engagement';
  const label=stage==='final'?'FINAL STAND':stage==='deployment'?'DEPLOY':'ENGAGE';
