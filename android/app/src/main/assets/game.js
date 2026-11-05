@@ -145,6 +145,8 @@ const M12_ART_PARAM=(()=>{
   return M12_HANGAR_STUDIES.includes(value)?value:null;}catch(_){return null}
 })();
 let m12HangarStudy=M12_ART_PARAM;
+// M12-E2: comparison state is transient, independent of Hangar selection and never persisted.
+let m12ModeStudyEnabled=M12_ART_PARAM!=='original';
 function refreshM12HangarStudy(){
  const stage=document.querySelector('.hangar-bay'),control=document.querySelector('.m12-art-cycle');
  if(!stage)return;
@@ -185,7 +187,21 @@ function openHangar(fromDossier=false,newUnlocks=[]){
  const back=document.querySelector('.hangar-screen button[data-action="hangar-back"]');
  back?.setAttribute?.('aria-label',hangarReturnToDossier?'Back to Dossier':'Back to main menu');
 }
-function openModes(){setPanel(document.getElementById('modes-template').innerHTML);if(M12_ART_PARAM)panel.querySelector('.mode-screen')?.setAttribute('data-m12-mode-art','on');}
+function refreshM12ModeStudy(){
+ const screen=panel.querySelector('.mode-screen'),control=screen?.querySelector('.m12-mode-art-cycle');
+ if(!screen)return;
+ if(!M12_ART_PARAM){screen.removeAttribute('data-m12-mode-art');if(control)control.hidden=true;return;}
+ screen.dataset.m12ModeArt=m12ModeStudyEnabled?'on':'off';
+ if(control){
+  control.hidden=false;
+  control.textContent=m12ModeStudyEnabled?'ART: STUDY':'ART: ORIGINAL';
+  control.setAttribute('aria-pressed',String(m12ModeStudyEnabled));
+  control.setAttribute('aria-label',m12ModeStudyEnabled?
+   'Experimental Mode Select artwork enabled; show original appearance':
+   'Original Mode Select appearance; show experimental artwork');
+ }
+}
+function openModes(){setPanel(document.getElementById('modes-template').innerHTML);refreshM12ModeStudy();}
 let loadingForwardBay=false;
 let loadingCtf=false;
 function launchCtfExercise(){
@@ -3475,7 +3491,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
  if(a==='toggle-sound'||a==='toggle-music'){togglePauseAudio(a==='toggle-sound'?'sound':'music',b);return;}
  if(!['solo','settings-play','practice','cqc','scored_ffa','scored_tdm','custom-play','duel','host','find','custom-preset-save','custom-preset-delete','custom-preset-load','ip-join'].includes(a))
   audioCue(['settings-back','help-back','dossier-back','backup-back','modes-back','custom-back','close','resume'].includes(a)?'ui-back':'ui-select');
- if(a==='lan-retry'){retryLanEndpoint();return;}else if(a==='lan-ready'){guestLanReady();return;}else if(a==='lan-start'){launchLanMatch();return;}else if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest?.('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-preview-unit'){hangarPreviewUnit=hangarPreviewUnit==='tank'?'mech':'tank';drawHangarUnitPreview()}else if(a==='m12-art-next'){if(M12_ART_PARAM){m12HangarStudy=M12_HANGAR_STUDIES[(M12_HANGAR_STUDIES.indexOf(m12HangarStudy)+1)%3];refreshM12HangarStudy();}return;}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
+ if(a==='lan-retry'){retryLanEndpoint();return;}else if(a==='lan-ready'){guestLanReady();return;}else if(a==='lan-start'){launchLanMatch();return;}else if(a==='modes'){openModes()}else if(a==='m12-mode-art-next'){if(M12_ART_PARAM){m12ModeStudyEnabled=!m12ModeStudyEnabled;refreshM12ModeStudy();}return;}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest?.('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-preview-unit'){hangarPreviewUnit=hangarPreviewUnit==='tank'?'mech':'tank';drawHangarUnitPreview()}else if(a==='m12-art-next'){if(M12_ART_PARAM){m12HangarStudy=M12_HANGAR_STUDIES[(M12_HANGAR_STUDIES.indexOf(m12HangarStudy)+1)%3];refreshM12HangarStudy();}return;}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
    const ok=equipPaint(b.dataset.paintId);
    refreshHangar();const status=document.getElementById('hangar-status');
    if(!ok&&status)status.textContent=paintProgress(b.dataset.paintId).eligible?'COULD NOT SAVE PAINT · CURRENT PAINT KEPT':'LOCKED · COMPLETE DOSSIER MILESTONE FIRST';

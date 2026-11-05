@@ -4,7 +4,7 @@
   "program": "M12 asset and render efficiency",
   "baselineCommit": "b114dfa37af2f132e4d3c08d503afcb15c5dff19",
   "runtimeAssetIntegration": "opt-in-only-m12visual-hangar-and-modes",
-  "stage": "M12-E-mode-art-study",
+  "stage": "M12-E2-mode-art-compare",
   "allCategoriesOptIn": true,
   "defaultGameArtPreserved": true,
   "categories": [
@@ -29,7 +29,7 @@
       "id": "mode-card-illustration",
       "priority": 2,
       "kind": "original-vector-illustration",
-      "instances": 5,
+      "instances": 6,
       "format": "svg",
       "dimensions": [
         512,
@@ -37,7 +37,7 @@
       ],
       "maxCompressedBytesPerAsset": 76800,
       "decodedRGBABytesPerAsset": 589824,
-      "content": "Five distinct compact tactical illustrations for Close Quarters, Free-for-All, TDM, CTF and Forward Bays; no embedded text, actors, new mechanics or network resources. Custom Match intentionally reuses a faded Forward Bays motif during the study.",
+      "content": "Six original offline vector studies for existing Close Quarters, FFA, TDM, Custom Match, CTF and Forward Bays. Each uses actual current game mode terminology, no fake game state; visually comparable with original Mode Select on test app.",
       "renderPath": "Existing Mode Select button pseudo-element only under ?m12Art opt-in",
       "runtimeStatus": "opt-in-test",
       "requiresActualPerfGain": false

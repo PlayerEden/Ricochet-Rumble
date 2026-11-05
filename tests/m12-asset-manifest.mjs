@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const m=JSON.parse(read('docs/M12_ASSET_MANIFEST_2026-11-04.json'));
-assert.equal(m.schemaVersion,1);assert.equal(m.stage,'M12-E-mode-art-study');
+assert.equal(m.schemaVersion,1);assert.equal(m.stage,'M12-E2-mode-art-compare');
 assert.equal(m.runtimeAssetIntegration,'opt-in-only-m12visual-hangar-and-modes');assert.equal(m.allCategoriesOptIn,true);
 assert.equal(m.defaultGameArtPreserved,true);
 const ids=m.categories.map(x=>x.id);
@@ -50,7 +50,7 @@ for(const variant of ['warm','blueprint']){
   assert.equal(read(path),svg,'Web/Android visual art must be exact original source: '+path);
 }
 
-for(const name of ['cqc','ffa','tdm','ctf','forward-bays']){
+for(const name of ['cqc','ffa','tdm','custom','ctf','forward-bays']){
  const doc=read('docs/m12-art-studies/mode-'+name+'-study-v1.svg');
  assert.match(doc,/<svg\b[^>]*width="512"[^>]*height="288"/);
  assert.ok(doc.length<76800&&doc.length>800,'compact original vector');
@@ -67,7 +67,10 @@ for(const name of ['field','vector','ace','command']){
  assert.ok(!/<(?:script|text|image|foreignObject)\b/i.test(svg));
  assert.ok(html.includes('id="sr-mark-'+name+'"'),'existing insignia remains canonical');
 }
-assert.ok(js.includes("if(M12_ART_PARAM)panel.querySelector('.mode-screen')"),'test-only mode art opt-in');
+assert.ok(js.includes("if(!M12_ART_PARAM){screen.removeAttribute('data-m12-mode-art')"),'default mode art must fail closed');
+assert.ok(js.includes("m12ModeStudyEnabled=!m12ModeStudyEnabled")&&js.includes('function refreshM12ModeStudy()'),
+ 'test-only on/off comparison should be user-controlled');
+assert.ok(html.includes('data-action="m12-mode-art-next"')&&html.includes('hidden>ART: STUDY'), 'art toggle must start hidden');
 assert.ok(css.includes('.mode-screen[data-m12-mode-art="on"]'),'art selectors must require opt-in');
 
 console.log('M12_ASSET_CONTRACT_PASS '+JSON.stringify({stage:m.stage,categories:ids,

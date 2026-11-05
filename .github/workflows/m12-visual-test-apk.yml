@@ -51,7 +51,7 @@ jobs:
           for f in hangar-warm-empty-v1.svg hangar-blueprint-empty-v1.svg; do
             cmp "web/assets/m12/$f" "android/app/src/main/assets/assets/m12/$f"
           done
-          for mode in cqc ffa tdm ctf forward-bays; do
+          for mode in cqc ffa tdm custom ctf forward-bays; do
             f="mode-$mode-study-v1.svg"
             cmp "docs/m12-art-studies/$f" "web/assets/m12/$f"
             cmp "web/assets/m12/$f" "android/app/src/main/assets/assets/m12/$f"
@@ -100,7 +100,7 @@ jobs:
           python3 - "$apk" <<'PY'
           import sys, zipfile, pathlib, hashlib
           with zipfile.ZipFile(sys.argv[1]) as z:
-              for f in ('hangar-warm-empty-v1.svg','hangar-blueprint-empty-v1.svg')+tuple('mode-'+m+'-study-v1.svg' for m in ('cqc','ffa','tdm','ctf','forward-bays')):
+              for f in ('hangar-warm-empty-v1.svg','hangar-blueprint-empty-v1.svg')+tuple('mode-'+m+'-study-v1.svg' for m in ('cqc','ffa','tdm','custom','ctf','forward-bays')):
                   packaged=z.read('assets/assets/m12/'+f)
                   source=pathlib.Path('web/assets/m12/'+f).read_bytes()
                   assert packaged==source, f+' packaged art differs from verified source'
@@ -121,7 +121,7 @@ jobs:
             echo "APP_ID=com.playereden.ricochetrumble.m12visual"
             echo "LAUNCHER=SR M12 Visual"
             echo "INITIAL_URL=file:///android_asset/index.html?hybridMenu=1&m12Art=warm"
-            echo "TEST_UI=Hangar ART button cycles WARM > BLUEPRINT > ORIGINAL"
+            echo "TEST_UI=Hangar ART cycles WARM > BLUEPRINT > ORIGINAL; Mode Select ART toggles STUDY / ORIGINAL independently"
             echo "APK_SHA256=$hash"
             echo "SIGNER=DISPOSABLE_CI_DEBUG"
             echo "NO_OWNER_SAVED_DATA_ACCESS"

@@ -4193,7 +4193,7 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 #menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-cqc::before{background-image:url("assets/m12/mode-cqc-study-v1.svg")}
 #menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-ffa::before{background-image:url("assets/m12/mode-ffa-study-v1.svg")}
 #menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-tdm::before{background-image:url("assets/m12/mode-tdm-study-v1.svg")}
-#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-custom::before{background-image:url("assets/m12/mode-forward-bays-study-v1.svg");opacity:.26}
+#menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-custom::before{background-image:url("assets/m12/mode-custom-study-v1.svg");opacity:.50}
 #menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch[data-action="forwardbay"]::before{background-image:url("assets/m12/mode-forward-bays-study-v1.svg")}
 #menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch[data-action="ctf"]::before{background-image:url("assets/m12/mode-ctf-study-v1.svg")}
 #menu .mode-screen[data-m12-mode-art="on"] .mode-copy,
@@ -4209,4 +4209,35 @@ html,body{font-family:Roboto,'Noto Sans',system-ui,-apple-system,Arial,sans-seri
 @media(prefers-reduced-motion:reduce){
  #menu .mode-screen[data-m12-mode-art="on"] .mode-grid .mode-mission::before,
  #menu .mode-screen[data-m12-mode-art="on"] .bay-exercise-launch::before{animation:none!important;transition:none!important}
+}
+
+/* M12-E2: a genuine in-app A/B on the isolated visual lab only.
+   Fourth header column fits inside the existing compact landscape header.
+   Native button remains hidden on every default/non-M12 launch. */
+#menu #panel .m12-mode-art-cycle[hidden]{display:none!important}
+#menu .mode-screen[data-m12-mode-art] .mode-head{
+ grid-template-columns:minmax(0,1fr) clamp(72px,13vw,140px) clamp(88px,11vw,114px) auto;
+ column-gap:clamp(3px,.55vw,8px);
+}
+#menu #panel .mode-screen[data-m12-mode-art] .mode-head>.m12-mode-art-cycle{
+ width:100%;min-width:0;min-height:44px;max-height:44px;
+ align-self:center;justify-self:stretch;margin:0;padding:4px 5px;
+ white-space:nowrap;letter-spacing:.01em;
+ font:800 clamp(9px,.9vw,11px)/1.08 ui-monospace,monospace;
+ color:#f0dfb6;background:#163643;border:1px solid #688d94;border-radius:3px;
+ box-shadow:inset 0 -2px 0 #b58d54;
+}
+#menu #panel .mode-screen[data-m12-mode-art] .mode-head>.m12-mode-art-cycle:focus-visible{
+ outline:2px solid #ffdc9b;outline-offset:2px;
+}
+#menu #panel .mode-screen[data-m12-mode-art="off"] .mode-head>.m12-mode-art-cycle{
+ color:#c4dce0;border-color:#62747a;box-shadow:none;background:#1d3039;
+}
+@media(max-width:620px) and (orientation:landscape){
+ #menu .mode-screen[data-m12-mode-art] .mode-head{
+  grid-template-columns:minmax(0,1fr) 72px 88px 68px;column-gap:3px;
+ }
+ #menu #panel .mode-screen[data-m12-mode-art] .mode-head>.m12-mode-art-cycle{
+  font-size:9px;padding:4px 3px;
+ }
 }
