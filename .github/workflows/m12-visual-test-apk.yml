@@ -70,7 +70,9 @@ jobs:
             test -s "qa-results/m12/visual/hangar-original-tank-$viewport.png"
             test -s "qa-results/m12/visual/mode-study-$viewport.png"
             test -s "qa-results/m12/visual/mode-exercises-$viewport.png"
+            test -s "qa-results/m12/visual/mode-original-$viewport.png"
           done
+          test -s qa-results/m12/visual/mode-original-initial-740x360.png
       - name: Install Android API 36 SDK
         run: |
           set -euo pipefail

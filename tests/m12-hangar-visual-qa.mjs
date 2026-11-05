@@ -95,7 +95,32 @@ try{
   await page.locator('.hangar-screen [data-action="hangar-back"]').click();
   await page.locator('#menu button[data-action="modes"]').click();
   assert.equal(await page.locator('.mode-screen').getAttribute('data-m12-mode-art'),'on');
-  for(const [action,art] of [['cqc','cqc'],['scored_ffa','ffa'],['scored_tdm','tdm'],['custom','forward-bays']]){
+  const compare=page.locator('.m12-mode-art-cycle');
+  assert.equal(await compare.isVisible(),true,'M12-only Mode Select compare is visible');
+  const controls=await page.evaluate(()=>{
+   const rect=selector=>{const r=document.querySelector(selector).getBoundingClientRect();
+    return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height};};
+   return {compare:rect('.m12-mode-art-cycle'),back:rect('.mode-head [data-action="modes-back"]'),
+    preview:rect('.mode-vehicle-preview'),header:rect('.mode-head')};
+  });
+  assert.ok(controls.compare.height>=44,'M12 mode compare button touch target');
+  assert.ok(controls.compare.x>=0&&controls.compare.right<=w&&controls.compare.bottom<=h,
+   'compare button outside screen '+w+'x'+h+' '+JSON.stringify(controls));
+  assert.ok(controls.compare.right<=controls.back.x+1&&controls.preview.right<=controls.compare.x+1,
+   'mode compare overlaps Back or real vehicle preview '+w+'x'+h+' '+JSON.stringify(controls));
+  await compare.click();
+  assert.equal(await page.locator('.mode-screen').getAttribute('data-m12-mode-art'),'off');
+  assert.equal(await compare.getAttribute('aria-pressed'),'false');
+  for(const action of ['cqc','scored_ffa','scored_tdm','custom']){
+   const css=await page.locator('.mode-grid [data-action="'+action+'"]')
+    .evaluate(el=>getComputedStyle(el,'::before').backgroundImage);
+   assert.equal(css,'none','original mode must not show any art');
+  }
+  await page.screenshot({path:out+'/mode-original-'+w+'x'+h+'.png',animations:'disabled'});
+  await compare.click();
+  assert.equal(await page.locator('.mode-screen').getAttribute('data-m12-mode-art'),'on');
+  assert.equal(await compare.getAttribute('aria-pressed'),'true');
+  for(const [action,art] of [['cqc','cqc'],['scored_ffa','ffa'],['scored_tdm','tdm'],['custom','custom']]){
    const card=page.locator('.mode-grid button[data-action="'+action+'"]');
    assert.equal(await card.isVisible(),true,'mode button visible '+action);
    const geometry=await card.evaluate(el=>{
@@ -109,7 +134,7 @@ try{
    assert.equal(geometry.pointer,'none','mode art cannot intercept touches');
    modeRows.push({viewport:w+'x'+h,action,art,geometry});
   }
-  for(const name of ['cqc','ffa','tdm','ctf','forward-bays']){
+  for(const name of ['cqc','ffa','tdm','custom','ctf','forward-bays']){
    const asset=await imageLoad(page,'mode-'+name+'-study-v1.svg');
    assert.ok(asset.ok&&asset.type.includes('svg')&&asset.length>800,'missing local study '+name);
   }
@@ -138,6 +163,7 @@ try{
  await page.locator('.hangar-screen [data-action="hangar-back"]').click();
  await page.locator('#menu button[data-action="modes"]').click();
  assert.equal(await page.locator('.mode-screen').getAttribute('data-m12-mode-art'),null,'no study on default modes');
+ assert.equal(await page.locator('.m12-mode-art-cycle').isVisible(),false,'no M12 button on normal launch');
  for(const action of ['cqc','scored_ffa','scored_tdm','custom']){
   const style=await page.locator('.mode-grid [data-action="'+action+'"]').evaluate(el=>getComputedStyle(el,'::before').backgroundImage);
   assert.equal(style,'none','default mode is not decorated by M12');
@@ -145,13 +171,32 @@ try{
  await page.locator('.bay-exercise-fold summary').click();
  assert.deepEqual(defaultArtRequests,[],'normal mode/exercise screens must fetch no study images');
  await context.close();
+ // Explicit ?m12Art=original is the isolated preview app's opt-in baseline.
+ // Unlike the former M12-E, original mode must not prefetch any mode textures.
+ const originContext=await browser.newContext({viewport:{width:740,height:360}});
+ const originalPage=await originContext.newPage(),originalRequests=[];
+ originalPage.on('request',r=>{if(r.url().includes('/assets/m12/'))originalRequests.push(r.url());});
+ originalPage.on('pageerror',e=>problems.push('original-URL: '+e.message));
+ await originalPage.goto(origin+'/?m12Art=original',{waitUntil:'load'});
+ await originalPage.locator('#menu button[data-action="modes"]').click();
+ assert.equal(await originalPage.locator('.mode-screen').getAttribute('data-m12-mode-art'),'off');
+ const originalCompare=originalPage.locator('.m12-mode-art-cycle');
+ assert.equal(await originalCompare.isVisible(),true);
+ assert.ok((await originalCompare.textContent()).includes('ORIGINAL'));
+ assert.deepEqual(originalRequests,[],'original opt-in state must not fetch any M12 images');
+ await originalPage.screenshot({path:out+'/mode-original-initial-740x360.png',animations:'disabled'});
+ await originalCompare.click();
+ assert.equal(await originalPage.locator('.mode-screen').getAttribute('data-m12-mode-art'),'on');
+ const afterToggle=await originalPage.locator('.mode-cqc').evaluate(el=>getComputedStyle(el,'::before').backgroundImage);
+ assert.ok(afterToggle.includes('mode-cqc-study-v1.svg'),'original->study compare did not enable art');
+ await originContext.close();
  assert.equal(rows.length,15);assert.equal(modeRows.length,20);
  assert.deepEqual(problems,[],'no game JavaScript errors');
  assert.deepEqual(missing,[],'all game and visual assets available locally');
  assert.deepEqual(remote,[],'no external network calls');
  const report={result:'PASS',source:'REAL_CHROMIUM_GAME_UI_NOT_PHYSICAL_ANDROID',
   cases:rows.length,defaultUnchanged:true,independentStudyVariants:['warm','blueprint','original'],
-  modeCases:modeRows.length,sizes:dimensions.map(x=>x.join('x')),screenshots:rows.length+1+dimensions.length*2,rows,modeRows};
+  modeCases:modeRows.length,sizes:dimensions.map(x=>x.join('x')),screenshots:rows.length+1+dimensions.length*3+1,originalModeNoPrefetch:true,rows,modeRows};
  fs.writeFileSync(out+'/report.json',JSON.stringify(report,null,2)+'\n');
  console.log('M12_VISUAL_HANGAR_QA_PASS '+JSON.stringify({cases:rows.length,defaultUnchanged:true,
   visualAssetsLoaded:true,modeCases:modeRows.length,originalUnitsPreserved:true,viewports:report.sizes}));
