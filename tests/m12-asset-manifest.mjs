@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const m=JSON.parse(read('docs/M12_ASSET_MANIFEST_2026-11-04.json'));
-assert.equal(m.schemaVersion,1);assert.equal(m.stage,'M12-E2-mode-art-compare');
-assert.equal(m.runtimeAssetIntegration,'opt-in-only-m12visual-hangar-and-modes');assert.equal(m.allCategoriesOptIn,true);
+assert.equal(m.schemaVersion,1);assert.equal(m.stage,'M12-E3-insignia-comparison');
+assert.equal(m.runtimeAssetIntegration,'opt-in-only-m12visual-hangar-modes-insignias');assert.equal(m.allCategoriesOptIn,true);
 assert.equal(m.defaultGameArtPreserved,true);
 const ids=m.categories.map(x=>x.id);
 assert.equal(ids.length,6);assert.equal(new Set(ids).size,ids.length);
@@ -66,12 +66,20 @@ for(const name of ['field','vector','ace','command']){
  assert.ok(svg.length<5120);
  assert.ok(!/<(?:script|text|image|foreignObject)\b/i.test(svg));
  assert.ok(html.includes('id="sr-mark-'+name+'"'),'existing insignia remains canonical');
+ for(const prefix of ['web/assets/m12/','android/app/src/main/assets/assets/m12/'])
+  assert.equal(read(prefix+'insignia-'+name+'-study-v1.svg'),svg,'insignia mirror '+name);
+ assert.ok(css.includes('insignia-'+name+'-study-v1.svg'),'study CSS references '+name);
 }
 assert.ok(js.includes("if(!M12_ART_PARAM){screen.removeAttribute('data-m12-mode-art')"),'default mode art must fail closed');
 assert.ok(js.includes("m12ModeStudyEnabled=!m12ModeStudyEnabled")&&js.includes('function refreshM12ModeStudy()'),
  'test-only on/off comparison should be user-controlled');
 assert.ok(html.includes('data-action="m12-mode-art-next"')&&html.includes('hidden>ART: STUDY'), 'art toggle must start hidden');
 assert.ok(css.includes('.mode-screen[data-m12-mode-art="on"]'),'art selectors must require opt-in');
+assert.ok(js.includes('function refreshM12InsigniaStudy()')&&js.includes('m12InsigniaStudyEnabled=!m12InsigniaStudyEnabled'),
+ 'insignia art must toggle only in isolated visual review');
+assert.ok(css.includes('.hangar-screen[data-m12-insignia-art="on"]'),'insignia CSS must require opt-in');
+assert.ok(html.includes('data-action="m12-insignia-art-next"')&&html.includes('hidden>BADGES: STUDY'),
+ 'default badge button must be hidden');
 
 console.log('M12_ASSET_CONTRACT_PASS '+JSON.stringify({stage:m.stage,categories:ids,
  maxBatchCompressedKiB:Math.round(m.categories.filter(a=>a.priority<=3).reduce((n,a)=>n+a.instances*a.maxCompressedBytesPerAsset,0)/1024)}));

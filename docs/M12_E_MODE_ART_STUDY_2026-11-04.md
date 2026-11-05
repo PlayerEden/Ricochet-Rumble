@@ -26,3 +26,9 @@ Four additional 96×96 original SVG studies in `docs/m12-art-studies/insignia-*-
 
 ## M12-E2 revision
 The 2026-11-04 refinement adds a dedicated original Custom Match concept and a direct Mode Select A/B control. The control is sized for touch (44 px minimum), appears only in the distinct M12 visual app / URL opt-in, and uses the existing short-screen header rather than introducing an extra row. The original renderer and mode actions remain unchanged. The insignia proposals stay in docs because no user-selected emblem overhaul has been approved.
+
+## M12-E3 — real Hangar insignia comparison
+
+Four previously created original 96×96 vector studies are mirrored to both offline test assets and presented on the Hangar **INSIGNIA** tab only when the isolated M12 visual app explicitly opts into artwork. A 44px **BADGES: STUDY / BADGES: ORIGINAL** button operates independently from Hangar background and Mode Select comparisons. A normal app load shows none of this and fetches zero M12 art.
+
+This is presentation-only. Locked VECTOR/ACE/COMMAND remain disabled until their existing milestones are met; FIELD stays free. Equipped IDs, Dossier symbols, original built-in SVG glyphs, save keys, real vehicles and match mechanics are unchanged. QA expands to five-size insignia study/original screenshots, disabled-state checks, and verification of Android offline asset parity. Device review is still required before production adoption.

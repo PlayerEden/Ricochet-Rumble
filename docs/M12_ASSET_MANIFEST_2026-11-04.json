@@ -3,8 +3,8 @@
   "project": "Sector Rebound",
   "program": "M12 asset and render efficiency",
   "baselineCommit": "b114dfa37af2f132e4d3c08d503afcb15c5dff19",
-  "runtimeAssetIntegration": "opt-in-only-m12visual-hangar-and-modes",
-  "stage": "M12-E2-mode-art-compare",
+  "runtimeAssetIntegration": "opt-in-only-m12visual-hangar-modes-insignias",
+  "stage": "M12-E3-insignia-comparison",
   "allCategoriesOptIn": true,
   "defaultGameArtPreserved": true,
   "categories": [
@@ -55,8 +55,8 @@
       "maxCompressedBytesPerAsset": 5120,
       "decodedRGBABytesPerAsset": 36864,
       "content": "Four original vector concept variants of the already-existing FIELD/VECTOR/ACE/COMMAND shapes; docs only, not new unlocks or replacements",
-      "renderPath": "existing SVG use IDs, no unlock change",
-      "runtimeStatus": "concept-only",
+      "renderPath": "Opt-in Hangar insignia cards and equipped detail; real unlocks and Dossier remain canonical",
+      "runtimeStatus": "opt-in-test",
       "requiresActualPerfGain": false
     },
     {

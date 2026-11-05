@@ -56,6 +56,11 @@ jobs:
             cmp "docs/m12-art-studies/$f" "web/assets/m12/$f"
             cmp "web/assets/m12/$f" "android/app/src/main/assets/assets/m12/$f"
           done
+          for badge in field vector ace command; do
+            f="insignia-$badge-study-v1.svg"
+            cmp "docs/m12-art-studies/$f" "web/assets/m12/$f"
+            cmp "web/assets/m12/$f" "android/app/src/main/assets/assets/m12/$f"
+          done
       - name: Real browser five-size art comparison and game controls
         run: |
           set -euo pipefail
@@ -71,6 +76,8 @@ jobs:
             test -s "qa-results/m12/visual/mode-study-$viewport.png"
             test -s "qa-results/m12/visual/mode-exercises-$viewport.png"
             test -s "qa-results/m12/visual/mode-original-$viewport.png"
+            test -s "qa-results/m12/visual/insignia-study-$viewport.png"
+            test -s "qa-results/m12/visual/insignia-original-$viewport.png"
           done
           test -s qa-results/m12/visual/mode-original-initial-740x360.png
       - name: Install Android API 36 SDK
@@ -102,7 +109,7 @@ jobs:
           python3 - "$apk" <<'PY'
           import sys, zipfile, pathlib, hashlib
           with zipfile.ZipFile(sys.argv[1]) as z:
-              for f in ('hangar-warm-empty-v1.svg','hangar-blueprint-empty-v1.svg')+tuple('mode-'+m+'-study-v1.svg' for m in ('cqc','ffa','tdm','custom','ctf','forward-bays')):
+              for f in ('hangar-warm-empty-v1.svg','hangar-blueprint-empty-v1.svg')+tuple('mode-'+m+'-study-v1.svg' for m in ('cqc','ffa','tdm','custom','ctf','forward-bays'))+tuple('insignia-'+badge+'-study-v1.svg' for badge in ('field','vector','ace','command')):
                   packaged=z.read('assets/assets/m12/'+f)
                   source=pathlib.Path('web/assets/m12/'+f).read_bytes()
                   assert packaged==source, f+' packaged art differs from verified source'

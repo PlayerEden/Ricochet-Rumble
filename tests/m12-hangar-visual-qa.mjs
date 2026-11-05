@@ -9,7 +9,9 @@ const root=path.resolve('web'),problems=[],remote=[],missing=[];
 const allowed=new Set(['index.html','style.css','game.js','dossier.js','save-backup.js',
  'scored-match.js','forward-bays.js','lan-series.js','lan-room.js','ctf-rules.js','ctf-ai.js',
  'assets/m12/hangar-warm-empty-v1.svg','assets/m12/hangar-blueprint-empty-v1.svg',
- 'assets/m12/mode-cqc-study-v1.svg','assets/m12/mode-ffa-study-v1.svg','assets/m12/mode-tdm-study-v1.svg','assets/m12/mode-custom-study-v1.svg','assets/m12/mode-ctf-study-v1.svg','assets/m12/mode-forward-bays-study-v1.svg']);
+ 'assets/m12/mode-cqc-study-v1.svg','assets/m12/mode-ffa-study-v1.svg','assets/m12/mode-tdm-study-v1.svg','assets/m12/mode-custom-study-v1.svg','assets/m12/mode-ctf-study-v1.svg','assets/m12/mode-forward-bays-study-v1.svg',
+ 'assets/m12/insignia-field-study-v1.svg','assets/m12/insignia-vector-study-v1.svg',
+ 'assets/m12/insignia-ace-study-v1.svg','assets/m12/insignia-command-study-v1.svg']);
 const server=http.createServer((req,res)=>{
  const name=decodeURIComponent(new URL(req.url,'http://127.0.0.1/').pathname).replace(/^\/+/,'')||'index.html';
  if(name==='favicon.ico'){res.writeHead(204);res.end();return;}
@@ -90,6 +92,37 @@ try{
     'real paint selection survives stage variants');
   await page.locator('#menu button[data-hangar-tab="insignia"]').click();
   assert.equal(await page.locator('#hangar-insignia').isVisible(),true,'insignias unchanged');
+  const badgeToggle=page.locator('.m12-insignia-art-cycle');
+  assert.equal(await badgeToggle.isVisible(),true,'badge study toggle visible on M12 only');
+  assert.equal(await page.locator('.hangar-screen').getAttribute('data-m12-insignia-art'),'on');
+  const bounds=await badgeToggle.evaluate(el=>{
+   const p=el.getBoundingClientRect(),h=el.closest('.m12-insignia-head').getBoundingClientRect();
+   return {x:p.x,right:p.right,height:p.height,headerLeft:h.left,headerRight:h.right};
+  });
+  assert.ok(bounds.height>=44&&bounds.x>=0&&bounds.right<=w+1&&bounds.x>=bounds.headerLeft&&bounds.right<=bounds.headerRight+1,
+   'badge study toggle outside phone/header '+w+'x'+h+' '+JSON.stringify(bounds));
+  for(const n of ['field','vector','ace','command']){
+   const item=page.locator('.emblem-grid [data-emblem-id="mark.'+n+'"]');
+   const image=await item.locator('.emblem-symbol').evaluate(el=>getComputedStyle(el).backgroundImage);
+   assert.ok(image.includes('insignia-'+n+'-study-v1.svg'),'study badge missing '+n);
+   assert.equal(await item.isDisabled(),n!=='field','existing unlock requirements changed '+n);
+   const loaded=await imageLoad(page,'insignia-'+n+'-study-v1.svg');
+   assert.ok(loaded.ok&&loaded.type.includes('svg')&&loaded.length>100,'offline badge missing '+n);
+  }
+  assert.equal(await page.locator('.insignia-detail-mark').getAttribute('data-study-emblem'),'field');
+  await page.screenshot({path:out+'/insignia-study-'+w+'x'+h+'.png',animations:'disabled'});
+  await badgeToggle.click();
+  assert.equal(await badgeToggle.getAttribute('aria-pressed'),'false');
+  assert.equal(await page.locator('.hangar-screen').getAttribute('data-m12-insignia-art'),'off');
+  for(const n of ['field','vector','ace','command']){
+   const image=await page.locator('.emblem-grid [data-emblem-id="mark.'+n+'"] .emblem-symbol')
+    .evaluate(el=>getComputedStyle(el).backgroundImage);
+   assert.ok(!image.includes('/insignia-'),'original SVG should be visible '+n);
+  }
+  await page.screenshot({path:out+'/insignia-original-'+w+'x'+h+'.png',animations:'disabled'});
+  await badgeToggle.click();
+  assert.equal(await badgeToggle.getAttribute('aria-pressed'),'true');
+  assert.equal(await page.locator('#insignia-detail-name').textContent(),'FIELD','equipped mark changed');
 
   // M12-E: real Mode Select. Decorative cards must not change controls or navigation.
   await page.locator('.hangar-screen [data-action="hangar-back"]').click();
@@ -158,6 +191,10 @@ try{
  await page.locator('#menu button[data-action="hangar"]').click();
  assert.equal(await page.locator('.m12-art-cycle').isVisible(),false,'normal Hangar has no test controls');
  assert.equal(await page.locator('.hangar-bay').getAttribute('data-m12-art'),null,'no opt-in art on normal launch');
+ await page.locator('#menu button[data-hangar-tab="insignia"]').click();
+ assert.equal(await page.locator('.m12-insignia-art-cycle').isVisible(),false,'no badge study control in normal app');
+ assert.equal(await page.locator('.hangar-screen').getAttribute('data-m12-insignia-art'),null,
+  'default game cannot enable badge study');
  assert.deepEqual(defaultArtRequests,[],'normal Hangar must load no M12 texture bytes');
  await page.screenshot({path:out+'/hangar-original-default-740x360.png',animations:'disabled'});
  await page.locator('.hangar-screen [data-action="hangar-back"]').click();
@@ -196,7 +233,7 @@ try{
  assert.deepEqual(remote,[],'no external network calls');
  const report={result:'PASS',source:'REAL_CHROMIUM_GAME_UI_NOT_PHYSICAL_ANDROID',
   cases:rows.length,defaultUnchanged:true,independentStudyVariants:['warm','blueprint','original'],
-  modeCases:modeRows.length,sizes:dimensions.map(x=>x.join('x')),screenshots:rows.length+1+dimensions.length*3+1,originalModeNoPrefetch:true,rows,modeRows};
+  modeCases:modeRows.length,sizes:dimensions.map(x=>x.join('x')),screenshots:rows.length+1+dimensions.length*5+1,originalModeNoPrefetch:true,insigniaVariants:['study','original'],rows,modeRows};
  fs.writeFileSync(out+'/report.json',JSON.stringify(report,null,2)+'\n');
  console.log('M12_VISUAL_HANGAR_QA_PASS '+JSON.stringify({cases:rows.length,defaultUnchanged:true,
   visualAssetsLoaded:true,modeCases:modeRows.length,originalUnitsPreserved:true,viewports:report.sizes}));
