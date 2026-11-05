@@ -8,7 +8,8 @@ assert.ok(process.env.CHROME_BIN,'Chromium is mandatory; do not skip visual QA')
 const root=path.resolve('web'),problems=[],remote=[],missing=[];
 const allowed=new Set(['index.html','style.css','game.js','dossier.js','save-backup.js',
  'scored-match.js','forward-bays.js','lan-series.js','lan-room.js','ctf-rules.js','ctf-ai.js',
- 'assets/m12/hangar-warm-empty-v1.svg','assets/m12/hangar-blueprint-empty-v1.svg']);
+ 'assets/m12/hangar-warm-empty-v1.svg','assets/m12/hangar-blueprint-empty-v1.svg',
+ 'assets/m12/mode-cqc-study-v1.svg','assets/m12/mode-ffa-study-v1.svg','assets/m12/mode-tdm-study-v1.svg','assets/m12/mode-ctf-study-v1.svg','assets/m12/mode-forward-bays-study-v1.svg']);
 const server=http.createServer((req,res)=>{
  const name=decodeURIComponent(new URL(req.url,'http://127.0.0.1/').pathname).replace(/^\/+/,'')||'index.html';
  if(name==='favicon.ico'){res.writeHead(204);res.end();return;}
@@ -22,7 +23,7 @@ const origin='http://127.0.0.1:'+server.address().port;
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_BIN,
  args:['--no-sandbox','--disable-dev-shm-usage']});
 const out='qa-results/m12/visual';fs.mkdirSync(out,{recursive:true});
-const rows=[];
+const rows=[],modeRows=[];
 const dimensions=[[568,320],[640,360],[740,360],[915,412],[1280,720]];
 const imageLoad=async(page,name)=>await page.evaluate(async filename=>{
  const response=await fetch('assets/m12/'+filename,{cache:'no-store'});
@@ -89,6 +90,38 @@ try{
     'real paint selection survives stage variants');
   await page.locator('#menu button[data-hangar-tab="insignia"]').click();
   assert.equal(await page.locator('#hangar-insignia').isVisible(),true,'insignias unchanged');
+
+  // M12-E: real Mode Select. Decorative cards must not change controls or navigation.
+  await page.locator('.hangar-screen [data-action="hangar-back"]').click();
+  await page.locator('#menu button[data-action="modes"]').click();
+  assert.equal(await page.locator('.mode-screen').getAttribute('data-m12-mode-art'),'on');
+  for(const [action,art] of [['cqc','cqc'],['scored_ffa','ffa'],['scored_tdm','tdm'],['custom','forward-bays']]){
+   const card=page.locator('.mode-grid button[data-action="'+action+'"]');
+   assert.equal(await card.isVisible(),true,'mode button visible '+action);
+   const geometry=await card.evaluate(el=>{
+    const r=el.getBoundingClientRect(),art=getComputedStyle(el,'::before');
+    return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,height:r.height,image:art.backgroundImage,pointer:art.pointerEvents};
+   });
+   assert.ok(geometry.x>=-1&&geometry.right<=w+1&&geometry.y>=-1&&geometry.bottom<=h+1,
+    'mode clipped '+w+'x'+h+' '+action+' '+JSON.stringify(geometry));
+   assert.ok(geometry.height>=40,'touch height must remain usable');
+   assert.ok(geometry.image.includes('mode-'+art+'-study-v1.svg'),'missing art for '+action);
+   assert.equal(geometry.pointer,'none','mode art cannot intercept touches');
+   modeRows.push({viewport:w+'x'+h,action,art,geometry});
+  }
+  for(const name of ['cqc','ffa','tdm','ctf','forward-bays']){
+   const asset=await imageLoad(page,'mode-'+name+'-study-v1.svg');
+   assert.ok(asset.ok&&asset.type.includes('svg')&&asset.length>800,'missing local study '+name);
+  }
+  await page.screenshot({path:out+'/mode-study-'+w+'x'+h+'.png',animations:'disabled'});
+  await page.locator('.bay-exercise-fold summary').click();
+  for(const [action,art] of [['forwardbay','forward-bays'],['ctf','ctf']]){
+   const card=page.locator('.bay-exercise-launch[data-action="'+action+'"]');
+   assert.equal(await card.isVisible(),true,'exercise visible '+action);
+   const artCss=await card.evaluate(el=>getComputedStyle(el,'::before').backgroundImage);
+   assert.ok(artCss.includes('mode-'+art+'-study-v1.svg'),'wrong exercise art '+action);
+  }
+  await page.screenshot({path:out+'/mode-exercises-'+w+'x'+h+'.png',animations:'disabled'});
   await context.close();
  }
  // Default launch must never show experimental art or even fetch any art asset.
@@ -102,15 +135,24 @@ try{
  assert.equal(await page.locator('.hangar-bay').getAttribute('data-m12-art'),null,'no opt-in art on normal launch');
  assert.deepEqual(defaultArtRequests,[],'normal Hangar must load no M12 texture bytes');
  await page.screenshot({path:out+'/hangar-original-default-740x360.png',animations:'disabled'});
+ await page.locator('.hangar-screen [data-action="hangar-back"]').click();
+ await page.locator('#menu button[data-action="modes"]').click();
+ assert.equal(await page.locator('.mode-screen').getAttribute('data-m12-mode-art'),null,'no study on default modes');
+ for(const action of ['cqc','scored_ffa','scored_tdm','custom']){
+  const style=await page.locator('.mode-grid [data-action="'+action+'"]').evaluate(el=>getComputedStyle(el,'::before').backgroundImage);
+  assert.equal(style,'none','default mode is not decorated by M12');
+ }
+ await page.locator('.bay-exercise-fold summary').click();
+ assert.deepEqual(defaultArtRequests,[],'normal mode/exercise screens must fetch no study images');
  await context.close();
- assert.equal(rows.length,15);
+ assert.equal(rows.length,15);assert.equal(modeRows.length,20);
  assert.deepEqual(problems,[],'no game JavaScript errors');
  assert.deepEqual(missing,[],'all game and visual assets available locally');
  assert.deepEqual(remote,[],'no external network calls');
  const report={result:'PASS',source:'REAL_CHROMIUM_GAME_UI_NOT_PHYSICAL_ANDROID',
   cases:rows.length,defaultUnchanged:true,independentStudyVariants:['warm','blueprint','original'],
-  sizes:dimensions.map(x=>x.join('x')),screenshots:rows.length+1,rows};
+  modeCases:modeRows.length,sizes:dimensions.map(x=>x.join('x')),screenshots:rows.length+1+dimensions.length*2,rows,modeRows};
  fs.writeFileSync(out+'/report.json',JSON.stringify(report,null,2)+'\n');
  console.log('M12_VISUAL_HANGAR_QA_PASS '+JSON.stringify({cases:rows.length,defaultUnchanged:true,
-  visualAssetsLoaded:true,originalUnitsPreserved:true,viewports:report.sizes}));
+  visualAssetsLoaded:true,modeCases:modeRows.length,originalUnitsPreserved:true,viewports:report.sizes}));
 }finally{await browser.close();await new Promise(ok=>server.close(ok));}
