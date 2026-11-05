@@ -27,7 +27,7 @@ const safeFile=p=>mainAllowed.has(p)||
  /^\.github\/workflows\/m12-[a-z0-9.-]+\.yml$/.test(p)||
  /^docs\/M12_[A-Za-z0-9_.-]+$/.test(p)||
  /^docs\/m12-art-studies\/[a-z0-9-]+\.svg$/.test(p)||
- /^tests\/m12-[a-z0-9-]+\.mjs$/.test(p)||
+ /^tests\/(?:m12|m13)-[a-z0-9-]+\.mjs$/.test(p)||
  /^web\/assets\/m12\/[a-z0-9-]+\.svg$/.test(p)||
  /^android\/app\/src\/m12Visual\/assets\/assets\/m12\/[a-z0-9-]+\.svg$/.test(p);
 assert.deepEqual(diff.filter(x=>!safeFile(x.file)),[],
