@@ -77,7 +77,7 @@ async function reviewUI(which){
   assert.equal((await page.locator(id).textContent()).trim(),wanted,which+': dossier '+id);
  await page.screenshot({path:out+'/m12-f2-'+which+'-dossier.png',animations:'disabled'});
  await page.locator('.dossier-screen [data-action="hangar"]').click();
- const paint=page.locator('[data-paint-id="fieldgrid.moss"]');
+ const paint=page.locator('button[data-action="equip-paint"][data-paint-id="fieldgrid.moss"]');
  assert.equal(await paint.getAttribute('aria-pressed'),'true',which+': equipped paint');
  await page.locator('.hangar-tabs [data-hangar-tab="insignia"]').click();
  const emblem=page.locator('[data-emblem-id="mark.vector"]');
