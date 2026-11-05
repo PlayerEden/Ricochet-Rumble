@@ -1,0 +1,104 @@
+name: Sector Rebound M13-D - extended synthetic match observations
+on:
+  push:
+    branches:
+      - 'feature/m13-d-*'
+    paths:
+      - '.github/workflows/m13-d-balance-evidence.yml'
+      - 'docs/M13_D_*'
+      - 'tests/m13-b-pacing-benchmark.mjs'
+      - 'tests/m13-b-scored-target-trials.mjs'
+  pull_request:
+    branches:
+      - 'feature/m13-c-unified-art-and-battle-preview-2026-11-05'
+      - main
+    paths:
+      - '.github/workflows/m13-d-balance-evidence.yml'
+      - 'docs/M13_D_*'
+      - 'tests/m13-b-pacing-benchmark.mjs'
+      - 'tests/m13-b-scored-target-trials.mjs'
+permissions:
+  contents: read
+jobs:
+  longrun-balance-observation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Guard source parity and test harness syntax
+        run: |
+          set -euo pipefail
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/scored-match.js android/app/src/main/assets/scored-match.js
+          node --check tests/m13-b-pacing-benchmark.mjs
+          node --check tests/m13-b-scored-target-trials.mjs
+      - name: Observe 20 seeds per natural-bot scenario (NOT a device test)
+        env:
+          M13_SEEDS: '20'
+        run: node tests/m13-b-pacing-benchmark.mjs
+      - name: Observe 20 seeds per score-target trial (VM-only overrides)
+        env:
+          M13_TARGET_SEEDS: '20'
+        run: node tests/m13-b-scored-target-trials.mjs
+      - name: Validate sample completeness and write review summary
+        run: |
+          set -euo pipefail
+          mkdir -p qa-results/m13-d
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const natural=JSON.parse(fs.readFileSync('qa-results/m13-b/natural-pacing.json','utf8'));
+          const targets=JSON.parse(fs.readFileSync('qa-results/m13-b/score-target-trials.json','utf8'));
+          assert.equal(natural.seedsPerScenario,20);
+          assert.equal(natural.rows.length,140);
+          assert.equal(Object.keys(natural.summary).length,7);
+          for(const [id,group] of Object.entries(natural.summary)){
+            assert.equal(group.n,20,id);
+            assert.ok(Number.isFinite(group.median)&&group.median>=0,id);
+          }
+          assert.equal(targets.samplesPerTarget,20);
+          assert.equal(targets.rows.length,160);
+          assert.equal(Object.keys(targets.summary).length,8);
+          for(const [id,group] of Object.entries(targets.summary)){
+            assert.equal(group.seeds,20,id);
+            assert.ok(Number.isFinite(group.median)&&group.median>=0,id);
+          }
+          const candidates=['cqc/15','scored_tdm/30','scored_ffa/10'];
+          candidates.forEach(k=>assert.ok(targets.summary[k],k));
+          const lines=[
+            '# M13-D extended observations (synthetic, 20 seeds/scenario)',
+            '',
+            '**No human play, physical phone FPS, or release approval is inferred.**',
+            'Engine trials use real game logic and natural bot AI with an idle or AI-proxy player seat; score-target trials override only inside a test VM.',
+            '',
+            '## Natural match engine observations',
+            '',
+            '| Scenario | n | P10 / median / P90 (seconds) | Under 60 s | End reasons |',
+            '|---|---:|---:|---:|---|'
+          ];
+          for(const [key,row] of Object.entries(natural.summary)){
+            lines.push('| '+key+' | '+row.n+' | '+row.p10+' / '+row.median+' / '+row.p90+' | '+row.below60+' | '+JSON.stringify(row.endReasons)+' |');
+          }
+          lines.push('','## Preview candidate KO-target observations','','| Mode / target | n | P10 / median / P90 (seconds) | Score ends | Clock ends | Draws |','|---|---:|---:|---:|---:|---:|');
+          for(const key of candidates){
+            const row=targets.summary[key];
+            lines.push('| '+key+' | '+row.seeds+' | '+row.p10+' / '+row.median+' / '+row.p90+' | '+row.scoredFinish+' | '+row.clockFinish+' | '+row.draws+' |');
+          }
+          lines.push('','**Review, do not auto-promote:** a pass certifies observation integrity, not acceptable real-player match feel.','');
+          fs.writeFileSync('qa-results/m13-d/summary.md',lines.join('\n'));
+          fs.copyFileSync('qa-results/m13-b/natural-pacing.json','qa-results/m13-d/natural-pacing-20-seeds.json');
+          fs.copyFileSync('qa-results/m13-b/score-target-trials.json','qa-results/m13-d/score-targets-20-seeds.json');
+          console.log('M13_D_300_SYNTHETIC_OBSERVATIONS_VALIDATED');
+          NODE
+          cat qa-results/m13-d/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Attach raw observations and human-readable summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SR-M13-D-20-seed-balance-evidence
+          path: qa-results/m13-d/
+          retention-days: 14
+          if-no-files-found: warn
