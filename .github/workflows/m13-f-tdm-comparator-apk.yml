@@ -40,6 +40,7 @@ jobs:
           node --check tests/m13-b-scored-target-trials.mjs
           node --check tests/m13-c-fusion-qa.mjs
           node --check tests/m13-f-tdm-comparator-qa.mjs
+          node --check tests/m13-f-lan-freshness-contract.mjs
           node --check tests/m13-promotion-preview-qa.mjs
           for file in game.js index.html style.css scored-match.js save-backup.js dossier.js lan-room.js lan-series.js; do
             cmp "web/$file" "android/app/src/main/assets/$file"
@@ -69,7 +70,7 @@ jobs:
           node tests/match-flow-truth-qa.mjs
           node tests/landscape-hud-safe-zones-qa.mjs
           node tests/lan-modes-d3-a2.mjs
-          node tests/lan-guest-input-timeout-v0954.mjs
+          node tests/m13-f-lan-freshness-contract.mjs
       - name: Install official Android API 36 and build tools
         run: |
           set -euo pipefail
