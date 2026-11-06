@@ -361,10 +361,16 @@ const M13_B_PACING_PREVIEW=(()=>{
  try{return new URLSearchParams(String(window.location?.search||'')).get('m13Pacing')==='1';}
  catch(_){return false}
 })();
+// M13-F is a second explicit preview layered on M13-C art+pacing only. Never
+// enable its TDM balance by supplying m13FCompare alone or on normal startup.
+const M13_F_TDM_COMPARISON=M13_B_PACING_PREVIEW&&M13_PROMOTION_PREVIEW&&(()=>{
+ try{return new URLSearchParams(String(window.location?.search||'')).get('m13FCompare')==='1';}
+ catch(_){return false;}
+})();
 // CQC is an EXPLICIT test button, NOT silently added to approved survival playlists.
 const CQC_RULES=Object.freeze({mode:'ffa',scoreTarget:M13_B_PACING_PREVIEW?15:10,clockSeconds:180,vehiclePolicy:'none'});
 const VEHICLE_FFA_RULES=Object.freeze({mode:'ffa',scoreTarget:10,clockSeconds:240,vehiclePolicy:'standard'});
-const VEHICLE_TDM_RULES=Object.freeze({mode:'teams',scoreTarget:M13_B_PACING_PREVIEW?30:15,clockSeconds:300,vehiclePolicy:'standard'});
+const VEHICLE_TDM_RULES=Object.freeze({mode:'teams',scoreTarget:M13_F_TDM_COMPARISON?40:M13_B_PACING_PREVIEW?30:15,clockSeconds:M13_F_TDM_COMPARISON?360:300,vehiclePolicy:'standard'});
 const SCORED_MATCH_RULES=Object.freeze({cqc:CQC_RULES,scored_ffa:VEHICLE_FFA_RULES,scored_tdm:VEHICLE_TDM_RULES});
 // V1 Survival selections remain valid. Scored modes are deliberate opt-in, never default.
 const QUICK_PLAY_OPT_IN_MODES=Object.freeze(['cqc','scored_ffa','scored_tdm']);
@@ -779,7 +785,7 @@ function savePrefs(){selectedRules=readSettings();
 }
 function applyPlaylistUI(){
  if(M13_B_PACING_PREVIEW){
-  for(const [id,text] of [['cqc',' CLOSE QUARTERS · 15 KOs / 3 MIN'],['scored_tdm',' TEAM DEATHMATCH · 30 KOs / 5 MIN']]){
+  for(const [id,text] of [['cqc',' CLOSE QUARTERS · '+CQC_RULES.scoreTarget+' KOs / '+CQC_RULES.clockSeconds/60+' MIN'],['scored_tdm',' TEAM DEATHMATCH · '+VEHICLE_TDM_RULES.scoreTarget+' KOs / '+VEHICLE_TDM_RULES.clockSeconds/60+' MIN']]){
    const input=document.querySelector('input[data-playlist-mode="'+id+'"]');
    if(input?.nextSibling?.nodeType===3)input.nextSibling.textContent=text;
   }
@@ -1088,8 +1094,18 @@ function initialState(arena=0,options=null,seed=null){const config={...readSetti
  if(cqc)for(const t of tanks){t.onFoot=true;t.vehicleId=null;t.shield=1.5;t.respawnWait=0;}
  const matchId=++matchSerial;
  // Shared real scoring system for both on-foot CQC and tank/mech Free-for-All.
+ // M13-F comparison is Solo-only. LAN host authority stays 15/30 KOs
+ // under its existing 300-second cap; CTF/Daily/exercises are excluded.
+ const compareSoloTdm=M13_F_TDM_COMPARISON&&mode==='solo'&&
+  config.matchModeId==='scored_tdm'&&!config.ctfExercise&&
+  !config.forwardBayExercise&&!config.dailySector&&config.lanScoredTdm!==true;
+ const compareExcluded=M13_F_TDM_COMPARISON&&config.matchModeId==='scored_tdm'&&!compareSoloTdm;
+ const scoredTarget=config.ctfExercise?100:
+  config.lanScoredTdm===true&&[15,30].includes(config.lanScoreTarget)?config.lanScoreTarget:
+  compareExcluded?30:scoredRules?.scoreTarget;
+ const scoredClock=config.ctfExercise?1800:compareExcluded?300:scoredRules?.clockSeconds;
  const scored=scoredRules?window.SectorScored.createScoredMatch({mode:scoredRules.mode,playerCount:total,teamIds:scoredRules.mode==='teams'?config.teamIds:null,
- scoreTarget:config.ctfExercise?100:config.lanScoredTdm===true&&[15,30].includes(config.lanScoreTarget)?config.lanScoreTarget:scoredRules.scoreTarget,clockSeconds:config.ctfExercise?1800:scoredRules.clockSeconds,matchId}):null;
+ scoreTarget:scoredTarget,clockSeconds:scoredClock,matchId}):null;
  const ctf=config.ctfExercise&&forwardBays&&window.SectorFlags?window.SectorFlags.create(forwardBays.bays):null;
  if(config.ctfExercise&&!ctf)throw Error('CTF flags or Forward Bays unavailable');
  camera.x=0;camera.y=0;botBrains.clear();return {tanks,vehicles,forwardBays,ctf,lanSeries:config.lanScoredTdm===true&&config.lanSeriesRounds===3?window.SectorLanSeries.createSeries(3):null,vehicleDropTimer:28,dropIndex:0,vehicleBeacon:null,bullets:[],pickups:[],pickupTimer:5.5,arenaId:id,mazeSeed,config,humanCount:humans,fxEvents:[],lives:Array(total).fill(scoredRules?1:config.startLives),kos:Array(total).fill(0),winner:-1,winnerTeam:-1,event:'',eventTimer:0,matchId,elapsedSeconds:0,deaths:Array(total).fill(0),respawns:Array(total).fill(0),scored,scoreSerial:0,finalResult:null};}
