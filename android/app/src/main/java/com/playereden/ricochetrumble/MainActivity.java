@@ -83,9 +83,11 @@ public final class MainActivity extends Activity {
         setContentView(web);
         // Only the separate .hybridtest APK enables the Pixi menu by default.
         // The real game/owner preview retains its original URL and Canvas fallback.
-        String initialPage = getPackageName().endsWith(".m13fusion")
-            ? "file:///android_asset/index.html?hybridMenu=1&m13Preview=1&m13Pacing=1"
-            : getPackageName().endsWith(".hybridtest")
+        String initialPage = getPackageName().endsWith(".m13compare")
+            ? "file:///android_asset/index.html?hybridMenu=1&m13Preview=1&m13Pacing=1&m13FCompare=1"
+            : getPackageName().endsWith(".m13fusion")
+                ? "file:///android_asset/index.html?hybridMenu=1&m13Preview=1&m13Pacing=1"
+                : getPackageName().endsWith(".hybridtest")
                 ? "file:///android_asset/index.html?hybridMenu=1"
                 : getPackageName().endsWith(".m13pacing")
                     ? "file:///android_asset/index.html?m13Pacing=1"
