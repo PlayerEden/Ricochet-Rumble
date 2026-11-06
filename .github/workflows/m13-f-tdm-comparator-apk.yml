@@ -49,9 +49,7 @@ jobs:
           node tests/save-backup.mjs
           node tests/android-upgrade-readiness.mjs
           node tests/lan-room-state-d3-a0.mjs
-          node tests/lan-modes-d3-a2.mjs
           node tests/lan-series-kernel.mjs
-          node tests/lan-guest-input-timeout-v0954.mjs
           test "$(find web/assets/m12 -name '*.svg' | wc -l)" -eq 12
           test "$(find android/app/src/m12Visual/assets/assets/m12 -name '*.svg' | wc -l)" -eq 12
           for file in web/assets/m12/*.svg; do
@@ -70,6 +68,8 @@ jobs:
           node tests/m13-f-tdm-comparator-qa.mjs
           node tests/match-flow-truth-qa.mjs
           node tests/landscape-hud-safe-zones-qa.mjs
+          node tests/lan-modes-d3-a2.mjs
+          node tests/lan-guest-input-timeout-v0954.mjs
       - name: Install official Android API 36 and build tools
         run: |
           set -euo pipefail
