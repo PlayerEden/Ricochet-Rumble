@@ -1,0 +1,139 @@
+name: Sector Rebound M13-E - isolated Survival and TDM pacing lab
+on:
+  push:
+    branches:
+      - 'feature/m13-e-*'
+    paths:
+      - '.github/workflows/m13-e-pacing-lab.yml'
+      - 'tests/m13-e-*.mjs'
+      - 'docs/M13_E_*'
+  pull_request:
+    branches:
+      - 'feature/m13-d-balance-evidence-and-device-playtest-2026-11-05'
+    paths:
+      - '.github/workflows/m13-e-pacing-lab.yml'
+      - 'tests/m13-e-*.mjs'
+      - 'docs/M13_E_*'
+permissions:
+  contents: read
+jobs:
+  survival-profiles:
+    name: 160 natural-bot Survival profile trials
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Guard unchanged game and scored kernel
+        run: |
+          set -euo pipefail
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/scored-match.js android/app/src/main/assets/scored-match.js
+          node --check tests/m13-e-survival-profile-trials.mjs
+          node tests/scored-match-kernel.mjs
+      - name: Run natural-bot Survival A/B (AI-proxy or idle operator, NOT human)
+        env:
+          M13_E_SEEDS: '20'
+        run: node tests/m13-e-survival-profile-trials.mjs
+      - name: Validate 160 scenarios and publish review table
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const file='qa-results/m13-e/survival-profile-trials.json';
+          const data=JSON.parse(fs.readFileSync(file,'utf8'));
+          assert.equal(data.status,'M13_E_SIMULATED_AB_ONLY_NOT_SHIPPED');
+          assert.equal(data.seedsPerScenario,20);
+          assert.equal(data.rows.length,160);
+          assert.equal(Object.keys(data.summary).length,8);
+          assert.equal(data.rows.filter(r=>r.operator==='IDLE').length,60);
+          assert.equal(data.rows.filter(r=>r.operator==='AI_PROXY').length,100);
+          for(const [key,v] of Object.entries(data.summary)){
+            assert.equal(v.n,20,key);
+            assert.ok(v.p10<=v.median&&v.median<=v.p90,key);
+            assert.ok(v.median>=0&&v.median<=420,key);
+          }
+          const out=['# M13-E Survival A/B (simulation only)','',
+            '**20 seeds per profile. Real physics/AI with idle or bot-proxy human seat. NOT a physical Android or human playtest.**','',
+            '| Survival profile / seat | Median (s) | P10 / P90 | Completed / 20 | Under 60s | Mean KOs |',
+            '|---|---:|---:|---:|---:|---:|'];
+          for(const [key,v] of Object.entries(data.summary))
+            out.push('| '+key+' | '+v.median+' | '+v.p10+' / '+v.p90+' | '+v.finished+' | '+v.below60+' | '+v.meanKOs+' |');
+          out.push('','A pass means sample data are complete, **not** that a candidate is acceptable or approved.','');
+          fs.writeFileSync('qa-results/m13-e/survival-summary.md',out.join('\n'));
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,out.join('\n'));
+          console.log('M13_E_SURVIVAL_160_SAMPLES_VALIDATED');
+          NODE
+      - name: Upload complete Survival profiles observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SR-M13-E-Survival-160-Observations
+          path: |
+            qa-results/m13-e/survival-profile-trials.json
+            qa-results/m13-e/survival-summary.md
+          retention-days: 14
+          if-no-files-found: warn
+  tdm-target-clock:
+    name: 120 TDM target and clock trials
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Guard unchanged game and score engine
+        run: |
+          set -euo pipefail
+          cmp web/game.js android/app/src/main/assets/game.js
+          cmp web/scored-match.js android/app/src/main/assets/scored-match.js
+          node --check tests/m13-e-tdm-clock-trials.mjs
+          node tests/scored-match-kernel.mjs
+      - name: Run unchanged real physics & AI with test-VM-only target and clock
+        env:
+          M13_E_TARGET_SEEDS: '20'
+        run: node tests/m13-e-tdm-clock-trials.mjs
+      - name: Validate 120 scenarios and publish review table
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const data=JSON.parse(fs.readFileSync('qa-results/m13-e/tdm-target-clock-trials.json','utf8'));
+          assert.equal(data.status,'M13_E_TDM_SIMULATED_TARGET_CLOCK_AB_ONLY_NOT_SHIPPED');
+          assert.equal(data.samplesPerTarget,20);
+          assert.equal(data.rows.length,120);
+          const keys=['scored_tdm/30/300','scored_tdm/35/300','scored_tdm/40/300',
+            'scored_tdm/35/360','scored_tdm/40/360','scored_tdm/45/360'];
+          assert.deepEqual(Object.keys(data.summary),keys);
+          for(const [key,v] of Object.entries(data.summary)){
+            assert.equal(v.seeds,20,key);
+            assert.equal(v.scoredFinish+v.clockFinish+v.sampledWithoutFinish,20,key);
+            assert.ok(v.p10<=v.median&&v.median<=v.p90,key);
+            assert.ok(v.median<=v.clockSeconds+1,key);
+          }
+          const out=['# M13-E TDM scored target × clock (simulation only)','',
+            '**20 seeds per setting; target and clock overridden ONLY inside an isolated VM. No production TDM change.**','',
+            '| TDM target / clock | Median (s) | P10 / P90 | KO ends | Clock ends | Draws |',
+            '|---|---:|---:|---:|---:|---:|'];
+          for(const [key,v] of Object.entries(data.summary))
+            out.push('| '+key+' | '+v.median+' | '+v.p10+' / '+v.p90+' | '+v.scoredFinish+' | '+v.clockFinish+' | '+v.draws+' |');
+          out.push('','Do not promote candidates until physical phone gameplay, LAN and owner review.','');
+          fs.writeFileSync('qa-results/m13-e/tdm-summary.md',out.join('\n'));
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,out.join('\n'));
+          console.log('M13_E_TDM_120_SAMPLES_VALIDATED');
+          NODE
+      - name: Upload complete TDM observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SR-M13-E-TDM-120-Observations
+          path: |
+            qa-results/m13-e/tdm-target-clock-trials.json
+            qa-results/m13-e/tdm-summary.md
+          retention-days: 14
+          if-no-files-found: warn
