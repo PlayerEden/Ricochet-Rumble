@@ -1,0 +1,144 @@
+name: Sector Rebound M13-F - isolated 40 KO six minute Solo TDM comparator
+on:
+  push:
+    branches:
+      - 'feature/m13-f-*'
+    paths:
+      - 'web/game.js'
+      - 'android/**'
+      - 'tests/m13-f-*.mjs'
+      - '.github/workflows/m13-f-tdm-comparator-apk.yml'
+      - 'docs/M13_F_*'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: sr-m13-f-compare-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  compare-phone-preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Verify unchanged scoring, backups, parity and signing guards
+        run: |
+          set -euo pipefail
+          node --check web/game.js
+          node --check tests/m13-b-match-arc-qa.mjs
+          node --check tests/m13-b-pacing-benchmark.mjs
+          node --check tests/m13-b-scored-target-trials.mjs
+          node --check tests/m13-c-fusion-qa.mjs
+          node --check tests/m13-f-tdm-comparator-qa.mjs
+          node --check tests/m13-promotion-preview-qa.mjs
+          for file in game.js index.html style.css scored-match.js save-backup.js dossier.js lan-room.js lan-series.js; do
+            cmp "web/$file" "android/app/src/main/assets/$file"
+          done
+          node tests/smoke.mjs
+          node tests/scored-match-kernel.mjs
+          node tests/save-backup.mjs
+          node tests/android-upgrade-readiness.mjs
+          node tests/lan-room-state-d3-a0.mjs
+          node tests/lan-modes-d3-a2.mjs
+          node tests/lan-series-kernel.mjs
+          node tests/lan-guest-input-timeout-v0954.mjs
+          test "$(find web/assets/m12 -name '*.svg' | wc -l)" -eq 12
+          test "$(find android/app/src/m12Visual/assets/assets/m12 -name '*.svg' | wc -l)" -eq 12
+          for file in web/assets/m12/*.svg; do
+            cmp "$file" "android/app/src/m12Visual/assets/assets/m12/$(basename "$file")"
+          done
+      - name: Install browser QA harness
+        run: npm install --no-save --ignore-scripts playwright-core@1.56.1
+      - name: Real Chromium 5-size combat HUD and match-flow QA
+        run: |
+          set -euo pipefail
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          node tests/m13-b-match-arc-qa.mjs
+          node tests/m13-promotion-preview-qa.mjs
+          node tests/m13-c-fusion-qa.mjs
+          node tests/m13-f-tdm-comparator-qa.mjs
+          node tests/match-flow-truth-qa.mjs
+          node tests/landscape-hud-safe-zones-qa.mjs
+      - name: Install official Android API 36 and build tools
+        run: |
+          set -euo pipefail
+          sdk="$(find "$ANDROID_HOME/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
+          test -n "$sdk"
+          "$sdk" --install "platforms;android-36" "build-tools;35.0.0"
+      - name: Compile exact offline Pixi menu
+        run: |
+          set -euo pipefail
+          npm --prefix hybrid-ui install --ignore-scripts --no-audit --no-fund
+          npm --prefix hybrid-ui run build
+          node tools/verify-hybrid-menu-bundle.mjs
+      - name: Build isolated SR M13 Compare test app (disposable debug signer)
+        working-directory: android
+        run: |
+          set -euo pipefail
+          grep -F 'android:label="Sector Rebound"' app/src/main/AndroidManifest.xml
+          sed -i 's/android:label="Sector Rebound"/android:label="SR M13 Compare"/' app/src/main/AndroidManifest.xml
+          gradle --no-daemon :app:assembleDebug -PsrM13FComparePackage=true
+      - name: Verify package, debug signer, offline source and no ID collision
+        run: |
+          set -euo pipefail
+          apk="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$apk"
+          aapt="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          signer="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          "$signer" verify --min-sdk-version 26 --print-certs "$apk" > /tmp/sr-m13-signer.txt
+          "$aapt" dump badging "$apk" | grep -F "name='com.playereden.ricochetrumble.m13compare'"
+          "$aapt" dump badging "$apk" | grep -F "application-label:'SR M13 Compare'"
+          for file in game.js index.html style.css scored-match.js dossier.js save-backup.js; do
+            cmp "web/$file" <(unzip -p "$apk" "assets/$file")
+          done
+          node tools/verify-hybrid-menu-bundle.mjs --apk="$apk"
+          python3 - "$apk" <<'PY'
+          import sys,zipfile
+          with zipfile.ZipFile(sys.argv[1]) as z:
+              dex=[n for n in z.namelist() if n.startswith('classes') and n.endswith('.dex')]
+              assert dex and any(b'm13Preview=1&m13Pacing=1&m13FCompare=1' in z.read(n) for n in dex), 'Comparator APK must opt into art, pacing and TDM comparison'
+              js=z.read('assets/game.js')
+              assert all(x in js for x in (b'M13_B_PACING_PREVIEW',b'M13_PROMOTION_PREVIEW',b'M13_F_TDM_COMPARISON')), 'Missing opt-in flag guards'
+              art=[n for n in z.namelist() if n.startswith('assets/assets/m12/') and n.endswith('.svg')]
+              assert len(art)==12, 'Comparator APK must contain exactly twelve original SVG studies: '+str(art)
+          print('M13_F_COMPARE_SVG_AND_FLAGS_VERIFIED')
+          PY
+          mkdir -p dist
+          cp "$apk" dist/SR-M13-Compare-Test.apk
+          {
+            echo "SOURCE_SHA=$GITHUB_SHA"
+            echo "APP_ID=com.playereden.ricochetrumble.m13compare"
+            echo "LABEL=SR M13 Compare"
+            echo "LAUNCH_URL=file:///android_asset/index.html?hybridMenu=1&m13Preview=1&m13Pacing=1&m13FCompare=1"
+            echo "SOLO_TEST_TARGETS=CQC15,TDM40_360SEC,FFA10"
+            echo "APK_SHA256=$(sha256sum dist/SR-M13-Compare-Test.apk | awk '{print $1}')"
+            echo "SIGNER=DISPOSABLE_CI_DEBUG_NOT_UPGRADE_SAFE"
+            echo "NORMAL_OWNER_APP_AND_SAVE_DATA_UNTOUCHED"
+            echo "M13_SOURCE_PRS_141_AND_143_REMAIN_SEPARATE_AND_UNMERGED"
+          } > dist/verification.txt
+          echo M13_F_COMPARATOR_ANDROID_APK_PASS
+      - name: Upload inspectable evidence and isolated APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SR-M13-Compare-APK-${{ github.run_id }}
+          path: |
+            dist/
+            qa-results/m13-c/
+            qa-results/m13-f/
+            qa-results/m13-b/
+            qa-results/m13/preview/
+            qa-results/landscape-hud-safe-zones.json
+          retention-days: 14
+          if-no-files-found: warn
