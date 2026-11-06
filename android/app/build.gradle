@@ -32,18 +32,23 @@ def previewPackageSwitch = providers.gradleProperty('srPreviewPackage').orNull
 def fusionLabPackage = providers.gradleProperty('srM13FusionPackage').orNull
 if (fusionLabPackage != null && fusionLabPackage != 'true')
     throw new GradleException('srM13FusionPackage must be true if supplied')
+def m13FComparePackage = providers.gradleProperty('srM13FComparePackage').orNull
+if (m13FComparePackage != null && m13FComparePackage != 'true')
+    throw new GradleException('srM13FComparePackage must be true if supplied')
 def pacingLabPackage = providers.gradleProperty('srPacingLabPackage').orNull
 if (pacingLabPackage != null && pacingLabPackage != 'true')
     throw new GradleException('srPacingLabPackage must be true if supplied')
 def hybridLabPackage = providers.gradleProperty('srHybridLabPackage').orNull
 if (hybridLabPackage != null && hybridLabPackage != 'true')
     throw new GradleException('srHybridLabPackage must be true when supplied')
-if (hybridLabPackage == 'true' && previewPackageSwitch != null)
+if (hybridLabPackage == 'true' && (previewPackageSwitch != null || m13FComparePackage != null))
     throw new GradleException('Hybrid test package must never be combined with owner preview package')
-if (pacingLabPackage == 'true' && (previewPackageSwitch != null || hybridLabPackage != null || fusionLabPackage != null))
+if (pacingLabPackage == 'true' && (previewPackageSwitch != null || hybridLabPackage != null || fusionLabPackage != null || m13FComparePackage != null))
     throw new GradleException('Pacing test app must never reuse existing owner or hybrid identity')
-if (fusionLabPackage == 'true' && (previewPackageSwitch != null || hybridLabPackage != null || pacingLabPackage != null))
+if (fusionLabPackage == 'true' && (previewPackageSwitch != null || hybridLabPackage != null || pacingLabPackage != null || m13FComparePackage != null))
     throw new GradleException('Unified app must have its own independent debug identity')
+if (m13FComparePackage == 'true' && (previewPackageSwitch != null || hybridLabPackage != null || fusionLabPackage != null || pacingLabPackage != null))
+    throw new GradleException('M13-F comparator must never reuse an existing production/preview/hybrid test identity')
 if (previewPackageSwitch != null && previewPackageSwitch != 'true')
     throw new GradleException('srPreviewPackage must be true when present')
 if ((requestedPreviewCode != null) != (previewPackageSwitch == 'true'))
@@ -76,7 +81,7 @@ android {
     // Review-only SVG assets are never packaged into the normal Android app.
     sourceSets {
         debug {
-            if (fusionLabPackage == 'true') assets.srcDir 'src/m12Visual/assets'
+            if (fusionLabPackage == 'true' || m13FComparePackage == 'true') assets.srcDir 'src/m12Visual/assets'
         }
     }
     signingConfigs {
@@ -105,6 +110,7 @@ android {
             if (hybridLabPackage == 'true') applicationIdSuffix '.hybridtest'
             if (pacingLabPackage == 'true') applicationIdSuffix '.m13pacing'
             if (fusionLabPackage == 'true') applicationIdSuffix '.m13fusion'
+            if (m13FComparePackage == 'true') applicationIdSuffix '.m13compare'
             if (hasTestSigning) signingConfig signingConfigs.internalTest
         }
         release {
