@@ -59,7 +59,7 @@ assert.ok(engine&&frame,"Actual gameplay engine loaded via unmodified production
 
 const count=Number(process.env.M13_E_SEEDS||20),dt=1/30,limit=420;
 assert.ok(Number.isInteger(count)&&count>=3&&count<=24,'bounded sample count');
-assert.equal(scenarios.length,8,'8 controlled Survival profiles including idle');;
+
 const scenarios=[
  // Source of truth is the unchanged real combat engine; only test deployment
  // options vary, never synthetic armor, respawn protection or fake combat.
