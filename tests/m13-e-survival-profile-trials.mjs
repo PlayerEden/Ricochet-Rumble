@@ -71,7 +71,8 @@ const scenarios=[
  {mode:'survival_ffa',profile:'base_3bots_3lives_standard',opts:{mapSize:'standard',botCount:3,startLives:3},idle:true},
  {mode:'survival_ffa',profile:'both_4bots_5lives_standard',opts:{mapSize:'standard',botCount:4,startLives:5},idle:true},
  {mode:'survival_ffa',profile:'large_4bots_5lives_large',opts:{mapSize:'large',botCount:4,startLives:5},idle:true}
-];
+ ];
+assert.equal(scenarios.length,8,'8 controlled Survival profiles including idle');
 const rows=[];
 for(const scenario of scenarios)for(let n=1;n<=count;n++){
  const seed=1000003+n*97;seedRandom(seed+2718);
