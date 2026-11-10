@@ -46,4 +46,4 @@ jobs:
           name: sector-rebound-lan-d1-evidence
           path: qa-screens/lan-lobby/
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 3

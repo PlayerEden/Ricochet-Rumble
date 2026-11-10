@@ -108,5 +108,5 @@ jobs:
         with:
           name: SR-Hybrid-Test-APK-${{ github.run_id }}
           path: dist/
-          retention-days: 14
+          retention-days: 3
           if-no-files-found: error

@@ -75,5 +75,5 @@ jobs:
             qa-results/m11-hybrid/
             qa-results/m11-premium/
             web/hybrid-menu-pixi.bundle.js
-          retention-days: 14
+          retention-days: 3
           if-no-files-found: warn
