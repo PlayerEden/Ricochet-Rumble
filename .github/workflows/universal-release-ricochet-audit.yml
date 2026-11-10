@@ -57,4 +57,4 @@ jobs:
             qa-results/team-vehicle-route-audit.json
             qa-screens/
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 3
