@@ -69,4 +69,4 @@ jobs:
           name: sector-rebound-forward-bay-ui-screenshots
           path: qa-screens/
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 3

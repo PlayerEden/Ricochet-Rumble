@@ -50,4 +50,4 @@ jobs:
             qa-results/ctf-natural-match-telemetry.json
             qa-screens/
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 3

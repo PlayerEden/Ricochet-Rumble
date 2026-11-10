@@ -128,7 +128,7 @@ jobs:
           name: sector-rebound-d3c-owner-preview-380001
           path: dist/
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
       - name: Erase temporary AOSP test-signing materials
         if: always()
         run: rm -rf "$RUNNER_TEMP/d3c-signing"

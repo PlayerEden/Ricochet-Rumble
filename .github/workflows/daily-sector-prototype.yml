@@ -62,4 +62,4 @@ jobs:
           name: sector-rebound-daily-ui-screenshots
           path: qa-screens/
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 3

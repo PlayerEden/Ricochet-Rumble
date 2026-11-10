@@ -100,5 +100,5 @@ jobs:
             qa-results/
             qa-screens/
             qa-layout/
-          retention-days: 21
+          retention-days: 3
           if-no-files-found: warn
