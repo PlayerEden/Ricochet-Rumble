@@ -153,7 +153,7 @@ jobs:
             android/app/build/outputs/apk/debug/app-debug.apk
             qa-results/owner-preview-evidence.txt
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
       - name: Erase temporary keystore on runner
         if: always()
         env:

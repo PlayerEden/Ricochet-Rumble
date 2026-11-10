@@ -129,7 +129,7 @@ jobs:
           name: sector-rebound-camera-owner-preview-390001
           path: dist/
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
       - name: Erase temporary AOSP test-signing materials
         if: always()
         run: rm -rf "$RUNNER_TEMP/m2cam-signing"
