@@ -115,7 +115,7 @@ jobs:
             qa-results/render-budget-observations.json
             qa-results/frame-pipeline-profile.json
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 3
       - name: Build debug Android APK and unsigned release AAB
         working-directory: android
         run: |
@@ -131,7 +131,7 @@ jobs:
           name: unsigned-aab-NOT-FOR-PLAY-${{ github.run_id }}
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 3
       - name: Upload installable debug APK
         uses: actions/upload-artifact@v4
         with:
@@ -140,7 +140,7 @@ jobs:
             android/app/build/outputs/apk/debug/app-debug.apk
             qa-results/android-ci-package-attestation.json
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 3
       - name: PROVE separate .preview package, monotonic versions and SAME ephemeral CI signer
         # Different from the owner's permanent key. Do not upload this ephemeral preview.
         env:

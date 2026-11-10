@@ -54,5 +54,5 @@ jobs:
           path: |
             qa-results/ctf-contested-human-attack.json
             qa-screens/
-          retention-days: 14
+          retention-days: 3
           if-no-files-found: ignore

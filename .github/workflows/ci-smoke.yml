@@ -58,7 +58,7 @@ jobs:
           name: sector-rebound-play-preflight-${{ github.run_id }}
           path: qa-results/play-release-preflight.json
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 3
       - name: Check accurate Play listing and draft privacy page (not publishable yet)
         run: node tests/store-listing-policy.mjs
       - name: Audit Android emulator update QA contract
