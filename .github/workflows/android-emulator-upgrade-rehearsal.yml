@@ -104,7 +104,7 @@ jobs:
             qa-results/emulator-upgrade/baseline-relaunch.txt
             qa-results/emulator-upgrade/webview-after.json
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 3
       - name: Erase downloaded public test signer
         if: always()
         run: rm -rf "$RUNNER_TEMP/sr-emulator" "$RUNNER_TEMP/testkey.pk8" "$RUNNER_TEMP/testkey.x509.pem" "$RUNNER_TEMP/testkey.key.pem"

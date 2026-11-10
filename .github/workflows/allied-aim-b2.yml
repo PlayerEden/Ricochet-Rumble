@@ -47,4 +47,4 @@ jobs:
             qa-screens/allied-aim-*.png
             qa-results/allied-aim-b2.json
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 3

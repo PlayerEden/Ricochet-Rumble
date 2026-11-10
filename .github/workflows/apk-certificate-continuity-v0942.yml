@@ -71,4 +71,4 @@ jobs:
             qa-input/*/apk-sha256.txt
             qa-input/*/release-sha256.txt
           if-no-files-found: warn
-          retention-days: 90
+          retention-days: 30

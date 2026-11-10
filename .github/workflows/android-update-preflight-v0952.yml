@@ -85,4 +85,4 @@ jobs:
           name: android-update-preflight-v0952-${{ github.run_id }}
           path: evidence/public/
           if-no-files-found: warn
-          retention-days: 30
+          retention-days: 3

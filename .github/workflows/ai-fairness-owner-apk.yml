@@ -163,7 +163,7 @@ jobs:
           name: sector-rebound-ai-fair-${{ github.run_number }}
           path: dist/
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
       - name: Clean test signing files from runner
         if: always()
         run: rm -rf "$RUNNER_TEMP/sr-aosp-preview" "$RUNNER_TEMP/testkey.pk8" "$RUNNER_TEMP/testkey.x509.pem" "$RUNNER_TEMP/testkey.key.pem"
