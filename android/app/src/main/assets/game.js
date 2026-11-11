@@ -23,6 +23,11 @@ function openDossier(){setPanel(document.getElementById('dossier-template').inne
  const mark=document.getElementById('dossier-emblem-mark'),name=document.getElementById('dossier-emblem-name');
  const markUse=mark?.querySelector('use');
  if(markUse)markUse.setAttribute('href','#sr-mark-'+equippedEmblem.slice(5));
+ // Read-only M13 mirror of real equipped operator insignia.
+ const dossierScreen=panel.querySelector('.dossier-screen');
+ if(M13_PROMOTION_PREVIEW&&mark&&dossierScreen){
+  dossierScreen.dataset.m13Preview='on';mark.dataset.m13Emblem=equippedEmblem.slice(5);
+ }
  if(name)name.textContent=OPERATOR_EMBLEMS[equippedEmblem].label;
  mark?.closest('.dossier-emblem')?.setAttribute('aria-label','Equipped operator insignia: '+OPERATOR_EMBLEMS[equippedEmblem].label);
  const intro=document.getElementById('dossier-intro');
@@ -95,6 +100,8 @@ function refreshHangar(){
  if(emblemStatus){emblemStatus.textContent='';emblemStatus.hidden=true;}
  const detailIcon=document.getElementById('insignia-detail-use');
  if(typeof detailIcon?.setAttribute==='function')detailIcon.setAttribute('href','#sr-mark-'+equippedEmblem.slice(5));
+ const studyDetail=document.querySelector('.hangar-screen .insignia-detail-mark');
+ if(studyDetail)studyDetail.dataset.studyEmblem=equippedEmblem.slice(5);
  const detailName=document.getElementById('insignia-detail-name');
  if(detailName)detailName.textContent=OPERATOR_EMBLEMS[equippedEmblem].label;
  const nextProgress=document.getElementById('insignia-next-progress');
@@ -138,6 +145,47 @@ function rewardHangarTab(unlocks){
  return unlocks.some(name=>typeof name==='string'&&name.endsWith(' PAINT'))?'paint':
   unlocks.some(name=>typeof name==='string'&&name.endsWith(' INSIGNIA'))?'insignia':'paint';
 }
+// M13 approved-art preview is explicit and transient, never normal app startup.
+const M13_PROMOTION_PREVIEW=(()=>{
+ try{return new URLSearchParams(String(window.location?.search||'')).get('m13Preview')==='1';}
+ catch(_){return false}
+})();
+// M12 art comparison still requires the original explicit query parameter.
+const M12_HANGAR_STUDIES=['warm','blueprint','original'];
+const M12_ART_PARAM=(()=>{
+ if(M13_PROMOTION_PREVIEW)return 'warm';
+ try{const value=new URLSearchParams(String(window.location?.search||'')).get('m12Art');
+  return M12_HANGAR_STUDIES.includes(value)?value:null;}catch(_){return null}
+})();
+let m12HangarStudy=M12_ART_PARAM;
+// M12-E2: comparison state is transient, independent of Hangar selection and never persisted.
+let m12ModeStudyEnabled=M12_ART_PARAM!=='original';
+let m12InsigniaStudyEnabled=M12_ART_PARAM!=='original'; // transient review state
+function refreshM12InsigniaStudy(){
+ const screen=panel.querySelector('.hangar-screen'),button=screen?.querySelector('.m12-insignia-art-cycle');
+ if(!screen)return;
+ if(!M12_ART_PARAM){screen.removeAttribute('data-m12-insignia-art');if(button)button.hidden=true;return;}
+ screen.dataset.m12InsigniaArt=m12InsigniaStudyEnabled?'on':'off';
+ if(button){
+  button.hidden=M13_PROMOTION_PREVIEW;
+  button.textContent=m12InsigniaStudyEnabled?'BADGES: STUDY':'BADGES: ORIGINAL';
+  button.setAttribute('aria-pressed',String(m12InsigniaStudyEnabled));
+  button.setAttribute('aria-label',m12InsigniaStudyEnabled?
+   'Experimental insignia art visible; show original insignias':
+   'Original insignia art visible; show experimental insignias');
+ }
+}
+function refreshM12HangarStudy(){
+ const stage=document.querySelector('.hangar-bay'),control=document.querySelector('.m12-art-cycle');
+ if(!stage)return;
+ if(!M12_ART_PARAM){if(stage.removeAttribute)stage.removeAttribute('data-m12-art');else if(stage.dataset)delete stage.dataset.m12Art;if(control)control.hidden=true;return;}
+ stage.dataset.m12Art=m12HangarStudy;
+ if(control){
+  control.hidden=M13_PROMOTION_PREVIEW;control.textContent='ART: '+m12HangarStudy.toUpperCase();
+  control.setAttribute('aria-label','Experimental Hangar background: '+m12HangarStudy+'. Tap to compare another stage');
+  control.setAttribute('aria-pressed',String(m12HangarStudy!=='original'));
+ }
+}
 function openHangar(fromDossier=false,newUnlocks=[]){
  hangarReturnToDossier=!!fromDossier;
  hangarPreviewUnit='tank';
@@ -146,7 +194,9 @@ function openHangar(fromDossier=false,newUnlocks=[]){
  const study=/(?:^|[?&])hangarStudy=blueprint(?:&|$)/.test(String(window.location?.search||''))?'blueprint':'warm';
  const dock=document.querySelector('.hangar-bay');
  if(dock)dock.dataset.hangarStudy=study==='blueprint'?'blueprint':'warm';
+ refreshM12HangarStudy();
  refreshHangar();
+ refreshM12InsigniaStudy();
  const rewards=Array.isArray(newUnlocks)?newUnlocks.filter(s=>typeof s==='string').slice(0,5):[];
  showHangarTab(rewardHangarTab(rewards));
  if(rewards.length){
@@ -166,7 +216,21 @@ function openHangar(fromDossier=false,newUnlocks=[]){
  const back=document.querySelector('.hangar-screen button[data-action="hangar-back"]');
  back?.setAttribute?.('aria-label',hangarReturnToDossier?'Back to Dossier':'Back to main menu');
 }
-function openModes(){setPanel(document.getElementById('modes-template').innerHTML);}
+function refreshM12ModeStudy(){
+ const screen=panel.querySelector('.mode-screen'),control=screen?.querySelector('.m12-mode-art-cycle');
+ if(!screen)return;
+ if(!M12_ART_PARAM){screen.removeAttribute('data-m12-mode-art');if(control)control.hidden=true;return;}
+ screen.dataset.m12ModeArt=m12ModeStudyEnabled?'on':'off';
+ if(control){
+  control.hidden=M13_PROMOTION_PREVIEW;
+  control.textContent=m12ModeStudyEnabled?'ART: STUDY':'ART: ORIGINAL';
+  control.setAttribute('aria-pressed',String(m12ModeStudyEnabled));
+  control.setAttribute('aria-label',m12ModeStudyEnabled?
+   'Experimental Mode Select artwork enabled; show original appearance':
+   'Original Mode Select appearance; show experimental artwork');
+ }
+}
+function openModes(){setPanel(document.getElementById('modes-template').innerHTML);refreshM12ModeStudy();}
 let loadingForwardBay=false;
 let loadingCtf=false;
 function launchCtfExercise(){
@@ -3456,7 +3520,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('button[data-action]'
  if(a==='toggle-sound'||a==='toggle-music'){togglePauseAudio(a==='toggle-sound'?'sound':'music',b);return;}
  if(!['solo','settings-play','practice','cqc','scored_ffa','scored_tdm','custom-play','duel','host','find','custom-preset-save','custom-preset-delete','custom-preset-load','ip-join'].includes(a))
   audioCue(['settings-back','help-back','dossier-back','backup-back','modes-back','custom-back','close','resume'].includes(a)?'ui-back':'ui-select');
- if(a==='lan-retry'){retryLanEndpoint();return;}else if(a==='lan-ready'){guestLanReady();return;}else if(a==='lan-start'){launchLanMatch();return;}else if(a==='modes'){openModes()}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest?.('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-preview-unit'){hangarPreviewUnit=hangarPreviewUnit==='tank'?'mech':'tank';drawHangarUnitPreview()}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
+ if(a==='lan-retry'){retryLanEndpoint();return;}else if(a==='lan-ready'){guestLanReady();return;}else if(a==='lan-start'){launchLanMatch();return;}else if(a==='modes'){openModes()}else if(a==='m12-mode-art-next'){if(M12_ART_PARAM&&!M13_PROMOTION_PREVIEW){m12ModeStudyEnabled=!m12ModeStudyEnabled;refreshM12ModeStudy();}return;}else if(a==='modes-back'){panel.innerHTML=originalPanel;applyPrefsToUI()}else if(a==='dossier'){openDossier()}else if(a==='hangar'){openHangar(!!b.closest?.('.dossier-screen'))}else if(a==='hangar-tab'){showHangarTab(b.dataset.hangarTab)}else if(a==='hangar-preview-unit'){hangarPreviewUnit=hangarPreviewUnit==='tank'?'mech':'tank';drawHangarUnitPreview()}else if(a==='m12-art-next'){if(M12_ART_PARAM&&!M13_PROMOTION_PREVIEW){m12HangarStudy=M12_HANGAR_STUDIES[(M12_HANGAR_STUDIES.indexOf(m12HangarStudy)+1)%3];refreshM12HangarStudy();}return;}else if(a==='m12-insignia-art-next'){if(M12_ART_PARAM&&!M13_PROMOTION_PREVIEW){m12InsigniaStudyEnabled=!m12InsigniaStudyEnabled;refreshM12InsigniaStudy();}return;}else if(a==='hangar-back'){if(hangarReturnToDossier){openDossier()}else{panel.innerHTML=originalPanel;applyPrefsToUI()}}else if(a==='equip-paint'){
    const ok=equipPaint(b.dataset.paintId);
    refreshHangar();const status=document.getElementById('hangar-status');
    if(!ok&&status)status.textContent=paintProgress(b.dataset.paintId).eligible?'COULD NOT SAVE PAINT · CURRENT PAINT KEPT':'LOCKED · COMPLETE DOSSIER MILESTONE FIRST';

@@ -1,0 +1,188 @@
+name: Sector Rebound M12 - isolated visual test APK and screenshots
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/m12-visual-test-apk.yml'
+      - 'web/**'
+      - 'android/**'
+      - 'hybrid-ui/**'
+      - 'tests/m12-*'
+      - 'docs/m12-art-studies/**'
+      - 'docs/M12_ASSET_MANIFEST_2026-11-04.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sr-m12-phone-visual-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  m12-visual-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Prepare offline Pixi build and fail-closed asset checks
+        run: |
+          set -euo pipefail
+          npm --prefix hybrid-ui install --ignore-scripts --no-audit --no-fund
+          npm --prefix hybrid-ui run build
+          node tools/verify-hybrid-menu-bundle.mjs
+          node --check tests/m12-hangar-visual-qa.mjs
+          node tests/m12-asset-manifest.mjs
+          M12_EXPECTED_PR_BASE="${{ github.event.pull_request.base.sha }}" node tests/m12-f-release-gate.mjs
+          node tests/smoke.mjs
+          for f in index.html style.css game.js; do
+            cmp "web/$f" "android/app/src/main/assets/$f"
+          done
+          for f in hangar-warm-empty-v1.svg hangar-blueprint-empty-v1.svg; do
+            cmp "web/assets/m12/$f" "android/app/src/m12Visual/assets/assets/m12/$f"
+          done
+          for mode in cqc ffa tdm custom ctf forward-bays; do
+            f="mode-$mode-study-v1.svg"
+            cmp "docs/m12-art-studies/$f" "web/assets/m12/$f"
+            cmp "web/assets/m12/$f" "android/app/src/m12Visual/assets/assets/m12/$f"
+          done
+          for badge in field vector ace command; do
+            f="insignia-$badge-study-v1.svg"
+            cmp "docs/m12-art-studies/$f" "web/assets/m12/$f"
+            cmp "web/assets/m12/$f" "android/app/src/m12Visual/assets/assets/m12/$f"
+          done
+      - name: Real browser five-size art comparison and game controls
+        run: |
+          set -euo pipefail
+          npm install --no-save --ignore-scripts --no-audit playwright-core@1.56.1
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          node tests/m12-hangar-visual-qa.mjs
+          node tests/m13-promotion-preview-qa.mjs
+          test -s qa-results/m13/preview/report.json
+          node tests/m12-art-scale-budget.mjs
+          node tests/m12-f2-progress-continuity.mjs
+          test -s qa-results/m12/release-gate/m12-f2-progress-continuity.json
+          test -s qa-results/m12/release-gate/m12-f2-baseline-dossier.png
+          test -s qa-results/m12/release-gate/m12-f2-current-dossier.png
+          test -s qa-results/m12/visual/report.json
+          test -s qa-results/m12/visual/insignia-scale-sheet-24-32-48-96.png
+          test -s qa-results/m12/visual/m12-e4-source-and-scale-audit.json
+          for viewport in 568x320 640x360 740x360 915x412 1280x720; do
+            test -s "qa-results/m12/visual/hangar-warm-tank-$viewport.png"
+            test -s "qa-results/m12/visual/hangar-blueprint-mech-$viewport.png"
+            test -s "qa-results/m12/visual/hangar-original-tank-$viewport.png"
+            test -s "qa-results/m12/visual/mode-study-$viewport.png"
+            test -s "qa-results/m12/visual/mode-exercises-$viewport.png"
+            test -s "qa-results/m12/visual/mode-original-$viewport.png"
+            test -s "qa-results/m12/visual/insignia-study-$viewport.png"
+            test -s "qa-results/m12/visual/insignia-original-$viewport.png"
+          done
+          test -s qa-results/m12/visual/mode-original-initial-740x360.png
+      - name: Install Android API 36 SDK
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" --install "platforms;android-36" "build-tools;35.0.0"
+      - name: Verify standard Android debug APK contains zero M12 art
+        working-directory: android
+        run: |
+          set -euo pipefail
+          gradle --no-daemon :app:assembleDebug
+          apk="app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$apk"
+          aapt="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/aapt"
+          "$aapt" dump badging "$apk" | grep -F "name='com.playereden.ricochetrumble'"
+          python3 - "$apk" <<'PY'
+          import pathlib, sys, zipfile
+          with zipfile.ZipFile(sys.argv[1]) as z:
+              forbidden=[f for f in z.namelist() if f.startswith('assets/assets/m12/')]
+              assert not forbidden, 'Standard Android APK unexpectedly contains M12 art: '+repr(forbidden)
+              for name in ('index.html','style.css','game.js'):
+                  assert z.read('assets/'+name)==pathlib.Path('../web/'+name).read_bytes(), 'Normal Android/Web source mismatch: '+name
+          print('M12_F_DEFAULT_APK_ART_EXCLUSION_PASS')
+          PY
+          mkdir -p ../dist
+          printf 'DEFAULT_APP_ID=com.playereden.ricochetrumble\nSTANDARD_APK_M12_ASSETS=0\nSIGNER=CI_DEBUG_NOT_UPGRADE_SAFE\nRELEASE_APPROVAL=NO\n' > ../dist/m12-f-default-apk.txt
+      - name: Package only the isolated M12 Visual Test debug app
+        working-directory: android
+        run: |
+          set -euo pipefail
+          grep -F 'android:label="Sector Rebound"' app/src/main/AndroidManifest.xml
+          sed -i 's/android:label="Sector Rebound"/android:label="SR M13 Preview"/' app/src/main/AndroidManifest.xml
+          grep -F 'android:label="SR M13 Preview"' app/src/main/AndroidManifest.xml
+          gradle --no-daemon :app:assembleDebug -PsrM12VisualLabPackage=true
+      - name: Verify isolated Android ID, embedded art, signer, native launch and hash
+        run: |
+          set -euo pipefail
+          apk="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$apk"
+          node tools/verify-hybrid-menu-bundle.mjs --apk="$apk"
+          aapt="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/aapt"
+          apksigner="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/apksigner"
+          "$apksigner" verify --min-sdk-version 26 --print-certs "$apk" > /tmp/sr-m12-cert.txt
+          line="$("$aapt" dump badging "$apk" | head -n 1)"
+          [[ "$line" == *"name='com.playereden.ricochetrumble.m12visual'"* ]]
+          "$aapt" dump badging "$apk" | grep -F "application-label:'SR M13 Preview'"
+          python3 - "$apk" <<'PY'
+          import sys, zipfile, pathlib, hashlib
+          with zipfile.ZipFile(sys.argv[1]) as z:
+              for f in ('hangar-warm-empty-v1.svg','hangar-blueprint-empty-v1.svg')+tuple('mode-'+m+'-study-v1.svg' for m in ('cqc','ffa','tdm','custom','ctf','forward-bays'))+tuple('insignia-'+badge+'-study-v1.svg' for badge in ('field','vector','ace','command')):
+                  packaged=z.read('assets/assets/m12/'+f)
+                  source=pathlib.Path('web/assets/m12/'+f).read_bytes()
+                  assert packaged==source, f+' packaged art differs from verified source'
+                  print('M12_OFFLINE_ASSET_PASS',f,len(source),hashlib.sha256(source).hexdigest())
+              for f in ('index.html','game.js','style.css'):
+                  assert z.read('assets/'+f)==pathlib.Path('web/'+f).read_bytes(), f+' web/android bundle drift'
+              assert b'm12-art-cycle' in z.read('assets/index.html')
+              assert b'refreshM12HangarStudy' in z.read('assets/game.js')
+              assert b'M13_PROMOTION_PREVIEW' in z.read('assets/game.js')
+              assert sum(f.startswith('assets/assets/m12/') for f in z.namelist())==12, 'Expected twelve M12-only resources'
+              dex=[n for n in z.namelist() if n.startswith('classes') and n.endswith('.dex')]
+              assert dex and any(b'm13Preview=1' in z.read(n) for n in dex), 'Missing dedicated M12 app launch URL'
+          PY
+          mkdir -p dist
+          cp "$apk" dist/SR-M13-Promotion-Preview.apk
+          hash="$(sha256sum dist/SR-M13-Promotion-Preview.apk | awk '{print $1}')"
+          {
+            echo "PR_HEAD=${{ github.event.pull_request.head.sha }}"
+            echo "WORKFLOW_SOURCE_SHA=$GITHUB_SHA"
+            echo "APP_ID=com.playereden.ricochetrumble.m12visual"
+            echo "LAUNCHER=SR M13 Preview"
+            echo "INITIAL_URL=file:///android_asset/index.html?hybridMenu=1&m13Preview=1"
+            echo "TEST_UI=Approved Warm Hangar, study modes, badges and Dossier; dev comparison controls hidden"
+            echo "APK_SHA256=$hash"
+            echo "SIGNER=DISPOSABLE_CI_DEBUG"
+            echo "NO_OWNER_SAVED_DATA_ACCESS"
+            echo "CAN_COEXIST_WITH=Sector Rebound,SR Hybrid Test,owner preview"
+            echo "REAL_ANDROID_PHONE_VISUAL_QA=NOT_YET_PERFORMED"
+            echo "NOT_A_GOOGLE_PLAY_RELEASE"
+          } > dist/verification.txt
+          echo "M12_VISUAL_APK_VERIFIED $hash"
+      - name: Upload tested screenshots, app and verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: SR-M13-Promotion-Preview-APK-${{ github.run_id }}
+          path: |
+            dist/SR-M13-Promotion-Preview.apk
+            dist/verification.txt
+            dist/m12-f-default-apk.txt
+            qa-results/m12/visual/
+            qa-results/m12/release-gate/
+            qa-results/m13/preview/
+          retention-days: 21
+          if-no-files-found: error

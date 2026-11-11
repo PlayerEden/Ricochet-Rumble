@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="576" viewBox="0 0 1024 576" role="img" aria-label="Empty Sector Rebound industrial docking bay, cool blueprint lighting">
+<defs>
+ <linearGradient id="base" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#071724"/><stop offset=".48" stop-color="#0d2b3a"/><stop offset="1" stop-color="#071724"/></linearGradient>
+ <radialGradient id="well" cx="50%" cy="45%" r="54%"><stop stop-color="#5fbed1" stop-opacity=".13"/><stop offset=".6" stop-color="#4b9bb0" stop-opacity=".045"/><stop offset="1" stop-color="#071724" stop-opacity="0"/></radialGradient>
+ <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#1f4456"/><stop offset=".52" stop-color="#0b2533"/><stop offset="1" stop-color="#071724"/></linearGradient>
+ <linearGradient id="beacon" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#4cbbd0" stop-opacity=".37"/><stop offset="1" stop-color="#4cbbd0" stop-opacity="0"/></linearGradient>
+ <pattern id="floorLines" width="94" height="82" patternUnits="userSpaceOnUse"><path d="M94 0H0V82" fill="none" stroke="#4b9bb0" stroke-opacity=".14" stroke-width="1.5"/><rect x="10" y="12" width="3" height="3" fill="#5fbed1" opacity=".19"/></pattern>
+</defs>
+<rect width="1024" height="576" fill="url(#base)"/>
+<rect x="0" y="0" width="1024" height="74" fill="#071724" opacity=".93"/>
+<path d="M0 76h1024M0 87h1024" stroke="#4b9bb0" stroke-width="5" opacity=".24"/>
+<path d="M0 97H1024" stroke="#78c9d5" stroke-width="2" opacity=".27"/>
+<rect x="0" y="82" width="1024" height="410" fill="url(#well)"/>
+<path d="M0 178L195 120L829 120L1024 178V576H0Z" fill="#0d2b3a" opacity=".38"/>
+<path d="M0 418L209 336L815 336L1024 418V576H0Z" fill="url(#floor)"/>
+<path d="M0 418L209 336L815 336L1024 418V576H0Z" fill="url(#floorLines)" opacity=".72"/>
+<path d="M209 336L815 336" stroke="#78c9d5" stroke-width="2.5" opacity=".31"/>
+<path d="M118 501L332 391M906 501L692 391" stroke="#4b9bb0" stroke-width="3" opacity=".2"/>
+<path d="M209 336L0 418m815-82 209 82" fill="none" stroke="#5fbed1" stroke-width="4" opacity=".18"/>
+<rect x="126" y="111" width="772" height="330" rx="5" fill="none" stroke="#4b9bb0" stroke-width="3" opacity=".3"/>
+<rect x="145" y="122" width="734" height="310" rx="3" fill="none" stroke="#5fbed1" stroke-width="1.5" opacity=".15"/>
+<path d="M160 92H864" stroke="#315d6a" stroke-width="18" opacity=".82"/>
+<path d="M218 92h130m328 0h130" stroke="#78c9d5" stroke-width="4" opacity=".68"/>
+<rect x="208" y="95" width="140" height="76" fill="url(#beacon)" opacity=".42"/>
+<rect x="676" y="95" width="140" height="76" fill="url(#beacon)" opacity=".42"/>
+<g opacity=".85"><rect x="82" y="65" width="22" height="348" rx="3" fill="#315d6a"/><rect x="86" y="65" width="4" height="348" fill="#5fbed1" opacity=".4"/><path d="M82 82l22 20m-22 78 22 20m-22 78 22 20" stroke="#071724" stroke-width="5" opacity=".53"/></g>
+<g opacity=".52"><rect x="186" y="65" width="22" height="348" rx="3" fill="#315d6a"/><rect x="190" y="65" width="4" height="348" fill="#5fbed1" opacity=".4"/><path d="M186 82l22 20m-22 78 22 20m-22 78 22 20" stroke="#071724" stroke-width="5" opacity=".53"/></g>
+<g opacity=".52"><rect x="838" y="65" width="22" height="348" rx="3" fill="#315d6a"/><rect x="842" y="65" width="4" height="348" fill="#5fbed1" opacity=".4"/><path d="M838 82l22 20m-22 78 22 20m-22 78 22 20" stroke="#071724" stroke-width="5" opacity=".53"/></g>
+<g opacity=".85"><rect x="942" y="65" width="22" height="348" rx="3" fill="#315d6a"/><rect x="946" y="65" width="4" height="348" fill="#5fbed1" opacity=".4"/><path d="M942 82l22 20m-22 78 22 20m-22 78 22 20" stroke="#071724" stroke-width="5" opacity=".53"/></g>
+<path d="M115 486H909" stroke="#78c9d5" stroke-width="2" opacity=".31"/>
+<path d="M185 506H839" stroke="#4b9bb0" stroke-width="1" opacity=".27"/>
+<g opacity=".42"><rect x="18" y="142" width="24" height="40" rx="2" fill="#1f4456" stroke="#4b9bb0" stroke-width="1"/><rect x="982" y="142" width="24" height="40" rx="2" fill="#1f4456" stroke="#4b9bb0" stroke-width="1"/></g>
+<g opacity=".42"><rect x="44" y="203" width="24" height="40" rx="2" fill="#1f4456" stroke="#4b9bb0" stroke-width="1"/><rect x="956" y="203" width="24" height="40" rx="2" fill="#1f4456" stroke="#4b9bb0" stroke-width="1"/></g>
+<g opacity=".42"><rect x="70" y="264" width="24" height="40" rx="2" fill="#1f4456" stroke="#4b9bb0" stroke-width="1"/><rect x="930" y="264" width="24" height="40" rx="2" fill="#1f4456" stroke="#4b9bb0" stroke-width="1"/></g>
+<g fill="#1f4456" stroke="#4b9bb0" stroke-opacity=".5" stroke-width="2">
+ <rect x="20" y="424" width="106" height="85" rx="5"/><rect x="898" y="424" width="106" height="85" rx="5"/>
+ <rect x="37" y="443" width="72" height="8" rx="1"/><rect x="915" y="443" width="72" height="8" rx="1"/>
+ <rect x="37" y="469" width="53" height="6"/><rect x="934" y="469" width="53" height="6"/>
+</g>
+<g stroke="#78c9d5" stroke-width="3" opacity=".65"><path d="M24 496l20-14m1 15 20-14m846 14 20-14m1 15 20-14"/></g>
+<g opacity=".52"><rect x="117" y="83" width="6" height="5" rx="1" fill="#78c9d5"/><rect x="117" y="487" width="6" height="5" rx="1" fill="#78c9d5"/></g>
+<g opacity=".52"><rect x="272" y="83" width="6" height="5" rx="1" fill="#78c9d5"/><rect x="272" y="487" width="6" height="5" rx="1" fill="#78c9d5"/></g>
+<g opacity=".52"><rect x="435" y="83" width="6" height="5" rx="1" fill="#78c9d5"/><rect x="435" y="487" width="6" height="5" rx="1" fill="#78c9d5"/></g>
+<g opacity=".52"><rect x="582" y="83" width="6" height="5" rx="1" fill="#78c9d5"/><rect x="582" y="487" width="6" height="5" rx="1" fill="#78c9d5"/></g>
+<g opacity=".52"><rect x="745" y="83" width="6" height="5" rx="1" fill="#78c9d5"/><rect x="745" y="487" width="6" height="5" rx="1" fill="#78c9d5"/></g>
+<g opacity=".52"><rect x="902" y="83" width="6" height="5" rx="1" fill="#78c9d5"/><rect x="902" y="487" width="6" height="5" rx="1" fill="#78c9d5"/></g>
+<path d="M0 561H1024" stroke="#5fbed1" stroke-width="4" opacity=".3"/>
+<rect width="1024" height="576" fill="none" stroke="#071724" stroke-width="24" opacity=".28"/>
+</svg>

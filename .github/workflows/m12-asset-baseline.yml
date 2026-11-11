@@ -1,0 +1,60 @@
+name: Sector Rebound M12 - asset manifest and render-operation baseline
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/m12-asset-baseline.yml'
+      - 'docs/M12_*'
+      - 'tests/m12-*'
+      - 'web/**'
+      - 'android/app/src/main/assets/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sr-m12-asset-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  m12-source-baseline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify no M12 runtime art shipped without review
+        run: |
+          set -euo pipefail
+          node --check tests/m12-asset-manifest.mjs
+          node --check tests/m12-draw-operation-baseline.mjs
+          node --check tests/m12-floor-cache-experiment.mjs
+          node tests/m12-asset-manifest.mjs
+      - name: Install browser harness
+        run: npm install --no-save --ignore-scripts --no-audit playwright-core@1.56.1
+      - name: Measure actual Canvas draw operations in Chromium
+        run: |
+          set -euo pipefail
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          node tests/m12-draw-operation-baseline.mjs
+          test -s qa-results/m12/draw-operation-baseline.json
+      - name: Experimental floor cache A/B on real game, not shipped
+        run: |
+          set -euo pipefail
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          node tests/m12-floor-cache-experiment.mjs
+          test -s qa-results/m12/floor-cache/report.json
+      - name: Preserve inspectable baseline
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sr-m12-asset-baseline-${{ github.run_id }}
+          path: qa-results/m12/
+          if-no-files-found: warn
+          retention-days: 21

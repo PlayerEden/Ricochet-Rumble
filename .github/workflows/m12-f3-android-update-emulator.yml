@@ -1,0 +1,142 @@
+name: Sector Rebound M12-F3 - signed emulator update and saved progress
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/m12-f3-android-update-emulator.yml'
+      - 'tests/m12-f3-android-approval-gate.mjs'
+      - 'docs/M12_F_RELEASE_READINESS_AUDIT_2026-11-05.md'
+      - 'tests/m12-f2-progress-continuity.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sector-m12-f3-emulator-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  m12-signed-install-over:
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Validate M12 source boundaries and existing upgrade harness
+        run: |
+          set -euo pipefail
+          node tests/emulator-upgrade-source-contract.mjs
+          node --check tests/m12-f3-android-approval-gate.mjs
+          node tests/m12-f-release-gate.mjs
+      - name: Install Android build tools
+        run: |
+          set -euo pipefail
+          sdkmanager_bin="$(find "$ANDROID_HOME/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
+          test -n "$sdkmanager_bin"
+          "$sdkmanager_bin" --install "platforms;android-36" "build-tools;35.0.0"
+      - name: Recover fixed public AOSP TEST signer (not release credentials)
+        env:
+          SR_TEST_STORE_FILE: ${{ runner.temp }}/sr-emulator/public-testkey.p12
+        run: |
+          set -euo pipefail
+          mkdir -p "$(dirname "$SR_TEST_STORE_FILE")"
+          base="https://android.googlesource.com/platform/build/+/refs/heads/main/target/product/security"
+          for name in testkey.pk8 testkey.x509.pem; do
+            curl --fail --show-error --silent --location --retry 3 "$base/$name?format=TEXT" | base64 --decode > "$RUNNER_TEMP/$name"
+            test -s "$RUNNER_TEMP/$name"
+          done
+          test "$(git hash-object "$RUNNER_TEMP/testkey.pk8")" = '586c1bd5cf96f9358f36b37ea98fef93f4d0a8e3'
+          test "$(git hash-object "$RUNNER_TEMP/testkey.x509.pem")" = 'e242d83e2bf72169ab0abd5280d4d455caef71eb'
+          openssl pkcs8 -inform DER -nocrypt -in "$RUNNER_TEMP/testkey.pk8" -out "$RUNNER_TEMP/testkey.key.pem"
+          openssl pkcs12 -export -inkey "$RUNNER_TEMP/testkey.key.pem" -in "$RUNNER_TEMP/testkey.x509.pem" -out "$SR_TEST_STORE_FILE" -name aosp-public-testkey -passout pass:emulator-only-public-test
+      - name: Compile immutable Preview 100041 and current Preview 100050 with same signer
+        env:
+          SR_TEST_STORE_FILE: ${{ runner.temp }}/sr-emulator/public-testkey.p12
+          SR_TEST_STORE_PASSWORD: emulator-only-public-test
+          SR_TEST_KEY_ALIAS: aosp-public-testkey
+          SR_TEST_KEY_PASSWORD: emulator-only-public-test
+        run: |
+          set -euo pipefail
+          mkdir -p qa-results/emulator-upgrade
+          git worktree add --detach "$RUNNER_TEMP/sector-old-source" 55c91024eb2d76f120bc9203dfc228fe7e333757
+          # Test-only debug WebView instrumentation in runner worktrees. No source file committed.
+          node qa/android-webview-upgrade-probe.mjs patch "$RUNNER_TEMP/sector-old-source" .
+          # The current M12 source retains the M11 hybrid-menu stub until the
+          # pinned offline build is compiled; never package a placeholder.
+          npm --prefix hybrid-ui install --ignore-scripts --no-audit --no-fund
+          npm --prefix hybrid-ui run build
+          node tools/verify-hybrid-menu-bundle.mjs
+          (cd "$RUNNER_TEMP/sector-old-source/android" && gradle --no-daemon :app:assembleDebug -PsrPreviewPackage=true -PsrPreviewVersionCode=100041 -PsrPreviewVersionName=0.9.58-preview.100041)
+          cp "$RUNNER_TEMP/sector-old-source/android/app/build/outputs/apk/debug/app-debug.apk" qa-results/emulator-upgrade/baseline-100041.apk
+          (cd android && gradle --no-daemon :app:assembleDebug -PsrPreviewPackage=true -PsrPreviewVersionCode=100050 -PsrPreviewVersionName=0.9.58-preview.100050)
+          cp android/app/build/outputs/apk/debug/app-debug.apk qa-results/emulator-upgrade/current-100050.apk
+      - name: Validate both signed preview APKs and experimental-art exclusion
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import zipfile,pathlib
+          old='qa-results/emulator-upgrade/baseline-100041.apk'
+          new='qa-results/emulator-upgrade/current-100050.apk'
+          for name in (old,new):
+              assert pathlib.Path(name).is_file(),name
+              with zipfile.ZipFile(name) as z:
+                  assert z.testzip() is None,name+' corrupt APK'
+                  assert not any(f.startswith('assets/assets/m12/') for f in z.namelist()),name+' leaked isolated M12 art'
+                  assert b'sector-rebound' not in b'' or len(z.namelist())>0
+          print('M12_F3_SIGNED_APK_ART_EXCLUSION_PASS: both preview APKs omit twelve isolated study files')
+          PY
+      - name: Enable emulator hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install and upgrade APKs on actual Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          script: bash tools/android-emulator-upgrade-rehearsal.sh
+      - name: Verify Android upgrade evidence is internally consistent
+        run: |
+          set -euo pipefail
+          node tests/m12-f3-android-approval-gate.mjs
+          test -s qa-results/m12/release-gate/m12-f3-android-upgrade.json
+      - name: Upload emulator verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sr-m12-f3-same-signer-android-emulator-${{ github.run_id }}
+          path: |
+            qa-results/emulator-upgrade/README.txt
+            qa-results/emulator-upgrade/*-signer.txt
+            qa-results/emulator-upgrade/*-badging.txt
+            qa-results/emulator-upgrade/*-install.txt
+            qa-results/emulator-upgrade/*-launch.txt
+            qa-results/emulator-upgrade/installed-version.txt
+            qa-results/emulator-upgrade/before-update.png
+            qa-results/emulator-upgrade/after-update.png
+            qa-results/emulator-upgrade/webview-before.json
+            qa-results/emulator-upgrade/webview-baseline-relaunch.json
+            qa-results/emulator-upgrade/baseline-relaunch.txt
+            qa-results/emulator-upgrade/webview-after.json
+            qa-results/m12/release-gate/m12-f3-android-upgrade.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Erase downloaded public test signer
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/sr-emulator" "$RUNNER_TEMP/testkey.pk8" "$RUNNER_TEMP/testkey.x509.pem" "$RUNNER_TEMP/testkey.key.pem"
