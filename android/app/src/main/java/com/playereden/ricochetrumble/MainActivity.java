@@ -85,7 +85,9 @@ public final class MainActivity extends Activity {
         // The real game/owner preview retains its original URL and Canvas fallback.
         String initialPage = getPackageName().endsWith(".hybridtest")
             ? "file:///android_asset/index.html?hybridMenu=1"
-            : "file:///android_asset/index.html";
+            : getPackageName().endsWith(".m13pacing")
+                ? "file:///android_asset/index.html?m13Pacing=1"
+                : "file:///android_asset/index.html";
         web.loadUrl(initialPage);
     }
 

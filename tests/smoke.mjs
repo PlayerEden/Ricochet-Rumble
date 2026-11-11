@@ -1601,7 +1601,7 @@ console.log('PASS Team Survival: real BLUE allies, RED opponents, mirrored tank/
  assert.equal(node('player0-label').textContent,'YOU KOs');
  assert.equal(node('player1-label').textContent,'LEADER');
  assert.equal(node('score0').textContent,0);
- assert.equal(node('score-clock').textContent,'03:00');
+ assert.equal(node('score-clock').textContent,'DEPLOY · 03:00 · 0/10','CQC HUD reports real clock and KO goal');
  g.tanks[1].shield=0;
  assert.equal(api.registerHit(0,1),true,'pilot hit credited as score');
  assert.equal(g.kos[0],1);
@@ -1646,7 +1646,9 @@ console.log('PASS Team Survival: real BLUE allies, RED opponents, mirrored tank/
  api.newMatch('solo');
  assert.equal(st().scored,null,'ordinary finite-life survival is not scored');
  assert.ok(st().vehicles.length,'original vehicle survival still has spawned vehicles');
- assert.equal(node('score-clock').classList.contains('hidden'),true,'no score clock shown in survival');
+ assert.equal(node('score-clock').classList.contains('hidden'),false,'Survival now shows actual elapsed time');
+  assert.match(node('score-clock').textContent,/^DEPLOY · 00:00 · [0-9]+ LEFT$/,
+   'Survival stage uses real elapsed clock and remaining sides');
 }
 console.log('PASS playable CQC contract: real 10 pilot KOs, protected safe respawns, clock draw, next sector and survival isolation.');
 
@@ -1728,7 +1730,7 @@ console.log('PASS CQC aim polish: dual-thumb FIRE aim, no tap jitter, fair score
  assert.ok(m.vehicles.some(v=>v.type==='mech'),'vehicle FFA includes spare mech');
  assert.ok(m.vehicles.some(v=>v.type==='tank'&&v.occupant<0),'vehicle FFA has spare tanks');
  assert.ok(vehicle.armor>0);
- assert.equal(node('score-clock').textContent,'04:00');
+ assert.equal(node('score-clock').textContent,'DEPLOY · 04:00 · 0/10','FFA HUD reports real clock and KO goal');
  assert.equal(node('player0-label').textContent,'YOU KOs');
  assert.equal(node('mode-label').textContent,'SCORED FREE-FOR-ALL');
  const hp=vehicle.armor;
@@ -1978,7 +1980,7 @@ console.log('PASS Solo and LAN pilot FIRE-drag parity, independent heading, ejec
  assert.equal(node('player0-label').textContent,'CYAN KOs · YOU');
  assert.equal(node('player1-label').textContent,'CORAL KOs');
  assert.equal(node('score0').textContent,0);assert.equal(node('score1').textContent,0);
- assert.equal(node('score-clock').textContent,'05:00');
+ assert.equal(node('score-clock').textContent,'DEPLOY · 05:00 · 0/15','TDM HUD reports real clock and KO goal');
  assert.ok(!menuHtml.includes('id="vehicle-aim"'),'TDM uses simple MOVE and FIRE without extra AIM button');
  assert.equal(api.registerHit(0,2),false,'friendly fire does not hurt Blue ally');
  for(let n=0;n<3;n++)assert.equal(api.registerHit(0,1),true,'scored TDM tank armor damage');
