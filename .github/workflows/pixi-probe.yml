@@ -1,0 +1,110 @@
+name: Sector Rebound - isolated PixiJS renderer probe
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/pixi-probe/**'
+      - '.github/workflows/pixi-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 27
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned PixiJS and bundler dependencies
+        run: npm --prefix experiments/pixi-probe install --ignore-scripts --no-audit --no-fund
+      - name: Build fully offline-renderable local assets
+        run: |
+          set -euo pipefail
+          npm --prefix experiments/pixi-probe run build
+          cp experiments/pixi-probe/index.html experiments/pixi-probe/style.css experiments/pixi-probe/dist/
+          test -s experiments/pixi-probe/dist/bundle.js
+          ! grep -qE 'https?://' experiments/pixi-probe/index.html || exit 1
+          node --check experiments/pixi-probe/test.mjs
+      - name: Run real Chromium Canvas and Pixi renderer comparisons
+        run: |
+          set -euo pipefail
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          node experiments/pixi-probe/test.mjs
+      - name: Preserve browser screenshots and measured observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pixi-renderer-browser-evidence-${{ github.run_id }}
+          path: qa-results/pixi-probe/
+          if-no-files-found: warn
+          retention-days: 14
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Ensure Android SDK 36 is installed
+        run: |
+          set -euo pipefail
+          sdkmanager="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | head -n 1)"
+          test -n "$sdkmanager"
+          "$sdkmanager" --install "platforms;android-36" "build-tools;35.0.0"
+      - name: Assemble separate Pixi PROBE package only on CI runner
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          f=Path('android/app/build.gradle')
+          s=f.read_text()
+          original="applicationId 'com.playereden.ricochetrumble'"
+          assert s.count(original)==1
+          s=s.replace(original,"applicationId 'com.playereden.ricochetrumble.pixiprobe'")
+          f.write_text(s)
+          m=Path('android/app/src/main/AndroidManifest.xml')
+          s=m.read_text()
+          assert 'android:label="Sector Rebound"' in s
+          s=s.replace('android:label="Sector Rebound"','android:label="SR Pixi Test"')
+          s=s.replace('android:name=".MainActivity"','android:name="com.playereden.ricochetrumble.MainActivity"')
+          m.write_text(s)
+          PY
+          find android/app/src/main/assets -mindepth 1 -maxdepth 1 -type f -delete
+          cp experiments/pixi-probe/dist/index.html experiments/pixi-probe/dist/style.css experiments/pixi-probe/dist/bundle.js android/app/src/main/assets/
+          cd android
+          gradle --no-daemon :app:assembleDebug
+      - name: Verify unique Android identity, packaged offline files and no main APK
+        run: |
+          set -euo pipefail
+          apk=android/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$apk"
+          aapt="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/35.0.0/aapt"
+          "$aapt" dump badging "$apk" | head -n 1 | grep -F "name='com.playereden.ricochetrumble.pixiprobe'"
+          "$aapt" dump badging "$apk" | grep -F "application-label:'SR Pixi Test'"
+          for f in index.html style.css bundle.js; do
+            cmp "experiments/pixi-probe/dist/$f" <(unzip -p "$apk" "assets/$f")
+          done
+          mkdir -p qa-results/pixi-probe
+          {
+            echo 'NOT A SECTOR REBOUND GAME UPDATE'
+            echo 'ISOLATED DEBUG-KEY PIXI RENDERER EXPERIMENT'
+            echo "SOURCE_SHA=$GITHUB_SHA"
+            echo 'PACKAGE=com.playereden.ricochetrumble.pixiprobe'
+            echo 'SIGNER=EPHEMERAL_CI_DEBUG; NOT OWNER_PREVIEW_SIGNER'
+            echo "SHA256=$(sha256sum "$apk" | awk '{print $1}')"
+            echo 'THE EXISTING v0.9.80 OWNER APK WAS NOT REPLACED'
+          } > qa-results/pixi-probe/android-build-proof.txt
+      - name: Upload separately installable experiment APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SEPARATE-SR-Pixi-renderer-test-APK-${{ github.run_id }}
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            qa-results/pixi-probe/android-build-proof.txt
+          if-no-files-found: error
+          retention-days: 14
